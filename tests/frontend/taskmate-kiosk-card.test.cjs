@@ -791,3 +791,35 @@ test("the editor offers both list filters, 'show' by default, and stores only a 
   const back = editor.dispatched.at(-1).detail.config;
   assert.equal("completed_mode" in back || "elapsed_time_mode" in back, false);
 });
+
+// ── set times: the ring counts the chore once ─────────────────────────────
+
+const SET_TIME_CHORES = [
+  chore("dishes"),
+  chore("hands", { times: [{ id: "am", name: "Breakfast", start: "07:00", end: "09:00", points: 2 }, { id: "pm", name: "Dinner", start: "17:00", end: "19:00", points: 2 }] }),
+];
+
+function withSetTimes(layout, states, fn) {
+  const before = cardWindow.__taskmate_set_times;
+  cardWindow.__taskmate_set_times = {
+    states: (c) => c.times.map((t, i) => ({ time: t, state: states[i], opens: t.start })),
+    focus: (entries) => entries.find((e) => e.state === "now") || entries[0],
+    layout: () => layout,
+    nowMinutes: () => 0,
+  };
+  return fn().finally(() => { cardWindow.__taskmate_set_times = before; });
+}
+
+for (const layout of ["rows", "pills"]) {
+  test(`set times count once in the done ring (${layout})`, () => withSetTimes(layout, ["done", "now"], async () => {
+    const card = await childView({ chores: SET_TIME_CHORES, status: phoneStatus(["dishes", "hands"]) });
+    const { done, total } = card._progress(card._entry("vaiha").child);
+    assert.deepEqual([done, total], [0, 2], "one of two times done is not the chore done");
+  }));
+
+  test(`set times count as done once every time is done or waiting (${layout})`, () => withSetTimes(layout, ["done", "pending"], async () => {
+    const card = await childView({ chores: SET_TIME_CHORES, status: phoneStatus(["dishes", "hands"]) });
+    const { done, total } = card._progress(card._entry("vaiha").child);
+    assert.deepEqual([done, total], [1, 2]);
+  }));
+}

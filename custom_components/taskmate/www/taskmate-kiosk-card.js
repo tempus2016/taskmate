@@ -469,9 +469,25 @@ class TaskMateKioskCard extends LitElement {
     const all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
     const counted = all.filter(r => !r.phone && !(missedMode === "dim" && r.missed));
     const shown = r => !(hideDone && isDone(r));
+    // A chore with set times counts once, in either layout, and only once
+    // every time is done (waiting for a grown-up counts as done).
+    let done = 0;
+    let total = 0;
+    const setTimeChores = new Set();
+    for (const r of counted) {
+      if (r.setTime) {
+        if (setTimeChores.has(r.chore._baseId)) continue;
+        setTimeChores.add(r.chore._baseId);
+        total += 1;
+        if (r.setTime.all.every(e => e.state === "done" || e.state === "pending")) done += 1;
+        continue;
+      }
+      total += 1;
+      if (isDone(r)) done += 1;
+    }
     return {
-      done: counted.filter(isDone).length,
-      total: counted.length,
+      done,
+      total,
       rows: all.filter(r => !r.phone && shown(r)),
       phoneRows: all.filter(r => r.phone && shown(r)),
     };
@@ -541,16 +557,23 @@ class TaskMateKioskCard extends LitElement {
   // not a parent action: choose_avatar runs the same linked-child check as
   // complete_chore.
 
-  _headAvatar(child, tone) {
+  // The season badge wraps only the face: the picker must position against
+  // .km-head, not against a relatively positioned wrapper round the face.
+  _headAvatar(child, tone, season) {
     const opts = child.avatar_options || [];
     const canChange = this.config.allow_avatar_change !== false && opts.filter(o => o.unlocked).length > 1;
-    if (!canChange) return this._face(child, tone, "head");
+    const face = html`
+      <div class="km-face-wrap">
+        ${this._face(child, tone, "head")}
+        ${season ? html`<span class="tm-season-badge" aria-hidden="true">${season.emoji}</span>` : ""}
+      </div>`;
+    if (!canChange) return face;
     return html`
       <div class="km-av">
         <button class="km-av-btn" title="${this._t("child.avatar_change")}" aria-label="${this._t("child.avatar_change")}"
                 aria-expanded="${this._avatarPicker ? "true" : "false"}"
                 @click=${() => { this._avatarPicker = !this._avatarPicker; }}>
-          ${this._face(child, tone, "head")}
+          ${face}
           <span class="km-av-dot"><ha-icon icon="mdi:pencil"></ha-icon></span>
         </button>
         ${this._avatarPicker ? html`
@@ -1589,10 +1612,7 @@ class TaskMateKioskCard extends LitElement {
     return html`
       <div class="km-child" style="--kc:${tone}">
         <div class="km-head" style="${season ? `background:${season.grad}` : ""}">
-          <div class="km-face-wrap">
-            ${this._headAvatar(child, tone)}
-            ${season ? html`<span class="tm-season-badge" aria-hidden="true">${season.emoji}</span>` : ""}
-          </div>
+          ${this._headAvatar(child, tone, season)}
           <div class="km-grow">
             <div class="km-head-name">${child.name}</div>
             ${showPoints && child.level ? html`

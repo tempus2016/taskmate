@@ -21,7 +21,7 @@ Click it to open the panel at `/taskmate-admin`.
 The panel opens on **Today**, a single page that shows how the day is going and everything that needs you.
 
 - **A card per child** with today's done/total ring, their points and streak, and a **±** button to give or take points. Click a child's card to filter the whole panel to them.
-- **Needs you** gathers everything waiting on a parent in one list: chore and bounty approvals, reward claims, swap requests, new wishes and open [surprise inspections](Surprise-Inspections.md). **Approve all** clears the chore approvals in one go.
+- **Needs you** gathers everything waiting on a parent in one list: chore and bounty approvals, reward claims, swap requests, new wishes and open [surprise inspections](Surprise-Inspections.md). **Approve all** clears the chore approvals in one go. *(v7.3.0)* When more than one kind is waiting, chips (**Chores**, **Rewards**, **Swaps**, **Wishes**) filter the list.
 - **Chore board** shows each child's chores for today, grouped by time of day and marked done, awaiting approval, to do or missed. Click a chore to open its editor. The **This week** tab shows each day's done/total.
 - **Quick actions** (new chore, new bounty, give a bonus, apply a penalty) and **Recent activity**.
 - **Asked for help** *(v7.0.0)* lists each open "I'm stuck" request: who, which chore, their message and when. **On my way** marks it answered, so the child's card stops saying help is on its way. See [Help Requests](Help-Requests.md).
@@ -33,20 +33,25 @@ When there are no children yet, Today offers **Start setup** (the [Setup Wizard]
 
 ## Navigation
 
-On the **desktop**, the sidebar groups sections by what you're doing, each with a live count badge:
+*(v7.3.0)* A rail down the left picks a **section**, and the section's pages are tabs along the top:
 
-| Group | Sections |
-|-------|----------|
+| Section | Pages |
+|---------|-------|
+| **Today** | Today |
 | **Family** | Children, Groups |
 | **Earn** | Chores, Bounties, Auctions, Quests, Challenges, Templates |
-| **Spend** | Rewards, Wishlists, Raffles (v7.0.0) |
-| **Adjust** | Bonuses, Penalties, Badges |
+| **Spend** | Rewards, Wishlists, [Raffles](Raffles.md) |
+| **Points** | Bonuses, Penalties, Badges |
 | **Review** | Activity, Insights, Audit |
-| **System** | Notifications, Settings, [Help & feedback](Help-and-Feedback.md) (v7.2.0) |
+| **Settings** (the gear) | Settings, Notifications, [Help & feedback](Help-and-Feedback.md) |
 
-Click a group heading to collapse it, and use **«** at the top to shrink the sidebar to icons. Both are remembered in your browser.
+A section reopens on the page you last used in it. Only **Today** shows a count on the rail: everything waiting on you is gathered there, so nothing is counted twice.
 
-On a **phone**, a bottom bar gives one-tap access to **Today**, **Chores**, **Rewards** and **Children**, with **More** for everything else. The section picker at the top (added in v4.5.1) still lists every section, grouped the same way.
+On a **phone**, the bottom bar holds **Today**, **Family**, **Earn**, **Spend** and **More**; More opens the other sections. The tabs row scrolls sideways and keeps the open page in view.
+
+### Editors open beside the page
+
+Opening a child, chore, reward, penalty, bonus, raffle, group, quest, challenge, bounty, auction or badge opens its editor as a **side panel**. On screens 1100px and wider the page moves over to make room and stays usable, so you can click from one item to the next; the item being edited is highlighted. If you have unsaved changes, opening another item or another page asks before dropping them. On a phone the editor fills the screen, and confirmations still appear in the middle.
 
 ### Command search (Ctrl K)
 
@@ -89,11 +94,13 @@ The admin panel provides full management for every aspect of TaskMate:
 - Pick each child's **Colour** (v7.0.0+), which marks their avatar and name around the panel; *Automatic* picks one from their place in the list
 - Remove children
 - Set a **Kiosk PIN** for the shared wall tablet (v6.0.0+, see [Kiosk Mode](Kiosk-Mode.md))
-- View child stats (points, streaks, completions)
+- View child stats (points, streaks, completions). *(v7.3.0)* Each child's card on the Family page shows their streak
 - **Adjust points inline (v5.1.0+)** — each child card carries a row of quick buttons, **−20 −10 −5** and **+5 +10 +20** by default, plus **⋯** for a custom amount with an optional reason. Change the amounts in **Settings → Quick point amounts** (a comma-separated list, e.g. `5, 10, 20`). Every adjustment lands in the activity feed and can be undone from there.
 
 ### Chore Management
 - Create chores with all configuration options
+- *(v7.3.0)* Add chores from the [library](Chore-Library.md) with **📚 Library**: about 200 chores by age and category, and the ready-made packs
+- *(v7.3.0)* Make a chore come up at [set times](Set-Times.md) of day, ticked off once per time
 - Edit any chore field including assignment mode, scheduling, visibility, and bonus subtasks
 - Configure timed task settings (rate, cap)
 - Delete chores
@@ -101,7 +108,7 @@ The admin panel provides full management for every aspect of TaskMate:
 
 #### The chore editor (v6.0.0+)
 
-Adding or editing a chore opens the editor as a **side panel** on the right, so the list stays visible behind it. On a phone it fills the screen. The same editor opens from the Chores list, the Today chore board, command search and the **New** menu.
+Adding or editing a chore opens the editor as a **side panel** on the right, so the list stays visible beside it (see [Editors open beside the page](#editors-open-beside-the-page)). On a phone it fills the screen. The same editor opens from the Chores list, the Today chore board, command search and the **New** menu.
 
 Its fields are grouped under five headings: **Basics**, **Who does it**, **When**, **Checking** and **More options**. More options holds the less-used sections: teamwork, bonus sub-tasks, NFC / QR tags, visibility and calendar, scheduled changes and weather. **Delete** sits in the footer when you're editing an existing chore, and **Esc** closes the panel. Nothing was removed from the old dialog; the fields are just grouped differently.
 
@@ -130,6 +137,8 @@ This also fixed the wide-screen horizontal scrolling the old inline button row c
 - Toggle pool mode (savings jar) per reward
 - Configure jackpot rewards
 - Set quantity limits and expiration dates
+- *(v7.3.0)* Each ordinary reward's card shows how close every child is to it, with a tick for who can get it now ([adults](Adult-Profiles.md) are left out)
+- *(v7.3.0)* Add rewards from the [library](Chore-Library.md) with **📚 Library**
 - Put rewards in your own order: drag a reward card by its ⠿ handle, or use **Reorder** (arrows, for touchscreens). The rewards card then shows them in that order instead of by price
 - Delete rewards (kept for 7 days in [Recently Deleted](Recently-Deleted.md))
 
@@ -324,6 +333,7 @@ All management — children, chores, rewards, penalties/bonuses, task groups, se
 - [Raffles](Raffles.md), [Help Requests](Help-Requests.md), [Sick Days](Sick-Days.md), [Make-It-Right Penalties](Make-It-Right-Penalties.md) — v7.0.0 features run from the panel
 - [Repairs & Diagnostics](Repairs-and-Diagnostics.md) — setup problems raised in Home Assistant's Settings → Repairs
 - [Printable Weekly Chart](Printable-Weekly-Chart.md) — a fridge-ready A4 chore chart
+- [Chore & Reward Library](Chore-Library.md) — ready-made chores and rewards to add in one go
 - [Template Packs](Template-Packs.md) — export and import shareable chore-template packs
 - [Admin Audit Log](Admin-Audit-Log.md) — who changed what, and when
 - [Backup and Restore](Backup-and-Restore.md) — export / import your setup

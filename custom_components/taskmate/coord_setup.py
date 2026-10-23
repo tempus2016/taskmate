@@ -22,6 +22,7 @@ from typing import Any
 from .const import AGE_GROUPS
 from .coord_birthdays import normalize_birthday
 from .models import clean_template_id
+from .setup_catalogue import library_screen_minutes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -200,6 +201,11 @@ class SetupWizardMixin:
                 icon=spec.get("icon") or "mdi:gift",
                 refresh=False,
                 template_id=spec.get("template_id", ""),
+                # A library screen-time reward fills the bank only while the
+                # bank is on; otherwise it stays a reward a parent hands over.
+                screen_minutes=(
+                    library_screen_minutes(spec.get("template_id", "")) if self.screen_time_enabled() else 0
+                ),
             )
 
         await self.async_refresh()

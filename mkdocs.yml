@@ -58,6 +58,8 @@ nav:
   - "Chores":
       - "Chores": "Chores.md"
       - "Chore Scheduling": "Chore-Scheduling.md"
+      - "Chores at Set Times": "Set-Times.md"
+      - "Chore & Reward Library": "Chore-Library.md"
       - "Mandatory Chores": "Mandatory-Chores.md"
       - "Difficulty Tiers": "Difficulty-Tiers.md"
       - "Timed Tasks": "Timed-Tasks.md"
