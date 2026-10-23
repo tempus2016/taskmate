@@ -73,6 +73,8 @@ def test_no_parent_action_in_the_kiosk():
         ("taskmate", "claim_bounty"),
         ("taskmate", "give_back_bounty"),
         ("taskmate", "complete_bounty"),
+        # The child picking one of their own unlocked avatars (#1112).
+        ("taskmate", "choose_avatar"),
     }
     for forbidden in (
         "as_parent",

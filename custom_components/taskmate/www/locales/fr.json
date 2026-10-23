@@ -3712,6 +3712,8 @@
   "panel.boost_to": "À",
   "panel.boost_everyone_lc": "tout le monde",
   "kiosk.editor.show_pet": "Afficher l’animal de l’enfant",
+  "kiosk.editor.show_badges": "Afficher les badges",
+  "kiosk.editor.allow_avatar_change": "Permettre aux enfants de changer leur avatar",
   "child.appeal_item_chore": "« {name} » a été refusée ({points})",
   "child.appeal_item_reward": "Ta demande pour « {name} » a été refusée",
   "child.appeal_item_penalty": "Pénalité : {name} (−{points})",

@@ -3712,6 +3712,8 @@
   "panel.boost_to": "Às",
   "panel.boost_everyone_lc": "todos",
   "kiosk.editor.show_pet": "Mostrar o animal da criança",
+  "kiosk.editor.show_badges": "Mostrar conquistas",
+  "kiosk.editor.allow_avatar_change": "Permitir que as crianças mudem o avatar",
   "child.appeal_item_chore": "“{name}” foi devolvida ({points})",
   "child.appeal_item_reward": "O teu pedido de “{name}” foi recusado",
   "child.appeal_item_penalty": "Penalização: {name} (−{points})",

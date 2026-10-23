@@ -92,6 +92,8 @@ const RAFFLE_REVEAL_WINDOW_MS = 15 * 60 * 1000;
 // The idle clock waits this long for a bounty photo: the camera covers the
 // card, so no tap reaches it while the child lines up the shot.
 const PHOTO_GRACE_MS = 120000;
+// Badge tier colours, as on the child card.
+const TIER_COLOURS = { bronze: "#cd7f32", silver: "#c0c0c0", gold: "#f1c40f", platinum: "#67e8f9" };
 // The same six-colour ring the child card uses for per-child tones.
 const CHILD_FALLBACK = ["#ff7043", "#42a5f5", "#66bb6a", "#ab47bc", "#ffa726", "#26c6da"];
 
@@ -123,6 +125,7 @@ class TaskMateKioskCard extends LitElement {
       _queue: { type: Array },
       _rafReveal: { type: Object },
       _slide: { type: Number },
+      _avatarPicker: { type: Boolean },
     };
   }
 
@@ -485,6 +488,123 @@ class TaskMateKioskCard extends LitElement {
     return m && Number(base) > 0 ? Math.round(Number(base) * m) : base;
   }
 
+  // ── Avatar and badges (#1112) ────────────────────────────────────────────
+  // The child card's header avatar picker and badge strip, so the kiosk can
+  // stand in for it. The avatar is the child's own choice behind their PIN,
+  // not a parent action: choose_avatar runs the same linked-child check as
+  // complete_chore.
+
+  _headAvatar(child, tone) {
+    const opts = child.avatar_options || [];
+    const canChange = this.config.allow_avatar_change !== false && opts.filter(o => o.unlocked).length > 1;
+    if (!canChange) return this._face(child, tone, "head");
+    return html`
+      <div class="km-av">
+        <button class="km-av-btn" title="${this._t("child.avatar_change")}" aria-label="${this._t("child.avatar_change")}"
+                aria-expanded="${this._avatarPicker ? "true" : "false"}"
+                @click=${() => { this._avatarPicker = !this._avatarPicker; }}>
+          ${this._face(child, tone, "head")}
+          <span class="km-av-dot"><ha-icon icon="mdi:pencil"></ha-icon></span>
+        </button>
+        ${this._avatarPicker ? html`
+          <div class="km-av-picker">
+            ${opts.map(o => html`
+              <button class="km-av-opt ${o.unlocked ? "" : "locked"} ${o.icon === child.avatar ? "current" : ""}"
+                      ?disabled=${!o.unlocked || !!this._busy}
+                      title="${o.unlocked ? (o.label || "") : (this._t("child.avatar_locked") + (o.requirement ? " — " + o.requirement : ""))}"
+                      @click=${() => this._chooseAvatar(child, o.icon)}>
+                <ha-icon icon="${o.unlocked ? o.icon : "mdi:lock"}"></ha-icon>
+                ${o.label ? html`<span>${o.label}</span>` : ""}
+              </button>`)}
+          </div>` : ""}
+      </div>`;
+  }
+
+  async _chooseAvatar(child, icon) {
+    this._avatarPicker = false;
+    if (icon === child.avatar || this._busy) return;
+    this._busy = "avatar";
+    try {
+      await this.hass.callService("taskmate", "choose_avatar", { child_id: child.id, icon });
+    } catch (err) {
+      this._notify(this._t("child.avatar_change_failed"));
+    } finally {
+      this._busy = "";
+      this.requestUpdate();
+    }
+  }
+
+  // The per-child badges sensor: the overview's entity map first (#1018),
+  // then the default entity id built from the child's name.
+  _badgesEntity(child) {
+    if (!this.hass || !child) return null;
+    const mapped = window.__taskmate_badges_state && window.__taskmate_badges_state(this.hass, child.id);
+    if (mapped) return mapped;
+    const slug = String(child.name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    return (slug && this.hass.states?.[`sensor.taskmate_${slug}_badges`]) || null;
+  }
+
+  // Built-in badge names arrive in English; the localised one is badge.name_<suffix>.
+  _badgeName(b) {
+    const id = b.badge_id || "";
+    if (!id.startsWith("builtin.")) return b.name;
+    const key = "badge.name_" + id.slice("builtin.".length);
+    const t = this._t(key);
+    return t !== key ? t : b.name;
+  }
+
+  // The closest unearned badge that has been started, as on the child card (#780).
+  _nextBadge(badges) {
+    let best = null;
+    for (const b of badges?.attributes?.available || []) {
+      const pct = Math.max(0, Math.min(100, Number(b.progress_pct) || 0));
+      if (pct > 0 && (!best || pct > best.pct)) best = { badge: b, pct };
+    }
+    if (!best) return null;
+    const c = best.badge.closest_criterion;
+    best.label = c && c.target ? _ltrNums(`${c.current} / ${c.target}`) : `${best.pct}%`;
+    best.oneMore = !!c && Number(c.target) - Number(c.current) === 1;
+    return best;
+  }
+
+  _badgesTile(child) {
+    if (this.config.show_badges === false) return "";
+    const badges = this._badgesEntity(child);
+    const earned = badges?.attributes?.earned || [];
+    const next = this._nextBadge(badges);
+    if (!earned.length && !next) return "";
+    const shown = earned.slice(0, 5);
+    return html`
+      <div class="km-tile km-badges">
+        <h3><ha-icon icon="mdi:medal"></ha-icon> ${this._t("badges.label")}</h3>
+        ${earned.length ? html`
+          <div class="km-badge-row">
+            ${shown.map(b => html`
+              <span class="km-badge" style="--t:${TIER_COLOURS[b.tier] || "#888"}" title="${_ltrNums(this._badgeName(b))}">
+                <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
+              </span>`)}
+            ${earned.length > shown.length ? html`<span class="km-dim km-badge-more">+${earned.length - shown.length}</span>` : ""}
+          </div>` : ""}
+        ${next ? html`
+          <div class="km-next-badge">
+            <span class="km-badge" style="--t:${TIER_COLOURS[next.badge.tier] || "#888"}">
+              <ha-icon icon="${next.badge.icon || "mdi:trophy-outline"}"></ha-icon>
+            </span>
+            <div class="km-grow">
+              <div class="km-reward-row">
+                <small class="km-dim">${this._t("badges.next_up")}</small>
+                <b class="km-grow km-next-name">${_ltrNums(this._badgeName(next.badge))}</b>
+                <span class="km-dim">${next.label}</span>
+              </div>
+              <div class="km-bar" role="progressbar" aria-valuenow="${next.pct}" aria-valuemin="0" aria-valuemax="100">
+                <i style="width:${next.pct}%;background:${TIER_COLOURS[next.badge.tier] || "#888"}"></i>
+              </div>
+              ${next.oneMore ? html`<div class="km-dim km-small">${this._t("badges.one_more")}</div>` : ""}
+            </div>
+          </div>` : ""}
+      </div>`;
+  }
+
   // ── Pet (#1094) ──────────────────────────────────────────────────────────
   // The child's virtual pet in the side column, drawn by the real pet card in
   // its compact mode, so it looks and behaves exactly like the pet card. Only
@@ -659,6 +779,7 @@ class TaskMateKioskCard extends LitElement {
     this._popup = null;
     this._confetti = [];
     this._bountyDlg = null;
+    this._avatarPicker = false;
     this._screen = "picker";
     this._kid = null;
     this._pin = "";
@@ -1396,7 +1517,7 @@ class TaskMateKioskCard extends LitElement {
     return html`
       <div class="km-child" style="--kc:${tone}">
         <div class="km-head">
-          ${this._face(child, tone, "head")}
+          ${this._headAvatar(child, tone)}
           <div class="km-grow">
             <div class="km-head-name">${child.name}</div>
             ${showPoints && child.level ? html`
@@ -1447,6 +1568,7 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-bar"><i style="width:${Math.min(100, Math.round(((Number(child.points) || 0) / next.cost) * 100))}%"></i></div>
                 <div class="km-dim km-small">${this._t("kiosk.to_go", { points: next.cost - (Number(child.points) || 0) })}</div>
               </div>` : ""}
+            ${this._badgesTile(child)}
             ${this._petTile(child)}
           </div>
         </div>
@@ -1763,6 +1885,35 @@ class TaskMateKioskCard extends LitElement {
         box-shadow: none;
       }
       .km-face.head ha-icon { --mdc-icon-size: 36px; }
+      /* Avatar picker (#1112), as on the child card's header. */
+      /* The picker hangs off the header, so it can never be wider than the card. */
+      .km-head { position: relative; }
+      .km-av-btn { position: relative; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; border-radius: 50%; }
+      .km-av-dot {
+        position: absolute; inset-block-end: -2px; inset-inline-end: -2px;
+        width: 24px; height: 24px; border-radius: 50%;
+        background: var(--kc); border: 2px solid #fff;
+        display: grid; place-items: center;
+      }
+      .km-av-dot ha-icon { --mdc-icon-size: 14px; color: #fff; }
+      .km-av-picker {
+        position: absolute; inset-block-start: calc(100% - 8px); inset-inline-start: 22px; z-index: 2;
+        display: grid; grid-template-columns: repeat(4, minmax(0, 84px)); gap: 8px; padding: 12px;
+        max-width: calc(100% - 44px); box-sizing: border-box; max-height: 60vh; overflow-y: auto;
+        background: var(--tmd-surface, var(--card-background-color, #fff));
+        color: var(--tmd-text, var(--primary-text-color));
+        border: 1px solid var(--tmd-border, var(--divider-color, rgba(127, 127, 127, 0.3)));
+        border-radius: var(--tmd-radius, 18px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      }
+      .km-av-opt {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+        min-height: 84px; padding: 6px; border-radius: 14px; cursor: pointer;
+        border: 2px solid transparent; background: var(--tmd-surface-2, var(--secondary-background-color, rgba(127, 127, 127, 0.12)));
+        color: inherit; font-size: 0.75rem; text-align: center; line-height: 1.15;
+      }
+      .km-av-opt ha-icon { --mdc-icon-size: 36px; }
+      .km-av-opt.current { border-color: var(--kc); box-shadow: 0 0 0 2px var(--kc) inset; }
+      .km-av-opt.locked { opacity: 0.45; cursor: not-allowed; }
 
       /* Picker */
       .km-picker {
@@ -2069,6 +2220,19 @@ class TaskMateKioskCard extends LitElement {
       .km-reward-row ha-icon { color: var(--tmd-gold, #e67e22); }
       .km-dim { color: var(--tmd-dim, var(--secondary-text-color)); }
       .km-small { font-size: 0.85rem; margin-top: 8px; }
+      /* Badges (#1112) */
+      .km-badge-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+      .km-badge {
+        width: 40px; height: 40px; min-width: 40px; border-radius: 50%;
+        display: grid; place-items: center;
+        background: color-mix(in srgb, var(--t) 22%, transparent); border: 2px solid var(--t);
+      }
+      .km-badge ha-icon { --mdc-icon-size: 22px; color: var(--t); }
+      .km-badge-more { font-weight: 700; }
+      .km-next-badge { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+      .km-next-badge .km-reward-row { margin-bottom: 6px; gap: 6px; }
+      .km-next-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .km-next-badge .km-small { margin-top: 6px; }
 
       /* Idle countdown + celebration overlays */
       .km-idle {
@@ -2227,6 +2391,8 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_raffle_draws", selector: { boolean: {} } },
       { name: "show_boost_alert", selector: { boolean: {} } },
       { name: "show_pet", selector: { boolean: {} } },
+      { name: "show_badges", selector: { boolean: {} } },
+      { name: "allow_avatar_change", selector: { boolean: {} } },
     ];
   }
 
@@ -2251,6 +2417,8 @@ class TaskMateKioskCardEditor extends LitElement {
     show_raffle_draws: this._t("kiosk.editor.show_raffle_draws"),
     show_boost_alert: this._t("kiosk.editor.show_boost_alert"),
     show_pet: this._t("kiosk.editor.show_pet"),
+    show_badges: this._t("kiosk.editor.show_badges"),
+    allow_avatar_change: this._t("kiosk.editor.allow_avatar_change"),
   })[entry.name] ?? entry.name;
 
   _computeHelper = (entry) => ({
@@ -2332,6 +2500,8 @@ class TaskMateKioskCardEditor extends LitElement {
       show_raffle_draws: this.config.show_raffle_draws !== false,
       show_boost_alert: this.config.show_boost_alert !== false,
       show_pet: this.config.show_pet !== false,
+      show_badges: this.config.show_badges !== false,
+      allow_avatar_change: this.config.allow_avatar_change !== false,
     };
     const rows = this._childRows();
     const pins = this._pins || {};

@@ -3712,6 +3712,8 @@
   "panel.boost_to": "Do",
   "panel.boost_everyone_lc": "wszystkich",
   "kiosk.editor.show_pet": "Pokaż zwierzaka dziecka",
+  "kiosk.editor.show_badges": "Pokaż odznaki",
+  "kiosk.editor.allow_avatar_change": "Pozwól dzieciom zmieniać awatar",
   "child.appeal_item_chore": "„{name}” odesłano do poprawy ({points})",
   "child.appeal_item_reward": "Twoja prośba o „{name}” została odrzucona",
   "child.appeal_item_penalty": "Kara: {name} (−{points})",

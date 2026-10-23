@@ -3712,6 +3712,8 @@
   "panel.boost_to": "Til",
   "panel.boost_everyone_lc": "alle",
   "kiosk.editor.show_pet": "Vis barnets kæledyr",
+  "kiosk.editor.show_badges": "Vis badges",
+  "kiosk.editor.allow_avatar_change": "Lad børn skifte deres avatar",
   "child.appeal_item_chore": "“{name}” blev sendt tilbage ({points})",
   "child.appeal_item_reward": "Dit krav på “{name}” blev afvist",
   "child.appeal_item_penalty": "Straf: {name} (−{points})",

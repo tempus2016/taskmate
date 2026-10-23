@@ -60,7 +60,7 @@ Rows without an icon are dropped on save.
 
 ### Children (self-service)
 
-On the [child card](Dashboard-Cards.md), tapping the avatar opens a picker showing the catalogue. Unlocked avatars are selectable; locked ones are dimmed and show their requirement. The picker is available when:
+On the [child card](Dashboard-Cards.md) and the [kiosk](Kiosk-Mode.md), tapping the avatar opens a picker showing the catalogue. Unlocked avatars are selectable; locked ones are dimmed and show their requirement. The picker is available when:
 
 - The card's `allow_avatar_change` option is not set to `false` (it's on by default), and
 - The child has more than one unlocked avatar to choose from

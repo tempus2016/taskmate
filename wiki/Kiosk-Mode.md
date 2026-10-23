@@ -12,7 +12,7 @@ Turn a spare tablet on the kitchen wall into the family's chore station. The **K
 
 1. **Pick a face.** The picker shows each child with today's progress ("3 of 6 done") and their points. A padlock marks a child who needs a PIN.
 2. **Enter the PIN** (only if one is set). The pad submits on the 4th digit. A wrong PIN shakes and asks them to try again.
-3. **Tick things off.** The child sees today's chores with a large **Done** button each, a done/total ring, stars earned today, their streak, and how close they are to the cheapest reward they can't afford yet.
+3. **Tick things off.** The child sees today's chores with a large **Done** button each, a done/total ring, stars earned today, their streak, and how close they are to the cheapest reward they can't afford yet. Their earned [badges](Achievement-Badges.md) and the next one they're closest to sit in the side column, and when they've unlocked more than one [avatar](Avatars.md) they can tap their face to switch, just as on the Child card.
 4. **Back to the picker.** After the idle timeout (60 seconds by default), straight after the "all done" celebration, or when someone taps **Switch** in the child's header ("Not Mia? Switch").
 
 For the last 10 seconds before it returns, a full-screen **Still there?** countdown gives the child a chance to carry on. Leaving the dashboard also locks the kiosk again.
@@ -67,6 +67,8 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `ambient_after` | number | `120` | *(v7.0.0)* Seconds untouched before ambient mode starts (30–1800) |
 | `show_raffle_draws` | boolean | `true` | *(v7.0.0)* Spin the names and land on the winner when a [raffle](Raffles.md) is drawn. See [Raffle draws](#raffle-draws) |
 | `show_pet` | boolean | `true` | *(v7.1.0)* Show the child's [virtual pet](Virtual-Pets.md) in the side column of their screen, while pets are switched on |
+| `show_badges` | boolean | `true` | *(v7.3.0)* Show the child's earned badges and their next badge's progress in the side column |
+| `allow_avatar_change` | boolean | `true` | *(v7.3.0)* Let a child tap their face to switch between the avatars they've unlocked |
 | `show_boost_alert` | boolean | `true` | *(v7.1.0)* Leave ambient mode and fill the screen when a [boost](Boost-Windows.md) starts, until someone taps. The countdown strip shows either way |
 | `children` | list | all children | Which children appear on the picker, in order. Each entry is `child_id` plus an optional `require_pin` (default `true`) |
 
