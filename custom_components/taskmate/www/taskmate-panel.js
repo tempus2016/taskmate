@@ -186,6 +186,14 @@ const WZ_KID_COLORS = ["#ff6b9d", "#3498db", "#1abc9c", "#9b59b6", "#e67e22", "#
 const WZ_POINT_NAMES = [["points", "mdi:star"], ["stars", "mdi:star"], ["coins", "mdi:circle-multiple"], ["gems", "mdi:diamond-stone"]];
 const WZ_DRAFT_KEY = "taskmate-setup-draft";
 const WZ_SKIP_KEY = "taskmate-setup-skipped";
+// 📚 Library: an icon for each chore category and reward tier in the rail.
+const LIB_CAT_ICONS = {
+  morning: "mdi:weather-sunset-up", school: "mdi:school-outline", kitchen: "mdi:silverware-fork-knife",
+  tidy: "mdi:broom", laundry: "mdi:washing-machine", outdoor: "mdi:home-outline", pets: "mdi:paw",
+  responsibility: "mdi:compass-outline", health: "mdi:heart-pulse", family: "mdi:account-heart-outline",
+  evening: "mdi:weather-night", learning: "mdi:book-open-variant",
+};
+const LIB_TIER_ICONS = { small: "mdi:candy-outline", saving: "mdi:target", big: "mdi:trophy-outline" };
 // Ready-made dashboards (#1053).
 const DASH_KINDS = ["kids", "parents", "wall"];
 const DASH_PATHS = { kids: "taskmate-kids", parents: "taskmate-parents", wall: "taskmate-wall" };
@@ -740,6 +748,9 @@ class TaskMatePanel extends HTMLElement {
     if (act.startsWith("fb-")) { this._fbClick(t, e); return; }
     // Setup wizard (#980) actions all start "wz-".
     if (act.startsWith("wz-")) { this._wizardAct(t, e); return; }
+    // 📚 Library actions all start "lib-".
+    if (act === "lib-open") { this._libOpen({ kind: t.dataset.v, mode: t.dataset.mode, newFor: t.dataset.k || "" }); return; }
+    if (act.startsWith("lib-")) { this._libAct(t, e); return; }
     // Ready-made dashboards (#1053) actions all start "dash-".
     if (act.startsWith("dash-")) { this._dashAct(t); return; }
 
@@ -1214,6 +1225,7 @@ class TaskMatePanel extends HTMLElement {
     if (!t.dataset) return;
     if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.wzIn) { this._wizardInput(t); return; }
+    if (t.dataset.libIn) { this._libInput(t, false); return; }
     if (t.dataset.palette === "q" && this._palette) {
       this._palette.q = t.value || "";
       this._palette.hi = 0;
@@ -1330,6 +1342,7 @@ class TaskMatePanel extends HTMLElement {
     const t = e.target;
     if (!t.dataset) return;
     if (t.dataset.fbField) { this._fbInput(t); return; }
+    if (t.dataset.libIn) { this._libInput(t, true); return; }
     if (t.dataset.act === "bulk-toggle-row") {
       const id = t.dataset.id;
       if (t.checked) this._bulkSel.add(id); else this._bulkSel.delete(id);
@@ -1490,7 +1503,7 @@ class TaskMatePanel extends HTMLElement {
 
   _onKeyDown(e) {
     // The wizard's tick rows are role="checkbox" divs (#980).
-    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('[role="checkbox"][data-act^="wz-"]')) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches('[role="checkbox"][data-act^="wz-"], [role="checkbox"][data-act^="lib-"]')) {
       e.preventDefault();
       e.target.click();
       return;
@@ -1498,6 +1511,8 @@ class TaskMatePanel extends HTMLElement {
     if (e.key === "Escape") {
       if (this._rowMenuEl) { this._closeRowMenu(); return; }
       if (this._inlineRename) { this._inlineRename = null; this._render(); return; }
+      // The library's Customise sheet closes before the library itself.
+      if (this._dialog && this._dialog.kind === "library" && this._lib && this._lib.edit) { this._lib.edit = null; this._render(); return; }
       if (this._dialog) { this._closeDialog(); return; }
     }
     if (e.key === "Enter" && this._inlineRename) {
@@ -3802,7 +3817,7 @@ class TaskMatePanel extends HTMLElement {
 
     if (!this._shellReady) {
       if (!this._cachedStyles) {
-        this._cachedStyles = this._styles() + this._wizardStyles() + this._dashStyles();
+        this._cachedStyles = this._styles() + this._wizardStyles() + this._dashStyles() + this._libStyles();
       }
       const existingToast = this.querySelector(".tm-toast");
       this.innerHTML = `
@@ -5994,6 +6009,9 @@ class TaskMatePanel extends HTMLElement {
       if (!d || d.v !== 1 || !Array.isArray(d.kids)) return null;
       d.busy = false;
       d.result = null;
+      // Library picks (📚) arrived after the first drafts.
+      if (!d.lib || typeof d.lib !== "object") d.lib = {};
+      if (!d.libRewards || typeof d.libRewards !== "object") d.libRewards = {};
       // Drafts from before #1053 had a single "Family chores" switch and
       // Review as step 4; Review is now after the Dashboards step.
       if (!d.dashOpts) {
@@ -6025,7 +6043,7 @@ class TaskMatePanel extends HTMLElement {
       v: 1, step: 0, seq: 1,
       pname, picon, pnameOrig: pname, piconOrig: picon, pnameCustom: false,
       kids: [], form: null,
-      chores: {}, packs: [], rewards: {}, custom: [], rwName: "", rwCost: 20,
+      chores: {}, packs: [], rewards: {}, custom: [], rwName: "", rwCost: 20, lib: {}, libRewards: {},
       approval: "big", notify: true, showAll: false,
       dash: { kids: true, parents: false, wall: false }, dashOpts: this._wizardDashOpts(),
     };
@@ -6184,6 +6202,12 @@ class TaskMatePanel extends HTMLElement {
         n++; pts += (c.points || 0) * ((c.due_days || []).length || 7);
       });
     }
+    for (const [id, o] of Object.entries(this._wz.lib || {})) {
+      const item = this._libItem("chores", id);
+      if (!item || !(o.who || []).includes(kid.key) || this._libHave("chores", item)) continue;
+      const perWeek = Array.isArray(o.days) ? (o.days.length || 7) : this._wizardPerWeek(item);
+      n++; pts += (o.points != null ? o.points : item.points) * perWeek;
+    }
     return { n, pts: Math.round(pts) };
   }
 
@@ -6212,7 +6236,7 @@ class TaskMatePanel extends HTMLElement {
       chores.push({
         name, points: c.pts, icon: s.icon, assigned_to: [...c.who],
         requires_approval: this._wizardApproval(c.pts), time_category: s.time_category, daily_limit: 1,
-        ...s.schedule,
+        ...s.schedule, template_id: s.id,
       });
     }
     for (const tpl of this._wizardPacks()) {
@@ -6225,14 +6249,30 @@ class TaskMatePanel extends HTMLElement {
           requires_approval: this._wizardApproval(c.points || 0),
           time_category: c.time_category || "anytime", daily_limit: c.daily_limit || 1,
           schedule_mode: c.schedule_mode || "specific_days", due_days: [...(c.due_days || [])],
+          template_id: `pack.${tpl.id}.${i}`,
         });
       });
+    }
+    // Picked in the 📚 library over the wizard.
+    const kidKeys = new Set(wz.kids.map(k => k.key));
+    for (const [id, o] of Object.entries(wz.lib || {})) {
+      const item = this._libItem("chores", id);
+      if (!item || this._libHave("chores", item)) continue;
+      const who = (o.who || []).filter(k => kidKeys.has(k));
+      if (!who.length) continue;
+      const def = this._libChoreDef(id, o, who);
+      def.requires_approval = this._wizardApproval(def.points);
+      chores.push(def);
     }
     const rewards = [];
     for (const r of this._wzCatalogue.rewards) {
       const pick = wz.rewards[r.id];
       const name = this._wizardRewardName(r);
-      if (pick.on && !this._wizardHave("rewards", name)) rewards.push({ name, cost: pick.cost, icon: r.icon });
+      if (pick.on && !this._wizardHave("rewards", name)) rewards.push({ name, cost: pick.cost, icon: r.icon, template_id: r.id });
+    }
+    for (const [id, o] of Object.entries(wz.libRewards || {})) {
+      const item = this._libItem("rewards", id);
+      if (item && !this._libHave("rewards", item)) rewards.push(this._libRewardDef(id, o));
     }
     for (const r of wz.custom) if (r.on) rewards.push({ name: r.name, cost: r.cost, icon: "mdi:gift-outline" });
     return { children, child_updates, chores, rewards };
@@ -6389,6 +6429,8 @@ class TaskMatePanel extends HTMLElement {
       case "wz-pack":
         wz.packs = wz.packs.includes(v) ? wz.packs.filter(p => p !== v) : [...wz.packs, v];
         break;
+      case "wz-lib-rm": if (wz.lib) delete wz.lib[t.dataset.id]; break;
+      case "wz-librw-rm": if (wz.libRewards) delete wz.libRewards[t.dataset.id]; break;
       case "wz-rw": {
         const r = wz.rewards[t.dataset.id];
         if (r) r.on = !r.on;
@@ -6551,7 +6593,8 @@ class TaskMatePanel extends HTMLElement {
     const { ok, err } = await this._callWS({ type: "taskmate/update_child", child_id: childId, age_group: group });
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
     await this._fetchState();
-    if (open) await this._wizardOpen({ step: 2 });
+    // "See chore ideas" opens the 📚 library on what newly suits them.
+    if (open) await this._libOpen({ kind: "chores", newFor: childId });
   }
 
   // ---- wizard rendering ----
@@ -6821,7 +6864,7 @@ class TaskMatePanel extends HTMLElement {
       <h2 class="tm-wz-h">${this._t("wizard.chores_title")}</h2>
       <p class="tm-wz-p">${this._t("wizard.chores_copy")}</p>
       <div class="tm-wz-cols">
-        <div>${bands}${packBands}</div>
+        <div>${bands}${packBands}${this._wizardLibBand()}${this._wzCatalogue.library ? this._libWizardMore("chores") : ""}</div>
         <aside class="tm-wz-aside">
           <div class="tm-wz-panel"><h4>${this._t("wizard.per_week")}</h4>
             ${wz.kids.map(k => { const w = this._wizardWeekly(k); return `
@@ -6838,6 +6881,47 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </aside>
       </div>`;
+  }
+
+  // Chores picked in the 📚 library over the wizard, with a remove link.
+  _wizardLibBand() {
+    const wz = this._wz;
+    const rows = Object.entries(wz.lib || {}).map(([id, o]) => [id, o, this._libItem("chores", id)]).filter(([, , it]) => it);
+    if (!rows.length) return "";
+    const kidKeys = new Set(wz.kids.map(k => k.key));
+    return `
+      <section class="tm-wz-band">
+        <div class="tm-wz-band-h">
+          <span class="tm-wz-band-ic" style="background:var(--tm-accent)"><ha-icon icon="mdi:bookshelf"></ha-icon></span>
+          <div class="tm-wz-grow"><div class="tm-wz-band-age">${this._t("library.from_library")}</div>
+            <div class="tm-wz-band-sub">${this._t("library.from_library_sub")}</div></div>
+        </div>
+        ${rows.map(([id, o, it]) => {
+          const have = this._libHave("chores", it);
+          const who = wz.kids.filter(k => (o.who || []).includes(k.key) && kidKeys.has(k.key));
+          return `<div class="tm-wz-sg ${have ? "tm-wz-have" : "tm-wz-on"} tm-wz-static" style="--bc:var(--tm-accent)">
+            <span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>
+            <span class="tm-wz-ic"><ha-icon icon="${this._esc(it.icon)}"></ha-icon></span>
+            <div class="tm-wz-nm"><b>${this._esc(o.name || this._libName("chores", it))}</b><small>${have ? this._t("wizard.have_chore") : this._esc(this._libFreqText(it, o))}</small></div>
+            <span class="tm-wz-who">${who.map(k => this._wizardKav(k, 26)).join("")}</span>
+            <span class="tm-wz-pts">${this._wizardUnit(o.points != null ? o.points : it.points)}<button type="button" class="tm-icon-btn tm-lib-rm" data-act="wz-lib-rm" data-id="${this._esc(id)}" title="${this._esc(this._t("wizard.remove"))}" aria-label="${this._esc(this._t("wizard.remove"))}"><ha-icon icon="mdi:close"></ha-icon></button></span>
+          </div>`;
+        }).join("")}
+      </section>`;
+  }
+
+  _wizardLibRewards() {
+    const wz = this._wz;
+    const rows = Object.entries(wz.libRewards || {}).map(([id, o]) => [id, o, this._libItem("rewards", id)]).filter(([, , it]) => it);
+    if (!rows.length) return "";
+    return `
+      <div class="tm-wz-tier">${this._t("library.from_library")}</div>
+      <div class="tm-wz-rw-grid">${rows.map(([id, o, it]) => `
+        <div class="tm-wz-rw tm-wz-on">
+          <div class="tm-wz-rw-top"><span class="tm-wz-ic"><ha-icon icon="${this._esc(it.icon)}"></ha-icon></span><b>${this._esc(o.name || this._libName("rewards", it))}</b></div>
+          <div class="tm-wz-rw-foot">${this._wizardUnit(o.cost != null ? o.cost : it.cost)}
+            <button type="button" class="tm-wz-lnk" data-act="wz-librw-rm" data-id="${this._esc(id)}">${this._t("wizard.remove")}</button></div>
+        </div>`).join("")}</div>`;
   }
 
   _wizardTopEarner() {
@@ -6879,7 +6963,8 @@ class TaskMatePanel extends HTMLElement {
       <p class="tm-wz-p">${this._t("wizard.rewards_copy")} ${earn}</p>
       <div class="tm-wz-cols">
         <div>
-          ${tiers}${custom}
+          ${tiers}${custom}${this._wizardLibRewards()}
+          ${this._wzCatalogue.library ? this._libWizardMore("rewards") : ""}
           <div class="tm-wz-rw-add">
             <input type="text" class="tm-input" data-wz-in="rw-name" maxlength="200" placeholder="${this._esc(this._t("wizard.own_reward_placeholder"))}" value="${this._esc(wz.rwName)}" aria-label="${this._esc(this._t("wizard.own_reward_placeholder"))}">
             <input type="number" class="tm-input tm-wz-cost" data-wz-in="rw-cost" min="0" step="5" value="${this._num(wz.rwCost, 20)}" aria-label="${this._esc(this._t("wizard.cost"))}">
@@ -7417,6 +7502,655 @@ class TaskMatePanel extends HTMLElement {
     </style>`;
   }
 
+  // ---- 📚 Library -------------------------------------------------------
+  // About 200 chores, 45 rewards and the built-in packs, filtered by each
+  // child's age. Opened from the Chores and Rewards tabs, the birthday nudge
+  // and the setup wizard. In the panel it adds straight away through
+  // taskmate/library/add (one call, one refresh); over the wizard it edits the
+  // wizard's picks, which are created on Review as before.
+
+  async _libOpen({ kind = "chores", mode = "panel", newFor = "" } = {}) {
+    if (!this._wzCatalogue || !this._wzCatalogue.library) {
+      const { ok, res, err } = await this._callWS({ type: "taskmate/setup_wizard/catalogue" });
+      if (!ok) { this._showToast("err", this._t("library.toast_load_failed", { error: err })); return; }
+      this._wzCatalogue = res;
+    }
+    const lib = {
+      mode: mode === "wizard" && this._wz ? "wizard" : "panel",
+      kind: kind === "rewards" ? "rewards" : "chores",
+      cat: newFor ? "new" : "top",
+      kids: newFor ? [newFor] : [], q: "", hide: true,
+      sel: { chores: {}, rewards: {} }, assign: null, edit: null, newFor, busy: false,
+    };
+    this._lib = lib;
+    if (lib.mode === "wizard") this._libSeedFromWizard();
+    // What was already picked when it opened, so the toast counts only new picks.
+    lib.seeded = { chores: Object.keys(lib.sel.chores), rewards: Object.keys(lib.sel.rewards) };
+    // The selection is the dialog's data, so closing with picks asks first.
+    this._openDialog({ kind: "library", data: lib.sel });
+  }
+
+  _libCat() { return (this._wzCatalogue && this._wzCatalogue.library) || { categories: [], chores: [], rewards: [], packs: [] }; }
+  _libFold(s) { return (s || "").trim().toLowerCase(); }
+
+  // The children the library filters by: never adults or guests (#1061).
+  _libKids() {
+    if (this._lib && this._lib.mode === "wizard" && this._wz) {
+      return this._wz.kids.map(k => ({ key: k.key, name: k.name, color: k.color, icon: k.icon, age: this._wizardAgeOf(k), band: this._wizardBand(k) }));
+    }
+    return ((this._state && this._state.children) || []).filter(c => !c.is_adult && !c.is_guest).map(c => {
+      const full = /^\d{4}-\d{2}-\d{2}$/.test(c.birthday || "");
+      return { key: c.id, name: c.name, color: this._childColor(c.id), icon: c.avatar || "mdi:account-circle",
+        age: full ? this._wizardAgeOf({ mode: "bday", bday: c.birthday }) : null, band: c.age_group || "" };
+    });
+  }
+
+  // Age from the birthday, else the wizard age group; nothing known suits all.
+  _libSuits(item, kid) {
+    const lo = Number(item.min_age) || 0;
+    const hi = item.max_age == null ? 999 : Number(item.max_age);
+    if (kid.age != null) return kid.age >= lo && kid.age <= hi;
+    const g = WZ_AGE_GROUPS.find(x => x[0] === kid.band);
+    if (g) return lo <= g[2] && hi >= g[1];
+    return true;
+  }
+
+  _libAgeLabel(item) {
+    const lo = Number(item.min_age) || 0;
+    if (!lo && item.max_age == null) return "";
+    return item.max_age == null ? this._t("library.age_from", { min: lo }) : this._t("library.age_range", { min: lo, max: item.max_age });
+  }
+
+  // Pack chores become library items of their own: pack.<pack>.<n>.
+  _libPackItems(p) {
+    return (p.chores || []).map((c, i) => ({
+      id: `pack.${p.id}.${i}`, pack: p.id, idx: i, icon: p.icon || "mdi:clipboard-list",
+      points: c.points || 0, time_category: c.time_category || "anytime", min_age: 0, max_age: null,
+      due_days: [...(c.due_days || [])], schedule_mode: c.schedule_mode || "specific_days", daily_limit: c.daily_limit || 1,
+    }));
+  }
+
+  _libItem(kind, id) {
+    const cat = this._libCat();
+    if (kind === "rewards") return cat.rewards.find(r => r.id === id) || null;
+    if (id.startsWith("pack.")) {
+      const [, pid] = id.split(".");
+      const p = cat.packs.find(x => x.id === pid);
+      return p ? this._libPackItems(p).find(x => x.id === id) || null : null;
+    }
+    return cat.chores.find(c => c.id === id) || null;
+  }
+
+  _libName(kind, item) {
+    if (kind === "rewards") return this._wizardRewardName(item);
+    if (item.pack) {
+      const p = this._libCat().packs.find(x => x.id === item.pack);
+      return p ? this._wizardPackChoreName(p, item.idx) : item.id;
+    }
+    return this._wizardChoreName(item);
+  }
+
+  // Already in the family: added from this entry, or the same name.
+  _libHave(kind, item) {
+    const list = (this._state && this._state[kind]) || [];
+    const name = this._libFold(this._libName(kind, item));
+    return list.some(x => (x.template_id && x.template_id === item.id) || this._libFold(x.name) === name);
+  }
+
+  _libShown(withCat = true) {
+    const lib = this._lib;
+    const kind = lib.kind;
+    const cat = this._libCat();
+    const kids = this._libKids().filter(k => lib.kids.includes(k.key));
+    const q = this._libFold(lib.q);
+    const items = kind === "rewards" ? cat.rewards : cat.chores;
+    const newKid = lib.newFor ? this._libKids().find(k => k.key === lib.newFor) : null;
+    const newLo = newKid ? (WZ_AGE_GROUPS.find(g => g[0] === (newKid.age != null ? this._wizardGroupForAge(newKid.age) : newKid.band)) || [0, 0])[1] : 0;
+    return items.filter(it => {
+      if (kids.length && !kids.some(k => this._libSuits(it, k))) return false;
+      if (lib.hide && this._libHave(kind, it)) return false;
+      if (q && !this._libFold(this._libName(kind, it)).includes(q)) return false;
+      if (!withCat || q) return true;
+      if (lib.cat === "top") return !!it.top_pick;
+      if (lib.cat === "new") return !!newKid && this._libSuits(it, newKid) && (Number(it.min_age) || 0) >= newLo;
+      return kind === "rewards" ? it.tier === lib.cat : it.category === lib.cat;
+    });
+  }
+
+  _libRail() {
+    const lib = this._lib;
+    const all = this._libShown(false);
+    const cat = this._libCat();
+    const rows = [["top", "mdi:star-outline", this._t("library.cat_top")]];
+    if (lib.newFor && lib.kind === "chores") {
+      const k = this._libKids().find(x => x.key === lib.newFor);
+      if (k) rows.push(["new", "mdi:cake-variant-outline", this._t("library.cat_new", { name: k.name })]);
+    }
+    if (lib.kind === "chores") {
+      for (const c of cat.categories) rows.push([c, LIB_CAT_ICONS[c] || "mdi:shape-outline", this._t(`wizard.cat.${c}`)]);
+      rows.push(["packs", "mdi:package-variant-closed", this._t("library.cat_packs")]);
+    } else {
+      for (const t of this._wzCatalogue.reward_tiers) rows.push([t, LIB_TIER_ICONS[t] || "mdi:gift-outline", this._t(`wizard.tier.${t}`)]);
+    }
+    const newKid = lib.newFor ? this._libKids().find(k => k.key === lib.newFor) : null;
+    const newLo = newKid ? (WZ_AGE_GROUPS.find(g => g[0] === (newKid.age != null ? this._wizardGroupForAge(newKid.age) : newKid.band)) || [0, 0])[1] : 0;
+    const count = id => {
+      if (id === "packs") return cat.packs.length;
+      if (id === "top") return all.filter(it => it.top_pick).length;
+      if (id === "new") return all.filter(it => newKid && this._libSuits(it, newKid) && (Number(it.min_age) || 0) >= newLo).length;
+      return all.filter(it => (lib.kind === "rewards" ? it.tier : it.category) === id).length;
+    };
+    return rows.map(([id, icon, label]) => `
+      <button type="button" class="tm-lib-cat ${lib.cat === id && !lib.q ? "tm-lib-cat-on" : ""}" data-act="lib-cat" data-v="${this._esc(id)}" aria-pressed="${lib.cat === id && !lib.q}">
+        <ha-icon icon="${icon}"></ha-icon><span>${this._esc(label)}</span><span class="tm-lib-n">${count(id)}</span>
+      </button>`).join("");
+  }
+
+  _libSelBucket() { return this._lib.sel[this._lib.kind]; }
+
+  _libCard(item) {
+    const lib = this._lib;
+    const kind = lib.kind;
+    const have = this._libHave(kind, item);
+    const o = this._libSelBucket()[item.id];
+    const on = !!o;
+    const name = (o && o.name) || this._libName(kind, item);
+    const age = this._libAgeLabel(item);
+    const unit = n => `<span class="tm-lib-pts">${this._fmtNum(n)}${this._pointsIconHtml()}</span>`;
+    const meta = kind === "rewards"
+      ? `<span>${unit(o && o.cost != null ? o.cost : item.cost)}</span>`
+      : `<span>${unit(o && o.points != null ? o.points : item.points)}</span><span>${this._esc(this._libFreqText(item, o))}</span>`;
+    return `
+      <div class="tm-lib-tpl ${on ? "tm-lib-on" : ""} ${have ? "tm-lib-have" : ""}" ${have ? "" : `data-act="lib-tpl" data-id="${this._esc(item.id)}" role="checkbox" aria-checked="${on}" tabindex="0"`}>
+        <span class="tm-lib-ic"><ha-icon icon="${this._esc(item.icon || "mdi:star-outline")}"></ha-icon></span>
+        <div class="tm-lib-nm"><b>${this._esc(name)}</b>
+          <div class="tm-lib-meta">${meta}${age ? `<span class="tm-lib-age">${this._esc(age)}</span>` : ""}${have ? `<span class="tm-lib-added"><ha-icon icon="mdi:check"></ha-icon>${this._t("library.added")}</span>` : ""}</div>
+        </div>
+        ${have ? "" : `<span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>`}
+        ${on ? `<button type="button" class="tm-lib-edit" data-act="lib-edit" data-id="${this._esc(item.id)}"><ha-icon icon="mdi:pencil-outline"></ha-icon>${this._t("library.customise")}</button>` : ""}
+      </div>`;
+  }
+
+  _libFreqText(item, o) {
+    const time = this._t(`panel.time_${(o && o.time) || item.time_category || "anytime"}`);
+    const days = o && Array.isArray(o.days) ? o.days : null;
+    let freq;
+    if (days) freq = days.length ? days.map(d => this._labelOf(DAYS, d)).join(", ") : this._t("wizard.freq_daily");
+    else if (item.pack) freq = item.due_days.length ? item.due_days.map(d => this._labelOf(DAYS, d)).join(", ") : this._t("wizard.freq_daily");
+    else if (item.frequency === "days") freq = item.days.map(d => this._labelOf(DAYS, d)).join(", ");
+    else freq = this._t(`wizard.freq_${item.frequency}`);
+    return `${freq} · ${time}`;
+  }
+
+  _libPackCard(p) {
+    const items = this._libPackItems(p);
+    const fresh = items.filter(it => !this._libHave("chores", it));
+    const have = items.length - fresh.length;
+    const on = fresh.length > 0 && fresh.every(it => this._lib.sel.chores[it.id]);
+    return `
+      <div class="tm-lib-tpl tm-lib-pack ${on ? "tm-lib-on" : ""} ${fresh.length ? "" : "tm-lib-have"}" ${fresh.length ? `data-act="lib-pack" data-id="${this._esc(p.id)}" role="checkbox" aria-checked="${on}" tabindex="0"` : ""}>
+        <span class="tm-lib-ic"><ha-icon icon="${this._esc(p.icon || "mdi:clipboard-list")}"></ha-icon></span>
+        <div class="tm-lib-nm"><b>${this._esc(this._wizardPackName(p))}</b>
+          <div class="tm-lib-meta"><span>${this._t("library.pack_chores", { count: items.length })}</span>${have ? `<span class="tm-lib-added"><ha-icon icon="mdi:check"></ha-icon>${this._t("library.pack_skip", { count: have })}</span>` : ""}</div>
+          <div class="tm-lib-packlist">${items.map(it => `<span class="${this._libHave("chores", it) ? "tm-lib-struck" : ""}">${this._esc(this._libName("chores", it))}</span>`).join("")}</div>
+        </div>
+        ${fresh.length ? `<span class="tm-wz-cbx"><ha-icon icon="mdi:check"></ha-icon></span>` : ""}
+      </div>`;
+  }
+
+  _libGrid() {
+    const lib = this._lib;
+    if (lib.kind === "chores" && lib.cat === "packs" && !lib.q) {
+      return `<div class="tm-lib-gh">${this._t("library.head_packs")}</div>${this._libCat().packs.map(p => this._libPackCard(p)).join("")}`;
+    }
+    const shown = this._libShown();
+    let head = "";
+    if (lib.q) head = this._t("library.results", { query: this._esc(lib.q), count: shown.length });
+    else if (lib.cat === "top") head = this._t("library.head_top");
+    else if (lib.cat === "new") {
+      const k = this._libKids().find(x => x.key === lib.newFor);
+      if (k) head = this._t("library.head_new", { name: this._esc(k.name), age: k.age != null ? k.age : "" });
+    }
+    const body = shown.length ? shown.map(it => this._libCard(it)).join("")
+      : `<div class="tm-lib-empty"><ha-icon icon="mdi:magnify-close"></ha-icon><p>${this._t("library.empty")}</p><small>${this._t("library.empty_hint")}</small></div>`;
+    return `${head ? `<div class="tm-lib-gh">${head}</div>` : ""}${body}`;
+  }
+
+  // Who a picked chore goes to: the chosen children it suits, or all the
+  // chosen ones when it suits none of them (the parent picked it anyway).
+  _libAssignKeys() {
+    const lib = this._lib;
+    const kids = this._libKids();
+    if (Array.isArray(lib.assign)) return lib.assign.filter(k => kids.some(x => x.key === k));
+    return lib.kids.length ? [...lib.kids] : kids.map(k => k.key);
+  }
+
+  _libWhoFor(item) {
+    const keys = this._libAssignKeys();
+    const kids = this._libKids().filter(k => keys.includes(k.key));
+    const fit = kids.filter(k => this._libSuits(item, k)).map(k => k.key);
+    return fit.length ? fit : kids.map(k => k.key);
+  }
+
+  _libFoot() {
+    const lib = this._lib;
+    const bucket = this._libSelBucket();
+    const n = Object.keys(bucket).length;
+    const kids = this._libKids();
+    let assign = "";
+    if (lib.kind === "chores" && kids.length) {
+      const keys = this._libAssignKeys();
+      const picked = Object.keys(bucket).map(id => this._libItem("chores", id)).filter(Boolean);
+      assign = `<span class="tm-lib-for">${this._t("library.assign_to")}</span>
+        ${kids.map(k => {
+          const fit = picked.filter(it => this._libSuits(it, k)).length;
+          const on = keys.includes(k.key);
+          return `<button type="button" class="tm-lib-kid ${on ? "tm-lib-kid-on" : ""}" data-act="lib-assign" data-k="${this._esc(k.key)}" aria-pressed="${on}" title="${this._esc(this._t("library.assign_fit", { fit, total: picked.length }))}">
+            ${this._wizardKav(k, 22, !on)}<span>${this._esc(k.name)}</span>${picked.length ? `<small>${fit}/${picked.length}</small>` : ""}</button>`;
+        }).join("")}`;
+    } else if (lib.kind === "chores") {
+      assign = `<span class="tm-lib-hint">${this._t("library.no_children")}</span>`;
+    }
+    const noOne = lib.kind === "chores" && kids.length > 0 && !this._libAssignKeys().length;
+    return `
+      <span class="tm-lib-count">${this._t("library.selected", { count: n })}</span>
+      ${n ? `<button type="button" class="tm-btn tm-btn-sm" data-act="lib-clear">${this._t("wizard.clear")}</button>` : ""}
+      <span class="tm-lib-sp"></span>
+      <div class="tm-lib-assign">${assign}</div>
+      <button type="button" class="tm-btn tm-btn-raised" data-act="lib-add" ${!n || noOne || lib.busy ? "disabled" : ""}>
+        <ha-icon icon="mdi:plus"></ha-icon>${lib.busy ? this._t("library.adding") : this._t("library.add", { count: n })}
+      </button>`;
+  }
+
+  _libEditPop() {
+    const e = this._lib.edit;
+    if (!e) return "";
+    const item = this._libItem(e.kind, e.id);
+    if (!item) return "";
+    const chores = e.kind === "chores";
+    const dayable = chores && (item.pack || ["daily", "weekdays", "days"].includes(item.frequency));
+    const times = ["morning", "afternoon", "evening", "night", "anytime"];
+    return `
+      <div class="tm-lib-pop-scrim" data-act="lib-e-cancel">
+        <div class="tm-lib-pop" role="dialog" aria-modal="true" aria-label="${this._esc(this._t("library.customise_title"))}">
+          <h3><ha-icon icon="${this._esc(item.icon || "mdi:star-outline")}"></ha-icon>${this._t("library.customise_title")}</h3>
+          <label class="tm-field"><span class="tm-field-label">${this._t("panel.chore_name_label")}</span>
+            <input class="tm-input" type="text" maxlength="200" data-lib-in="e-name" value="${this._esc(e.name)}"></label>
+          <div class="tm-lib-pop-row">
+            <label class="tm-field"><span class="tm-field-label">${chores ? this._t("panel.chore_points_label") : this._t("wizard.cost")}</span>
+              <input class="tm-input" type="number" min="0" step="1" data-lib-in="e-pts" value="${this._num(e.pts, 0)}"></label>
+            ${chores ? `<label class="tm-field"><span class="tm-field-label">${this._t("panel.chore_time_category_label")}</span>
+              <select class="tm-select" data-lib-in="e-time">${times.map(t => `<option value="${t}" ${e.time === t ? "selected" : ""}>${this._t(`panel.time_${t}`)}</option>`).join("")}</select></label>` : ""}
+          </div>
+          ${chores ? (dayable ? `
+            <div class="tm-field"><span class="tm-field-label">${this._t("panel.chore_days_label")}</span>
+              <div class="tm-day-row">${DAYS.map(d => `<button type="button" class="tm-day-btn ${e.days.includes(d.v) ? "tm-day-on" : ""}" data-act="lib-e-day" data-v="${d.v}" aria-pressed="${e.days.includes(d.v)}">${this._t(d.lk)}</button>`).join("")}</div>
+              <small class="tm-lib-hint">${this._t("library.days_hint")}</small></div>`
+            : `<div class="tm-field"><span class="tm-field-label">${this._t("library.repeats")}</span><div>${this._esc(this._t(`wizard.freq_${item.frequency}`))}</div></div>`) : ""}
+          <p class="tm-lib-hint">${this._t("library.customise_hint")}</p>
+          <div class="tm-lib-pop-foot">
+            <button type="button" class="tm-btn" data-act="lib-e-cancel">${this._t("panel.btn_cancel")}</button>
+            <button type="button" class="tm-btn tm-btn-raised" data-act="lib-e-save">${this._t("library.customise_save")}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  _renderLibraryDialog() {
+    const lib = this._lib;
+    if (!lib) return "";
+    const kids = this._libKids();
+    const title = this._t("library.title");
+    return `
+      <div class="tm-scrim" data-act="scrim">
+        <div class="tm-dialog tm-lib" role="dialog" aria-modal="true" aria-label="${this._esc(title)}">
+          <header class="tm-dialog-head tm-lib-head">
+            <h2><ha-icon icon="mdi:bookshelf"></ha-icon>${this._esc(title)}</h2>
+            <div class="tm-lib-kinds" role="tablist">
+              ${["chores", "rewards"].map(k => `<button type="button" role="tab" class="${lib.kind === k ? "tm-lib-kind-on" : ""}" aria-selected="${lib.kind === k}" data-act="lib-kind" data-v="${k}">${this._t(`library.tab_${k}`)}</button>`).join("")}
+            </div>
+            <button type="button" class="tm-icon-btn" data-act="close-dialog" title="${this._t("panel.tooltip_close")}">&times;</button>
+          </header>
+          <div class="tm-lib-filters">
+            ${kids.length ? `<span class="tm-lib-for">${this._t("library.suits")}</span>
+            <div class="tm-lib-kids">
+              <button type="button" class="tm-lib-kid ${lib.kids.length ? "" : "tm-lib-kid-on"}" data-act="lib-kid" data-k="" aria-pressed="${!lib.kids.length}"><span class="tm-wz-kav" style="--kc:var(--tm-text-muted);--s:22px"><ha-icon icon="mdi:account-group"></ha-icon></span><span>${this._t("library.everyone")}</span></button>
+              ${kids.map(k => `<button type="button" class="tm-lib-kid ${lib.kids.includes(k.key) ? "tm-lib-kid-on" : ""}" data-act="lib-kid" data-k="${this._esc(k.key)}" aria-pressed="${lib.kids.includes(k.key)}">${this._wizardKav(k, 22)}<span>${this._esc(k.name)}</span>${k.age != null ? `<small>${k.age}</small>` : ""}</button>`).join("")}
+            </div>` : ""}
+            <input type="search" class="tm-input tm-lib-search" data-lib-in="q" value="${this._esc(lib.q)}" placeholder="${this._esc(this._t("library.search"))}" aria-label="${this._esc(this._t("library.search"))}">
+            <label class="tm-lib-hide"><input type="checkbox" data-lib-in="hide" ${lib.hide ? "checked" : ""}>${this._t("library.hide_have")}</label>
+          </div>
+          <div class="tm-lib-main">
+            <nav class="tm-lib-rail">${this._libRail()}</nav>
+            <div class="tm-dialog-body tm-lib-grid">${this._libGrid()}</div>
+          </div>
+          <footer class="tm-dialog-foot tm-lib-foot">${this._libFoot()}</footer>
+          ${this._libEditPop()}
+        </div>
+      </div>`;
+  }
+
+  _libAct(t, e) {
+    const lib = this._lib;
+    if (!lib) return;
+    const act = t.dataset.act;
+    const v = t.dataset.v;
+    const top = () => { const g = this.querySelector(".tm-lib-grid"); if (g) g.scrollTop = 0; };
+    switch (act) {
+      case "lib-kind": lib.kind = v === "rewards" ? "rewards" : "chores"; lib.cat = "top"; lib.edit = null; break;
+      case "lib-cat": lib.cat = v; lib.q = ""; break;
+      case "lib-kid": {
+        const k = t.dataset.k;
+        if (!k) lib.kids = [];
+        else lib.kids = lib.kids.includes(k) ? lib.kids.filter(x => x !== k) : [...lib.kids, k];
+        if (lib.cat === "new" && !lib.kids.includes(lib.newFor)) lib.cat = "top";
+        break;
+      }
+      case "lib-tpl": {
+        const bucket = this._libSelBucket();
+        if (bucket[t.dataset.id]) delete bucket[t.dataset.id]; else bucket[t.dataset.id] = {};
+        this._render();
+        this._libRefocus("lib-tpl", t.dataset.id);
+        return;
+      }
+      case "lib-pack": {
+        const p = this._libCat().packs.find(x => x.id === t.dataset.id);
+        if (!p) return;
+        const fresh = this._libPackItems(p).filter(it => !this._libHave("chores", it));
+        const on = fresh.every(it => lib.sel.chores[it.id]);
+        for (const it of fresh) { if (on) delete lib.sel.chores[it.id]; else lib.sel.chores[it.id] = lib.sel.chores[it.id] || {}; }
+        this._render();
+        this._libRefocus("lib-pack", t.dataset.id);
+        return;
+      }
+      case "lib-edit": {
+        const item = this._libItem(lib.kind, t.dataset.id);
+        if (!item) return;
+        const o = this._libSelBucket()[item.id] || {};
+        const days = Array.isArray(o.days) ? o.days
+          : item.pack ? item.due_days
+            : item.frequency === "weekdays" ? ["monday", "tuesday", "wednesday", "thursday", "friday"]
+              : item.frequency === "days" ? [...item.days] : [];
+        lib.edit = {
+          kind: lib.kind, id: item.id, name: o.name || this._libName(lib.kind, item),
+          pts: lib.kind === "rewards" ? (o.cost != null ? o.cost : item.cost) : (o.points != null ? o.points : item.points),
+          time: o.time || item.time_category || "anytime", days: [...days],
+        };
+        this._render();
+        requestAnimationFrame(() => { const f = this.querySelector('[data-lib-in="e-name"]'); if (f) f.focus(); });
+        return;
+      }
+      case "lib-e-day": {
+        const e = lib.edit;
+        if (!e) return;
+        e.days = e.days.includes(v) ? e.days.filter(d => d !== v) : DAYS.map(d => d.v).filter(d => d === v || e.days.includes(d));
+        this._render();
+        return;
+      }
+      case "lib-e-cancel":
+        // Only the scrim itself or the button: clicks inside the sheet bubble here too.
+        if (t.classList.contains("tm-lib-pop-scrim") && e && e.target !== t) return;
+        lib.edit = null; break;
+      case "lib-e-save": {
+        const e = lib.edit;
+        if (!e) return;
+        const item = this._libItem(e.kind, e.id);
+        const bucket = lib.sel[e.kind];
+        const pts = Math.max(0, Math.round(Number(e.pts) || 0));
+        const o = { name: (e.name || "").trim() || this._libName(e.kind, item) };
+        if (e.kind === "rewards") o.cost = pts;
+        else {
+          o.points = pts;
+          o.time = e.time;
+          if (item.pack || ["daily", "weekdays", "days"].includes(item.frequency)) o.days = [...e.days];
+        }
+        bucket[e.id] = o;
+        lib.edit = null;
+        break;
+      }
+      case "lib-assign": {
+        const keys = this._libAssignKeys();
+        const k = t.dataset.k;
+        lib.assign = keys.includes(k) ? keys.filter(x => x !== k) : [...keys, k];
+        break;
+      }
+      case "lib-clear": lib.sel[lib.kind] = {}; this._dialog.data = lib.sel; break;
+      case "lib-add": lib.mode === "wizard" ? this._libApplyToWizard() : this._libAdd(); return;
+      default: return;
+    }
+    this._render();
+    if (["lib-kind", "lib-cat", "lib-kid"].includes(act)) top();
+  }
+
+  // A tile toggled from the keyboard keeps the focus after the redraw.
+  _libRefocus(act, id) {
+    const el = [...this.querySelectorAll(`[data-act="${act}"]`)].find(x => x.dataset.id === id);
+    if (el && document.activeElement !== el) el.focus({ preventScroll: true });
+  }
+
+  _libInput(t, isChange) {
+    const lib = this._lib;
+    if (!lib) return;
+    const key = t.dataset.libIn;
+    if (key === "hide") { if (isChange) { lib.hide = t.checked; this._render(); } return; }
+    if (isChange && key !== "e-time") return;
+    if (key === "q") {
+      lib.q = t.value || "";
+      const pos = t.selectionStart;
+      this._render();
+      const f = this.querySelector('[data-lib-in="q"]');
+      if (f) { f.focus(); try { f.setSelectionRange(pos, pos); } catch (_) { /* type=search */ } }
+      return;
+    }
+    if (!lib.edit) return;
+    if (key === "e-name") lib.edit.name = t.value;
+    else if (key === "e-pts") lib.edit.pts = t.value;
+    else if (key === "e-time") lib.edit.time = t.value;
+  }
+
+  // One chore definition for taskmate/library/add or the wizard's plan.
+  _libChoreDef(id, o, who) {
+    const item = this._libItem("chores", id);
+    const points = o.points != null ? o.points : item.points;
+    const def = {
+      name: o.name || this._libName("chores", item), points, icon: item.icon,
+      assigned_to: who, requires_approval: points >= 4,
+      time_category: o.time || item.time_category || "anytime", daily_limit: item.daily_limit || 1, template_id: id,
+    };
+    if (Array.isArray(o.days)) Object.assign(def, { schedule_mode: "specific_days", due_days: [...o.days] });
+    else if (item.pack) Object.assign(def, { schedule_mode: item.schedule_mode, due_days: [...item.due_days] });
+    else Object.assign(def, item.schedule);
+    return def;
+  }
+
+  _libRewardDef(id, o) {
+    const item = this._libItem("rewards", id);
+    return { name: o.name || this._libName("rewards", item), cost: o.cost != null ? o.cost : item.cost, icon: item.icon, template_id: id };
+  }
+
+  async _libAdd() {
+    const lib = this._lib;
+    if (lib.busy) return;
+    const kind = lib.kind;
+    const bucket = lib.sel[kind];
+    const ids = Object.keys(bucket).filter(id => this._libItem(kind, id));
+    if (!ids.length) return;
+    const payload = { type: "taskmate/library/add" };
+    if (kind === "chores") payload.chores = ids.map(id => this._libChoreDef(id, bucket[id], this._libKids().length ? this._libWhoFor(this._libItem("chores", id)) : []));
+    else payload.rewards = ids.map(id => this._libRewardDef(id, bucket[id]));
+    lib.busy = true;
+    this._render();
+    const { ok, res, err } = await this._callWS(payload);
+    lib.busy = false;
+    if (!ok) { this._render(); this._showToast("err", this._t("library.toast_failed", { error: err })); return; }
+    const added = kind === "chores" ? res.chores_added : res.rewards_added;
+    const skipped = kind === "chores" ? res.chores_skipped : res.rewards_skipped;
+    lib.sel[kind] = {};
+    this._dialog.data = lib.sel;
+    this._dialogInitialHash = this._hashDialog();
+    this._showToast("ok", skipped ? this._t("library.toast_added_skipped", { count: added, skipped }) : this._t("library.toast_added", { count: added }));
+    await this._fetchState();
+  }
+
+  // Over the wizard the library edits the wizard's picks: top picks are the
+  // wizard's own suggestions, packs its pack list, the rest go in wz.lib.
+  _libSeedFromWizard() {
+    const wz = this._wz;
+    const lib = this._lib;
+    wz.lib = wz.lib || {};
+    wz.libRewards = wz.libRewards || {};
+    for (const s of this._wzCatalogue.chores) {
+      const c = wz.chores[s.id];
+      if (c && c.on) lib.sel.chores[s.id] = c.pts !== s.points ? { points: c.pts } : {};
+    }
+    for (const [id, o] of Object.entries(wz.lib)) lib.sel.chores[id] = { ...o };
+    for (const p of this._libCat().packs) {
+      if (wz.packs.includes(p.id)) for (const it of this._libPackItems(p)) lib.sel.chores[it.id] = {};
+    }
+    for (const r of this._wzCatalogue.rewards) {
+      const pick = wz.rewards[r.id];
+      if (pick && pick.on) lib.sel.rewards[r.id] = pick.cost !== r.cost ? { cost: pick.cost } : {};
+    }
+    for (const [id, o] of Object.entries(wz.libRewards)) lib.sel.rewards[id] = { ...o };
+  }
+
+  _libApplyToWizard() {
+    const wz = this._wz;
+    const lib = this._lib;
+    if (!wz) return;
+    const topIds = new Set(this._wzCatalogue.chores.map(s => s.id));
+    if (lib.kind === "chores") {
+      const sel = lib.sel.chores;
+      const keys = this._libAssignKeys();
+      for (const s of this._wzCatalogue.chores) {
+        const o = sel[s.id];
+        const c = wz.chores[s.id];
+        if (!c) continue;
+        if (o) {
+          const who = this._libWhoFor(this._libItem("chores", s.id) || s).filter(k => keys.includes(k));
+          Object.assign(c, { on: true, touched: true, pts: o.points != null ? o.points : c.pts, who: who.length ? who : c.who });
+        } else if (c.on) { c.on = false; c.touched = true; }
+      }
+      wz.lib = {};
+      for (const [id, o] of Object.entries(sel)) {
+        if (topIds.has(id) || id.startsWith("pack.")) continue;
+        wz.lib[id] = { ...o, who: this._libWhoFor(this._libItem("chores", id)) };
+      }
+      // A top pick for an age group nobody is in would hide in a closed band.
+      const bands = new Set(wz.kids.map(k => this._wizardBand(k)).filter(Boolean));
+      if (this._wzCatalogue.chores.some(s => sel[s.id] && !bands.has(s.age_group))) wz.showAll = true;
+      wz.packs = this._libCat().packs.filter(p => {
+        const fresh = this._libPackItems(p).filter(it => !this._libHave("chores", it));
+        return fresh.length && fresh.every(it => sel[it.id]);
+      }).map(p => p.id);
+    } else {
+      const sel = lib.sel.rewards;
+      const topR = new Set(this._wzCatalogue.rewards.map(r => r.id));
+      for (const r of this._wzCatalogue.rewards) {
+        const pick = wz.rewards[r.id];
+        if (!pick) continue;
+        if (sel[r.id]) Object.assign(pick, { on: true, cost: sel[r.id].cost != null ? sel[r.id].cost : pick.cost });
+        else pick.on = false;
+      }
+      wz.libRewards = {};
+      for (const [id, o] of Object.entries(sel)) if (!topR.has(id)) wz.libRewards[id] = { ...o };
+    }
+    const n = Object.keys(lib.sel[lib.kind]).filter(id => !lib.seeded[lib.kind].includes(id)).length;
+    this._wizardSaveDraft();
+    this._closeDialog(true);
+    this._showToast("ok", this._t("library.toast_wizard", { count: n }));
+  }
+
+  // The wizard's "Want more?" box at the bottom of the Chores and Rewards steps.
+  _libWizardMore(kind) {
+    const cat = this._libCat();
+    const count = kind === "rewards" ? cat.rewards.length : cat.chores.length;
+    return `
+      <div class="tm-lib-more">
+        <ha-icon icon="mdi:bookshelf"></ha-icon>
+        <div class="tm-wz-grow"><b>${this._t("library.more_title")}</b><small>${this._t(kind === "rewards" ? "library.more_rewards" : "library.more_chores", { count })}</small></div>
+        <button type="button" class="tm-btn" data-act="lib-open" data-v="${kind}" data-mode="wizard"><ha-icon icon="mdi:bookshelf"></ha-icon>${this._t("library.browse")}</button>
+      </div>`;
+  }
+
+  _libStyles() {
+    return `<style>
+      .tm-dialog.tm-lib { max-width: 1080px; height: calc(100vh - 120px); position: relative; }
+      .tm-lib-head { gap: 14px; flex-wrap: wrap; }
+      .tm-lib-head h2 { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+      .tm-lib-head h2 ha-icon { --mdc-icon-size: 20px; color: var(--tm-accent); }
+      .tm-lib-head .tm-icon-btn { margin-inline-start: auto; }
+      .tm-lib-kinds { display: inline-flex; gap: 2px; background: var(--tm-surface-2); border-radius: 999px; padding: 3px; }
+      .tm-lib-kinds button { border: 0; background: none; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; color: var(--tm-text-muted); }
+      .tm-lib-kinds button.tm-lib-kind-on { background: var(--tm-surface-0); color: var(--tm-text); font-weight: 600; box-shadow: var(--tm-shadow-xs); }
+      .tm-lib-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 20px; border-bottom: 1px solid var(--tm-border-soft); background: var(--tm-surface-2); }
+      .tm-lib-for { font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-lib-kids, .tm-lib-assign { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+      .tm-lib-kid { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--tm-border); background: var(--tm-surface-0); border-radius: 999px; padding-block: 3px; padding-inline: 3px 11px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--tm-text); }
+      .tm-lib-kid small { font-weight: 400; color: var(--tm-text-muted); }
+      .tm-lib-kid.tm-lib-kid-on { border-color: var(--tm-accent-border); background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+      .tm-lib-search { flex: 1 1 220px; width: auto; border-radius: 999px; }
+      .tm-lib-hide { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--tm-text); cursor: pointer; user-select: none; }
+      .tm-lib-main { flex: 1; display: flex; min-height: 0; }
+      .tm-lib-rail { width: 220px; flex: none; overflow-y: auto; padding: 8px; border-inline-end: 1px solid var(--tm-border-soft); }
+      .tm-lib-cat { display: flex; width: 100%; align-items: center; gap: 8px; border: 0; background: none; border-radius: var(--tm-radius-sm); padding: 8px 10px; font: inherit; font-size: 13.5px; cursor: pointer; color: var(--tm-text); text-align: start; }
+      .tm-lib-cat ha-icon { --mdc-icon-size: 18px; color: var(--tm-text-muted); flex: none; }
+      .tm-lib-cat span:not(.tm-lib-n) { flex: 1; }
+      .tm-lib-cat:hover { background: var(--tm-surface-hover); }
+      .tm-lib-cat.tm-lib-cat-on { background: var(--tm-accent-soft); color: var(--tm-accent-text); font-weight: 600; }
+      .tm-lib-cat.tm-lib-cat-on ha-icon { color: var(--tm-accent-text); }
+      .tm-lib-n { font-size: 12px; color: var(--tm-text-muted); background: var(--tm-surface-2); border-radius: 999px; padding: 1px 8px; }
+      .tm-lib-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; align-content: start; padding: 14px 16px; }
+      .tm-lib-gh { grid-column: 1 / -1; font-size: 13px; font-weight: 700; color: var(--tm-text-muted); margin: 2px 0 0; }
+      .tm-lib-tpl { position: relative; display: flex; gap: 10px; align-items: flex-start; border: 1.5px solid var(--tm-border); border-radius: 12px; padding: 10px 12px 12px; background: var(--tm-surface-0); cursor: pointer; transition: border-color .12s var(--tm-easing), background .12s var(--tm-easing); }
+      .tm-lib-tpl:hover { border-color: var(--tm-border-strong); }
+      .tm-lib-tpl:focus-visible { outline: 0; box-shadow: var(--tm-shadow-focus); }
+      .tm-lib-tpl.tm-lib-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); padding-bottom: 30px; }
+      .tm-lib-tpl.tm-lib-have { cursor: default; opacity: .62; background: var(--tm-surface-2); }
+      .tm-lib-tpl .tm-wz-cbx { flex: none; margin-inline-start: auto; }
+      .tm-lib-tpl.tm-lib-on .tm-wz-cbx { background: var(--tm-accent); border-color: var(--tm-accent); color: #fff; }
+      .tm-lib-ic { width: 34px; height: 34px; border-radius: 10px; background: var(--tm-surface-2); display: grid; place-items: center; flex: none; --mdc-icon-size: 20px; color: var(--tm-accent); }
+      .tm-lib-nm { flex: 1; min-width: 0; }
+      .tm-lib-nm b { display: block; font-size: 14px; line-height: 1.25; }
+      .tm-lib-meta { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 4px; font-size: 12px; color: var(--tm-text-muted); }
+      .tm-lib-pts { display: inline-flex; align-items: center; gap: 2px; font-weight: 600; color: var(--tm-text); }
+      .tm-lib-pts ha-icon { --mdc-icon-size: 13px; color: var(--tm-gold); }
+      .tm-lib-age { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 7px; background: var(--tm-surface-2); color: var(--tm-text); }
+      .tm-lib-added { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: var(--tm-positive); --mdc-icon-size: 13px; }
+      .tm-lib-edit { position: absolute; inset-inline-end: 8px; bottom: 6px; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--tm-accent-text); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 4px; --mdc-icon-size: 14px; }
+      .tm-lib-pack { grid-column: span 2; }
+      .tm-lib-packlist { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+      .tm-lib-packlist span { font-size: 12px; background: var(--tm-surface-2); border-radius: 999px; padding: 2px 8px; }
+      .tm-lib-packlist .tm-lib-struck { text-decoration: line-through; opacity: .7; }
+      .tm-lib-empty { grid-column: 1 / -1; text-align: center; color: var(--tm-text-muted); padding: 40px 0; --mdc-icon-size: 32px; }
+      .tm-lib-empty p { margin: 8px 0 4px; font-weight: 600; color: var(--tm-text); }
+      .tm-lib-foot { align-items: center; flex-wrap: wrap; gap: 8px 10px; justify-content: flex-start; }
+      .tm-lib-count { font-weight: 700; }
+      .tm-lib-sp { flex: 1; }
+      .tm-lib-hint { font-size: 12px; color: var(--tm-text-muted); }
+      .tm-lib-pop-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 5; border-radius: inherit; }
+      .tm-lib-pop { background: var(--tm-surface-0); border-radius: var(--tm-radius-lg); width: min(440px, 92%); padding: 18px; box-shadow: var(--tm-shadow-lg); max-height: 90%; overflow-y: auto; }
+      .tm-lib-pop h3 { margin: 0 0 14px; font-size: 16px; display: flex; gap: 8px; align-items: center; --mdc-icon-size: 22px; }
+      .tm-lib-pop h3 ha-icon { color: var(--tm-accent); }
+      .tm-lib-pop-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .tm-lib-pop-foot { display: flex; justify-content: flex-end; gap: 8px; }
+      .tm-lib-rm { margin-inline-start: 4px; --mdc-icon-size: 16px; }
+      .tm-lib-more { display: flex; gap: 12px; align-items: center; margin-top: 14px; border: 1px dashed var(--tm-accent-border); border-radius: 12px; padding: 12px 14px; background: var(--tm-accent-soft); --mdc-icon-size: 26px; }
+      .tm-lib-more > ha-icon { color: var(--tm-accent); flex: none; }
+      .tm-lib-more small { display: block; color: var(--tm-text-muted); margin-top: 2px; }
+      .tm-lib-more .tm-btn ha-icon { --mdc-icon-size: 16px; }
+      .tm-toolbar .tm-btn ha-icon { --mdc-icon-size: 16px; vertical-align: -3px; margin-inline-end: 4px; }
+      @media (max-width: 760px) {
+        .tm-dialog.tm-lib { height: calc(100vh - 40px); }
+        .tm-lib-main { flex-direction: column; }
+        .tm-lib-rail { width: auto; display: flex; gap: 4px; overflow-x: auto; border-inline-end: 0; border-bottom: 1px solid var(--tm-border-soft); flex: none; }
+        .tm-lib-cat { width: auto; white-space: nowrap; }
+        .tm-lib-pack { grid-column: auto; }
+        .tm-lib-grid { grid-template-columns: 1fr; }
+      }
+    </style>`;
+  }
+
   _wizardStyles() {
     return `<style>
       /* Setup wizard (#980) */
@@ -7654,6 +8388,7 @@ class TaskMatePanel extends HTMLElement {
         ${all.length > 0 ? this._searchBox(this._t("panel.search_chores")) : ""}
         <button type="button" class="tm-btn" data-act="reorder-chores-global">${this._t("panel.btn_reorder_chores")}</button>
         <button type="button" class="tm-btn" data-act="bulk-add-chore">${this._t("panel.btn_bulk_add")}</button>
+        <button type="button" class="tm-btn" data-act="lib-open" data-v="chores"><ha-icon icon="mdi:bookshelf"></ha-icon>${this._t("library.btn")}</button>
         <button type="button" class="tm-btn" data-act="tpl-add-from">${this._t("panel.btn_from_template")}</button>
         <button type="button" class="tm-btn" data-act="tpl-save-from">${this._t("panel.btn_save_as_template")}</button>
         ${all.length > 0 ? `<button type="button" class="tm-btn ${this._bulkMode ? "tm-btn-on" : ""}" data-act="bulk-toggle">${this._bulkMode ? this._t("panel.bulk_done") : this._t("panel.bulk_select")}</button>` : ""}
@@ -7751,6 +8486,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._t("panel.reward_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
         ${all.length > 0 ? this._searchBox(this._t("panel.search_rewards")) : ""}
+        <button type="button" class="tm-btn" data-act="lib-open" data-v="rewards"><ha-icon icon="mdi:bookshelf"></ha-icon>${this._t("library.btn")}</button>
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-reward">${this._t("panel.btn_add_reward")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🎁", this._t("panel.empty_rewards_title"), this._t("panel.empty_rewards_copy", {points_name: pointsName.toLowerCase()}), "add-reward", this._t("panel.btn_add_reward")) :
@@ -11611,6 +12347,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "wish-decline") return this._renderWishDeclineDialog();
     if (this._dialog.kind === "reject")       return this._renderRejectDialog();
     if (this._dialog.kind === "wizard-confirm") return this._renderWizardConfirmDialog();
+    if (this._dialog.kind === "library")        return this._renderLibraryDialog();
     if (this._dialog.kind === "dash-create")    return this._renderDashDialog();
     if (this._dialog.kind === "insp-start")   return this._renderInspectionStartDialog();
     if (this._dialog.kind === "insp-pass")    return this._renderInspectionPassDialog();

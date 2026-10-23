@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from .const import ASSIGNMENT_MODES, SCHEDULE_MODES, TIME_CATEGORIES
-from .models import Chore, generate_id, optional_float
+from .models import Chore, clean_template_id, generate_id, optional_float
 from .templates import BUILT_IN_IDS, BUILT_IN_TEMPLATES, TEMPLATE_CHORE_FIELDS
 
 if TYPE_CHECKING:
@@ -110,6 +110,9 @@ class TemplatesMixin:
             # packs don't, and keep the chore's default.
             if chore_def.get("icon"):
                 chore.icon = chore_def["icon"]
+            # Added from the 📚 library or the wizard: remembered so the
+            # library shows it as already added.
+            chore.template_id = clean_template_id(chore_def.get("template_id"))
             self.storage.add_chore(chore)
             created_ids.append(chore.id)
         await self.storage.async_save()

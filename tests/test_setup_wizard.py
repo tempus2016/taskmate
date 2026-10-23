@@ -361,7 +361,11 @@ def test_apply_schemas():
 def test_setup_commands_are_registered():
     src = (ROOT / "custom_components" / "taskmate" / "websocket.py").read_text(encoding="utf-8")
     assert "SETUP_COMMANDS" in src
-    assert websocket_setup.SETUP_COMMANDS == (websocket_setup.ws_setup_catalogue, websocket_setup.ws_setup_apply)
+    assert websocket_setup.SETUP_COMMANDS == (
+        websocket_setup.ws_setup_catalogue,
+        websocket_setup.ws_setup_apply,
+        websocket_setup.ws_library_add,
+    )
 
 
 def test_child_commands_accept_an_age_group():

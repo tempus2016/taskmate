@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
@@ -99,6 +100,22 @@ def format_datetime(dt: datetime | None) -> str | None:
     utc_dt = dt.astimezone(timezone.utc)
     # Use isoformat but replace +00:00 with Z for cleaner output
     return utc_dt.isoformat().replace("+00:00", "Z")
+
+
+TEMPLATE_ID_MAX_LENGTH = 80
+_TEMPLATE_ID_RE = re.compile(r"[a-z0-9_.]+")
+
+
+def clean_template_id(raw: Any) -> str:
+    """A library template id (``make_bed``, ``pack.pet_care.2``) or "".
+
+    Anything else — a restored backup's junk, a too-long string — reads as
+    "", which only means the library won't recognise the item as added.
+    """
+    value = str(raw or "").strip()
+    if len(value) > TEMPLATE_ID_MAX_LENGTH or not _TEMPLATE_ID_RE.fullmatch(value):
+        return ""
+    return value
 
 
 def normalize_tag_ids(raw: Any) -> list[str]:
@@ -491,6 +508,10 @@ class Chore:
     # one completion (0 = no cap).
     quantity_unit: str = ""
     quantity_max: int = 0
+    # The library entry this chore was added from (a catalogue id such as
+    # ``make_bed``, or ``pack.<pack>.<n>``), so the 📚 library can show it as
+    # already added. "" for chores made by hand.
+    template_id: str = ""
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -576,6 +597,7 @@ class Chore:
             reference_image_url=str(data.get("reference_image_url", "") or ""),
             quantity_unit=str(data.get("quantity_unit", "") or "").strip()[:QUANTITY_UNIT_MAX_LENGTH],
             quantity_max=_clamp_int(data.get("quantity_max"), 0, MAX_QUANTITY),
+            template_id=clean_template_id(data.get("template_id")),
             id=data.get("id") or generate_id(),
         )
 
@@ -648,6 +670,7 @@ class Chore:
             "reference_image_url": self.reference_image_url,
             "quantity_unit": self.quantity_unit,
             "quantity_max": self.quantity_max,
+            "template_id": self.template_id,
             "id": self.id,
         }
 
@@ -741,6 +764,10 @@ class Reward:
     # Streak freeze (#925): approving a claim hands the child one streak-freeze
     # token instead of anything physical. Always a fixed cost like any reward.
     streak_freeze: bool = False
+    # The library entry this reward was added from (a catalogue id such as
+    # ``sleepover``); "" for rewards made by hand. Only used to show "already
+    # added".
+    template_id: str = ""
     id: str = field(default_factory=generate_id)
 
     def __post_init__(self) -> None:
@@ -783,6 +810,7 @@ class Reward:
             available_from=str(data.get("available_from", "") or ""),
             available_until=str(data.get("available_until", "") or ""),
             streak_freeze=bool(data.get("streak_freeze", False)),
+            template_id=clean_template_id(data.get("template_id")),
             id=data.get("id") or generate_id(),
         )
 
@@ -809,6 +837,7 @@ class Reward:
             "available_from": self.available_from,
             "available_until": self.available_until,
             "streak_freeze": self.streak_freeze,
+            "template_id": self.template_id,
             "id": self.id,
         }
 

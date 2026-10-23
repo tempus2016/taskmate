@@ -1,10 +1,12 @@
-"""WebSocket commands for the setup wizard (#980).
+"""WebSocket commands for the setup wizard (#980) and the 📚 library.
 
 ``taskmate/setup_wizard/catalogue`` hands the panel the age-grouped chore
-suggestions and starter rewards (setup_catalogue.py); the names are in the
-panel's locale files. ``taskmate/setup_wizard/apply`` creates what the parent
-picked in a single call and a single refresh (coord_setup.py). Both are
-admin-only, like the rest of the panel's commands.
+suggestions and starter rewards, plus the whole library (setup_catalogue.py);
+the names are in the panel's locale files. ``taskmate/setup_wizard/apply``
+creates what the parent picked in a single call and a single refresh
+(coord_setup.py); ``taskmate/library/add`` is the same create for the
+library's chores and rewards, logged as a library add. All are admin-only,
+like the rest of the panel's commands.
 """
 
 from __future__ import annotations
@@ -15,7 +17,7 @@ from homeassistant.components import websocket_api
 from .const import AGE_GROUPS, SCHEDULE_MODES
 from .coord_birthdays import normalize_birthday, parse_birthday
 from .setup_catalogue import setup_catalogue
-from .websocket import WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only, validate_child_color
+from .websocket import WS_LIBRARY_ADD, WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only, validate_child_color
 
 # Generous ceilings: a wizard run is a handful of children and a few dozen
 # chores; these only stop a runaway payload.
@@ -25,6 +27,8 @@ MAX_REWARDS = 50
 
 _AGE_GROUP = vol.In(("", *AGE_GROUPS))
 _NAME = vol.All(str, vol.Length(min=1, max=200))
+# The library entry a chore or reward comes from (models.clean_template_id).
+_TEMPLATE_ID = vol.All(str, vol.Length(max=80))
 
 _CHILD_SCHEMA = {
     vol.Required("ref"): vol.All(str, vol.Length(min=1, max=40)),
@@ -54,6 +58,7 @@ _CHORE_SCHEMA = {
     vol.Optional("due_days"): [str],
     vol.Optional("recurrence"): str,
     vol.Optional("recurrence_day"): str,
+    vol.Optional("template_id"): _TEMPLATE_ID,
 }
 
 _REWARD_SCHEMA = {
@@ -62,6 +67,7 @@ _REWARD_SCHEMA = {
     vol.Required("cost"): vol.All(int, vol.Range(min=0, max=1000000)),
     vol.Optional("description"): vol.All(str, vol.Length(max=500)),
     vol.Optional("icon"): vol.All(str, vol.Length(max=80)),
+    vol.Optional("template_id"): _TEMPLATE_ID,
 }
 
 
@@ -118,4 +124,19 @@ async def ws_setup_apply(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], result)
 
 
-SETUP_COMMANDS = (ws_setup_catalogue, ws_setup_apply)
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_LIBRARY_ADD,
+        vol.Optional("chores", default=[]): vol.All([_CHORE_SCHEMA], vol.Length(max=MAX_CHORES)),
+        vol.Optional("rewards", default=[]): vol.All([_REWARD_SCHEMA], vol.Length(max=MAX_REWARDS)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def ws_library_add(hass, connection, msg, coordinator):
+    # The wizard's create: add-only, one refresh, already-there items skipped.
+    result = await coordinator.async_apply_setup_wizard(chores=msg.get("chores"), rewards=msg.get("rewards"))
+    connection.send_result(msg["id"], result)
+
+
+SETUP_COMMANDS = (ws_setup_catalogue, ws_setup_apply, ws_library_add)
