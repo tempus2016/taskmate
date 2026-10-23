@@ -3712,6 +3712,8 @@
   "panel.boost_to": "Til",
   "panel.boost_everyone_lc": "alle",
   "kiosk.editor.show_pet": "Vis kjæledyret til barnet",
+  "kiosk.editor.show_badges": "Vis merke",
+  "kiosk.editor.allow_avatar_change": "La born byte avatar",
   "child.appeal_item_chore": "«{name}» vart send tilbake ({points})",
   "child.appeal_item_reward": "Kravet ditt på «{name}» vart avslått",
   "child.appeal_item_penalty": "Straff: {name} (−{points})",

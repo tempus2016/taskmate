@@ -3712,6 +3712,8 @@
   "panel.boost_to": "Tot",
   "panel.boost_everyone_lc": "iedereen",
   "kiosk.editor.show_pet": "Huisdier van het kind tonen",
+  "kiosk.editor.show_badges": "Medailles tonen",
+  "kiosk.editor.allow_avatar_change": "Kinderen mogen hun avatar wijzigen",
   "child.appeal_item_chore": "“{name}” is teruggestuurd ({points})",
   "child.appeal_item_reward": "Je aanvraag voor “{name}” is afgekeurd",
   "child.appeal_item_penalty": "Puntenaftrek: {name} (−{points})",

@@ -3712,6 +3712,8 @@
   "panel.boost_to": "Bis",
   "panel.boost_everyone_lc": "alle",
   "kiosk.editor.show_pet": "Haustier des Kindes anzeigen",
+  "kiosk.editor.show_badges": "Abzeichen anzeigen",
+  "kiosk.editor.allow_avatar_change": "Kinder dürfen ihren Avatar ändern",
   "child.appeal_item_chore": "„{name}“ wurde zurückgeschickt ({points})",
   "child.appeal_item_reward": "Dein Anspruch auf „{name}“ wurde abgelehnt",
   "child.appeal_item_penalty": "Strafe: {name} (−{points})",

@@ -3712,6 +3712,8 @@
   "panel.boost_to": "To",
   "panel.boost_everyone_lc": "everyone",
   "kiosk.editor.show_pet": "Show the child's pet",
+  "kiosk.editor.show_badges": "Show badges",
+  "kiosk.editor.allow_avatar_change": "Let children change their avatar",
   "child.appeal_item_chore": "“{name}” was sent back ({points})",
   "child.appeal_item_reward": "Your claim for “{name}” was turned down",
   "child.appeal_item_penalty": "Penalty: {name} (−{points})",
