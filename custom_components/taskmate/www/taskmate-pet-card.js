@@ -88,6 +88,9 @@ function petAnchors(species, stage) {
 
 const f = (n) => Math.round(n * 10) / 10;
 
+// The egg is drawn without a <clipPath>: on iOS 15 Safari a clip inside the
+// wobbling .tm-pet group froze the whole page (#1113). The spots all sit well
+// inside the shell, and the shading is a crescent cut to the egg's edge.
 function egg(species) {
   const p = PET_PALETTES[species];
   const spots = {
@@ -100,9 +103,9 @@ function egg(species) {
   }[species];
   return `
     <ellipse cx="100" cy="188" rx="46" ry="7" fill="#000" opacity=".12"/>
-    <clipPath id="tm-egg-${species}"><path d="M100 46 C140 46 152 112 152 136 C152 166 128 186 100 186 C72 186 48 166 48 136 C48 112 60 46 100 46Z"/></clipPath>
     <path d="M100 46 C140 46 152 112 152 136 C152 166 128 186 100 186 C72 186 48 166 48 136 C48 112 60 46 100 46Z" fill="${p.body}"/>
-    <g clip-path="url(#tm-egg-${species})">${spots}<ellipse cx="128" cy="150" rx="40" ry="44" fill="${p.shade}" opacity=".35"/></g>
+    ${spots}
+    <path d="M149.7 113.1 C151.3 122.1 152 130.3 152 136 C152 164.3 130.7 183.7 104.8 185.8 A40 44 0 0 1 149.7 113.1Z" fill="${p.shade}" opacity=".35"/>
     <ellipse cx="80" cy="84" rx="9" ry="15" fill="#fff" opacity=".55" transform="rotate(-20 80 84)"/>
     <path d="M100 46 C140 46 152 112 152 136 C152 166 128 186 100 186 C72 186 48 166 48 136 C48 112 60 46 100 46Z" fill="none" stroke="${p.line}" stroke-width="5"/>`;
 }

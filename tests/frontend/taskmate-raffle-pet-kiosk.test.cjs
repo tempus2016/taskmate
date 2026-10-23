@@ -171,11 +171,21 @@ for (const design of DESIGNS) {
 
 test("pet: an egg is an egg, a grown pet with nothing switched on says so", () => {
   const egg = render(petCard({ adopted: true, name: "E", species: "cat", stage: "egg", chores: 0, xp: 0, goal: { kind: "stage", from: 0, at: 30 }, mood: "happy", accessories: [] }).card.render()).markup;
-  assert.match(egg, /tm-egg-cat/);
+  assert.match(egg, /class="pt-stage[^"]*stage-egg/);
+  assert.match(egg, /#f39b3d/, "the cat egg's shell colour");
   const grown = render(petCard({ adopted: true, name: "G", species: "dog", stage: "grown", chores: 120, xp: 1700, mood: "proud", accessories: ["bow", "top_hat", "scarf", "crown"] }).card.render()).markup;
   assert.ok(grown.includes(localize("pet.fully_grown", { name: "G" })));
   assert.match(grown, /👑/);
   assert.doesNotMatch(grown, /role="progressbar"/);
+});
+
+test("pet: the egg has no clipPath, which froze iOS 15 Safari inside the wobble (#1113)", () => {
+  const { petScene, petArt } = (petMod.window ? petMod.window.__taskmate_pet_art : sandbox.window?.__taskmate_pet_art) || {};
+  for (const species of ["dragon", "cat", "dog", "bunny", "dino", "unicorn"]) {
+    for (const markup of [petScene(species, "egg"), petArt(species, "egg")]) {
+      assert.doesNotMatch(markup, /clipPath|clip-path/, species);
+    }
+  }
 });
 
 test("pet: each stage looks different, and legendary turns it gold", () => {
