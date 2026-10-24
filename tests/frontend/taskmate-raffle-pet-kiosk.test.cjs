@@ -182,10 +182,23 @@ test("pet: an egg is an egg, a grown pet with nothing switched on says so", () =
 test("pet: the egg has no clipPath, which froze iOS 15 Safari inside the wobble (#1113)", () => {
   const { petScene, petArt } = (petMod.window ? petMod.window.__taskmate_pet_art : sandbox.window?.__taskmate_pet_art) || {};
   for (const species of ["dragon", "cat", "dog", "bunny", "dino", "unicorn"]) {
-    for (const markup of [petScene(species, "egg"), petArt(species, "egg")]) {
+    for (const markup of [Object.values(petScene(species, "egg")).join(""), petArt(species, "egg")]) {
       assert.doesNotMatch(markup, /clipPath|clip-path/, species);
     }
   }
+});
+
+test("pet: every animation moves an HTML layer, never an SVG group, which froze iOS 15 Safari (#1126)", () => {
+  const pet = { adopted: true, name: "Sparky", species: "bunny", stage: "grown", chores: 200, xp: 3100, legendary: true, home: 10, egg_ready: true,
+    mood: "happy", accessories: ["bow", "crown"] };
+  const { markup } = render(petCard(pet).card.render());
+  assert.match(markup, /<div class="pt-layer tm-pet">/);
+  assert.match(markup, /<div class="pt-layer tm-new-egg">/);
+  assert.doesNotMatch(markup, /<g[^>]*class=/, "no SVG group carries an animated class");
+  const styles = render(PetCard.styles).markup;
+  assert.match(styles, /pt-bounce/, "the card styles are readable here");
+  assert.doesNotMatch(styles, /transform-box/);
+  assert.doesNotMatch(styles, /svg[^{]*\{[^}]*(animation|filter)/);
 });
 
 test("pet: each stage looks different, and legendary turns it gold", () => {
