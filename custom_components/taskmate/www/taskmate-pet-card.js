@@ -494,6 +494,12 @@ const NECK_ACC = { scarf: "🧣", bow: "🎀" };
  * The whole scene: home items unlocked so far, the pet (gold if legendary)
  * with its hat and scarf, and the egg it laid when there is one.
  * opts: { legendary, home (0–10), egg (bool), accessories: [...] }.
+ *
+ * Returned as stacked layers { back, pet, front, egg } (egg is "" when there
+ * is none), each a full-size SVG on the same canvas. The card wraps the pet
+ * and egg layers in HTML elements and animates those: old iOS Safari repaints
+ * an animated SVG group on the main thread every frame, which froze the page
+ * once a pet hatched (#1126); an animated HTML element is moved on the GPU.
  */
 function petScene(species, stage, opts = {}) {
   const home = Math.max(0, Math.min(HOME_ITEM_COUNT, Number(opts.home) || 0));
@@ -510,16 +516,18 @@ function petScene(species, stage, opts = {}) {
       ${headAcc ? `<text x="${a.head.x}" y="${a.head.y + 2}" font-size="${headAcc === HEAD_ACC.crown ? 32 : 38}" text-anchor="middle" transform="rotate(-8 ${a.head.x} ${a.head.y})">${headAcc}</text>` : ""}`;
   const EX = 44;
   const newEgg = opts.egg
-    ? `<g class="tm-new-egg"><ellipse cx="${EX}" cy="${HOME_GROUND + 1}" rx="18" ry="4" fill="#000" opacity=".14"/>
+    ? `<g><ellipse cx="${EX}" cy="${HOME_GROUND + 1}" rx="18" ry="4" fill="#000" opacity=".14"/>
         <path d="M${EX} ${HOME_GROUND - 40} C${EX + 16} ${HOME_GROUND - 40} ${EX + 20} ${HOME_GROUND - 14} ${EX + 20} ${HOME_GROUND - 10} C${EX + 20} ${HOME_GROUND - 1} ${EX + 10} ${HOME_GROUND + 1} ${EX} ${HOME_GROUND + 1} C${EX - 10} ${HOME_GROUND + 1} ${EX - 20} ${HOME_GROUND - 1} ${EX - 20} ${HOME_GROUND - 10} C${EX - 20} ${HOME_GROUND - 14} ${EX - 16} ${HOME_GROUND - 40} ${EX} ${HOME_GROUND - 40} Z" fill="#fff6e3" stroke="#a07a3c" stroke-width="3"/>
         <circle cx="${EX - 6}" cy="${HOME_GROUND - 24}" r="3.5" fill="#f6b3d6"/><circle cx="${EX + 6}" cy="${HOME_GROUND - 14}" r="4" fill="#9fd8ff"/><circle cx="${EX + 5}" cy="${HOME_GROUND - 30}" r="2.5" fill="#ffd23f"/>
         ${sparkle(EX + 22, HOME_GROUND - 44, 6, "#ffd23f")}</g>`
     : "";
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${HOME_W} ${HOME_H}" class="tm-pet-scene" aria-hidden="true">
-    ${layer("sky")}${layer("back")}${layer("ground")}
-    <g transform="translate(${px} ${py})"><g class="tm-pet">${petBody(species, stage, !!opts.legendary)}${dress}</g></g>
-    ${layer("front")}${newEgg}
-  </svg>`;
+  const svg = (cls, inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${HOME_W} ${HOME_H}" class="${cls}" aria-hidden="true">${inner}</svg>`;
+  return {
+    back: svg("tm-pet-scene", `${layer("sky")}${layer("back")}${layer("ground")}`),
+    pet: svg("pt-layer", `<g transform="translate(${px} ${py})">${petBody(species, stage, !!opts.legendary)}${dress}</g>`),
+    front: svg("pt-layer", layer("front")),
+    egg: newEgg ? svg("pt-layer", newEgg) : "",
+  };
 }
 
 
@@ -752,7 +760,10 @@ class TaskMatePetCard extends LitElement {
       <div class="pt-body">
         <button type="button" class="pt-stage ${homeClass} mood-${pet.mood} stage-${pet.stage} ${pet.legendary ? "legendary" : ""} ${this._petting ? "petting" : ""} ${this._evolving ? "evolving" : ""}"
                 aria-label="${this._t("pet.cuddle", { name: pet.name })}" @click=${() => this._pet()}>
-          ${_artNode(scene)}
+          ${_artNode(scene.back)}
+          <div class="pt-layer tm-pet">${_artNode(scene.pet)}</div>
+          ${_artNode(scene.front)}
+          ${scene.egg ? html`<div class="pt-layer tm-new-egg">${_artNode(scene.egg)}</div>` : ""}
           ${pet.mood === "sleepy" ? html`<span class="pt-zzz" aria-hidden="true">💤</span>` : ""}
           ${pet.mood === "proud" ? html`<span class="pt-spark" aria-hidden="true">✨</span>` : ""}
           ${this._petting ? html`<span class="pt-hearts" aria-hidden="true">💕</span>` : ""}
@@ -847,14 +858,17 @@ class TaskMatePetCard extends LitElement {
       .pt-stage.has-home { background: linear-gradient(#dff1ff, #f4fbff 70%); }
       .pt-stage.legendary:not(.has-home) { background: radial-gradient(ellipse at 50% 60%, #fff4c9, transparent 72%); }
       .pt-stage svg { display: block; width: 100%; height: 100%; }
-      .pt-stage .tm-pet { transform-box: fill-box; transform-origin: 50% 100%; }
+      .pt-layer { position: absolute; inset: 0; pointer-events: none; }
+      /* Animated layers are HTML, never SVG groups: see petScene (#1126). The
+         origins are the pet's and the egg's feet on the 320×210 canvas. */
+      .pt-stage .tm-pet { transform-origin: 50% 95%; }
       .mood-happy .tm-pet, .mood-proud .tm-pet { animation: pt-bounce 1.6s ease-in-out infinite; }
       .mood-content .tm-pet { animation: pt-sway 3s ease-in-out infinite; }
       .mood-sleepy .tm-pet { filter: grayscale(.35) brightness(.92); }
       .stage-egg .tm-pet { animation: pt-wobble 2.2s ease-in-out infinite; }
       .petting .tm-pet { animation: pt-hop .5s ease-out; }
       .evolving .tm-pet { animation: pt-evolve 1.6s ease-in-out 2; }
-      .tm-new-egg { transform-box: fill-box; transform-origin: 50% 100%; animation: pt-wobble 2.6s ease-in-out infinite; }
+      .tm-new-egg { transform-origin: 15% 94%; animation: pt-wobble 2.6s ease-in-out infinite; }
       .pt-zzz { position: absolute; top: 6px; inset-inline-end: 10px; font-size: 30px; animation: pt-float 2.4s ease-in-out infinite; }
       .pt-spark { position: absolute; top: 6px; inset-inline-start: 10px; font-size: 28px; animation: pt-float 1.8s ease-in-out infinite; }
       .pt-hearts { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 30px; animation: pt-up .9s ease-out forwards; } /* rtl-ok: centred horizontally */
