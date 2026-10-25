@@ -2168,8 +2168,10 @@ class TaskMateKioskCard extends LitElement {
         border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 40px;
         padding-block: 6px; padding-inline: 16px 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
       }
+      /* Its number changes every second; strict containment keeps that from
+         laying out the whole card again each time (#1126, old iPads). */
       .km-ring {
-        width: 40px; height: 40px; border-radius: 50%;
+        width: 40px; height: 40px; border-radius: 50%; contain: strict;
         display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
         background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.25) 0);
       }
