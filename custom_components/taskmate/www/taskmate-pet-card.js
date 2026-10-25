@@ -496,10 +496,8 @@ const NECK_ACC = { scarf: "🧣", bow: "🎀" };
  * opts: { legendary, home (0–10), egg (bool), accessories: [...] }.
  *
  * Returned as stacked layers { back, pet, front, egg } (egg is "" when there
- * is none), each a full-size SVG on the same canvas. The card wraps the pet
- * and egg layers in HTML elements and animates those: old iOS Safari repaints
- * an animated SVG group on the main thread every frame, which froze the page
- * once a pet hatched (#1126); an animated HTML element is moved on the GPU.
+ * is none), each a full-size SVG on the same canvas. The card draws each layer
+ * as an <img> and animates the HTML wrappers around the pet and the egg.
  */
 function petScene(species, stage, opts = {}) {
   const home = Math.max(0, Math.min(HOME_ITEM_COUNT, Number(opts.home) || 0));
@@ -542,6 +540,20 @@ function _artNode(markup) {
     _artCache.set(markup, node);
   }
   return node.cloneNode(true);
+}
+// A scene layer as an <img> source. On the kiosk the page lays out again
+// every second (its idle countdown), and old iOS Safari redid the layout and
+// paint of every inline SVG shape each time, which froze the page once a pet
+// hatched (#1126). An image is drawn once and kept as a picture.
+const _imgCache = new Map();
+function _artSrc(markup) {
+  let src = _imgCache.get(markup);
+  if (!src) {
+    src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+    if (_imgCache.size > 60) _imgCache.clear();
+    _imgCache.set(markup, src);
+  }
+  return src;
 }
 window.__taskmate_pet_art = { petArt, petScene, petAnchors };
 
@@ -760,10 +772,10 @@ class TaskMatePetCard extends LitElement {
       <div class="pt-body">
         <button type="button" class="pt-stage ${homeClass} mood-${pet.mood} stage-${pet.stage} ${pet.legendary ? "legendary" : ""} ${this._petting ? "petting" : ""} ${this._evolving ? "evolving" : ""}"
                 aria-label="${this._t("pet.cuddle", { name: pet.name })}" @click=${() => this._pet()}>
-          ${_artNode(scene.back)}
-          <div class="pt-layer tm-pet">${_artNode(scene.pet)}</div>
-          ${_artNode(scene.front)}
-          ${scene.egg ? html`<div class="pt-layer tm-new-egg">${_artNode(scene.egg)}</div>` : ""}
+          <img class="pt-art" src=${_artSrc(scene.back)} alt="" draggable="false">
+          <div class="pt-layer tm-pet"><img class="pt-art" src=${_artSrc(scene.pet)} alt="" draggable="false"></div>
+          <img class="pt-art pt-layer" src=${_artSrc(scene.front)} alt="" draggable="false">
+          ${scene.egg ? html`<div class="pt-layer tm-new-egg"><img class="pt-art" src=${_artSrc(scene.egg)} alt="" draggable="false"></div>` : ""}
           ${pet.mood === "sleepy" ? html`<span class="pt-zzz" aria-hidden="true">💤</span>` : ""}
           ${pet.mood === "proud" ? html`<span class="pt-spark" aria-hidden="true">✨</span>` : ""}
           ${this._petting ? html`<span class="pt-hearts" aria-hidden="true">💕</span>` : ""}
@@ -857,10 +869,11 @@ class TaskMatePetCard extends LitElement {
         background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--pt-accent) 20%, transparent), transparent 70%); }
       .pt-stage.has-home { background: linear-gradient(#dff1ff, #f4fbff 70%); }
       .pt-stage.legendary:not(.has-home) { background: radial-gradient(ellipse at 50% 60%, #fff4c9, transparent 72%); }
-      .pt-stage svg { display: block; width: 100%; height: 100%; }
+      .pt-stage .pt-art { display: block; width: 100%; height: 100%; -webkit-user-select: none; user-select: none; }
       .pt-layer { position: absolute; inset: 0; pointer-events: none; }
-      /* Animated layers are HTML, never SVG groups: see petScene (#1126). The
-         origins are the pet's and the egg's feet on the 320×210 canvas. */
+      /* The art is <img> layers and the animation sits on their HTML wrappers,
+         never on SVG (#1113, #1126). The origins are the pet's and the egg's
+         feet on the 320×210 canvas. */
       .pt-stage .tm-pet { transform-origin: 50% 95%; }
       .mood-happy .tm-pet, .mood-proud .tm-pet { animation: pt-bounce 1.6s ease-in-out infinite; }
       .mood-content .tm-pet { animation: pt-sway 3s ease-in-out infinite; }

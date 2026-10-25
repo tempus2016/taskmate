@@ -128,6 +128,13 @@ test("raffle: a fresh draw spins to the winner, once per browser, and survives a
 const petMod = loadCard("taskmate-pet-card.js", { sandbox });
 const PetCard = petMod.get("taskmate-pet-card");
 
+// The pet's scene is drawn as <img> layers (#1126): decode their SVG so the
+// tests can look inside the art as well as the card.
+function withArt(markup) {
+  const art = [...markup.matchAll(/src="?data:image\/svg\+xml;charset=utf-8,([^"\s>]*)/g)].map(m => decodeURIComponent(m[1]));
+  return markup + art.join("");
+}
+
 function petCard(pet, design = "classic") {
   const calls = [];
   const card = new PetCard();
@@ -158,7 +165,7 @@ test("pet: the adoption form adopts the picked creature", async () => {
 for (const design of DESIGNS) {
   test(`pet: ${design} draws the pet, its mood and how close the next stage is`, () => {
     const pet = { adopted: true, name: "Sparkle", species: "unicorn", stage: "baby", chores: 5, xp: 115, goal: { kind: "stage", from: 30, at: 200 }, mood: "sleepy", accessories: ["bow"] };
-    const { markup } = render(petCard(pet, design).card.render());
+    const markup = withArt(render(petCard(pet, design).card.render()).markup);
     assert.match(markup, /<svg[^>]*tm-pet-scene/);
     assert.ok(markup.includes(localize("pet.mood_sleepy", { name: "Sparkle" })));
     const stage = localize("pet.stage_kid", { species: localize("pet.species_unicorn") });
@@ -170,10 +177,10 @@ for (const design of DESIGNS) {
 }
 
 test("pet: an egg is an egg, a grown pet with nothing switched on says so", () => {
-  const egg = render(petCard({ adopted: true, name: "E", species: "cat", stage: "egg", chores: 0, xp: 0, goal: { kind: "stage", from: 0, at: 30 }, mood: "happy", accessories: [] }).card.render()).markup;
+  const egg = withArt(render(petCard({ adopted: true, name: "E", species: "cat", stage: "egg", chores: 0, xp: 0, goal: { kind: "stage", from: 0, at: 30 }, mood: "happy", accessories: [] }).card.render()).markup);
   assert.match(egg, /class="pt-stage[^"]*stage-egg/);
   assert.match(egg, /#f39b3d/, "the cat egg's shell colour");
-  const grown = render(petCard({ adopted: true, name: "G", species: "dog", stage: "grown", chores: 120, xp: 1700, mood: "proud", accessories: ["bow", "top_hat", "scarf", "crown"] }).card.render()).markup;
+  const grown = withArt(render(petCard({ adopted: true, name: "G", species: "dog", stage: "grown", chores: 120, xp: 1700, mood: "proud", accessories: ["bow", "top_hat", "scarf", "crown"] }).card.render()).markup);
   assert.ok(grown.includes(localize("pet.fully_grown", { name: "G" })));
   assert.match(grown, /👑/);
   assert.doesNotMatch(grown, /role="progressbar"/);
@@ -201,6 +208,21 @@ test("pet: every animation moves an HTML layer, never an SVG group, which froze 
   assert.doesNotMatch(styles, /svg[^{]*\{[^}]*(animation|filter)/);
 });
 
+test("pet: the scene is drawn as images, never inline SVG the kiosk lays out every second (#1126)", () => {
+  const pet = { adopted: true, name: "Sparky", species: "dragon", stage: "teen", chores: 80, xp: 900, legendary: true, home: 10, egg_ready: true,
+    mood: "sleepy", accessories: ["bow", "crown"] };
+  const { markup } = render(petCard(pet).card.render());
+  const stage = markup.slice(markup.indexOf('class="pt-stage'), markup.indexOf("</button>"));
+  assert.doesNotMatch(stage, /<svg/, "no inline SVG in the pet's scene");
+  assert.equal((stage.match(/<img class="pt-art/g) || []).length, 4, "back, pet, front and the egg");
+  assert.match(withArt(markup), /👑/, "the accessories are still drawn, inside the pet's image");
+});
+
+test("kiosk: the countdown ring that changes every second is contained (#1126)", () => {
+  const styles = render(KioskCard.styles).markup;
+  assert.match(styles, /\.km-ring \{[^}]*contain: strict/);
+});
+
 test("pet: each stage looks different, and legendary turns it gold", () => {
   const art = petMod.window ? petMod.window.__taskmate_pet_art : sandbox.window?.__taskmate_pet_art;
   const { petArt } = art || {};
@@ -214,7 +236,7 @@ test("pet: each stage looks different, and legendary turns it gold", () => {
 test("pet: after fully grown — home items, legendary, level and the goal", () => {
   const pet = { adopted: true, name: "Rex", species: "dino", stage: "grown", chores: 150, xp: 2200, legendary: true, home: 3, pet_level: 4,
     goal: { kind: "home", from: 2100, at: 2400 }, mood: "happy", accessories: [] };
-  const { markup } = render(petCard(pet).card.render());
+  const markup = withArt(render(petCard(pet).card.render()).markup);
   assert.ok(markup.includes(localize("pet.stage_legendary", { species: localize("pet.species_dino") })));
   assert.ok(markup.includes(localize("pet.level", { level: 4 })));
   assert.ok(markup.includes(localize("pet.goal_home", { percent: 33, name: "Rex" })));
