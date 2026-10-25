@@ -33,6 +33,9 @@ dev/config/.cloud/
 docs/
 .DS_Store
 
+# The Manual bundle: built from wiki/ by scripts/build_manual.py at release
+custom_components/taskmate/www/manual/
+
 # Node / JS tooling (CI-3)
 node_modules/
 

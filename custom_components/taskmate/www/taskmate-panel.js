@@ -39,6 +39,35 @@ const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
 const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
 // Dialogs that edit one thing open as a side panel, not a centred dialog.
 const EDITOR_KINDS = new Set(["child", "chore", "reward", "penalty", "bonus", "raffle", "group", "quest", "challenge", "bounty", "auction", "badge"]);
+
+// The Manual: wiki/ bundled into the integration by scripts/build_manual.py.
+const MANUAL_URL = "/taskmate/manual/manual.json";
+const MANUAL_SITE = "https://tempus2016.github.io/taskmate/";
+// The manual page each admin page's "?" opens: [wiki page, heading id].
+const MANUAL_HELP = {
+  today:         ["Admin-Panel", "today-v600"],
+  children:      ["Children"],
+  groups:        ["Task-Groups"],
+  chores:        ["Chores"],
+  bounties:      ["Bounty-Board"],
+  auctions:      ["Chore-Auctions"],
+  quests:        ["Quests"],
+  challenges:    ["Challenges"],
+  templates:     ["Template-Packs"],
+  rewards:       ["Managing-Rewards"],
+  wishlists:     ["Wishlist"],
+  raffles:       ["Raffles"],
+  bonuses:       ["Bonuses"],
+  penalties:     ["Penalties"],
+  badges:        ["Achievement-Badges"],
+  activity:      ["Admin-Panel", "approval-workflows"],
+  insights:      ["Insights"],
+  audit:         ["Admin-Audit-Log"],
+  settings:      ["Settings"],
+  notifications: ["Notifications"],
+  help:          ["Help-and-Feedback"],
+  setup:         ["Setup-Wizard"],
+};
 const BADGE_TIERS = [
   { v: "bronze",   lk: "badge.tier_bronze" },
   { v: "silver",   lk: "badge.tier_silver" },
@@ -415,7 +444,14 @@ class TaskMatePanel extends HTMLElement {
     this._newMenuOpen = false;
     this._palette = null;            // { q, hi } while the command search is open
     this._boardView = "today";       // Today page chore board: "today" | "week"
+    // The Manual page: the open doc, the search box, opened sections. The
+    // bundle itself loads the first time the Manual or a "?" is opened.
+    this._man = { doc: "index", anchor: "", q: "", open: new Set(), contents: false };
+    this._manual = null;
+    this._manualState = "";          // "" | "loading" | "missing" | "failed"
+    this._manualText = null;         // page -> lower-cased text, built on the first search
     this._onDocKeyDown = this._onDocKeyDown.bind(this);
+    this._onManualImgError = this._onManualImgError.bind(this);
     this._ensureHaComponents();
   }
 
@@ -482,6 +518,9 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragend", this._onDragEnd);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
     document.addEventListener("keydown", this._onDocKeyDown);
+    // A screenshot in the manual that cannot load (no internet) says so.
+    // Image errors do not bubble, so listen in the capture phase.
+    this.addEventListener("error", this._onManualImgError, true);
     if (!this.classList.contains("dark") && !this.classList.contains("light")) {
       const isDark = this._isHaDark();
       this.classList.toggle("dark", isDark);
@@ -506,6 +545,7 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("dragend", this._onDragEnd);
     document.removeEventListener("visibilitychange", this._onVisibilityChange);
     document.removeEventListener("keydown", this._onDocKeyDown);
+    this.removeEventListener("error", this._onManualImgError, true);
     this._closeRowMenu();
   }
 
@@ -780,6 +820,7 @@ class TaskMatePanel extends HTMLElement {
     if (!t) { if (closedNewMenu) this._render(); return; }
     const act = t.dataset.act;
     if (act.startsWith("fb-")) { this._fbClick(t, e); return; }
+    if (act.startsWith("man-")) { this._manualClick(t, e); return; }
     // Setup wizard (#980) actions all start "wz-".
     if (act.startsWith("wz-")) { this._wizardAct(t, e); return; }
     // 📚 Library actions all start "lib-".
@@ -1344,6 +1385,7 @@ class TaskMatePanel extends HTMLElement {
     if (!t.dataset) return;
     if (this._activeTab === "settings") setTimeout(() => this._paintUnsavedBar(), 0);
     if (t.dataset.fbField) { this._fbInput(t); return; }
+    if (t.dataset.manQ != null) { this._manualSearchInput(t); return; }
     if (t.dataset.wzIn) { this._wizardInput(t); return; }
     if (t.dataset.libIn) { this._libInput(t, false); return; }
     if (t.dataset.palette === "q" && this._palette) {
@@ -1637,6 +1679,7 @@ class TaskMatePanel extends HTMLElement {
       e.target.click();
       return;
     }
+    if (e.target && e.target.dataset && e.target.dataset.manQ != null && this._manualSearchKey(e)) return;
     if (e.key === "Escape") {
       if (this._rowMenuEl) { this._closeRowMenu(); return; }
       if (this._inlineRename) { this._inlineRename = null; this._render(); return; }
@@ -4293,6 +4336,9 @@ class TaskMatePanel extends HTMLElement {
         { id: "notifications", label: this._t("panel.tab_notifications"), icon: "mdi:bell-outline" },
         { id: "help", label: this._t("panel.tab_help"), icon: "mdi:lifebuoy" },
       ]},
+      { key: "manual", head: this._t("panel.manual"), icon: "mdi:book-open-variant", items: [
+        { id: "manual", label: this._t("panel.manual"), icon: "mdi:book-open-variant" },
+      ]},
     ].map(g => ({
       ...g,
       items: g.items.map(it => ({ ...it, count: counts[it.id] }))
@@ -4324,9 +4370,9 @@ class TaskMatePanel extends HTMLElement {
 
   _sidebar() {
     const groups = this._sidebarGroups();
-    const main = groups.filter(g => g.key !== "settings");
+    const main = groups.filter(g => g.key !== "settings" && g.key !== "manual");
     const settings = groups.find(g => g.key === "settings");
-    const wiki = this._esc(this._t("panel.wiki_tooltip"));
+    const manual = groups.find(g => g.key === "manual");
     return `
       <aside class="tm-sidebar">
         <div class="tm-brand-mark" title="TaskMate v${PANEL_VERSION}"><ha-icon icon="mdi:checkbox-marked-circle-plus-outline"></ha-icon></div>
@@ -4334,9 +4380,7 @@ class TaskMatePanel extends HTMLElement {
           ${main.map(g => this._hubBtn(g, "tm-hub")).join("")}
         </nav>
         <div class="tm-rail-foot">
-          <a class="tm-brand-wiki" href="https://tempus2016.github.io/taskmate/" target="_blank" rel="noopener noreferrer" title="${wiki}" aria-label="${wiki}">
-            <ha-icon icon="mdi:book-open-variant"></ha-icon>
-          </a>
+          ${manual ? this._hubBtn(manual, "tm-hub") : ""}
           ${settings ? this._hubBtn(settings, "tm-hub") : ""}
         </div>
       </aside>
@@ -4402,9 +4446,29 @@ class TaskMatePanel extends HTMLElement {
             ${this._t("panel.topbar_pending", {count: pendingCount})}
           </button>
         ` : ""}
+        ${this._manualTopbarBtn()}
         ${this._state ? this._newMenu() : ""}
       </div>
     `;
+  }
+
+  // The Manual page links out to the same page on the website; every other
+  // page gets a "?" that opens its own manual page beside it.
+  _manualTopbarBtn() {
+    if (this._activeTab === "manual") {
+      const label = this._esc(this._t("panel.manual_open_web"));
+      return `
+        <a class="tm-btn tm-man-web" href="${this._esc(this._manualWebUrl(this._man.doc))}" target="_blank" rel="noopener noreferrer" title="${label}">
+          <ha-icon icon="mdi:open-in-new"></ha-icon><span class="tm-man-web-text">${label}</span>
+        </a>`;
+    }
+    if (!MANUAL_HELP[this._activeTab]) return "";
+    const label = this._esc(this._t("panel.manual_help"));
+    const on = this._dialog && this._dialog.kind === "manual-help";
+    return `
+      <button type="button" class="tm-icon-btn tm-man-help ${on ? "tm-man-help-on" : ""}" data-act="man-help" title="${label}" aria-label="${label}">
+        <ha-icon icon="mdi:help-circle-outline"></ha-icon>
+      </button>`;
   }
 
   // ---- Child filter (#966) --------------------------------------------
@@ -4577,6 +4641,9 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _renderBody() {
+    // The manual needs nothing from TaskMate's state, so it still opens when
+    // the state cannot load: that is when someone most wants it.
+    if (this._activeTab === "manual") return this._renderManualTab();
     if (this._loading && !this._state) return `<div class="tm-card tm-loading">${this._t("panel.loading")}</div>`;
     if (this._error) return `
       <div class="tm-card tm-card-error">
@@ -11997,6 +12064,352 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  // ---- Manual ------------------------------------------------------------
+  // wiki/ ships inside the integration (scripts/build_manual.py, run at
+  // release), so the manual matches the installed version and its text
+  // reads offline. Screenshots load from the website. The page HTML is
+  // sanitised by the build, so it goes in as it is.
+
+  _manualWebUrl(doc, anchor = "") {
+    const url = !doc || doc === "index" ? MANUAL_SITE : `${MANUAL_SITE}${encodeURIComponent(doc)}/`;
+    return anchor ? `${url}#${encodeURIComponent(anchor)}` : url;
+  }
+
+  _loadManual() {
+    if (this._manual || this._manualState === "loading") return;
+    this._manualState = "loading";
+    fetch(`${MANUAL_URL}?v=${encodeURIComponent(PANEL_VERSION)}`, { credentials: "same-origin" })
+      .then(r => {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        if (data === null) { this._manualState = "missing"; }
+        else if (!data || typeof data.pages !== "object" || !Array.isArray(data.nav)) throw new Error("bad bundle");
+        else { this._manual = data; this._manualState = ""; this._manualText = null; this._manualOpenSection(this._man.doc); }
+        this._render();
+        if (this._manual) this._manualScroll(!!(this._dialog && this._dialog.kind === "manual-help"));
+      })
+      .catch(() => { this._manualState = "failed"; this._render(); });
+  }
+
+  _manualPage(doc) {
+    const pages = this._manual && this._manual.pages;
+    return pages && Object.prototype.hasOwnProperty.call(pages, doc) ? pages[doc] : null;
+  }
+
+  // Reading order, nav titles and the section each page sits in.
+  _manualIndex() {
+    if (!this._manualIx || this._manualIx.src !== this._manual) {
+      const order = [], titles = {}, section = {};
+      const walk = (nodes, sec) => nodes.forEach(n => {
+        if (n && n.page) { order.push(n.page); titles[n.page] = n.title; section[n.page] = sec; }
+        else if (n && Array.isArray(n.children)) walk(n.children, n.title);
+      });
+      walk((this._manual && this._manual.nav) || [], "");
+      this._manualIx = { src: this._manual, order, titles, section };
+    }
+    return this._manualIx;
+  }
+
+  _manualTitle(doc) {
+    const page = this._manualPage(doc);
+    return this._manualIndex().titles[doc] || (page && page.title) || doc;
+  }
+
+  _manualOpenSection(doc) {
+    if (!this._manual) return;
+    const sec = this._manualIndex().section[doc];
+    if (sec) this._man.open.add(sec);
+  }
+
+  _manualStatusCard(doc = "index") {
+    const st = this._manualState;
+    if (st !== "missing" && st !== "failed") return `<div class="tm-card tm-loading">${this._t("panel.manual_loading")}</div>`;
+    return `
+      <div class="tm-card tm-man-status">
+        <ha-icon icon="mdi:book-off-outline"></ha-icon>
+        <p>${this._t(st === "missing" ? "panel.manual_missing" : "panel.manual_failed")}</p>
+        <div class="tm-man-status-acts">
+          ${st === "failed" ? `<button type="button" class="tm-btn" data-act="man-retry">${this._t("panel.btn_retry")}</button>` : ""}
+          <a class="tm-btn tm-btn-raised" href="${this._esc(this._manualWebUrl(doc))}" target="_blank" rel="noopener noreferrer">
+            <ha-icon icon="mdi:open-in-new"></ha-icon>${this._t("panel.manual_open_web")}
+          </a>
+        </div>
+      </div>`;
+  }
+
+  _manualLink(doc, title, cur, cls = "") {
+    const on = doc === cur;
+    return `<a class="tm-man-item ${cls} ${on ? "tm-man-item-on" : ""}" href="${this._esc(this._manualWebUrl(doc))}" data-act="man-go" data-doc="${this._esc(doc)}"${on ? ' aria-current="page"' : ""}>${this._esc(title)}</a>`;
+  }
+
+  _manualTree(cur) {
+    return (this._manual.nav || []).map(n => {
+      if (n.page) return this._manualLink(n.page, n.title, cur, "tm-man-item-top");
+      if (!Array.isArray(n.children)) return "";
+      const open = this._man.open.has(n.title);
+      return `
+        <div class="tm-man-sec ${open ? "tm-man-sec-open" : ""}">
+          <button type="button" class="tm-man-sec-btn" data-act="man-sec" data-sec="${this._esc(n.title)}" aria-expanded="${open}">
+            <ha-icon icon="mdi:chevron-down"></ha-icon><span>${this._esc(n.title)}</span><span class="tm-man-sec-n">${n.children.length}</span>
+          </button>
+          ${open ? `<div class="tm-man-items">${n.children.map(c => this._manualLink(c.page, c.title, cur)).join("")}</div>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  // Every word must appear somewhere on the page; titles count most, then
+  // headings, then how often the words come up in the text.
+  _manualSearch(q) {
+    const words = String(q || "").toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length || !this._manual) return [];
+    const ix = this._manualIndex();
+    if (!this._manualText) {
+      const decode = s => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, "&");
+      this._manualText = {};
+      for (const [doc, p] of Object.entries(this._manual.pages)) {
+        const text = decode(String(p.html || "").replace(/<h1[^>]*>[\s\S]*?<\/h1>/, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+        this._manualText[doc] = { text, lower: text.toLowerCase(), title: this._manualTitle(doc).toLowerCase(), toc: p.toc || [] };
+      }
+    }
+    const rank = doc => { const i = ix.order.indexOf(doc); return i < 0 ? ix.order.length : i; };
+    const hits = [];
+    for (const [doc, s] of Object.entries(this._manualText)) {
+      const heads = s.toc.map(h => h.text.toLowerCase());
+      if (!words.every(w => s.title.includes(w) || heads.some(h => h.includes(w)) || s.lower.includes(w))) continue;
+      let score = 0;
+      for (const w of words) {
+        if (s.title.includes(w)) score += 10;
+        if (heads.some(h => h.includes(w))) score += 4;
+        score += Math.min(3, s.lower.split(w).length - 1) * 0.3;
+      }
+      const head = s.toc.find(h => words.some(w => h.text.toLowerCase().includes(w)));
+      const pos = s.lower.indexOf(words[0]);
+      const snip = pos < 0 ? s.text.slice(0, 120)
+        : `${pos > 40 ? "…" : ""}${s.text.slice(Math.max(0, pos - 40), pos + 90)}…`;
+      hits.push({ doc, score, snip, head: head ? head.text : "", anchor: head ? head.id.replace(/^tmdoc-/, "") : "" });
+    }
+    hits.sort((a, b) => b.score - a.score || rank(a.doc) - rank(b.doc));
+    return hits;
+  }
+
+  _manualResults(q) {
+    const hits = this._manualSearch(q);
+    if (!hits.length) return `<div class="tm-man-empty">${this._t("panel.manual_no_results")}</div>`;
+    const words = String(q).toLowerCase().split(/\s+/).filter(Boolean).map(w => this._esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const re = new RegExp(`(${words.join("|")})`, "gi");
+    const mark = s => this._esc(s).replace(re, "<mark>$1</mark>");
+    return `
+      <div class="tm-man-count">${this._t("panel.manual_results", { count: hits.length })}</div>
+      ${hits.slice(0, 30).map(h => `
+        <a class="tm-man-hit" href="${this._esc(this._manualWebUrl(h.doc, h.anchor))}" data-act="man-go" data-doc="${this._esc(h.doc)}" data-anchor="${this._esc(h.anchor)}">
+          <strong>${mark(this._manualTitle(h.doc))}${h.head ? `<span> › ${mark(h.head)}</span>` : ""}</strong>
+          <small>${mark(h.snip)}</small>
+        </a>`).join("")}`;
+  }
+
+  _renderManualTab() {
+    if (!this._manual) {
+      if (!this._manualState) this._loadManual();
+      return this._manualStatusCard(this._man.doc);
+    }
+    const ix = this._manualIndex();
+    const doc = this._manualPage(this._man.doc) ? this._man.doc : "index";
+    const page = this._manualPage(doc);
+    if (!page) return this._manualStatusCard();
+    const sec = ix.section[doc];
+    const i = ix.order.indexOf(doc);
+    const prev = i > 0 ? ix.order[i - 1] : "";
+    const next = i >= 0 && i < ix.order.length - 1 ? ix.order[i + 1] : "";
+    const q = this._man.q;
+    const toc = (page.toc || []);
+    const go = (d, cls, label) => `
+      <a class="tm-man-pn-link ${cls}" href="${this._esc(this._manualWebUrl(d))}" data-act="man-go" data-doc="${this._esc(d)}">
+        <small>${this._t(label)}</small><span>${this._esc(this._manualTitle(d))}</span>
+      </a>`;
+    const searchLabel = this._esc(this._t("panel.manual_search"));
+    return `
+      <div class="tm-man ${this._man.contents ? "tm-man-contents-open" : ""}">
+        <button type="button" class="tm-btn tm-man-contents-btn" data-act="man-contents" aria-expanded="${this._man.contents}">
+          <ha-icon icon="mdi:format-list-bulleted"></ha-icon>${this._t("panel.manual_contents")}
+        </button>
+        <nav class="tm-man-nav" aria-label="${this._esc(this._t("panel.manual"))}">
+          <label class="tm-man-search">
+            <ha-icon icon="mdi:magnify"></ha-icon>
+            <input type="search" class="tm-man-q" data-man-q="" value="${this._esc(q)}" placeholder="${searchLabel}" aria-label="${searchLabel}" autocomplete="off" spellcheck="false">
+          </label>
+          <div class="tm-man-list">${q.trim() ? this._manualResults(q) : this._manualTree(doc)}</div>
+          <div class="tm-man-foot">${this._t("panel.manual_version", { version: this._esc(this._manual.version || PANEL_VERSION) })}</div>
+        </nav>
+        <article class="tm-man-doc tm-doc">
+          <div class="tm-man-crumbs">
+            <a href="${this._esc(this._manualWebUrl("index"))}" data-act="man-go" data-doc="index">${this._t("panel.manual")}</a>${sec ? `<span>›</span><span>${this._esc(sec)}</span>` : ""}
+          </div>
+          ${page.html}
+          ${prev || next ? `
+            <nav class="tm-man-pn">
+              ${prev ? go(prev, "tm-man-pn-prev", "panel.manual_prev") : "<span></span>"}
+              ${next ? go(next, "tm-man-pn-next", "panel.manual_next") : ""}
+            </nav>` : ""}
+        </article>
+        ${toc.length > 1 ? `
+          <aside class="tm-man-otp">
+            <h4>${this._t("panel.manual_on_this_page")}</h4>
+            ${toc.map(h => {
+              const a = String(h.id || "").replace(/^tmdoc-/, "");
+              return `<a href="${this._esc(this._manualWebUrl(doc, a))}" data-act="man-go" data-doc="${this._esc(doc)}" data-anchor="${this._esc(a)}">${this._esc(h.text)}</a>`;
+            }).join("")}
+          </aside>` : ""}
+      </div>`;
+  }
+
+  // "?" on a page: its manual page in the side panel, beside the page.
+  _renderManualHelpDialog() {
+    const d = this._dialog.data || {};
+    const page = this._manual ? this._manualPage(d.doc) : null;
+    const title = page ? this._manualTitle(d.doc) : this._t("panel.manual");
+    const body = page
+      ? `<article class="tm-doc tm-man-drawer-doc">${page.html}</article>`
+      : this._manualStatusCard(d.doc);
+    const footer = `
+      <a class="tm-btn" href="${this._esc(this._manualWebUrl(d.doc, d.anchor))}" target="_blank" rel="noopener noreferrer">
+        <ha-icon icon="mdi:open-in-new"></ha-icon>${this._t("panel.manual_open_web")}
+      </a>
+      <button type="button" class="tm-btn tm-btn-raised" data-act="man-full">${this._t("panel.manual_open_full")}</button>`;
+    return this._dialogShell(title, body, footer, { drawer: true });
+  }
+
+  _manualClick(t, e) {
+    const act = t.dataset.act;
+    if (act === "man-go") {
+      // Ctrl/Cmd/Shift-click opens the website copy, as any link would.
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+      e.preventDefault();
+      const doc = t.dataset.doc || "index";
+      const anchor = t.dataset.anchor || "";
+      if (t.closest(".tm-man-drawer-doc")) this._manualHelpGo(doc, anchor);
+      else this._manualGo(doc, anchor);
+      return;
+    }
+    if (act === "man-sec") {
+      const sec = t.dataset.sec || "";
+      if (this._man.open.has(sec)) this._man.open.delete(sec); else this._man.open.add(sec);
+      this._render();
+      return;
+    }
+    if (act === "man-contents") { this._man.contents = !this._man.contents; this._render(); return; }
+    if (act === "man-help") {
+      if (this._dialog && this._dialog.kind === "manual-help") { this._closeDialog(true); return; }
+      const [doc, anchor = ""] = MANUAL_HELP[this._activeTab] || ["index"];
+      this._openDialog({ kind: "manual-help", data: { doc, anchor } });
+      if (this._dialog && this._dialog.kind === "manual-help") {
+        if (this._manual) this._manualScroll(true); else this._loadManual();
+      }
+      return;
+    }
+    if (act === "man-full") {
+      const d = (this._dialog && this._dialog.data) || {};
+      this._dialog = null;
+      this._dialogInitialHash = null;
+      this._manualGo(d.doc || "index", d.anchor || "");
+      return;
+    }
+    if (act === "man-retry") { this._manualState = ""; this._loadManual(); this._render(); }
+  }
+
+  _manualGo(doc, anchor = "") {
+    if (this._activeTab !== "manual") {
+      if (!this._leaveDialogForNav()) return;
+      this._activeTab = "manual";
+    }
+    this._man.doc = doc;
+    this._man.anchor = anchor;
+    this._man.contents = false;
+    this._mobileNavOpen = false;
+    this._manualOpenSection(doc);
+    this._render();
+    this._manualScroll(false);
+  }
+
+  // A link inside the side panel stays in the side panel.
+  _manualHelpGo(doc, anchor = "") {
+    if (!this._dialog || this._dialog.kind !== "manual-help") return;
+    this._dialog.data = { doc, anchor };
+    this._dialogInitialHash = this._hashDialog();
+    this._render();
+    this._manualScroll(true);
+  }
+
+  // After a page change: the heading asked for, else the top of the page;
+  // and the open page kept in view in the contents list.
+  _manualScroll(drawer) {
+    const run = () => {
+      const docEl = this.querySelector(drawer ? ".tm-man-drawer-doc" : ".tm-man-doc");
+      if (!docEl) return;
+      const scroller = drawer ? docEl.closest(".tm-dialog-body") : this.querySelector(".tm-body");
+      const anchor = drawer ? ((this._dialog && this._dialog.data && this._dialog.data.anchor) || "") : this._man.anchor;
+      const target = anchor ? docEl.querySelector(`[id="tmdoc-${String(anchor).replace(/["\\]/g, "")}"]`) : null;
+      if (target && target.scrollIntoView) target.scrollIntoView({ block: "start" });
+      else if (scroller) scroller.scrollTop = 0;
+      if (drawer) return;
+      const list = this.querySelector(".tm-man-list");
+      const on = list && list.querySelector(".tm-man-item-on");
+      if (on && (on.offsetTop < list.scrollTop || on.offsetTop > list.scrollTop + list.clientHeight - 40)) {
+        list.scrollTop = Math.max(0, on.offsetTop - list.clientHeight / 3);
+      }
+    };
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(run); else run();
+  }
+
+  _manualSearchInput(t) {
+    this._man.q = t.value || "";
+    const list = this.querySelector(".tm-man .tm-man-list");
+    if (list && this._manual) {
+      list.innerHTML = this._man.q.trim() ? this._manualResults(this._man.q) : this._manualTree(this._man.doc);
+      list.scrollTop = 0;
+    }
+    // The page already shows what a redraw would. Record that, so the next
+    // state push does not rebuild it and take the caret out of the box.
+    if (this._zoneCache) this._zoneCache.body = this._renderBody();
+  }
+
+  _manualSearchKey(e) {
+    if (e.key === "Enter") {
+      const first = this.querySelector(".tm-man .tm-man-hit");
+      if (first) { e.preventDefault(); this._manualGo(first.dataset.doc || "index", first.dataset.anchor || ""); }
+      return true;
+    }
+    if (e.key === "Escape" && this._man.q) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.target.value = "";
+      this._manualSearchInput(e.target);
+      return true;
+    }
+    return false;
+  }
+
+  // A screenshot that cannot load (no internet) becomes a short note.
+  _onManualImgError(e) {
+    const img = e.target;
+    if (!img || img.tagName !== "IMG" || !img.closest || !img.closest(".tm-doc")) return;
+    const box = document.createElement("span");
+    box.className = "tm-man-imgoff";
+    const icon = document.createElement("ha-icon");
+    icon.setAttribute("icon", "mdi:image-off-outline");
+    const text = document.createElement("span");
+    if (img.alt) {
+      const name = document.createElement("strong");
+      name.textContent = img.alt;
+      text.append(name, document.createElement("br"));
+    }
+    text.append(this._t("panel.manual_img_offline"));
+    box.append(icon, text);
+    img.replaceWith(box);
+  }
+
   _renderHelpTab() {
     const d = this._fbDraft();
     if (!this._fbInfo && !this._fbLoading) this._fbLoad();
@@ -13667,6 +14080,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "insp-start")   return this._renderInspectionStartDialog();
     if (this._dialog.kind === "insp-pass")    return this._renderInspectionPassDialog();
     if (this._dialog.kind === "insp-fail")    return this._renderInspectionFailDialog();
+    if (this._dialog.kind === "manual-help")  return this._renderManualHelpDialog();
     return "";
   }
 
@@ -15508,20 +15922,6 @@ class TaskMatePanel extends HTMLElement {
       .tm-brand-mark ha-icon { --mdc-icon-size: 20px; }
       .tm-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
       .tm-rail-foot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 12px; }
-      .tm-brand-wiki {
-        width: 36px; height: 36px;
-        border-radius: 10px;
-        display: grid; place-items: center;
-        color: var(--tm-text-faint);
-        text-decoration: none;
-        transition: color 0.15s ease, background 0.15s ease;
-      }
-      .tm-brand-wiki ha-icon { --mdc-icon-size: 20px; }
-      .tm-brand-wiki:hover, .tm-brand-wiki:focus-visible {
-        color: var(--tm-accent);
-        background: var(--tm-surface-2);
-        outline: none;
-      }
       .tm-hub {
         position: relative;
         width: 86px;
@@ -17429,6 +17829,126 @@ class TaskMatePanel extends HTMLElement {
         margin-bottom: 4px; font-size: 13px;
       }
 
+      /* ===== Manual ===== */
+      .tm-man-web { text-decoration: none; flex: none; }
+      .tm-man-web ha-icon { --mdc-icon-size: 18px; }
+      .tm-man-help { width: 38px; height: 38px; flex: none; border-radius: 50%; color: var(--tm-text-muted); }
+      .tm-man-help ha-icon { --mdc-icon-size: 22px; }
+      .tm-man-help-on { background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+      .tm-man { display: flex; align-items: flex-start; gap: 32px; }
+      .tm-man-contents-btn { display: none; }
+      .tm-man-nav {
+        width: 264px; flex: none; position: sticky; top: 0;
+        max-height: calc(100vh - 120px); display: flex; flex-direction: column;
+        background: var(--tm-surface-0); border: 1px solid var(--tm-border); border-radius: var(--tm-radius-lg);
+        overflow: hidden;
+      }
+      .tm-man-search {
+        display: flex; align-items: center; gap: 8px; margin: 12px; padding: 0 12px;
+        border: 1px solid var(--tm-border); border-radius: 10px; background: var(--tm-bg);
+        color: var(--tm-text-muted);
+      }
+      .tm-man-search:focus-within { border-color: var(--tm-accent); }
+      .tm-man-search ha-icon { --mdc-icon-size: 18px; flex: none; }
+      .tm-man-q {
+        flex: 1; min-width: 0; border: 0; outline: none; background: none; padding: 10px 0;
+        font: inherit; font-size: 14px; color: var(--tm-text);
+      }
+      .tm-man-list { flex: 1; overflow-y: auto; padding: 0 8px 10px; border-top: 1px solid var(--tm-border-soft); }
+      .tm-man-sec-btn {
+        display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; cursor: pointer;
+        padding: 10px 8px 8px; font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+        text-transform: uppercase; color: var(--tm-text-muted); text-align: start;
+      }
+      .tm-man-sec-btn ha-icon { --mdc-icon-size: 18px; transition: transform 0.15s var(--tm-easing); transform: rotate(-90deg); }
+      [dir="rtl"] .tm-man-sec-btn ha-icon { transform: rotate(90deg); }
+      .tm-man-sec-open .tm-man-sec-btn ha-icon { transform: none; }
+      .tm-man-sec-n { margin-inline-start: auto; font-weight: 400; letter-spacing: 0; background: var(--tm-surface-2); border-radius: 999px; padding: 1px 8px; font-size: 11.5px; }
+      .tm-man-item {
+        display: block; padding-block: 6px; padding-inline: 32px 10px; border-radius: 8px;
+        color: var(--tm-text); text-decoration: none; font-size: 13.5px; line-height: 1.35;
+      }
+      .tm-man-item-top { padding-inline-start: 10px; margin-top: 8px; font-weight: 500; }
+      .tm-man-item:hover { background: var(--tm-surface-2); }
+      .tm-man-item-on, .tm-man-item-on:hover { background: var(--tm-accent-soft); color: var(--tm-accent-text); font-weight: 600; }
+      .tm-man-count, .tm-man-empty { padding: 10px 10px 6px; font-size: 12.5px; color: var(--tm-text-muted); }
+      .tm-man-hit { display: block; padding: 9px 10px; border-radius: 8px; color: var(--tm-text); text-decoration: none; }
+      .tm-man-hit:hover { background: var(--tm-surface-2); }
+      .tm-man-hit strong { display: block; font-size: 13.5px; font-weight: 600; }
+      .tm-man-hit strong span { color: var(--tm-text-muted); font-weight: 400; }
+      .tm-man-hit small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--tm-text-muted); }
+      .tm-man-hit mark { background: color-mix(in srgb, var(--warning-color, #ffa600), transparent 65%); color: inherit; border-radius: 2px; }
+      .tm-man-foot { padding: 10px 14px; border-top: 1px solid var(--tm-border-soft); font-size: 12px; color: var(--tm-text-muted); }
+      .tm-man-doc { flex: 1; min-width: 0; max-width: 820px; }
+      .tm-man-crumbs { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12.5px; color: var(--tm-text-muted); margin-bottom: 4px; }
+      .tm-man-crumbs a { color: inherit; }
+      .tm-man-otp { width: 210px; flex: none; position: sticky; top: 0; max-height: calc(100vh - 120px); overflow-y: auto; font-size: 13px; }
+      .tm-man-otp h4 { margin: 4px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tm-text-muted); }
+      .tm-man-otp a {
+        display: block; padding-block: 4px; padding-inline: 10px 0; border-inline-start: 2px solid var(--tm-border);
+        color: var(--tm-text-muted); text-decoration: none; line-height: 1.35;
+      }
+      .tm-man-otp a:hover { color: var(--tm-accent-text); border-inline-start-color: var(--tm-accent); }
+      .tm-man-pn { display: flex; gap: 12px; margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--tm-border); }
+      .tm-man-pn > * { flex: 1; }
+      .tm-man-pn-link {
+        border: 1px solid var(--tm-border); border-radius: 10px; padding: 10px 14px;
+        color: var(--tm-text); text-decoration: none; background: var(--tm-surface-0);
+      }
+      .tm-man-pn-link:hover { border-color: var(--tm-accent); }
+      .tm-man-pn-link small { display: block; font-size: 12px; color: var(--tm-text-muted); }
+      .tm-man-pn-next { text-align: end; }
+      .tm-man-status { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 32px 20px; }
+      .tm-man-status ha-icon { --mdc-icon-size: 40px; color: var(--tm-text-muted); }
+      .tm-man-status p { margin: 0; max-width: 460px; color: var(--tm-text-muted); line-height: 1.5; }
+      .tm-man-status-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+      .tm-man-status-acts a { text-decoration: none; }
+      .tm-man-drawer-doc > h1:first-child { display: none; }
+      .tm-man-drawer-doc > h2:first-of-type { margin-top: 8px; }
+      .tm-dialog-foot a.tm-btn { text-decoration: none; }
+      .tm-man-imgoff {
+        display: flex; align-items: center; gap: 10px; margin: 12px 0; padding: 14px 16px;
+        border: 1px dashed var(--tm-border); border-radius: 10px; color: var(--tm-text-muted); font-size: 13px; line-height: 1.4;
+      }
+      .tm-man-imgoff strong { color: var(--tm-text); font-weight: 500; }
+      .tm-man-imgoff ha-icon { --mdc-icon-size: 22px; flex: none; }
+      @media (max-width: 1300px) { .tm-man-otp { display: none; } }
+
+      /* The manual's page text: plain document styles, in the HA theme. */
+      .tm-doc { color: var(--tm-text); font-size: 15px; line-height: 1.65; overflow-wrap: break-word; }
+      .tm-doc h1 { font-size: 28px; line-height: 1.25; font-weight: 600; margin: 0 0 14px; }
+      .tm-doc h2 { font-size: 20px; line-height: 1.3; font-weight: 600; margin: 34px 0 10px; }
+      .tm-doc h3 { font-size: 16.5px; font-weight: 600; margin: 26px 0 8px; }
+      .tm-doc h4, .tm-doc h5, .tm-doc h6 { font-size: 15px; font-weight: 600; margin: 20px 0 6px; }
+      .tm-doc h1, .tm-doc h2, .tm-doc h3, .tm-doc h4 { scroll-margin-top: 12px; }
+      .tm-doc p, .tm-doc ul, .tm-doc ol, .tm-doc dl { margin: 10px 0; }
+      .tm-doc ul, .tm-doc ol { padding-inline-start: 24px; }
+      .tm-doc li { margin: 3px 0; }
+      .tm-doc a { color: var(--tm-accent-text); }
+      .tm-doc a[target="_blank"]::after { content: " ↗"; font-size: 0.85em; }
+      .tm-doc hr { border: 0; border-top: 1px solid var(--tm-border); margin: 26px 0; }
+      .tm-doc img { display: block; max-width: 100%; height: auto; margin: 12px 0; border: 1px solid var(--tm-border); border-radius: 10px; }
+      .tm-doc code {
+        font-family: var(--code-font-family, ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace); font-size: 0.86em;
+        background: var(--tm-surface-2); border-radius: 4px; padding: 1px 5px;
+      }
+      .tm-doc pre {
+        background: var(--tm-surface-2); border: 1px solid var(--tm-border-soft); border-radius: 10px;
+        padding: 12px 14px; overflow-x: auto; line-height: 1.5; direction: ltr; text-align: left; /* rtl-ok: code reads left to right */
+      }
+      .tm-doc pre code { background: none; padding: 0; font-size: 13px; }
+      .tm-doc blockquote { margin: 12px 0; padding: 6px 14px; border-inline-start: 3px solid var(--tm-accent); background: var(--tm-surface-2); border-radius: 8px; border-start-start-radius: 0; border-end-start-radius: 0; }
+      .tm-doc table { border-collapse: collapse; width: 100%; font-size: 13.5px; display: block; overflow-x: auto; margin: 12px 0; border: 1px solid var(--tm-border); border-radius: 10px; }
+      .tm-doc th, .tm-doc td { padding: 8px 12px; border-bottom: 1px solid var(--tm-border-soft); vertical-align: top; text-align: start; }
+      .tm-doc tr:last-child td { border-bottom: 0; }
+      .tm-doc th { background: var(--tm-surface-2); font-weight: 600; white-space: nowrap; }
+      .tm-doc details { margin: 12px 0; padding: 8px 14px; border: 1px solid var(--tm-border); border-radius: 10px; }
+      .tm-doc summary { cursor: pointer; font-weight: 600; }
+      .tm-doc .admonition { margin: 14px 0; padding: 4px 14px; border-inline-start: 3px solid var(--tm-accent); background: var(--tm-surface-2); border-radius: 8px; border-start-start-radius: 0; border-end-start-radius: 0; }
+      .tm-doc .admonition.warning, .tm-doc .admonition.danger { border-inline-start-color: var(--warning-color, #ffa600); }
+      .tm-doc .admonition-title { font-weight: 600; margin: 8px 0 4px; }
+      .tm-doc kbd { font-family: inherit; font-size: 0.85em; border: 1px solid var(--tm-border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
+
       /* ===== Mobile / narrow ===== */
       @media (max-width: 900px) {
         .tm-shell { grid-template-columns: 1fr; }
@@ -17495,6 +18015,15 @@ class TaskMatePanel extends HTMLElement {
           to { opacity: 1; transform: none; }
         }
         .tm-body { padding: 16px; }
+        /* Manual: the contents list folds away behind a button above the page. */
+        .tm-man { flex-direction: column; align-items: stretch; gap: 14px; }
+        .tm-man-contents-btn { display: inline-flex; align-self: flex-start; }
+        .tm-man-nav { display: none; position: static; width: auto; max-height: 70vh; }
+        .tm-man-contents-open .tm-man-nav { display: flex; }
+        .tm-man-web-text { display: none; }
+        .tm-man-web { width: 38px; height: 38px; padding: 0; justify-content: center; border: 0; background: none; }
+        .tm-doc { font-size: 15px; }
+        .tm-doc h1 { font-size: 23px; }
         .tm-toolbar { flex-direction: column; align-items: stretch; }
         .tm-search-wrap { max-width: none; }
         /* Full screen, sized by the overlay rather than 100vh: on an iPhone

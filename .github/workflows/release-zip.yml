@@ -7,6 +7,9 @@ name: Attach HACS zip to release
 #
 # The zip's root must contain manifest.json directly: HACS extracts the archive
 # straight into custom_components/taskmate/.
+#
+# The zip also carries the Manual (wiki/ bundled by scripts/build_manual.py),
+# which is not in git: a release without it shows "read it on the website".
 
 on:
   release:
@@ -31,6 +34,20 @@ jobs:
           ref: ${{ github.event.release.tag_name }}
           persist-credentials: false
 
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      # The admin panel's Manual page reads wiki/ from inside the integration.
+      # It is built here, not committed, so every release carries the docs as
+      # they stood at the tag. Same markdown setup as the website (docs.yml).
+      - name: Bundle the manual
+        run: |
+          python -m pip install -r requirements-docs.txt
+          python scripts/build_manual.py
+          test -s custom_components/taskmate/www/manual/manual.json || (echo "manual bundle missing" && exit 1)
+
       - name: Build taskmate.zip
         id: build
         run: |
@@ -40,6 +57,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           echo "--- zip contents (top level) ---"
           unzip -l taskmate.zip | grep -E 'manifest.json' || (echo "manifest.json missing from zip root" && exit 1)
+          unzip -l taskmate.zip | grep -E 'www/manual/manual.json$' || (echo "manual bundle missing from zip" && exit 1)
           echo "sha256=$(sha256sum taskmate.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Attest build provenance for taskmate.zip

@@ -3,6 +3,8 @@ name: Data checks
 # Guards the two classes of breakage the Python test suite can't see:
 #   1. a locale that drifted out of sync with en.json (renders raw keys in the UI)
 #   2. a shipped YAML/JSON file that doesn't parse (blows up at install time)
+#   3. a wiki/ change that breaks the admin panel's Manual: a page the bundle
+#      can't build, or a "?" button whose page or heading has gone
 
 on:
   push:
@@ -57,3 +59,9 @@ jobs:
 
       - name: Parse blueprints, sentences, locales and metadata
         run: python3 scripts/check_data_files.py
+
+      - name: Install the docs toolchain
+        run: python -m pip install -r requirements-docs.txt
+
+      - name: Bundle the manual and check the panel's help links
+        run: python3 scripts/build_manual.py --check
