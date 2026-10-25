@@ -734,10 +734,16 @@ class TaskMateGraphCard extends LitElement {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.font = '10px sans-serif';
+    // Always label the last day, but skip a regular label that would sit on
+    // top of it (14 days on a phone put "Oct 24" under "Oct 25").
+    const lastX = xPos(n - 1);
+    const lastW = ctx.measureText(this._shortDate(dateRange[n - 1])).width;
     dateRange.forEach((d, i) => {
-      if (i % labelEvery === 0 || i === n - 1) {
-        ctx.fillText(this._shortDate(d), xPos(i), H - 4);
-      }
+      const last = i === n - 1;
+      if (!last && i % labelEvery !== 0) return;
+      const label = this._shortDate(d);
+      if (!last && Math.abs(lastX - xPos(i)) < (lastW + ctx.measureText(label).width) / 2 + 4) return;
+      ctx.fillText(label, xPos(i), H - 4);
     });
   }
 

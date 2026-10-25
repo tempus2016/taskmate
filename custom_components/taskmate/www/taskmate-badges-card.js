@@ -295,6 +295,9 @@ class TaskMateBadgesCard extends LitElement {
       }
 
       .badge.locked .badge-name { color: var(--secondary-text-color); }
+      /* Earned tiles are always light, whatever the theme: keep the text dark
+         so a dark theme's white text doesn't vanish into them. */
+      .badge.earned .badge-name { color: #1f2328; }
 
       .badge-meta {
         font-size: 0.65rem;
@@ -304,7 +307,7 @@ class TaskMateBadgesCard extends LitElement {
       }
 
       .badge.earned .badge-meta {
-        color: var(--t);
+        color: color-mix(in srgb, var(--t) 55%, #000);
         font-weight: 600;
       }
 

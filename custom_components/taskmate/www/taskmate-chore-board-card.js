@@ -498,7 +498,18 @@ class TaskMateChoreBoardCard extends LitElement {
       .cb-body.cb-has-toast { padding-bottom: 66px; }
       .cb-empty { text-align: center; padding: 28px 12px; color: var(--tmd-dim, var(--secondary-text-color)); }
 
-      .cb-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
+      .cb-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; container-type: inline-size; }
+      /* A narrow card (a phone, or half a tablet): the time-slot names become
+         headings across the board, so each child's column gets the full width
+         instead of the board scrolling sideways and cutting the last child off.
+         Browsers without container queries keep the scrolling board. */
+      @container (max-width: 480px) {
+        /* .cb-wrap > … so these beat the base rules further down. */
+        .cb-wrap > .cb-board { grid-template-columns: repeat(var(--cb-cols), minmax(110px, 1fr)); }
+        .cb-wrap > .cb-board > .cb-sticky:first-child { display: none; }
+        .cb-wrap > .cb-board > .cb-slot { grid-column: 1 / -1; position: static; padding-bottom: 0; border-bottom: 0; font-weight: 600; }
+        .cb-wrap > .cb-week { grid-template-columns: 64px repeat(var(--cb-days), minmax(28px, 1fr)); gap: 4px; }
+      }
       .cb-board {
         display: grid; grid-template-columns: 110px repeat(var(--cb-cols), minmax(140px, 1fr));
         font-size: 13px;
