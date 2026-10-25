@@ -298,6 +298,12 @@ _AUDIT_EXCLUDE: Final = {
     # Panel tools: the read-only ones.
     "taskmate/recently_deleted/list",
     "taskmate/reports/economy",
+    # Lookups the panel makes just by opening a page or dialog.
+    WS_LIST_HA_USERS,
+    WS_DAY_COMPLETIONS,
+    "taskmate/raffles/list",
+    "taskmate/bin_days/preview",
+    "taskmate/recaps/preview",
 }
 
 
