@@ -39,12 +39,15 @@
   description: No recent activity — may be closed if it stays inactive
 
 # ── Conversation state (set automatically on comment) ────────────────────────
-- name: Author Reply
+- name: Developer Reply
   color: 5319e7
-  description: Maintainer has replied — awaiting the reporter
+  description: The developer replied last
+- name: Author Reply
+  color: 1d76db
+  description: Whoever opened the issue replied last
 - name: User Reply
   color: 0e8a16
-  description: Reporter has replied — awaiting the maintainer
+  description: Somebody else replied last
 
 # ── Resolution ───────────────────────────────────────────────────────────────
 - name: duplicate
