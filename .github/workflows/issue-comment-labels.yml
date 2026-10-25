@@ -1,5 +1,8 @@
 name: Label issues on comment
 
+# Marks who commented last: the developer, whoever opened the issue, or
+# somebody else. The developer opening an issue still counts as the developer.
+
 on:
   issue_comment:
     types: [created]
@@ -15,20 +18,24 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const isOwner = context.payload.comment.author_association === 'OWNER';
-            const addLabel = isOwner ? 'Author Reply' : 'User Reply';
-            const removeLabel = isOwner ? 'User Reply' : 'Author Reply';
+            const comment = context.payload.comment;
+            const issue = context.payload.issue;
+            const addLabel =
+              comment.author_association === 'OWNER' ? 'Developer Reply'
+              : comment.user.login === issue.user.login ? 'Author Reply'
+              : 'User Reply';
             const { owner, repo } = context.repo;
-            const issue_number = context.payload.issue.number;
+            const issue_number = issue.number;
 
             await github.rest.issues.addLabels({
               owner, repo, issue_number, labels: [addLabel],
             });
 
-            try {
-              await github.rest.issues.removeLabel({
-                owner, repo, issue_number, name: removeLabel,
-              });
-            } catch (err) {
-              if (err.status !== 404) throw err;
+            for (const name of ['Developer Reply', 'Author Reply', 'User Reply']) {
+              if (name === addLabel) continue;
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              } catch (err) {
+                if (err.status !== 404) throw err;
+              }
             }
