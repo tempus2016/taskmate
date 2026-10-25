@@ -88,13 +88,35 @@ jobs:
           mkdir -p from_asset
           unzip -q taskmate.zip -d from_asset
 
+          # www/manual/ is the Manual bundle: built from wiki/ at release time
+          # and gitignored, so it is never in the tag. Compare everything
+          # else against the tag, and check the bundle on its own below.
           digest() {
             ( cd "$1" && find . -type f \
                 ! -path '*/__pycache__/*' ! -name '*.pyc' \
+                ! -path './www/manual/*' \
                 -print0 | sort -z | xargs -0 sha256sum )
           }
           digest from_asset > asset.txt
           digest src/custom_components/taskmate > tag.txt
+
+          python3 - "$TAG" <<'PY'
+          import gzip, json, sys
+          def fail(msg):
+              print(f"::error::{msg}")
+              sys.exit(1)
+          tag = sys.argv[1].lstrip("v")
+          path = "from_asset/www/manual/manual.json"
+          try:
+              raw = open(path, "rb").read()
+          except FileNotFoundError:
+              fail("taskmate.zip has no www/manual/manual.json; the Manual will not load.")
+          if json.loads(raw).get("version") != tag:
+              fail(f"The bundled Manual is not for {tag}.")
+          if gzip.open(path + ".gz").read() != raw:
+              fail("www/manual/manual.json.gz does not match manual.json.")
+          print(f"Manual bundle present for {tag}.")
+          PY
 
           if diff -u tag.txt asset.txt; then
             echo "taskmate.zip matches the source at $TAG ($(wc -l < tag.txt) files)."
