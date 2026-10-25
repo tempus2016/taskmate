@@ -353,7 +353,27 @@
 
 /* Seasonal themes: the season's emoji pinned to the child's avatar. */
 .tm-season-badge{position:absolute;bottom:-4px;inset-inline-start:-4px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
-  font-size:13px;line-height:1;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none}`;
+  font-size:13px;line-height:1;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none}
+/* Graphite dark keeps --tmd-accent a dark grey so header bands stay legible
+   with white text; anything that uses the accent as a TEXT colour would then
+   vanish on the dark surface, so those take the text colour instead. */
+:host([data-tm-design="graphite"][data-tm-dark]) .pts,
+:host([data-tm-design="graphite"][data-tm-dark]) .pd-tab-cp.active,
+:host([data-tm-design="graphite"][data-tm-dark]) .rp-name,
+:host([data-tm-design="graphite"][data-tm-dark]) .rp-pct,
+:host([data-tm-design="graphite"][data-tm-dark]) .rp-kid-pts,
+:host([data-tm-design="graphite"][data-tm-dark]) .more,
+:host([data-tm-design="graphite"][data-tm-dark]) .st-dot{color:var(--tmd-text)!important}
+/* Touch screens: small buttons keep their look but get an invisible tap area
+   about 40px tall, so a child's finger lands on "Done", "I'm stuck" or a
+   filter chip instead of beside it. */
+@media (pointer:coarse){
+.btn,button.chip,button.tmd-tag,.filter-chip,.photo-badge.tm-help-btn,.cb-chip,.cb-seg button,.mode-btn,.pd-tab-cn,.pc-qchip,.quick-btn,.alloc-btn,.day-nav button,.undo-btn,.wl-hd-pill{position:relative}
+.btn::after,button.chip::after,button.tmd-tag::after,.filter-chip::after,.photo-badge.tm-help-btn::after,.cb-chip::after,.cb-seg button::after,.mode-btn::after,.pd-tab-cn::after,.pc-qchip::after,.quick-btn::after,.alloc-btn::after,.day-nav button::after,.undo-btn::after,.wl-hd-pill::after{content:"";position:absolute;inset:-8px 0}
+button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12px 0}
+.undo-btn::after,.pc-qchip::after,.quick-btn::after,.d-arrow::after{inset:-8px -4px}
+.rw-deposit-input,.badges-filter,.deposit-custom input{min-height:36px}
+}`;
 
   if (!document.getElementById("taskmate-design-fonts")) {
     const styleEl = document.createElement("style");

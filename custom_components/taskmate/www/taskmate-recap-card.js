@@ -315,7 +315,7 @@ class TaskMateRecapCard extends LitElement {
 
   _title() {
     const child = this._child();
-    return this.config.title || this._t("recap.default_title", { name: child?.name || "" });
+    return this.config.title || (child?.name ? this._t("recap.default_title", { name: child.name }) : this._t("recap.default_title_none"));
   }
 
   _subtitle() {

@@ -1055,8 +1055,10 @@ class TaskMateRewardsCard extends LitElement {
       .rw-pool-bar > i { border-radius: 0; }
       .rw-pool-foot { flex-wrap: wrap; gap: 6px; }
       .rw-contrib { gap: 5px; font-size: 11px; }
-      .rw-foot { gap: 8px; }
-      .rw-status { font-size: 12px; }
+      /* Wrap the deposit controls under the status on a narrow card rather
+         than squeezing "0 / 50" into a one-word column. */
+      .rw-foot { gap: 8px; flex-wrap: wrap; }
+      .rw-status { font-size: 12px; white-space: nowrap; }
       .rw-status-good { color: var(--tmd-good); font-weight: 800; }
       .rw-pool-btns { gap: 6px; flex-wrap: wrap; align-items: center; }
       .rw-pool-btns .deposit-custom { margin-inline-start: auto; gap: 6px; }

@@ -3572,6 +3572,8 @@ class TaskMatePanel extends HTMLElement {
       const row = this.querySelector(`tr[data-recap-row="${CSS.escape(c.id)}"]`);
       if (row) row.innerHTML = this._recapChildRow(c);
     }
+    const body = this.querySelector('[data-zone="body"]');
+    if (body) this._labelTables(body);
   }
 
   _recapToggle(who, freq) {
@@ -4090,6 +4092,7 @@ class TaskMatePanel extends HTMLElement {
       if (existingToast) this.appendChild(existingToast);
       this._shellReady = true;
       this._zoneCache = {};
+      this._labelTables(this);
       this._applyDesign();
       this._bindHaPickers();
       this._mountBackdateCard();
@@ -4146,13 +4149,20 @@ class TaskMatePanel extends HTMLElement {
       this._markDialogEntry(el, hadDialog);
       anyChanged = true;
       if (name === "palette") paletteChanged = true;
+      if (name === "body" || name === "dialog") this._labelTables(el);
       if (name === "body") bodyChanged = true;
-      // On a phone the tabs row scrolls; keep the open tab in view.
+      // On a phone the tabs row scrolls; keep the open tab in view. Wait a
+      // frame so the icons have their width, and centre it ourselves:
+      // scrollIntoView can also scroll the page.
       if (name === "subtabs") {
-        const on = el.querySelector(".tm-subtab-on");
-        if (on && el.firstElementChild && el.firstElementChild.scrollWidth > el.firstElementChild.clientWidth) {
-          on.scrollIntoView({ block: "nearest", inline: "nearest" });
-        }
+        requestAnimationFrame(() => {
+          const nav = el.firstElementChild;
+          const on = el.querySelector(".tm-subtab-on");
+          if (!nav || !on || nav.scrollWidth <= nav.clientWidth) return;
+          const navBox = nav.getBoundingClientRect();
+          const onBox = on.getBoundingClientRect();
+          nav.scrollLeft += (onBox.left + onBox.width / 2) - (navBox.left + navBox.width / 2);
+        });
       }
     }
     // A rebuilt command search has a fresh input: give it the focus back.
@@ -5113,6 +5123,28 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", err); return; }
     this._fairness = res;
     this._render();
+  }
+
+  // A phone shows each table row as a card (see "Tables become one card per
+  // row"); label every cell with its column heading so the values still say
+  // what they are.
+  _labelTables(root) {
+    root.querySelectorAll("table.tm-table").forEach(table => {
+      const heads = [...table.querySelectorAll("thead th")].map(th => th.textContent.trim());
+      if (!heads.length) return;
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        let col = 0;
+        [...tr.children].forEach(td => {
+          const span = Number(td.getAttribute("colspan")) || 1;
+          if (span === 1 && heads[col] && !td.hasAttribute("data-label")) td.setAttribute("data-label", heads[col]);
+          col += span;
+        });
+        const first = tr.firstElementChild;
+        if (first && first.children.length === 1 && first.firstElementChild.matches("input[type=checkbox]") && !first.textContent.trim()) {
+          tr.classList.add("tm-has-check");
+        }
+      });
+    });
   }
 
   _searchBox(placeholder) {
@@ -8577,7 +8609,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-day-row">${DAYS.map(d => `<button type="button" class="tm-day-btn ${e.days.includes(d.v) ? "tm-day-on" : ""}" data-act="lib-e-day" data-v="${d.v}" aria-pressed="${e.days.includes(d.v)}">${this._t(d.lk)}</button>`).join("")}</div>
               <small class="tm-lib-hint">${this._t("library.days_hint")}</small></div>`
             : `<div class="tm-field"><span class="tm-field-label">${this._t("library.repeats")}</span><div>${this._esc(this._t(`wizard.freq_${item.frequency}`))}</div></div>`) : ""}
-          <p class="tm-lib-hint">${this._t("library.customise_hint")}</p>
+          <p class="tm-lib-hint">${this._t(chores ? "library.customise_hint" : "library.customise_hint_reward")}</p>
           <div class="tm-lib-pop-foot">
             <button type="button" class="tm-btn" data-act="lib-e-cancel">${this._t("panel.btn_cancel")}</button>
             <button type="button" class="tm-btn tm-btn-raised" data-act="lib-e-save">${this._t("library.customise_save")}</button>
@@ -8933,7 +8965,7 @@ class TaskMatePanel extends HTMLElement {
       /* Full screen like every other dialog at this width, so it covers the
          phone's bottom bar instead of leaving it dimmed underneath. */
       @media (max-width: 900px) {
-        .tm-dialog.tm-lib { height: 100vh; }
+        .tm-dialog.tm-lib { height: auto; }
       }
       @media (max-width: 760px) {
         .tm-lib-main { flex-direction: column; }
@@ -9104,6 +9136,9 @@ class TaskMatePanel extends HTMLElement {
       .tm-wz-tog { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--tm-border-soft); font-size: 13.5px; flex-wrap: wrap; }
       .tm-wz-opts h4 + .tm-wz-tog { border-top: 0; }
       .tm-wz-tog small { display: block; color: var(--tm-text-faint); font-size: 12px; }
+      /* Let a wide control (None / Big jobs / All) drop below its label on a
+         phone instead of squeezing the label into a narrow column. */
+      .tm-wz-tog > .tm-wz-grow { flex: 1 1 180px; }
       .tm-wz-sw { width: 36px; height: 20px; border-radius: 999px; background: var(--tm-border-strong); position: relative; cursor: pointer; flex: none; border: 0; padding: 0; }
       .tm-wz-sw::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start 0.15s; }
       .tm-wz-sw.tm-wz-on { background: var(--tm-accent); }
@@ -12951,7 +12986,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-section-head"><div><h3>${this._t("panel.ics_title")}</h3><p class="tm-meta">${this._t("panel.ics_hint")}</p></div></div>
           <div class="tm-section-body">
             ${this._icsUrl ? `
-              <input type="text" readonly value="${this._esc(this._icsUrl)}" data-role="ics-url" style="width:100%;font-family:monospace;font-size:12px;padding:6px;margin-bottom:8px" onclick="this.select()">
+              <input type="text" readonly value="${this._esc(this._icsUrl)}" data-role="ics-url" class="tm-ics-url" onclick="this.select()">
               <div class="tm-period-actions">
                 <button type="button" class="tm-btn" data-act="ics-copy"><ha-icon icon="mdi:content-copy"></ha-icon> ${this._t("panel.ics_copy")}</button>
                 <button type="button" class="tm-btn" data-act="ics-regenerate"><ha-icon icon="mdi:refresh"></ha-icon> ${this._t("panel.ics_regenerate")}</button>
@@ -13024,7 +13059,7 @@ class TaskMatePanel extends HTMLElement {
                 <select class="tm-notif-select" data-act="notif-set-child-notify" data-child-id="${this._esc(cid)}">
                   ${optTags(c.notify_service)}
                 </select>
-                <div class="tm-meta" style="display:flex;align-items:center;gap:6px;width:100%" title="${this._t("panel.notif_quiet_hours_desc")}">
+                <div class="tm-meta tm-notif-quiet" style="display:flex;align-items:center;gap:6px;width:100%" title="${this._t("panel.notif_quiet_hours_desc")}">
                   <ha-icon icon="mdi:bell-sleep" style="--mdc-icon-size:16px"></ha-icon>
                   <span>${this._t("panel.notif_quiet_hours_label")}</span>
                   <input type="time" class="tm-notif-time-input" data-act="notif-set-child-quiet" data-quiet-bound="start" data-child-id="${this._esc(cid)}" value="${this._esc(c.quiet_hours_start || "")}" style="margin:0;width:90px">
@@ -13037,8 +13072,8 @@ class TaskMatePanel extends HTMLElement {
           <div>
             <h4>${this._t("panel.notif_recipients_parents")}</h4>
             ${ns.recipients.parents.map(p => `
-              <div class="tm-notif-recipient" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
-                <input type="text" value="${this._esc(p.name)}" data-act="notif-rename-parent" data-parent-id="${this._esc(p.id)}" style="flex:1;min-width:60px;background:transparent;border:none;color:inherit;font-size:14px;font-weight:500">
+              <div class="tm-notif-recipient tm-notif-parent-row" style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--tm-border,#3a3a3a)">
+                <input type="text" value="${this._esc(p.name)}" data-act="notif-rename-parent" data-parent-id="${this._esc(p.id)}" class="tm-notif-parent-name">
                 <select class="tm-notif-select" data-act="notif-set-parent-notify" data-parent-id="${this._esc(p.id)}">
                   ${optTags(p.notify_service)}
                 </select>
@@ -13095,7 +13130,7 @@ class TaskMatePanel extends HTMLElement {
         <td>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <input type="checkbox" class="tm-notif-switch" data-act="notif-set-master" data-type-id="${this._esc(t.id)}" ${active ? "checked" : ""}>
-            <div style="max-width:240px;white-space:normal">
+            <div class="tm-notif-desc" style="max-width:240px;white-space:normal">
               <strong>${this._t("notification." + t.id + ".name")}</strong>
               <div class="tm-meta">${this._t("notification." + t.id + ".description")}</div>
               ${t.id === "streak_at_risk" ? `
@@ -13132,7 +13167,7 @@ class TaskMatePanel extends HTMLElement {
                   <ha-icon class="tm-rtl-flip" icon="mdi:send" style="--mdc-icon-size:14px"></ha-icon> ${this._t("panel.notif_send_test")}
                 </button>
               </div>
-              <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+              <div class="tm-notif-extras" style="margin-top:6px;display:flex;align-items:center;gap:8px">
                 <input type="text" class="tm-notif-time-input" style="width:150px"
                        value="${this._esc(c.nav_url || "")}"
                        data-act="notif-set-nav-url-type" data-type-id="${this._esc(t.id)}"
@@ -14830,7 +14865,7 @@ class TaskMatePanel extends HTMLElement {
            if (!c) return "";
            return `
              <div class="tm-reorder-item" draggable="true" data-drag-id="${this._esc(id)}">
-               <div class="tm-reorder-handle">⠿</div>
+               <div class="tm-reorder-handle" aria-hidden="true"><ha-icon icon="mdi:drag"></ha-icon></div>
                <div class="tm-reorder-name">${this._esc(c.name)}</div>
                <div class="tm-reorder-points tm-numeric">${this._num(c.points)}</div>
                <div class="tm-reorder-moves">
@@ -15186,16 +15221,20 @@ class TaskMatePanel extends HTMLElement {
     this._rowMenuEl = menu;
     this._rowMenuForId = id;
     btn.setAttribute("aria-expanded", "true");
-    // Detach if the page scrolls or resizes under the (fixed) menu.
+    // Detach if the page scrolls or resizes under the (fixed) menu. The
+    // panel scrolls inside Home Assistant's shadow DOM, where a scroll never
+    // reaches window, so listen on the panel too.
     this._onRowMenuDismiss = () => this._closeRowMenu();
     window.addEventListener("resize", this._onRowMenuDismiss, true);
     window.addEventListener("scroll", this._onRowMenuDismiss, true);
+    this.addEventListener("scroll", this._onRowMenuDismiss, true);
   }
 
   _closeRowMenu() {
     if (this._onRowMenuDismiss) {
       window.removeEventListener("resize", this._onRowMenuDismiss, true);
       window.removeEventListener("scroll", this._onRowMenuDismiss, true);
+      this.removeEventListener("scroll", this._onRowMenuDismiss, true);
       this._onRowMenuDismiss = null;
     }
     if (this._rowMenuEl) { this._rowMenuEl.remove(); this._rowMenuEl = null; }
@@ -16102,7 +16141,13 @@ class TaskMatePanel extends HTMLElement {
       .tm-avatar-row { display: flex; align-items: center; gap: 8px; }
       .tm-avatar-row-fields { flex: 1; display: grid; grid-template-columns: 1fr 1.5fr 1.3fr 0.6fr; gap: 6px; align-items: center; }
       .tm-avatar-picker { display: block; min-width: 0; }
-      @media (max-width: 600px) { .tm-avatar-row-fields { grid-template-columns: 1fr 1fr; } }
+      @media (max-width: 600px) {
+        /* Name and icon get a row each so the picker isn't cut to "m…";
+           the unlock rule and its value share the row below. */
+        .tm-avatar-row { align-items: flex-start; padding-bottom: 10px; border-bottom: 1px solid var(--tm-border-soft); }
+        .tm-avatar-row-fields { grid-template-columns: 2fr 1fr; }
+        .tm-avatar-row-fields > input[type=text], .tm-avatar-row-fields > ha-icon-picker { grid-column: 1 / -1; }
+      }
       .tm-pill-alternating, .tm-pill-random, .tm-pill-balanced { background: var(--tm-accent-soft); color: var(--tm-accent-text); border-color: var(--tm-accent-border); }
       .tm-pill-first_come { background: var(--tm-gold-soft); color: var(--tm-gold); border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-unassigned { background: var(--tm-muted-bg, #f0f0f0); color: var(--tm-text-muted); border-color: var(--tm-border); }
@@ -17452,8 +17497,27 @@ class TaskMatePanel extends HTMLElement {
         .tm-body { padding: 16px; }
         .tm-toolbar { flex-direction: column; align-items: stretch; }
         .tm-search-wrap { max-width: none; }
-        .tm-dialog { max-width: none; border-radius: 0; max-height: 100vh; height: 100vh; }
-        .tm-scrim { padding: 0; }
+        /* Full screen, sized by the overlay rather than 100vh: on an iPhone
+           100vh is taller than what's visible, so the overlay scrolled and a
+           swipe could carry the header and its close button off screen. The
+           overlay fills the visible area and never scrolls; the dialog
+           stretches to fit it, clear of the notch and the home bar. */
+        .tm-scrim, .tm-scrim.tm-scrim-drawer {
+          padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+          align-items: stretch; overflow: hidden;
+        }
+        .tm-dialog { max-width: none; border-radius: 0; height: auto; max-height: none; }
+        /* The body takes the spare height, so a short dialog keeps its
+           buttons at the bottom of the screen, not floating halfway up. */
+        .tm-dialog > .tm-dialog-body { flex: 1 1 auto; overscroll-behavior: contain; }
+        .tm-reorder-moves { flex-direction: row; gap: 6px; }
+        .tm-reorder-move { min-width: 36px; min-height: 36px; }
+        .tm-tpl-remove { min-width: 36px; min-height: 36px; }
+        .tm-lib-kid, .tm-lib-kinds button { min-height: 36px; }
+        .tm-swatches button { width: 36px; height: 36px; }
+        .tm-row-menu-item { min-height: 40px; }
+        .tm-pal-input { min-height: 36px; }
+        .tm-lib-edit { min-height: 36px; }
         .tm-dialog-body .tm-field-row { grid-template-columns: 1fr; }
         .tm-setting-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 16px; }
         .tm-section-head, .tm-setting-row { padding-inline-start: 16px; padding-inline-end: 16px; }
@@ -17499,6 +17563,9 @@ class TaskMatePanel extends HTMLElement {
       }
       /* Topbar controls */
       .tm-topbar .tm-crumbs { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
+      .tm-topbar .tm-crumbs strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .tm-notif-parent-name { flex: 1; min-width: 60px; background: transparent; border: none; color: inherit; font-size: 14px; font-weight: 500; }
+      .tm-ics-url { width: 100%; font-family: monospace; font-size: 12px; padding: 6px; margin-bottom: 8px; }
       .tm-search-btn {
         flex: 1 1 auto; max-width: 420px; margin: 0 auto;
         display: flex; align-items: center; gap: 8px;
@@ -17911,6 +17978,101 @@ class TaskMatePanel extends HTMLElement {
       @media (max-width: 480px) {
         .tm-scope { max-width: 46vw; overflow-x: auto; }
         .tm-today-quick { grid-template-columns: 1fr; }
+      }
+
+      /* ===== Phone polish ===== */
+      @media (max-width: 900px) {
+        /* Toolbars: title and search on their own rows, the buttons share
+           rows instead of each taking a full-width line, the main action last. */
+        .tm-toolbar { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .tm-toolbar > .tm-toolbar-title, .tm-toolbar > .tm-search-wrap { flex: 1 1 100%; }
+        .tm-toolbar > .tm-btn { flex: 1 1 auto; }
+        .tm-toolbar > .tm-btn-raised { flex-basis: 100%; order: 1; }
+
+        /* Finger-sized targets. */
+        .tm-btn { min-height: 40px; }
+        .tm-btn-sm { min-height: 36px; }
+        .tm-icon-btn { width: 36px; height: 36px; }
+        .tm-chip-btn { min-height: 34px; padding-inline: 12px; }
+        .tm-scope-btn { min-height: 34px; min-width: 34px; justify-content: center; }
+        .tm-seg button { min-height: 32px; }
+        .tm-search { min-height: 40px; }
+        .tm-bchip { min-height: 32px; }
+        .tm-notif-select, .tm-shell .tm-notif-time-input { min-height: 40px; }
+        .tm-shell .tm-notif-delete { width: 36px; height: 36px; }
+        .tm-shell .tm-notif-toggle { min-height: 36px; }
+        .tm-shell .tm-recap-mode button { min-height: 36px; }
+        .tm-shell .tm-entity-clear { width: 32px; height: 32px; font-size: 13px; }
+        .tm-badge-toggle::before { content: ""; position: absolute; inset: -8px -4px; }
+        .tm-notif-parent-name { min-height: 36px; }
+        /* Parents: the name gets its own line, the notify service and remove below. */
+        .tm-notif-parent-row { flex-wrap: wrap; row-gap: 4px; }
+        .tm-notif-parent-row .tm-notif-parent-name { flex: 1 1 100%; }
+        .tm-notif-parent-row .tm-notif-select { flex: 1 1 0; min-width: 0; }
+        .tm-notif-parent-row .tm-icon-btn { width: 40px; height: 40px; }
+        .tm-wz-steps { gap: 0; flex-wrap: wrap; row-gap: 4px; }
+        /* "Step 2 of 7 · Children" gets its own line below the circles. */
+        .tm-shell .tm-wz-mlabel { flex: 1 0 100%; white-space: nowrap; text-align: end; }
+        .tm-wz-step { min-height: 36px; min-width: 32px; justify-content: center; }
+        .tm-shell .tm-wz-swatches button { width: 36px; height: 36px; }
+        .tm-shell .tm-wz-mstep button { width: 36px; height: 36px; flex: none; }
+        .tm-wz-lnk { min-height: 36px; padding-inline: 8px; }
+        /* The switch keeps its size; an invisible margin takes the tap. */
+        .tm-wz-sw::before { content: ""; position: absolute; inset: -8px -4px; }
+
+        /* iOS zooms the page into any field under 16px when it's tapped. */
+        .tm-shell input:not([type=checkbox]):not([type=radio]):not([type=range]), .tm-shell select, .tm-shell textarea { font-size: 16px; }
+
+        /* Audit: when and who on one line, the action and its target below. */
+        .tm-audit-row { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 16px; }
+        .tm-audit-action, .tm-audit-target { grid-column: 1 / -1; }
+        .tm-audit-action { overflow-wrap: normal; word-break: normal; }
+      }
+
+      /* Chore board: the time-slot names become small headings across the
+         row, so the children's columns get the whole width. */
+      @media (max-width: 600px) {
+        .tm-board { grid-template-columns: repeat(var(--cols), minmax(110px, 1fr)); }
+        .tm-board > .tm-board-h:first-child { display: none; }
+        .tm-board > .tm-board-slot { grid-column: 1 / -1; padding-bottom: 0; border-bottom: 0; font-weight: 600; }
+      }
+
+      /* Tables become one card per row in the phone/tablet layout. Each cell
+         is labelled with its column heading by _labelTables(). */
+      @media (max-width: 900px) {
+        .tm-table-wrap { overflow-x: visible; }
+        .tm-table, .tm-table tbody { display: block; width: 100%; }
+        .tm-table thead { display: none; }
+        .tm-table tr { display: block; padding: 10px 14px; border-bottom: 1px solid var(--tm-border-soft); }
+        .tm-table tbody tr:last-child { border-bottom: 0; }
+        .tm-table td {
+          display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px;
+          padding: 5px 0; border: 0; text-align: end; min-width: 0 !important;
+          white-space: normal;
+        }
+        .tm-table td[data-label]::before {
+          content: attr(data-label); flex: none; max-width: 45%; margin-inline-end: auto;
+          color: var(--tm-text-muted); font-size: 12px; font-weight: 500; text-align: start;
+        }
+        .tm-table td:first-child, .tm-table td[colspan] { display: block; text-align: start; }
+        .tm-table td:first-child::before, .tm-table td[colspan]::before { content: none; }
+        .tm-table td:first-child { padding-top: 0; }
+        .tm-table td:empty { display: none; }
+        .tm-table .tm-col-sticky { position: static; box-shadow: none; background: none; }
+        .tm-table td > .tm-name-cell { justify-content: space-between; }
+        /* Bulk select: the tick box sits beside the name, not on a row of its own. */
+        .tm-table tr.tm-has-check td:first-child { display: inline-block; vertical-align: middle; padding: 0; padding-inline-end: 10px; }
+        .tm-table tr.tm-has-check td:nth-child(2) { display: inline-block; vertical-align: middle; width: calc(100% - 40px); padding-top: 0; text-align: start; }
+        .tm-table tr.tm-has-check td:nth-child(2)::before { content: none; }
+        .tm-notif-desc { max-width: none !important; flex: 1; min-width: 0; }
+        .tm-notif-extras { flex-wrap: wrap; }
+        .tm-notif-extras > input { flex: 1 1 130px; min-width: 0; width: auto !important; }
+        .tm-table td.tm-notif-matrix-cell .tm-notif-time-input { margin: 0; }
+        .tm-notif-time-input[type=time] { width: auto !important; min-width: 130px; }
+        /* Quiet hours: the label on one row, from and to side by side below. */
+        .tm-notif-quiet { flex-wrap: wrap; }
+        .tm-notif-quiet > span:first-of-type { flex: 1 1 calc(100% - 30px); }
+        .tm-notif-quiet > .tm-notif-time-input { flex: 1 1 0; min-width: 0; }
       }
     </style>`;
   }

@@ -598,7 +598,7 @@ class TaskMateStreakCard extends LitElement {
           <span class="chip ${a.earned ? (locked.soft ? "soft" : "") : "locked"}"
             title="${a.description}"
             style="${a.earned ? "" : "opacity:0.45;filter:grayscale(1)"}">
-            ${locked.dot && a.earned ? html`<span style="color:var(--tmd-accent)">●</span> ` : html`${a.emoji} `}${a.name}
+            ${locked.dot && a.earned ? html`<span class="st-dot" style="color:var(--tmd-accent)">●</span> ` : html`${a.emoji} `}${a.name}
           </span>`)}
       </div>`;
   }
