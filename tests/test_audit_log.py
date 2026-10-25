@@ -139,6 +139,30 @@ async def test_wrapper_skips_readonly():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "taskmate/list_ha_users",
+        "taskmate/day_completions",
+        "taskmate/raffles/list",
+        "taskmate/bin_days/preview",
+        "taskmate/recaps/preview",
+    ],
+)
+async def test_wrapper_skips_page_load_lookups(cmd):
+    """Opening a panel page must not write to the audit log (it filled it with noise)."""
+    coord = object.__new__(TaskMateCoordinator)
+    coord.async_record_audit = AsyncMock()
+
+    @ws._admin_only
+    async def handler(hass, connection, msg, coordinator):
+        connection.send_result(msg["id"], {"ok": True})
+
+    await handler(_hass_with(coord), _conn(), {"id": 1, "type": cmd})
+    coord.async_record_audit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_wrapper_does_not_audit_on_handler_error():
     coord = object.__new__(TaskMateCoordinator)
     coord.async_record_audit = AsyncMock()
