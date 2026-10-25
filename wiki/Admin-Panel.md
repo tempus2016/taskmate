@@ -44,10 +44,19 @@ When there are no children yet, Today offers **Start setup** (the [Setup Wizard]
 | **Points** | Bonuses, Penalties, Badges |
 | **Review** | Activity, Insights, Audit |
 | **Settings** (the gear) | Settings, Notifications, [Help & feedback](Help-and-Feedback.md) |
+| **Manual** (the book) | This documentation — see [Manual](#manual) |
 
 A section reopens on the page you last used in it. Only **Today** shows a count on the rail: everything waiting on you is gathered there, so nothing is counted twice.
 
-On a **phone**, the bottom bar holds **Today**, **Family**, **Earn**, **Spend** and **More**; More opens the other sections. The tabs row scrolls sideways and keeps the open page in view.
+On a **phone**, the bottom bar holds **Today**, **Family**, **Earn**, **Spend** and **More**; More opens the other sections, the Manual included. The tabs row scrolls sideways and keeps the open page in view.
+
+### Manual
+
+*(v7.4.0)* These docs are built into the panel. **Manual** (the book at the bottom of the rail) opens them: the sections down the left, a search box above them, the page in the middle and its headings under **On this page** on wide screens. Links between pages stay in the panel; **Open on website** opens the same page here.
+
+Every page of the panel has a **?** in its top bar. It opens the part of the manual about that page in a side panel, so you can read it next to what it describes; **Open in Manual** takes you to the full page.
+
+The manual that ships with TaskMate matches the version you have installed, and its text works without an internet connection. Screenshots load from this website, so without a connection each one shows a short note instead. On a phone the sections fold away behind **Contents**.
 
 ### Editors open beside the page
 

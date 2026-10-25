@@ -23,8 +23,14 @@ def _tab_ids() -> list[str]:
 
 
 def _rendered_ids() -> set[str]:
-    """Ids the render switch actually has a case for."""
-    return set(re.findall(r'case "([a-z_]+)":\s*return this\._render', PANEL))
+    """Ids the render switch actually has a case for.
+
+    The Manual renders ahead of the switch (it needs no TaskMate state), so an
+    early `if (this._activeTab === "x") return this._render…()` counts too.
+    """
+    cases = set(re.findall(r'case "([a-z_]+)":\s*return this\._render', PANEL))
+    early = set(re.findall(r'if \(this\._activeTab === "([a-z_]+)"\) return this\._render', PANEL))
+    return cases | early
 
 
 def _sidebar_ids() -> set[str]:
