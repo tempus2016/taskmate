@@ -22,7 +22,7 @@ never taken from the page.
 Run: python3 scripts/build_manual.py [--out DIR]
      python3 scripts/build_manual.py --check   (CI: build to a temp dir, and
      check every page the panel's "?" buttons open is still there)
-Needs: pip install -r requirements-docs.txt  (markdown, pymdown-extensions, pyyaml)
+Needs: pip install -r requirements-docs.txt  (markdown, pymdown-extensions, pyyaml; pinned from requirements-docs.in)
 """
 
 from __future__ import annotations

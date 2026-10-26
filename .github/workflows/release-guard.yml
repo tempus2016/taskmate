@@ -137,7 +137,7 @@ jobs:
       # The same hash-pinned toolchain release-zip.yml built the bundle with,
       # so a byte-for-byte match is expected. This job only has a read token.
       - name: Install the docs toolchain
-        run: python -m pip install --require-hashes -r src/requirements-docs.lock
+        run: python -m pip install --require-hashes -r src/requirements-docs.txt
 
       - name: Rebuild the manual and compare it with the one in the zip
         # The digest above skips www/manual/ because the bundle is built, not
