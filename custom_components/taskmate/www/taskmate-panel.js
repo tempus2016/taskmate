@@ -15821,9 +15821,21 @@ class TaskMatePanel extends HTMLElement {
          toolbar above it — so 100dvh is the full panel area, not an overflow.
          It must be height, not min-height: the shell scrolls its own body,
          and a floor-only rule would let a long section (Settings) grow the
-         panel past the viewport and scroll the nav column off the page. */
+         panel past the viewport and scroll the nav column off the page.
+         The panel opts out of HA's safe-area padding (handle_safe_area, see
+         panel.py), so it keeps clear of the notch, the home indicator and
+         a landscape camera cutout itself, inside that 100dvh (#1140). The
+         phone bottom bar takes the bottom inset instead, so its background
+         runs to the edge of the screen. */
       taskmate-panel {
         display: flex; flex-direction: column; height: 100dvh;
+        box-sizing: border-box;
+        padding:
+          var(--safe-area-inset-top, env(safe-area-inset-top, 0px))
+          var(--safe-area-content-inset-right, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)))
+          var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+          var(--safe-area-content-inset-left, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+        background: var(--tm-surface-0);
 
         --tm-bg:            var(--primary-background-color, #fafafa);
         --tm-surface-0:     var(--card-background-color, #fff);
@@ -17967,13 +17979,14 @@ class TaskMatePanel extends HTMLElement {
         }
         .tm-mnav-sheet {
           position: fixed;
-          bottom: calc(64px + env(safe-area-inset-bottom, 0px)); inset-inline-start: 8px; inset-inline-end: 8px;
+          bottom: calc(64px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); inset-inline-start: 8px; inset-inline-end: 8px;
           z-index: 31;
           background: var(--tm-surface-0);
           border: 1px solid var(--tm-border);
           border-radius: var(--tm-radius-md, 14px);
           box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
-          max-height: calc(100vh - 140px);
+          /* Clear of the notch as well as the bar it sits on (#1140). */
+          max-height: calc(100dvh - 140px - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
           overflow-y: auto;
           padding: 4px 0 8px;
           animation: tm-mnav-drop 0.18s var(--tm-easing);
@@ -18032,7 +18045,7 @@ class TaskMatePanel extends HTMLElement {
            overlay fills the visible area and never scrolls; the dialog
            stretches to fit it, clear of the notch and the home bar. */
         .tm-scrim, .tm-scrim.tm-scrim-drawer {
-          padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+          padding: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) 0 var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
           align-items: stretch; overflow: hidden;
         }
         .tm-dialog { max-width: none; border-radius: 0; height: auto; max-height: none; }
@@ -18381,7 +18394,7 @@ class TaskMatePanel extends HTMLElement {
         .tm-new-btn ha-icon { --mdc-icon-size: 22px; }
         .tm-today-col .tm-approval-list { max-height: 60vh; }
         /* Clear the bottom bar. */
-        .tm-toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+        .tm-toast { bottom: calc(72px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
         .tm-scope-banner { padding: 8px 12px; }
         .tm-today-kids {
           grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(240px, 80%);
@@ -18390,10 +18403,11 @@ class TaskMatePanel extends HTMLElement {
         }
         .tm-kid { scroll-snap-align: start; }
         .tm-board { grid-template-columns: 92px repeat(var(--cols), minmax(120px, 1fr)); }
+        taskmate-panel { padding-bottom: 0; }
         .tm-bnav {
           display: grid; grid-template-columns: repeat(5, 1fr); flex-shrink: 0;
           background: var(--tm-surface-0); border-top: 1px solid var(--tm-border);
-          padding-bottom: env(safe-area-inset-bottom, 0);
+          padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
         }
         .tm-bnav-item {
           position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
