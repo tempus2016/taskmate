@@ -62,7 +62,7 @@ def test_upload_streams_with_a_running_size_check():
 
 def test_serve_view_validates_the_filename_before_touching_disk():
     get_body = SRC.split("async def get")[1]
-    assert get_body.index("FILENAME_RE.match") < get_body.index("sounds_path")
+    assert get_body.index("FILENAME_RE.fullmatch") < get_body.index("sounds_path")
 
 
 def test_serve_view_sets_the_sniffed_content_type():

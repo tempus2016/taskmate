@@ -100,8 +100,14 @@ class ChoresMixin:
         team_points_mode: str = "each",
         team_bonus: int = 0,
         due_time: str = "",
+        refresh: bool = True,
     ) -> Chore:
-        """Add a new chore."""
+        """Add a new chore.
+
+        ``refresh=False`` leaves the save and the coordinator rebuild to the
+        caller: a loop raising several chores at once (the shopping-list and
+        bin-day syncs) pays for one of each rather than one per chore (#794).
+        """
         # Teamwork (#928) is refused up front, before anything is stored.
         team_error = teamwork_config_error(
             team_size, assignment_mode=assignment_mode, team_points_mode=team_points_mode
@@ -177,8 +183,9 @@ class ChoresMixin:
         self.storage.add_chore(chore)
         # Publish to any configured calendars ASAP — before save so we persist the last_date stamp
         await self._publish_chore_to_calendars(chore, today)
-        await self.storage.async_save()
-        await self.async_refresh()
+        if refresh:
+            await self.storage.async_save()
+            await self.async_refresh()
         return chore
 
     # ── Sibling chore swaps ──────────────────────────────────────────────
@@ -1072,6 +1079,25 @@ class ChoresMixin:
             auto_approve=auto_approve,
         )
         return completion
+
+    def needs_parent_price(self, completion, chore) -> bool:
+        """True when only a parent may put a price on this completion.
+
+        An open-ended chore has no price of its own: the child only suggested
+        one (#832). An uncapped quantity chore is the same thing in another
+        shape — it pays ``points × quantity`` and the child picked the
+        quantity — so once more than one unit is claimed nothing automatic
+        (the auto-approve timer, a sibling's "looks done") may pay it at the
+        promised price. ``async_complete_chore`` already sends both to a
+        parent; this keeps the automatic approvers on the same rule. A
+        completion whose chore has gone has no price at all.
+        """
+        if chore is None or getattr(chore, "open_ended", False):
+            return True
+        quantity = int(getattr(completion, "quantity", 0) or 0)
+        if quantity > 1 and (getattr(chore, "quantity_unit", "") or "").strip():
+            return not int(getattr(chore, "quantity_max", 0) or 0)
+        return False
 
     def chore_quantity(self, chore, quantity: Any, *, as_parent: bool = False) -> int:
         """The units counted for a quantity chore, capped; 0 for any other chore.
@@ -2080,6 +2106,10 @@ class ChoresMixin:
             await self._async_reverse_challenges(target_completion.child_id)
         if target_completion and target_completion.approved and hasattr(self, "async_reverse_weekly_goals"):
             await self.async_reverse_weekly_goals(target_completion.child_id)
+        if target_completion and target_completion.approved and hasattr(self, "_reverse_perfect_week_bonus"):
+            # The record is already gone, so the week is judged on what is
+            # still approved — the same test undo-approval applies.
+            self._reverse_perfect_week_bonus(target_completion, self.get_child(target_completion.child_id))
         if target_completion and target_completion.approved and hasattr(self, "async_recompute_personal_bests"):
             await self.async_recompute_personal_bests(target_completion.child_id)
         # The completion record is gone, so its evidence photo is now orphaned —
@@ -2177,6 +2207,8 @@ class ChoresMixin:
         # A parent touched it, so child undo stays locked (#918).
         target.child_undo_allowed = False
         self.storage.update_completion(target)
+        # A perfect-week bonus this day helped earn goes back with it.
+        self._reverse_perfect_week_bonus(target, self.get_child(target.child_id))
         if getattr(target, "bounty_id", ""):
             self._bounty_on_unapproved(target)
 

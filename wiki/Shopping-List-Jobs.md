@@ -25,6 +25,8 @@ Add **"#tm fetch logs from the shed"** to Home Assistant's shopping list — or 
 - An item counts when its text starts with the tag, followed by a space, `:` or `-`. `#tm sweep the path` and `#TM: sweep the path` both work; `#tmp…` and `sweep the path #tm` don't. The job is named after the rest of the text, with its first letter in capitals.
 - Each item becomes **one** job, matched by the to-do item's id, however often the list is read.
 - The job is a one-off chore with no deadline. While the item is still on the list and nobody has done it, the job carries over from day to day.
+- A job always needs a parent's approval: a list item is nobody's judgement of the work, so neither the auto-approve timer nor a sibling check pays it.
+- Anyone who can write to the list can raise jobs, so the list is bounded: at most **5 new jobs per read** and **10 jobs on the go at once**. Extra items stay on the list and come through as earlier jobs are done.
 - **Done:** once the chore is completed — and approved, if it needs approval — TaskMate marks the item completed with `todo.update_item`.
 - **Ticked off or deleted first:** the job is removed if nobody has done it. If a child already did it, it stays for a parent to approve or reject.
 - If the list can't be read (the entity is missing or unavailable), nothing is removed.

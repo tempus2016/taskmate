@@ -74,7 +74,16 @@ class WeeklyGoalsMixin:
             state["reached"] = goal.get("reached_week") == _week_key(today)
         return state
 
-    async def async_set_weekly_goal(self, child_id: str, target: int) -> None:
+    async def async_set_weekly_goal(self, child_id: str, target: int, *, as_parent: bool = False) -> None:
+        """Set (or clear, with 0) a child's weekly target.
+
+        ``as_parent`` is a grown-up setting it on the child's behalf. A child
+        setting their own goal is held to two rules a parent isn't: the
+        target is at least the bonus it pays, so a goal of 1 can't farm a
+        10-point bonus every week; and it can't move once this week's bonus
+        has been paid, because lowering it would keep a bonus the week no
+        longer earns when a completion is reversed.
+        """
         child = self.get_child(child_id)
         if child is None:
             raise ValueError(f"Child {child_id} not found")
@@ -86,6 +95,13 @@ class WeeklyGoalsMixin:
         # The record outlives a cleared goal: it keeps ``reached_week``, so
         # clearing and re-setting a goal can't pay the same week's bonus twice.
         goal = self._weekly_goals().setdefault(child_id, {})
+        if not as_parent:
+            bonus = self.weekly_goal_bonus()
+            if target and bonus and target < bonus:
+                raise ValueError(f"A goal has to be at least {bonus}, the bonus it pays.")
+            week = _week_key(dt_util.as_local(dt_util.now()).date())
+            if goal.get("reached_week") == week and target != int(goal.get("target", 0) or 0):
+                raise ValueError("This week's goal has already been reached and paid, so it can't change until Monday.")
         goal["target"] = target
         goal["set_at"] = dt_util.now().isoformat()
         await self.storage.async_save()
@@ -113,6 +129,9 @@ class WeeklyGoalsMixin:
                 continue
             goal["reached_week"] = week
             goal["bonus_paid"] = bonus
+            # The target the bonus was judged against: a reversal later this
+            # week is judged against this, not whatever the target is by then.
+            goal["paid_target"] = target
             await self.storage.async_save()
             if bonus:
                 await self.async_add_points(child_id, bonus, reason=f"Weekly goal reached 🎯 ({target})")
@@ -132,12 +151,17 @@ class WeeklyGoalsMixin:
             await self.async_refresh()
         return paid
 
+    @staticmethod
+    def _paid_target(goal: dict[str, Any]) -> int:
+        """The target this week's bonus was paid for (the current one on older records)."""
+        return int(goal.get("paid_target") or goal.get("target", 0) or 0)
+
     def _weekly_goal_refund_owed(self, child_id: str, exclude_ids: set | None = None) -> int:
         """The goal bonus a reversal of ``exclude_ids`` would take back, without doing it."""
         if not self.weekly_goals_enabled():
             return 0
         goal = self._weekly_goals().get(child_id) or {}
-        target = int(goal.get("target", 0) or 0)
+        target = self._paid_target(goal)
         week = _week_key(dt_util.as_local(dt_util.now()).date())
         if not target or goal.get("reached_week") != week:
             return 0
@@ -154,7 +178,7 @@ class WeeklyGoalsMixin:
         if not self.weekly_goals_enabled():
             return
         goal = self._weekly_goals().get(child_id) or {}
-        target = int(goal.get("target", 0) or 0)
+        target = self._paid_target(goal)
         week = _week_key(dt_util.as_local(dt_util.now()).date())
         if not target or goal.get("reached_week") != week:
             return
@@ -165,6 +189,7 @@ class WeeklyGoalsMixin:
             return
         bonus = max(0, int(goal.pop("bonus_paid", self.weekly_goal_bonus()) or 0))
         goal.pop("reached_week", None)
+        goal.pop("paid_target", None)
         if bonus:
             child.points = max(0, child.points - bonus)
             child.total_points_earned = max(0, child.total_points_earned - bonus)

@@ -7,6 +7,9 @@ name: Release guard
 #   2. the release must carry taskmate.zip — hacs.json sets zip_release, so a
 #      release without that asset is uninstallable, and the asset's download
 #      count is the number HACS displays.
+#   3. the Manual inside that zip must be exactly what scripts/build_manual.py
+#      produces from wiki/ at the tag — the one part of the zip that is not in
+#      git, so the only way to check it is to build it again and compare.
 #
 # release-zip.yml builds and uploads the zip on the same `published` event;
 # this workflow waits for it to land rather than racing it.
@@ -125,3 +128,34 @@ jobs:
             echo "Rebuild it with the 'Attach HACS zip to release' workflow before announcing this release."
             exit 1
           fi
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+
+      # The same hash-pinned toolchain release-zip.yml built the bundle with,
+      # so a byte-for-byte match is expected. This job only has a read token.
+      - name: Install the docs toolchain
+        run: python -m pip install --require-hashes -r src/requirements-docs.lock
+
+      - name: Rebuild the manual and compare it with the one in the zip
+        # The digest above skips www/manual/ because the bundle is built, not
+        # committed. Build it again from the tag and compare: the output is
+        # deterministic (sorted pages, gzip with mtime 0), so any difference
+        # means the zip does not carry the wiki as it stood at the tag.
+        run: |
+          set -euo pipefail
+          python src/scripts/build_manual.py --out rebuilt
+          want=$(sha256sum rebuilt/manual.json | cut -d' ' -f1)
+          have=$(sha256sum from_asset/www/manual/manual.json | cut -d' ' -f1)
+          echo "rebuilt:  $want"
+          echo "in zip:   $have"
+          if [ "$want" != "$have" ]; then
+            echo "::error::The Manual in taskmate.zip is not what wiki/ at $TAG builds to."
+            echo "Re-run the 'Attach HACS zip to release' workflow, then re-run this check."
+            exit 1
+          fi
+          echo "The Manual in taskmate.zip matches a fresh build from $TAG."
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}

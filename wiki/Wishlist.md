@@ -30,6 +30,7 @@ Saved points leave the child's spendable balance straight away, like a savings j
 - **Declining or deleting** a wish gives the child back everything they saved and cancels every pledge.
 - **Redeeming** a wish takes nothing more from the wallet, because the saved points already left it.
 - Moving points in and taking them back out doesn't count towards the monthly leaderboard, so it can't be used to farm season points.
+- With [points expiry](Points-Economy.md) on, saved points keep the dates they were earned: taking them back out doesn't restart their clock. With decay on, saved points shrink by the same share as the balance.
 - Every movement (save, take back, pledge, pledge removed, refund, redeem) is written to the activity log.
 
 ---

@@ -93,9 +93,10 @@ Children earn a bonus when they complete at least one chore every day Monday–S
 | Perfect week needs all tasks (`perfect_week_requires_all_chores`) | `off` | on / off |
 
 **How it works:**
-- Checked automatically every **Monday at midnight**
-- Requires at least one **approved** chore completion on each of the 7 days (Mon–Sun) — or, with **Perfect week needs all tasks** enabled, *every* chore due that day must be done before the day counts
+- Checked every night as part of TaskMate's midnight maintenance, looking at **last week** (Monday–Sunday). A week whose last approval lands on Tuesday is paid on Tuesday night.
+- Requires at least one **approved** chore completion on each of the 7 days (Mon–Sun) — or, with **Perfect week needs all tasks** enabled, *every* chore due that day must be done before the day counts. Completions still waiting for approval don't count until they're approved.
 - Each week is awarded once per child — duplicates are prevented even if the check runs twice
+- If a completion from a paid week is later rejected or un-approved and the week no longer qualifies, the bonus is taken back ("Perfect week bonus reversed"). Re-approving the day lets the nightly check pay it again.
 - The awarded weeks are stored as a list of Monday ISO dates on the child record
 - The bonus is logged in the activity feed
 

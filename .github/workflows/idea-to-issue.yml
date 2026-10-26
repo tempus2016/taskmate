@@ -101,8 +101,12 @@ jobs:
               { discussionId: discussion.node_id, body: comment },
             );
 
+            // The summary is HTML and addLink() does not escape its text, so
+            // the title (the discussion author's text) is escaped first.
+            const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (c) =>
+              ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
             await core.summary
               .addHeading('Idea mirrored to an issue')
-              .addLink(title, issue.html_url)
+              .addLink(escapeHtml(title), issue.html_url)
               .addRaw(` (from discussion #${discussion.number})`)
               .write();

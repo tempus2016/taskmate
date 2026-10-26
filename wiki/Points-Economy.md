@@ -44,6 +44,7 @@ The opposite lever to interest: idle balances slowly shrink, discouraging hoardi
 
 - Runs on the period boundary — **weekly** on Mondays, **monthly** on the 1st
 - Each child loses `round(balance × percent ÷ 100)` points; the balance never goes below 0
+- Points a child has saved into a [wish](Wishlist.md) decay by the same share, so a wish isn't a place to park a balance while decay passes. The activity entry says how much came from wish savings.
 - Logged in the activity feed as `Points decay (-N%)` and fires a `taskmate_points_decay` event
 - Children with a zero balance, or whose decay rounds to 0, are skipped
 - A guard stamp prevents decaying twice on the same day
@@ -110,6 +111,7 @@ Applied the wrong penalty, awarded a bonus to the wrong child, or approved a cho
 | Points decay | ❌ |
 | Savings interest | ❌ |
 | Badge awards | ❌ |
+| Raffle tickets, allowance payouts, quest / challenge / weekly-goal bonuses, make-it-right refunds, appeals, sibling checks, surprise bonuses | ❌ — each has its own way back (or none) |
 
 Auto-derived events have no clean inverse, so undo is deliberately scoped to the discrete actions an admin (or child) took. The card's deny-list mirrors the backend, so the button simply never appears on a non-reversible row.
 

@@ -1,4 +1,11 @@
-# Builds the documentation site (wiki/ -> GitHub Pages). See .github/workflows/docs.yml.
+# Builds the documentation site (wiki/ -> GitHub Pages) and the in-panel Manual.
 # MkDocs 2.0 drops the plugin and theme system Material depends on, so stay on 1.x.
+#
+# This is the INPUT. CI installs from requirements-docs.lock (exact versions +
+# hashes, so a release job runs only the packages that were reviewed). After
+# changing this file, regenerate the lock and commit both:
+#
+#   uv pip compile --python-version 3.14 --universal --generate-hashes --no-header \
+#     requirements-docs.txt -o requirements-docs.lock
 mkdocs>=1.6,<2
 mkdocs-material>=9.6,<10

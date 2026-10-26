@@ -724,15 +724,24 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
    * of person entities. A non-"mdi:" `avatar` is still treated as a picture URL,
    * which is what the points-display and approvals cards already did.
    *
+   * Either URL ends up as an <img src>, so only the places a picture can
+   * legitimately come from are accepted: TaskMate's and HA's own /api/ images,
+   * /local/ and /hacsfiles/ assets, inline data:image/ and https://. Anything
+   * else (javascript:, a bare host, a relative path) counts as no picture.
+   *
    * Accepts a child object or a bare avatar string, because a few payloads
    * (reward claims, badges) carry only the string.
    */
+  const AVATAR_URL_OK = /^(\/api\/|\/local\/|\/hacsfiles\/|data:image\/|https:\/\/)/;
+  const avatarUrl = (value) => (typeof value === "string" && AVATAR_URL_OK.test(value) ? value : "");
   window.__taskmate_child_visual = window.__taskmate_child_visual || function (child) {
     const c = typeof child === "string" ? { avatar: child } : child || {};
-    if (c.avatar_image) return { kind: "image", url: c.avatar_image };
-    const av = c.avatar || "";
+    const photo = avatarUrl(c.avatar_image);
+    if (photo) return { kind: "image", url: photo };
+    const av = typeof c.avatar === "string" ? c.avatar : "";
     if (av.startsWith("mdi:")) return { kind: "icon", icon: av };
-    if (av) return { kind: "image", url: av };
+    const url = avatarUrl(av);
+    if (url) return { kind: "image", url };
     return { kind: "none" };
   };
 

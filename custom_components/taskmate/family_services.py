@@ -15,6 +15,7 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 
+from . import authz
 from .const import DOMAIN
 from .coord_appeals import APPEAL_KINDS, APPEAL_MESSAGE_MAX, APPEAL_NOTE_MAX
 from .coord_boosts import BOOST_MAX_MINUTES, BOOST_MAX_MULTIPLIER, BOOST_MIN_MULTIPLIER, BOOST_NAME_MAX
@@ -107,7 +108,9 @@ def async_register_family_services(
         await coordinator.async_set_sick_day(call.data["child_id"], call.data.get("date"), call.data.get("sick", True))
 
     async def set_weekly_goal(coordinator, call):
-        await coordinator.async_set_weekly_goal(call.data["child_id"], call.data["target"])
+        # A child's own goal is held to the self-pay rules; a parent's isn't.
+        as_parent = await authz.async_context_is_parent(hass, coordinator, call.context)
+        await coordinator.async_set_weekly_goal(call.data["child_id"], call.data["target"], as_parent=as_parent)
 
     async def buy_raffle_tickets(coordinator, call):
         await coordinator.async_buy_raffle_tickets(call.data["raffle_id"], call.data["child_id"], call.data["tickets"])

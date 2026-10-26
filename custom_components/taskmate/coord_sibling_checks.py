@@ -57,8 +57,8 @@ class SiblingChecksMixin:
         """A waiting, ordinary chore completion no one has checked yet."""
         if completion.approved or completion.bonus_subtask_id or getattr(completion, "checked_by", ""):
             return False
-        if chore is None or getattr(chore, "open_ended", False):
-            return False  # a parent prices open-ended work
+        if self.needs_parent_price(completion, chore):
+            return False  # a parent prices open-ended and uncapped-quantity work
         return not getattr(completion, "bounty_id", "")
 
     def sibling_checks_for_child(self, checker_id: str, pending=None, chore_lookup=None) -> list[dict[str, Any]]:

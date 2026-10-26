@@ -23,7 +23,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .photos import content_type_for, detect_image_ext, matching_files_bytes
+from .photos import content_type_for, detect_image_ext, has_control_chars, matching_files_bytes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,12 +86,12 @@ def is_taskmate_image_url(image_url: str) -> bool:
     websocket boundary. Rejects blanks, the evidence-photo prefix, foreign
     URLs, dangerous schemes and anything failing the strict filename pattern.
     """
-    if not image_url:
+    if not image_url or has_control_chars(image_url):
         return False
     prefix = URL_PREFIX + "/"
     if not image_url.startswith(prefix):
         return False
-    return bool(FILENAME_RE.match(image_url[len(prefix) :]))
+    return bool(FILENAME_RE.fullmatch(image_url[len(prefix) :]))
 
 
 def normalize_taskmate_image_url(image_url: str) -> str | None:
@@ -105,7 +105,7 @@ def normalize_taskmate_image_url(image_url: str) -> str | None:
     and would rot the stored chore and break the delete-by-equality check in
     ``coord_chores._async_release_image`` (#827).
     """
-    if not image_url:
+    if not image_url or has_control_chars(str(image_url)):
         return None
     base = str(image_url).split("#", 1)[0].split("?", 1)[0]
     return base if is_taskmate_image_url(base) else None

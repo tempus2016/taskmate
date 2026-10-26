@@ -140,14 +140,14 @@ class TestWeeklyGoal:
         coord, _storage, _mod, kid, _chore = _family()
         assert coord.weekly_goal_state(kid.id) is None
         with pytest.raises(ValueError):
-            run(coord.async_set_weekly_goal(kid.id, 50))
+            run(coord.async_set_weekly_goal(kid.id, 50, as_parent=True))
 
     def test_reaching_the_goal_pays_the_bonus_once(self):
         coord, storage, mod, kid, chore = _family(requires_approval=False)
         self._on(storage)
         goals = "custom_components.taskmate.coord_goals.dt_util"
         with _at(mod), patch(f"{goals}.now", return_value=_now()), patch(f"{goals}.as_local", side_effect=lambda d: d):
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             assert storage.get_child(kid.id).points == 0
             run(coord.async_complete_chore(chore.id, kid.id))
             assert run(coord.async_check_weekly_goals()) == 1
@@ -161,8 +161,8 @@ class TestWeeklyGoal:
         coord, storage, _mod, kid, _chore = _family()
         self._on(storage)
         with patch("custom_components.taskmate.coord_goals.dt_util.now", return_value=_now()):
-            run(coord.async_set_weekly_goal(kid.id, 80))
-            run(coord.async_set_weekly_goal(kid.id, 0))
+            run(coord.async_set_weekly_goal(kid.id, 80, as_parent=True))
+            run(coord.async_set_weekly_goal(kid.id, 0, as_parent=True))
             assert coord.weekly_goal_state(kid.id)["target"] == 0
 
     def test_clearing_and_resetting_a_reached_goal_pays_nothing_more(self):
@@ -170,11 +170,11 @@ class TestWeeklyGoal:
         self._on(storage)
         goals = "custom_components.taskmate.coord_goals.dt_util"
         with _at(mod), patch(f"{goals}.now", return_value=_now()), patch(f"{goals}.as_local", side_effect=lambda d: d):
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             run(coord.async_complete_chore(chore.id, kid.id))
             assert run(coord.async_check_weekly_goals()) == 1
-            run(coord.async_set_weekly_goal(kid.id, 0))
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 0, as_parent=True))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             assert run(coord.async_check_weekly_goals()) == 0
         assert storage.get_child(kid.id).points == 5 + 15
 

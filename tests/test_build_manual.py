@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from html import escape as html_escape
 from pathlib import Path
 
 import pytest
@@ -146,3 +147,36 @@ def test_full_build(tmp_path):
     assert chores["title"] == "Chores"
     assert chores["toc"][0]["id"].startswith("tmdoc-")
     assert "<script" not in "".join(p["html"] for p in bundle["pages"].values())
+
+
+# Every <img src> in the bundle is loaded by every admin panel that opens the
+# Manual, so a wiki PR must not be able to point one at a host of its choosing.
+@pytest.mark.parametrize(
+    "src",
+    [
+        "https://evil.example/pixel.png",
+        "HTTPS://evil.example/pixel.png",
+        "https://tempus2016.github.io/other/pixel.png",
+        "https://tempus2016.github.io.evil.example/taskmate/pixel.png",
+        "http://tempus2016.github.io/taskmate/images/a.png",
+        "//evil.example/pixel.png",
+        "/evil.example/pixel.png",
+        "data:image/png;base64,AAAA",
+        "javascript:alert(1)",
+    ],
+)
+def test_images_from_anywhere_but_the_docs_site_are_dropped(src):
+    out = clean(f'<p>before <img alt="x" src="{html_escape(src)}"> after</p>')
+    assert out == "<p>before  after</p>", out
+
+
+def test_images_on_the_docs_site_are_kept():
+    assert (
+        clean(f'<img src="{SITE}images/panel-chores.png">')
+        == f'<img src="{SITE}images/panel-chores.png" loading="lazy">'
+    )
+
+
+def test_relative_images_are_rewritten_to_the_docs_site():
+    assert clean('<img src="./images/a.png">') == f'<img src="{SITE}images/a.png" loading="lazy">'
+    assert clean('<img src="../images/a.png">') == f'<img src="{SITE}images/a.png" loading="lazy">'

@@ -8,8 +8,10 @@ permissions:
   contents: read
   pull-requests: write
 
+# Keyed on the PR, not github.ref: under pull_request_target the ref is always
+# the default branch, so a ref-keyed group would cancel other PRs' runs.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

@@ -5,8 +5,9 @@ whether it counted. With ``auto_approve_hours`` set, a chore completion still
 waiting after that many hours approves itself at the price the child was
 promised, exactly as if a parent had tapped Approve. 0 (the default) is off.
 
-Open-ended chores (#832) are left alone: the child only suggested a price, so
-a parent has to set it. Bounty work is left alone too — a bounty pays from its
+Open-ended chores (#832) and uncapped quantity chores are left alone: the
+child only suggested a price (or picked the number it is multiplied by), so a
+parent has to set it. Bounty work is left alone too — a bounty pays from its
 own posted reward and has its own claim rules.
 """
 
@@ -43,8 +44,7 @@ class AutoApproveMixin:
         for comp in self.storage.get_completions():
             if comp.approved or getattr(comp, "bounty_id", ""):
                 continue
-            chore = chores.get(comp.chore_id)
-            if chore is None or getattr(chore, "open_ended", False):
+            if self.needs_parent_price(comp, chores.get(comp.chore_id)):
                 continue
             if comp.completed_at <= cutoff:
                 due.append(comp)

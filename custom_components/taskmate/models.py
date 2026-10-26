@@ -2296,6 +2296,11 @@ class Wish:
     link: str = ""
     image_url: str = ""
     saved: int = 0
+    # The points-expiry lots ``saved`` came out of (``[{"d": ISO date,
+    # "n": points}]``, oldest first), so taking savings back out restores
+    # them with their original dates instead of starting their clock again.
+    # Empty when expiry is off.
+    saved_lots: list[dict[str, Any]] = field(default_factory=list)
     pledges: list[WishPledge] = field(default_factory=list)
     decline_reason: str = ""
     claim_id: str = ""
@@ -2331,6 +2336,11 @@ class Wish:
             link=clean_wish_link(data.get("link")),
             image_url=_clean_wish_image(data.get("image_url")),
             saved=_points(data.get("saved")),
+            saved_lots=[
+                {"d": str(lot.get("d", "")), "n": _points(lot.get("n"))}
+                for lot in (data.get("saved_lots") or [])
+                if isinstance(lot, dict) and lot.get("d") and _points(lot.get("n")) > 0
+            ],
             pledges=[WishPledge.from_dict(p) for p in data.get("pledges", []) or [] if isinstance(p, dict)],
             decline_reason=clean_label(data.get("decline_reason"), WISH_DECLINE_REASON_MAX),
             claim_id=str(data.get("claim_id", "") or ""),
@@ -2351,6 +2361,7 @@ class Wish:
             "link": self.link,
             "image_url": self.image_url,
             "saved": self.saved,
+            **({"saved_lots": [dict(lot) for lot in self.saved_lots]} if self.saved_lots else {}),
             "pledges": [p.to_dict() for p in self.pledges],
             "decline_reason": self.decline_reason,
             "claim_id": self.claim_id,

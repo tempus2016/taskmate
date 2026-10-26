@@ -61,8 +61,8 @@ def test_upload_returns_an_image_url_key():
 
 
 def test_serve_view_validates_the_filename_before_touching_disk():
-    assert "images.FILENAME_RE.match(filename)" in SRC
-    assert SRC.index("FILENAME_RE.match(filename)") < SRC.index("read_bytes()")
+    assert "images.FILENAME_RE.fullmatch(filename)" in SRC
+    assert SRC.index("FILENAME_RE.fullmatch(filename)") < SRC.index("read_bytes()")
 
 
 def test_registration_is_idempotent():

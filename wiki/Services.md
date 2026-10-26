@@ -950,6 +950,8 @@ Call off an open inspection, as if it never started.
 
 ## Family services (v7.0.0)
 
+A child's account may make at most 120 child-facing service calls a minute; a burst beyond that is refused ("Too many requests from this account") and recorded in the audit log. Parents, admins and automations are not limited.
+
 Services for the v7.0.0 family features. The ones a child can use for themselves (`request_help`, `log_mood`, `set_weekly_goal`, `buy_raffle_tickets`, `adopt_pet`) go through the same linked-child check as `complete_chore`, so a child's account can only act for that child. `answer_help`, `set_sick_day` and `draw_raffle` are parent actions (an HA admin or a [TaskMate parent](Parent-Access.md); automations are allowed).
 
 ### `taskmate.request_help`
@@ -1032,7 +1034,7 @@ data:
   target: 120
 ```
 
-Refused while **Weekly goals** is switched off in Settings. The goal carries over from week to week until it is changed.
+Refused while **Weekly goals** is switched off in Settings. The goal carries over from week to week until it is changed. When a child's own account sets the goal, the target has to be at least the weekly goal bonus and can't change once this week's bonus has been paid; a parent or automation isn't held to either.
 
 ### `taskmate.buy_raffle_tickets`
 A child spends points on tickets for a raffle. Each ticket is one chance in the draw. See [Raffles](Raffles.md).
@@ -1099,7 +1101,7 @@ Set the per-child display order of chores.
 | `chore_order` | ✅ | Ordered list of chore IDs |
 
 ### `taskmate.preview_sound`
-Preview a completion sound in the browser.
+Preview a completion sound in the browser. Admin only, like the rest of the sound configuration.
 
 | Field | Required | Description |
 | --- | --- | --- |

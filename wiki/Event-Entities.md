@@ -70,6 +70,8 @@ An event about more than one child lands on each of their entities: a [gift of p
 
 Events tied to a notification (help requested, weekly goal reached, penalty earned back, pet grew up, raffle drawn) reach the entities whether or not that notification is switched on.
 
+The child's own words never do. A help request's `message`, an appeal's `message` and a rejection's `note` or `reason` are on the bus event for automations, but not on the entity: its state and attributes are readable by every Home Assistant user and kept by the recorder.
+
 ---
 
 ## Using Them in the Automation Editor
