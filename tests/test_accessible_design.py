@@ -76,7 +76,11 @@ class TestTokens:
         assert block.count("Atkinson Hyperlegible") >= 3  # display, body, mono
 
     def test_the_font_is_actually_loaded(self):
-        assert "Atkinson+Hyperlegible" in DESIGN_JS
+        # Served from the integration's own static path, not a font CDN.
+        assert "font-family:'Atkinson Hyperlegible'" in DESIGN_JS
+        assert "/taskmate/fonts/atkinson-hyperlegible-400-latin.woff2" in DESIGN_JS
+        assert "/taskmate/fonts/atkinson-hyperlegible-700-latin.woff2" in DESIGN_JS
+        assert "googleapis" not in DESIGN_JS
 
     def test_dark_variant_avoids_pure_black(self):
         """Pure black blooms on OLED and is harsh with astigmatism."""
