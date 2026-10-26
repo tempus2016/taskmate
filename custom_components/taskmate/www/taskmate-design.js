@@ -882,7 +882,7 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
         "<style>" +
         ".tm-lightbox{position:fixed;inset:0;z-index:2147483000;display:none;flex-direction:column;" +
         "align-items:center;justify-content:center;gap:14px;box-sizing:border-box;" +
-        "padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));" +
+        "padding:max(16px,var(--safe-area-inset-top,env(safe-area-inset-top,0px))) 16px max(16px,var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));" +
         "background:rgba(8,10,14,.86);opacity:0;transition:opacity .18s ease;" +
         "font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;}" +
         ".tm-lightbox.open{opacity:1;}" +

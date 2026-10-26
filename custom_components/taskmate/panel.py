@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 from pathlib import Path
@@ -47,6 +48,15 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     version = await _async_get_version(hass)
     module_url = f"/taskmate/{PANEL_MODULE_FILE}?v={version}"
 
+    # HA 2026.8+ pads custom panels by the safe-area insets (notch, home
+    # indicator) unless the panel opts out. The panel is a 100dvh flex column
+    # with its own bottom bar, so that padding pushed the bar off the bottom
+    # of an iPhone (#1140); it pads itself instead. Older cores lack the
+    # argument and never pad, so only pass it where it exists.
+    extra = {}
+    if "handle_safe_area" in inspect.signature(panel_custom.async_register_panel).parameters:
+        extra["handle_safe_area"] = True
+
     try:
         await panel_custom.async_register_panel(
             hass,
@@ -57,6 +67,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
             module_url=module_url,
             embed_iframe=False,
             require_admin=True,
+            **extra,
         )
     except ValueError as err:
         # async_register_panel raises ValueError if the url_path is taken —
