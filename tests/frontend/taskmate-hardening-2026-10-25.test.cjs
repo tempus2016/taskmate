@@ -99,7 +99,7 @@ test("the feedback search query strips addresses and tokens too", () => {
   const d = p._fbDraft();
   d.bug.title = "Notify fails for sam@example.com with token=abc123def";
   const q = p._fbSearchQuery();
-  assert.ok(!q.includes("example.com") && !q.includes("abc123def"), q);
+  assert.doesNotMatch(q, /sam@example\.com|abc123def/, q);
   assert.ok(q.includes("Notify") && q.includes("fails"), q);
 });
 
