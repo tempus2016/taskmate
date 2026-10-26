@@ -35,7 +35,22 @@ MAX_TOTAL_BYTES = 512 * 1024 * 1024  # 512 MB
 
 # Stored filenames are always a generated uuid4().hex + a known image extension.
 # Anything else is rejected before any filesystem access (path-traversal safety).
+# Always matched with ``fullmatch``: ``$`` alone still accepts a trailing
+# newline, so ``<name>.jpg\n`` would pass the check and then miss the file.
 FILENAME_RE = re.compile(r"^[0-9a-f]{32}\.(jpg|png|webp|heic)$")
+
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def has_control_chars(text: str) -> bool:
+    """True when ``text`` carries a control character (newline, NUL, ...).
+
+    None of our URLs, filenames or sound values ever legitimately contain one;
+    a stray ``\\r`` or ``\\n`` is either an injection attempt or a bug, and either
+    way must fail closed before any prefix/regex check can be talked around.
+    """
+    return bool(_CONTROL_CHARS_RE.search(text or ""))
+
 
 CONTENT_TYPES = {
     "jpg": "image/jpeg",
@@ -79,6 +94,53 @@ class UploadRateLimiter:
         return len(self._seen)
 
 
+class UploadOwners:
+    """Which HA user uploaded each evidence photo that is not yet attached.
+
+    An upload is anonymous on disk — the name is a random hex — so without
+    this the only budget is the household-wide one, and one account can fill
+    it for everyone. Owners are remembered in memory: a file that gets
+    attached to a completion stops counting, a file that is gone is
+    forgotten, and after a restart the hourly orphan sweep still bounds what
+    an unowned pile can cost.
+    """
+
+    def __init__(self) -> None:
+        self._owner_by_name: dict[str, str] = {}
+
+    def record(self, filename: str, user_id: str) -> None:
+        self._owner_by_name[filename] = user_id
+
+    def forget(self, filename: str) -> None:
+        self._owner_by_name.pop(filename, None)
+
+    def files_for(self, user_id: str) -> list[str]:
+        return [name for name, owner in self._owner_by_name.items() if owner == user_id]
+
+    def unattached_for(self, user_id: str, referenced_urls) -> list[str]:
+        """This user's uploads no record points at (and forget the attached ones)."""
+        attached = {url[len(URL_PREFIX) + 1 :] for url in referenced_urls if url and url.startswith(URL_PREFIX + "/")}
+        out = []
+        for name in self.files_for(user_id):
+            if name in attached:
+                self.forget(name)
+            else:
+                out.append(name)
+        return out
+
+
+def files_bytes(directory: Path, names) -> tuple[int, list[str]]:
+    """Total size of the named files in ``directory``, plus the names no longer there."""
+    total = 0
+    missing = []
+    for name in names:
+        try:
+            total += (directory / name).stat().st_size
+        except OSError:
+            missing.append(name)
+    return total, missing
+
+
 def detect_image_ext(data: bytes) -> str | None:
     """Return a file extension for known image magic bytes, else None.
 
@@ -117,12 +179,12 @@ def is_taskmate_photo_url(photo_url: str) -> bool:
     dangerous scheme (``javascript:``, external ``http(s):``) and anything whose
     name fails the strict filename pattern.
     """
-    if not photo_url:
+    if not photo_url or has_control_chars(photo_url):
         return False
     prefix = URL_PREFIX + "/"
     if not photo_url.startswith(prefix):
         return False
-    return bool(FILENAME_RE.match(photo_url[len(prefix) :]))
+    return bool(FILENAME_RE.fullmatch(photo_url[len(prefix) :]))
 
 
 def photo_file_for_url(hass, photo_url: str) -> Path | None:
@@ -132,14 +194,9 @@ def photo_file_for_url(hass, photo_url: str) -> Path | None:
     fails the strict filename pattern (rejects traversal, sub-paths, foreign
     URLs). Never touches the filesystem.
     """
-    if not photo_url:
+    if not is_taskmate_photo_url(photo_url):
         return None
-    prefix = URL_PREFIX + "/"
-    if not photo_url.startswith(prefix):
-        return None
-    name = photo_url[len(prefix) :]
-    if not FILENAME_RE.match(name):
-        return None
+    name = photo_url[len(URL_PREFIX) + 1 :]
     return photos_path(hass) / name
 
 
@@ -243,7 +300,7 @@ def matching_files_bytes(directory: Path, filename_re: re.Pattern[str]) -> int:
         return 0
     total = 0
     for p in directory.iterdir():
-        if p.is_file() and filename_re.match(p.name):
+        if p.is_file() and filename_re.fullmatch(p.name):
             with contextlib.suppress(OSError):  # pragma: no cover - defensive
                 total += p.stat().st_size
     return total
@@ -272,7 +329,7 @@ async def async_sweep_orphan_photos(hass, referenced_urls, max_age_hours: int = 
         cutoff = time.time() - max_age_hours * 3600
         removed = 0
         for p in directory.iterdir():
-            if not (p.is_file() and FILENAME_RE.match(p.name)):
+            if not (p.is_file() and FILENAME_RE.fullmatch(p.name)):
                 continue
             if p.name in referenced:
                 continue

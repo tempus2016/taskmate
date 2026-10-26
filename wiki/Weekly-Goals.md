@@ -33,7 +33,12 @@ The sheet tells the child how many points they **could** earn this week from the
 
 A goal carries over from week to week until it is changed, so a child who likes their goal doesn't have to set it every Monday. Setting the goal to 0 clears it.
 
-Parents can set or change a goal for a child with the `set_weekly_goal` service.
+Two rules apply when the child sets their own goal, so the bonus stays a reward for aiming at something:
+
+- the goal has to be at least the bonus it pays (with a 10-point bonus, 10 or more), so a goal of 1 can't farm the bonus every week
+- once this week's bonus has been paid, the goal can't be changed until Monday
+
+Parents can set or change a goal for a child with the `set_weekly_goal` service; neither rule applies to a parent.
 
 ---
 

@@ -14,7 +14,10 @@ refresh and every minute:
   gifts to a sibling all use up the points closest to expiring.
 
 Points saved into a reward's savings jar have left the balance, so they
-never expire while they sit there.
+never expire while they sit there. Points a child moves into a wish (#932)
+are different: they are still the child's to take back, so the lots they
+came out of travel with the wish (``take_lots`` / ``restore_lots``) and keep
+their dates — moving points in and out is not a way to restart the clock.
 
 On the minutely tick any lot older than ``points_expiry_days`` is taken off
 the balance with a "Points expired" transaction and a
@@ -105,6 +108,50 @@ class PointsExpiryMixin:
                     lots.pop(0)
         record["lots"] = lots
         return lots
+
+    def take_lots(self, child, amount: int) -> list[dict[str, Any]]:
+        """Take ``amount`` points off ``child``'s oldest lots and return them.
+
+        For points leaving the balance but staying the child's — savings moved
+        into a wish. They come back through ``restore_lots`` with their dates.
+        Call it before lowering the balance, so the lots still match it; the
+        reconcile then sees the balance and the lots fall together. [] when
+        expiry is off.
+        """
+        if not self.points_expiry_enabled() or amount <= 0:
+            return []
+        lots = self._reconcile_lots(child)
+        taken: list[dict[str, Any]] = []
+        owed = amount
+        while owed > 0 and lots:
+            take = min(owed, int(lots[0]["n"]))
+            taken.append({"d": lots[0]["d"], "n": take})
+            lots[0]["n"] = int(lots[0]["n"]) - take
+            owed -= take
+            if lots[0]["n"] <= 0:
+                lots.pop(0)
+        return taken
+
+    def restore_lots(self, child, lots: list[dict[str, Any]]) -> None:
+        """Put lots from ``take_lots`` back, dated as they were.
+
+        Call it before raising the balance, for the same reason as above.
+        """
+        if not self.points_expiry_enabled() or not lots:
+            return
+        current = self._reconcile_lots(child)
+        for lot in lots:
+            day = str(lot.get("d", ""))
+            n = int(lot.get("n", 0) or 0)
+            if not day or n <= 0:
+                continue
+            match = next((c for c in current if c.get("d") == day), None)
+            if match is not None:
+                match["n"] = int(match["n"]) + n
+            else:
+                current.append({"d": day, "n": n})
+        current.sort(key=lambda lot: str(lot.get("d", "")))
+        self._expiry_record(child.id)["lots"] = current
 
     def reconcile_points_lots(self) -> None:
         """Run on every refresh. Cheap: one pass per child, no save of its own."""

@@ -98,61 +98,87 @@ class PointsMixin:
             progress[child.id] = {"earned": earned.get(child.id, 0), "available": available}
         return progress
 
+    def _perfect_week_bonus_points(self) -> int:
+        try:
+            return int(self.storage.get_setting("perfect_week_bonus", "50"))
+        except (ValueError, TypeError):
+            return 50
+
+    def _perfect_week_met(self, child, last_monday: date, completions, chores, all_mode: bool) -> bool:
+        """Whether ``child`` earned the perfect week starting ``last_monday``.
+
+        Only approved completions count. A pending one is a claim nobody has
+        checked yet, and seven of them would otherwise pay a bonus a parent
+        may still reject every one of. A day with nothing scheduled isn't
+        required (weekends for weekday-only chores); a birthday day off never
+        is (#924); rotation-mode chores are skipped because who was active on
+        a past day can't be reconstructed. When no scheduled day can be
+        derived (rotation-only setups) every day of the week is required.
+        With ``perfect_week_requires_all_chores`` (#563) a day counts only
+        when every chore due that day was done.
+        """
+        week_dates = {(last_monday + timedelta(days=i)).isoformat() for i in range(7)}
+        completed_days: set[str] = set()
+        for comp in completions:
+            if comp.child_id != child.id or not comp.approved:
+                continue
+            try:
+                day_str = dt_util.as_local(comp.completed_at).date().isoformat()
+            except (ValueError, TypeError, AttributeError):
+                continue
+            if day_str in week_dates:
+                completed_days.add(day_str)
+
+        required: set[str] = set()
+        for d_str in week_dates:
+            day = date.fromisoformat(d_str)
+            if self.is_birthday_day_off(child, day):
+                continue
+            for chore in chores:
+                assigned = chore.assigned_to or []
+                if assigned and child.id not in assigned:
+                    continue
+                if child.id in getattr(chore, "disabled_for", []):
+                    continue
+                if getattr(chore, "assignment_mode", "everyone") not in ("", "everyone"):
+                    continue
+                if self._is_chore_scheduled_for_date(chore, day):
+                    required.add(d_str)
+                    break
+        if all_mode and required:
+            return all(
+                self._all_due_chores_done(child.id, date.fromisoformat(d), include_rotation=False, approved_only=True)
+                for d in required
+            )
+        return completed_days >= (required or week_dates)
+
     async def _async_check_perfect_week(self) -> None:
-        """Award perfect week bonus to children who completed at least one chore every day last week."""
+        """Pay the perfect-week bonus for last week to every child who earned it.
+
+        Part of the nightly maintenance, not just Monday's: only approved
+        completions count (``_perfect_week_met``), so a week whose last
+        approval lands on Tuesday is paid on Tuesday night. The week's key in
+        ``awarded_perfect_weeks`` keeps it to once per week.
+        """
         perfect_week_enabled = self.storage.get_setting("perfect_week_enabled", "true") == "true"
         if not perfect_week_enabled:
             return
 
-        try:
-            perfect_week_bonus = int(self.storage.get_setting("perfect_week_bonus", "50"))
-        except (ValueError, TypeError):
-            perfect_week_bonus = 50
+        perfect_week_bonus = self._perfect_week_bonus_points()
 
         # #563: require every chore due each day (not just one) to count the day.
         all_mode = self._setting_enabled("perfect_week_requires_all_chores")
 
         today = dt_util.now().date()
-        # Should only run on Monday — last week is Mon(today-7) to Sun(today-1)
-        if today.weekday() != 0:
-            _LOGGER.debug("Perfect week check skipped (not Monday)")
-            return
-
-        last_monday = today - timedelta(days=7)
-        last_week_dates = {(last_monday + timedelta(days=i)).isoformat() for i in range(7)}
+        # Last week, Monday to Sunday, whatever day it is now.
+        last_monday = today - timedelta(days=today.weekday() + 7)
+        last_sunday = last_monday + timedelta(days=6)
         week_key = last_monday.isoformat()
 
         all_completions = self.storage.get_completions()
         children = self.storage.get_children()
         chores = [c for c in self.storage.get_chores() if getattr(c, "enabled", True)]
         changed = False
-
-        def _required_dates(child_id: str) -> set[str]:
-            """Days last week on which the child had at least one scheduled chore.
-
-            A perfect week shouldn't demand completions on days with nothing
-            due (e.g. weekends for weekday-only chores). Rotation-mode chores
-            are skipped — who was active on a past day can't be reconstructed.
-            """
-            req: set[str] = set()
-            child_obj = self.storage.get_child(child_id)
-            for d_str in last_week_dates:
-                day = date.fromisoformat(d_str)
-                # A birthday day off is never a required day (#924).
-                if self.is_birthday_day_off(child_obj, day):
-                    continue
-                for chore in chores:
-                    assigned = chore.assigned_to or []
-                    if assigned and child_id not in assigned:
-                        continue
-                    if child_id in getattr(chore, "disabled_for", []):
-                        continue
-                    if getattr(chore, "assignment_mode", "everyone") not in ("", "everyone"):
-                        continue
-                    if self._is_chore_scheduled_for_date(chore, day):
-                        req.add(d_str)
-                        break
-            return req
 
         for child in children:
             awarded_weeks = list(getattr(child, "awarded_perfect_weeks", None) or [])
@@ -161,84 +187,100 @@ class PointsMixin:
             if week_key in awarded_weeks:
                 continue
 
-            # Get all days this child had at least one completion last week
-            # (count both approved and pending — don't penalise for slow parent approval)
-            completed_days = set()
-            for comp in all_completions:
-                if comp.child_id != child.id:
-                    continue
-                try:
-                    comp_local = dt_util.as_local(comp.completed_at)
-                    comp_date_str = comp_local.date().isoformat()
-                    if comp_date_str in last_week_dates:
-                        completed_days.add(comp_date_str)
-                except (ValueError, TypeError, AttributeError):
-                    continue
+            if not self._perfect_week_met(child, last_monday, all_completions, chores, all_mode):
+                continue
 
-            # If no scheduled days can be derived (e.g. rotation-only setups),
-            # fall back to requiring a completion on all 7 days as before
-            derived_dates = _required_dates(child.id)
-            required_dates = derived_dates or last_week_dates
-            # #563: when enabled (and the required days could be derived), a day
-            # counts only when EVERY chore due that day was done — not just one.
-            if all_mode and derived_dates:
-                satisfied = all(
-                    self._all_due_chores_done(child.id, date.fromisoformat(d), include_rotation=False)
-                    for d in derived_dates
-                )
-            else:
-                satisfied = completed_days >= required_dates
-            if satisfied:
-                # Perfect week!
-                child.awarded_perfect_weeks = awarded_weeks + [week_key]
-                child.points += perfect_week_bonus
-                child.total_points_earned += perfect_week_bonus
-                child.career_score = child.total_points_earned - child.total_penalties_received
-                self.storage.append_career_score_snapshot(child.id, today.isoformat(), child.career_score)
-                self.storage.update_child(child)
+            # Perfect week!
+            child.awarded_perfect_weeks = awarded_weeks + [week_key]
+            child.points += perfect_week_bonus
+            child.total_points_earned += perfect_week_bonus
+            child.career_score = child.total_points_earned - child.total_penalties_received
+            self.storage.append_career_score_snapshot(child.id, today.isoformat(), child.career_score)
+            self.storage.update_child(child)
 
-                transaction = PointsTransaction(
-                    child_id=child.id,
-                    points=perfect_week_bonus,
-                    reason=f"Perfect week bonus! ({last_monday.strftime('%d %b')} – {(today - timedelta(days=1)).strftime('%d %b')})",
-                    created_at=dt_util.now(),
-                )
-                self.storage.add_points_transaction(transaction)
-                changed = True
+            transaction = PointsTransaction(
+                child_id=child.id,
+                points=perfect_week_bonus,
+                reason=f"Perfect week bonus! ({last_monday.strftime('%d %b')} – {last_sunday.strftime('%d %b')})",
+                created_at=dt_util.now(),
+            )
+            self.storage.add_points_transaction(transaction)
+            changed = True
 
-                self.hass.bus.async_fire(
-                    "taskmate_perfect_week",
-                    {
-                        "child_id": child.id,
-                        "week_key": week_key,
-                        "bonus": perfect_week_bonus,
-                        "timestamp": dt_util.now().isoformat(),
-                    },
-                )
+            self.hass.bus.async_fire(
+                "taskmate_perfect_week",
+                {
+                    "child_id": child.id,
+                    "week_key": week_key,
+                    "bonus": perfect_week_bonus,
+                    "timestamp": dt_util.now().isoformat(),
+                },
+            )
 
-                if getattr(self, "badges", None):
-                    await self.badges.evaluate_for_child(child.id, "perfect_week")
-                await self._celebrate(
-                    child,
-                    "perfect_week",
-                    notify_strings.render(
-                        self.hass,
-                        "celebrate_perfect_week",
-                        {"child_name": child.name, "bonus": perfect_week_bonus},
-                    ),
-                    tier=3,
-                    extra={"bonus": perfect_week_bonus},
-                )
-                _LOGGER.info(
-                    "Perfect week bonus (%d pts) awarded to %s for week of %s",
-                    perfect_week_bonus,
-                    child.name,
-                    week_key,
-                )
+            if getattr(self, "badges", None):
+                await self.badges.evaluate_for_child(child.id, "perfect_week")
+            await self._celebrate(
+                child,
+                "perfect_week",
+                notify_strings.render(
+                    self.hass,
+                    "celebrate_perfect_week",
+                    {"child_name": child.name, "bonus": perfect_week_bonus},
+                ),
+                tier=3,
+                extra={"bonus": perfect_week_bonus},
+            )
+            _LOGGER.info(
+                "Perfect week bonus (%d pts) awarded to %s for week of %s",
+                perfect_week_bonus,
+                child.name,
+                week_key,
+            )
 
         if changed:
             await self.storage.async_save()
             await self.async_refresh()
+
+    def _reverse_perfect_week_bonus(self, completion, child) -> None:
+        """Take a paid perfect-week bonus back when un-approving ``completion`` breaks its week.
+
+        Same shape as ``_reverse_weekly_target_bonus``: the completion has
+        already gone back to pending, so the week is judged again on what is
+        still approved. Dropping the week key lets the nightly check pay it
+        again if the day is re-approved. The caller saves.
+        """
+        if not child or getattr(completion, "bonus_subtask_id", ""):
+            return
+        try:
+            day = dt_util.as_local(completion.completed_at).date()
+        except (ValueError, TypeError, AttributeError):
+            return
+        monday = day - timedelta(days=day.weekday())
+        week_key = monday.isoformat()
+        awarded = list(getattr(child, "awarded_perfect_weeks", None) or [])
+        if week_key not in awarded:
+            return
+        chores = [c for c in self.storage.get_chores() if getattr(c, "enabled", True)]
+        all_mode = self._setting_enabled("perfect_week_requires_all_chores")
+        if self._perfect_week_met(child, monday, self.storage.get_completions(), chores, all_mode):
+            return
+        bonus = self._perfect_week_bonus_points()
+        child.awarded_perfect_weeks = [w for w in awarded if w != week_key]
+        child.points = max(0, child.points - bonus)
+        child.total_points_earned = max(0, child.total_points_earned - bonus)
+        child.career_score = child.total_points_earned - child.total_penalties_received
+        self.storage.update_child(child)
+        self.storage.append_career_score_snapshot(child.id, dt_util.now().date().isoformat(), child.career_score)
+        sunday = monday + timedelta(days=6)
+        self.storage.add_points_transaction(
+            PointsTransaction(
+                child_id=child.id,
+                points=-bonus,
+                reason=f"Perfect week bonus reversed ({monday.strftime('%d %b')} – {sunday.strftime('%d %b')})",
+                created_at=dt_util.now(),
+            ),
+            reverses_season=True,
+        )
 
     def _streak_breaks_after_gap(self, last_date_str: str, today: date, child: Child | None = None) -> bool:
         """True if a genuine (non-vacation) expected day was missed.
@@ -596,6 +638,26 @@ class PointsMixin:
         "Wish refund",
         "Wish pledge",
         "Wish redeemed",
+        # Each of these is the consequence of something else — a draw, a
+        # payout ledger, a chore, a quest step, a decision — and has its own
+        # way back (or none). The panel and the activity card carry the same
+        # list, in the same order.
+        "Raffle tickets",
+        "Raffle called off",
+        "Allowance payout",
+        "Made it right",
+        "Quest complete",
+        "Quest reversed",
+        "Challenge complete",
+        "Challenge reversed",
+        "Weekly goal reached",
+        "Weekly goal reversed",
+        "All times done",
+        "Appeal:",
+        "Sibling check:",
+        "Surprise bonus",
+        "Perfect week bonus reversed",
+        "Streak milestone reversed",
     )
 
     async def async_undo_transaction(self, transaction_id: str) -> None:
@@ -621,7 +683,15 @@ class PointsMixin:
             link_id = getattr(target, "link_id", "") or ""
             if not link_id:
                 raise ValueError("This gift predates undo support and can't be reversed automatically.")
-            for leg in [t for t in txns if (getattr(t, "link_id", "") or "") == link_id]:
+            legs = [t for t in txns if (getattr(t, "link_id", "") or "") == link_id]
+            # The recipient must still hold what they were given. Flooring
+            # their balance at zero while handing the sender the full amount
+            # back would mint the difference.
+            for leg in legs:
+                leg_child = self.get_child(leg.child_id)
+                if leg.points > 0 and leg_child is not None and leg_child.points < leg.points:
+                    raise ValueError(f"{leg_child.name} has already spent some of this gift, so it can't be undone.")
+            for leg in legs:
                 leg_child = self.get_child(leg.child_id)
                 if leg_child:
                     leg_child.points = max(0, leg_child.points - leg.points)
@@ -637,6 +707,9 @@ class PointsMixin:
 
         pts = target.points  # signed: removals < 0, additions > 0
         is_penalty = reason.startswith("Penalty: ")
+        if is_penalty:
+            # Its make-it-right offer goes with it; refused if already earned back.
+            self._settle_offer_for_undone_penalty(child.id, reason[len("Penalty: ") :], target.created_at)
         child.points = max(0, child.points - pts)
         if is_penalty:
             # Penalty removed points AND raised total_penalties_received.
@@ -839,18 +912,23 @@ class PointsMixin:
         now = dt_util.now()
         changed = False
         for child in self.storage.get_children():
-            if (child.points or 0) <= 0:
+            loss = round(child.points * pct / 100.0) if (child.points or 0) > 0 else 0
+            # Savings parked in a wish (#932) decay by the same share, or a
+            # wish would be a place to keep a balance out of decay's reach.
+            wish_loss = self._decay_wish_savings(child.id, pct) if hasattr(self, "_decay_wish_savings") else 0
+            if loss <= 0 and wish_loss <= 0:
                 continue
-            loss = round(child.points * pct / 100.0)
-            if loss <= 0:
-                continue
-            child.points = max(0, child.points - loss)
-            self.storage.update_child(child)
+            if loss > 0:
+                child.points = max(0, child.points - loss)
+                self.storage.update_child(child)
+            reason = f"Points decay (-{pct:.0f}%)"
+            if wish_loss:
+                reason += f", {wish_loss} from wish savings"
             self.storage.add_points_transaction(
                 PointsTransaction(
                     child_id=child.id,
                     points=-loss,
-                    reason=f"Points decay (-{pct:.0f}%)",
+                    reason=reason,
                     created_at=now,
                 )
             )
@@ -860,6 +938,7 @@ class PointsMixin:
                     "child_id": child.id,
                     "child_name": child.name,
                     "points": loss,
+                    **({"wish_points": wish_loss} if wish_loss else {}),
                     "timestamp": now.isoformat(),
                 },
             )
@@ -992,12 +1071,16 @@ class PointsMixin:
             out.add(chore.id)
         return out
 
-    def _completed_chore_ids_for_child(self, child_id: str, day: date) -> set[str]:
+    def _completed_chore_ids_for_child(self, child_id: str, day: date, *, approved_only: bool = False) -> set[str]:
         """Chore IDs the child has a (non-bonus) completion for on ``day`` —
-        approved or pending, so slow parent approval doesn't break the day."""
+        approved or pending, so slow parent approval doesn't break the day.
+        The perfect-week bonus passes ``approved_only``: it is paid, so it
+        waits for the approval."""
         out: set[str] = set()
         for c in self.storage.get_completions():
             if c.child_id != child_id or getattr(c, "bonus_subtask_id", ""):
+                continue
+            if approved_only and not c.approved:
                 continue
             try:
                 if dt_util.as_local(c.completed_at).date() == day:
@@ -1007,17 +1090,24 @@ class PointsMixin:
         return out
 
     def _all_due_chores_done(
-        self, child_id: str, day: date, *, include_rotation: bool, extra_done: str | None = None
+        self,
+        child_id: str,
+        day: date,
+        *,
+        include_rotation: bool,
+        extra_done: str | None = None,
+        approved_only: bool = False,
     ) -> bool:
         """True when every chore due for the child on ``day`` has a completion.
 
         A day with nothing due is satisfied. ``extra_done`` lets the streak path
-        count an in-flight completion that hasn't been persisted yet.
+        count an in-flight completion that hasn't been persisted yet;
+        ``approved_only`` is the perfect-week rule.
         """
         due = self._due_chore_ids_for_child(child_id, day, include_rotation=include_rotation)
         if not due:
             return True
-        done = self._completed_chore_ids_for_child(child_id, day)
+        done = self._completed_chore_ids_for_child(child_id, day, approved_only=approved_only)
         if extra_done:
             done = done | {extra_done}
         return due <= done

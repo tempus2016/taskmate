@@ -15,7 +15,7 @@ Every chore the child still has to do today shows a small **🙋 I'm stuck** but
 1. sends the parents the *Asked for help* notification: "🙋 Vaiha needs help with 'Empty the dishwasher'"
 2. changes the button to **🙋 Help is on its way**
 
-The request stays open until a parent marks it answered, or for two hours, whichever comes first. A second tap on the same chore within ten minutes doesn't buzz you again.
+The request stays open until a parent marks it answered, or for two hours, whichever comes first. A second tap on the same chore within ten minutes doesn't buzz you again, and nor does another request within a minute of an open one, whatever the chore. Only a chore that is the child's to do today can be asked about.
 
 The button is hidden on chores that are already done, and on cards in [pre-reader mode](Pre-Reader-Mode.md). To hide it on a card:
 
@@ -56,7 +56,7 @@ The notification fires the `taskmate_help_requested` event whether or not it's s
 
 | Service | Fields | Description |
 |---------|--------|-------------|
-| `taskmate.request_help` | `child_id`, `chore_id`, `message` (optional, up to 120 characters) | Ask for help with a chore. Refused with "Help is already on its way" if the same child asked about the same chore in the last ten minutes |
+| `taskmate.request_help` | `child_id`, `chore_id`, `message` (optional, up to 120 characters) | Ask for help with a chore. Refused with "Help is already on its way" if the same child asked about the same chore in the last ten minutes, with "Give it a minute" if they have another open request less than a minute old, and if the chore isn't theirs to do today |
 | `taskmate.answer_help` | `request_id` | Mark a request answered |
 
 Each child's entry in `sensor.taskmate_overview`'s `children` attribute lists the chores with an open request under `help`.

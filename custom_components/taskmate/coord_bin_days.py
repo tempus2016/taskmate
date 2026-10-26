@@ -39,6 +39,11 @@ DEFAULT_BRING_IN_TIME = "16:00"
 _REQUERY_EVERY = timedelta(minutes=15)
 _SEEN_KEEP_DAYS = 14
 _SUMMARY_MAX = 60
+# A calendar anyone can write to can raise chores, so it is bounded the same
+# way as the shopping list: this many bin chores on the board at once, this
+# many new ones per read. Skipped events are picked up on the next read.
+BIN_DAY_MAX_OPEN = 10
+BIN_DAY_MAX_PER_POLL = 5
 _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 # First match wins; the summary is checked in lower case.
@@ -181,6 +186,10 @@ class BinDaysMixin:
         state = self._bin_state()
         created = 0
         dirty = False
+        open_jobs = self._open_bin_jobs(state)
+
+        def _room() -> bool:
+            return created < BIN_DAY_MAX_PER_POLL and open_jobs + created < BIN_DAY_MAX_OPEN
 
         if local.time() >= _parse_time(self.storage.get_setting("bin_day_put_out_time"), DEFAULT_PUT_OUT_TIME):
             try:
@@ -197,6 +206,9 @@ class BinDaysMixin:
                     key = f"{event['date']}|{event['summary'].lower()}"
                     if key in state["seen"]:
                         continue
+                    if not _room():
+                        _LOGGER.debug("TaskMate: bin chore for %s waits for the next read", key)
+                        continue
                     chore = await self._async_raise_bin_chore("bin_day_put_out", event["summary"], local)
                     state["seen"][key] = {
                         "date": event["date"],
@@ -212,23 +224,41 @@ class BinDaysMixin:
             for record in state["seen"].values():
                 if record.get("date") != today.isoformat() or record.get("bring_in"):
                     continue
+                if not _room():
+                    continue
                 record["bring_in"] = True
                 dirty = True
                 chore = await self._async_raise_bin_chore("bin_day_bring_in", record["summary"], local)
+                record["bring_in_chore"] = chore.id if chore else ""
                 created += 1 if chore else 0
 
         cutoff = (today - timedelta(days=_SEEN_KEEP_DAYS)).isoformat()
         for key in [k for k, r in state["seen"].items() if str(r.get("date", "")) < cutoff]:
             del state["seen"][key]
             dirty = True
-        if dirty:
+        if dirty or created:
             await self.storage.async_save()
         if created:
             await self.async_refresh()
         return created
 
+    def _open_bin_jobs(self, state: dict[str, Any]) -> int:
+        """Bin chores still on the board: raised, and neither done nor gone."""
+        count = 0
+        for record in state["seen"].values():
+            for key in ("put_out_chore", "bring_in_chore"):
+                chore = self.storage.get_chore(str(record.get(key) or ""))
+                if chore is not None and getattr(chore, "enabled", True):
+                    count += 1
+        return count
+
     async def _async_raise_bin_chore(self, text_key: str, summary: str, local: datetime):
-        """One-off chore for tonight; the deadline is the end of the day."""
+        """One-off chore for tonight; the deadline is the end of the day.
+
+        Keeps the default ``requires_approval``: a calendar event is nobody's
+        judgement of the work, so a parent ticks it off, never the auto-approve
+        timer or a sibling. The caller saves once per tick.
+        """
         pool = self.bin_day_children()
         if not pool:
             return None
@@ -255,6 +285,7 @@ class BinDaysMixin:
             time_category="anytime",
             assignment_mode=assignment_mode,
             deadline_at=deadline.isoformat(),
+            refresh=False,
         )
         self.hass.bus.async_fire(
             "taskmate_bin_day",

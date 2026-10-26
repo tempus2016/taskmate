@@ -4,7 +4,8 @@ Help: a child tapping "I'm stuck" on a chore sends the parents a push without
 completing or skipping anything. A request stays open until a parent marks it
 answered, or for two hours, so the card can say "help is on its way". A second
 tap on the same chore inside ten minutes is refused rather than buzzing the
-parent again.
+parent again, and so is any further tap inside a minute while one is still
+open: the button is for the child's own chores today, one at a time.
 
 Mood: once a day a child can say how the day went with one of five faces.
 Parents see the trend in the admin panel; a sad or upset day can also send a
@@ -28,6 +29,7 @@ MOOD_KEEP_DAYS = 90
 
 HELP_OPEN_HOURS = 2
 HELP_REPEAT_MINUTES = 10
+HELP_COOLDOWN_SECONDS = 60
 HELP_KEEP = 100
 HELP_MESSAGE_MAX = 120
 
@@ -62,17 +64,27 @@ class WellbeingMixin:
         chore = self.get_chore(chore_id)
         if chore is None:
             raise ValueError(f"Chore {chore_id} not found")
+        # Only a chore that is the child's to do today. The card only offers
+        # those, but the service takes any chore id, and a sibling's chore
+        # name in a parent's push is not this child's to send.
+        if not self._is_chore_completable_by_child(chore, child_id):
+            raise ValueError(f"{chore.name} is not one of {child.name}'s chores today.")
         now = dt_util.now()
         repeat_cutoff = now - timedelta(minutes=HELP_REPEAT_MINUTES)
+        cooldown_cutoff = now - timedelta(seconds=HELP_COOLDOWN_SECONDS)
         for req in self._help_requests():
-            if req.get("child_id") != child_id or req.get("chore_id") != chore_id or req.get("answered"):
+            if req.get("child_id") != child_id or req.get("answered"):
                 continue
             try:
-                recent = datetime.fromisoformat(req.get("at", "")) >= repeat_cutoff
+                at = datetime.fromisoformat(req.get("at", ""))
             except (TypeError, ValueError):
-                recent = False
-            if recent:
+                continue
+            if req.get("chore_id") == chore_id and at >= repeat_cutoff:
                 raise ValueError("Help is already on its way.")
+            # One open request a minute across every chore: each one is a push
+            # to every parent, and a different chore each tap is still a burst.
+            if at >= cooldown_cutoff:
+                raise ValueError("Give it a minute before asking for help again.")
         record = {
             "id": generate_id(),
             "child_id": child_id,

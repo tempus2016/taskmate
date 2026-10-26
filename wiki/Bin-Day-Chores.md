@@ -27,7 +27,8 @@ You need a calendar in Home Assistant with your collection days on it — [Waste
 
 - **One chore per event.** Each calendar event on tomorrow's date becomes a chore named after it, so a calendar with "Recycling" and "Garden waste" on the same day gives two chores. The same bin on the same day is only ever raised once, however many calendars carry it or however often they're read.
 - The calendar is read at the put-out time and again every 15 minutes until midnight, so a collection added late in the evening still gets its chore.
-- The chore is a [reactive chore](Reactive-Chores.md): a one-off with a deadline at the end of that evening. It needs approval like any other chore.
+- The chore is a [reactive chore](Reactive-Chores.md): a one-off with a deadline at the end of that evening. It always needs a parent's approval; the auto-approve timer and sibling checks leave it alone.
+- A calendar anyone can write to can raise chores, so the same bounds as [shopping-list jobs](Shopping-List-Jobs.md) apply: at most 5 new bin chores per read and 10 on the board at once. Skipped events are picked up on the next read.
 - The emoji comes from the event's name: ♻️ for recycling, blue, paper, card, plastic or tins; 🌿 for garden, green, brown, compost or food; 🍾 for glass or bottles; 🗑️ for anything else.
 - The words around the bin name follow Home Assistant's language: *"Put the {bin} out"* in English, *"{bin} rausstellen"* in German.
 

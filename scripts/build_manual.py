@@ -22,7 +22,7 @@ never taken from the page.
 Run: python3 scripts/build_manual.py [--out DIR]
      python3 scripts/build_manual.py --check   (CI: build to a temp dir, and
      check every page the panel's "?" buttons open is still there)
-Needs: pip install -r requirements-docs.txt  (markdown, pymdown-extensions, pyyaml)
+Needs: pip install -r requirements-docs.txt  (markdown, pymdown-extensions, pyyaml; pinned from requirements-docs.in)
 """
 
 from __future__ import annotations
@@ -173,14 +173,30 @@ class Sanitizer(HTMLParser):
             elif tag == "a" and name == "href":
                 kept.update(self._link(value))
             elif tag == "img" and name == "src":
-                src = value.strip()
-                if re.match(r"^https://", src, re.I):
+                src = self._image_src(value)
+                if src:
                     kept["src"] = src
-                elif not re.match(r"^[a-z][a-z0-9+.-]*:", src, re.I):
-                    kept["src"] = SITE + src.lstrip("./")
         if tag == "img":
             kept["loading"] = "lazy"
         return kept
+
+    @staticmethod
+    def _image_src(value: str) -> str:
+        """Where a picture may load from: the docs site, and nothing else.
+
+        Every admin panel that opens the Manual fetches every <img> in it, so a
+        wiki page pointing one at another host would hand that host every
+        reader's address. Relative paths (the screenshots in wiki/images/) are
+        rewritten onto the site; a URL already on the site is kept; anything
+        else — another https host, http, a bare //host, /rooted, data:, a
+        scheme — is dropped, and the <img> with it.
+        """
+        src = value.strip()
+        if src.startswith(SITE):
+            return src
+        if re.match(r"^(?:\.{1,2}/)*[^/:#?][^:]*$", src):
+            return SITE + src.lstrip("./")
+        return ""
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
@@ -190,9 +206,10 @@ class Sanitizer(HTMLParser):
             return
         if self.drop_depth or tag not in ALLOWED_TAGS:
             return
-        if tag == "img" and not any(n == "src" for n, _ in attrs):
-            return
-        rendered = "".join(f' {k}="{html.escape(v, quote=True)}"' for k, v in self._attrs(tag, attrs).items())
+        kept = self._attrs(tag, attrs)
+        if tag == "img" and "src" not in kept:
+            return  # no picture, or one from a host the Manual does not load from
+        rendered = "".join(f' {k}="{html.escape(v, quote=True)}"' for k, v in kept.items())
         self.out.append(f"<{tag}{rendered}>")
         if tag not in VOID_TAGS:
             self.open.append(tag)

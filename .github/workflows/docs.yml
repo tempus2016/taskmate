@@ -13,6 +13,7 @@ on:
     paths:
       - "wiki/**"
       - "mkdocs.yml"
+      - "requirements-docs.in"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"
   pull_request:
@@ -20,6 +21,7 @@ on:
     paths:
       - "wiki/**"
       - "mkdocs.yml"
+      - "requirements-docs.in"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
@@ -47,8 +49,10 @@ jobs:
         with:
           python-version: "3.14"
 
+      # The lock pins every package by version and hash, so pip installs only
+      # what was reviewed with the PR that regenerated it (see requirements-docs.in).
       - name: Install MkDocs
-        run: python -m pip install -r requirements-docs.txt
+        run: python -m pip install --require-hashes -r requirements-docs.txt
 
       - name: Build site
         run: python -m mkdocs build --strict --site-dir site

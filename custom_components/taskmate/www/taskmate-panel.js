@@ -600,6 +600,11 @@ class TaskMatePanel extends HTMLElement {
       "Allocated to pool:", "Pool refund", "Points decay", "Points expired",
       "Savings interest", "Badge", "Streak freeze",
       "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
+      "Raffle tickets", "Raffle called off", "Allowance payout", "Made it right",
+      "Quest complete", "Quest reversed", "Challenge complete", "Challenge reversed",
+      "Weekly goal reached", "Weekly goal reversed", "All times done",
+      "Appeal:", "Sibling check:", "Surprise bonus",
+      "Perfect week bonus reversed", "Streak milestone reversed",
     ];
   }
 
@@ -11738,7 +11743,11 @@ class TaskMatePanel extends HTMLElement {
   /** The search the current title calls for, or "" when it is too short to search. */
   _fbSearchQuery() {
     const d = this._fbDraft();
-    const words = d[d.type].title.trim().split(/\s+/).filter(w => w.length >= 3);
+    // The title leaves the house (api.github.com), so it gets the same
+    // redaction as the logs and the body; the placeholders are not search terms.
+    const title = feedbackRedact(d[d.type].title, this._fbNames())
+      .replace(/\[(?:name \d+|email|hidden|device)\]/g, " ");
+    const words = title.trim().split(/\s+/).filter(w => w.length >= 3);
     return words.length < 2 ? "" : words.slice(0, 8).join(" ");
   }
 

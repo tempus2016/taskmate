@@ -728,6 +728,11 @@ class TaskMateCoordinator(
             raise ValueError("points must be >= 1")
         if not self._setting_enabled("allowance_enabled"):
             raise ValueError("Allowance is not enabled")
+        # The ledger records cash handed over for points taken. Removing
+        # points floors the balance at zero, so a payout bigger than the
+        # balance would log money for points the child never had.
+        if child.points < points:
+            raise ValueError(f"{child.name} only has {child.points} points to pay out.")
         try:
             rate = int(self.storage.get_setting("allowance_rate", 10))
         except (TypeError, ValueError):
@@ -990,10 +995,10 @@ class TaskMateCoordinator(
             self.async_prune_bounties,
             # Finished auctions likewise (#982).
             self.async_prune_auctions,
+            # Last week's perfect-week bonus, every night: it counts approved
+            # completions only, so a week approved late is still paid.
+            self._async_check_perfect_week,
         ]
-        # Check for perfect week bonus every Monday at midnight
-        if now.weekday() == 0:
-            steps.append(self._async_check_perfect_week)
         for step in steps:
             try:
                 await step()

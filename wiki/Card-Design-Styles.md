@@ -21,6 +21,8 @@ Every TaskMate card can be themed independently, with a global default that any 
 
 **Classic** is the default and is left exactly as it was — existing dashboards look identical until you opt in to another style.
 
+The typefaces ship inside the integration and load from Home Assistant itself (`/taskmate/fonts/`), not from a font service, so nothing leaves your network to draw a card and the styles look the same on a tablet with no internet. Latin and Latin-extended characters are covered, which is every language TaskMate speaks; other scripts fall back to the system font.
+
 ---
 
 ## Graphite

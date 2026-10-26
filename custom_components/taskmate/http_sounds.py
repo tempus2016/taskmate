@@ -105,7 +105,7 @@ class TaskMateSoundServeView(HomeAssistantView):
         self.hass = hass
 
     async def get(self, request: web.Request, filename: str) -> web.Response:
-        if not sounds.FILENAME_RE.match(filename):
+        if not sounds.FILENAME_RE.fullmatch(filename):
             return web.Response(status=HTTPStatus.NOT_FOUND)
 
         path = sounds.sounds_path(self.hass) / filename

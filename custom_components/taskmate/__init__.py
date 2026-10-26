@@ -18,7 +18,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_set_service_schema
 from homeassistant.util import dt as dt_util
 
-from . import authz
+from . import authz, photos
 from .const import (
     ATTR_AS_PARENT,
     ATTR_AWARDED_BADGE_ID,
@@ -367,6 +367,13 @@ async def _async_require_parent(hass: HomeAssistant, call: ServiceCall) -> None:
     raise Unauthorized(context=call.context)
 
 
+# A child's account may drive this many child-facing service calls a minute.
+# Nobody taps that fast; a script hammering complete_chore / request_help /
+# choose_avatar does, and every one of those calls refreshes the coordinator
+# and may push a parent's phone. Parents, admins and automations are exempt.
+CHILD_SERVICE_RATE_LIMIT = 120
+CHILD_SERVICE_RATE_WINDOW_SECONDS = 60
+
 _AUDIT_TARGET_KEYS = (
     "chore_id",
     "reward_id",
@@ -513,6 +520,21 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         # Unauthorized (not ValueError), so it is unaffected and still 401s.
         return _safe(wrapped)
 
+    # The same sliding window the photo upload uses, keyed by HA user id.
+    child_calls = photos.UploadRateLimiter(CHILD_SERVICE_RATE_LIMIT, CHILD_SERVICE_RATE_WINDOW_SECONDS)
+
+    async def _async_check_child_rate(call: ServiceCall) -> None:
+        """Refuse (and record) a user account's call once it is over the window."""
+        user_id = call.context.user_id
+        if not user_id or not child_calls.check(user_id):
+            return
+        # Over the cap. A parent or admin driving a bulk script is not what
+        # the brake is for; only a non-parent account is slowed.
+        if await authz.async_context_is_parent(hass, _get_coordinator(hass), call.context):
+            return
+        await _async_record_service_audit(hass, call, denied=True)
+        raise ServiceValidationError("Too many requests from this account, try again in a minute")
+
     def _audited(handler):
         """Wrap a child-facing handler so its mutation is recorded too.
 
@@ -520,11 +542,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         can drive — completing a chore, claiming a reward, allocating points —
         therefore left no trail at all, which is exactly the set of actions
         worth being able to review. The guards stay inside each handler; this
-        only adds the record.
+        only adds the record, and the per-account brake above it.
         """
 
         @wraps(handler)
         async def wrapped(call: ServiceCall) -> None:
+            await _async_check_child_rate(call)
             try:
                 await handler(call)
             except Unauthorized:
@@ -1001,7 +1024,12 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         await coordinator.async_remove_points(child_id, points, reason)
 
     async def handle_preview_sound(call: ServiceCall) -> None:
-        """Handle the preview_sound service call — fires a browser event for the config-sounds card."""
+        """Handle the preview_sound service call — fires a browser event for the config-sounds card.
+
+        Admin-gated like the rest of the sound configuration: the event plays
+        on every open TaskMate browser, so it is a parent's button, not a
+        child's.
+        """
         sound = call.data.get(ATTR_SOUND, "coin")
         hass.bus.async_fire(EVENT_PREVIEW_SOUND, {"sound": sound})
 
@@ -1641,7 +1669,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_READ_ALOUD,
-        _safe(handle_read_aloud),
+        _audited(handle_read_aloud),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_CHILD_ID): cv.string,
@@ -1751,7 +1779,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_PREVIEW_SOUND,
-        _safe(handle_preview_sound),
+        _admin(handle_preview_sound),
         schema=vol.Schema(
             {
                 vol.Required(ATTR_SOUND): vol.All(str, _valid_sound),
@@ -2109,6 +2137,12 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_START_TIMED_TASK,
         SERVICE_PAUSE_TIMED_TASK,
         SERVICE_STOP_TIMED_TASK,
+        SERVICE_APPLY_MANDATORY_PENALTY,
+        SERVICE_POSTPONE_MANDATORY_CHORE,
+        SERVICE_DISMISS_MANDATORY_CHORE,
+        SERVICE_ADJUST_STREAK_FREEZES,
+        SERVICE_READ_ALOUD,
+        SERVICE_SPIN_ROULETTE,
         "add_badge",
         "update_badge",
         "remove_badge",

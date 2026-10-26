@@ -43,7 +43,7 @@ class TestWeeklyGoalReversal:
         coord, storage, mod, kid, chore = _family(requires_approval=False)
         self._on(storage)
         with _with(*_goal_clock(mod)):
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             comp = run(coord.async_complete_chore(chore.id, kid.id))
             assert run(coord.async_check_weekly_goals()) == 1
             assert storage.get_child(kid.id).points == 5 + 15
@@ -60,7 +60,7 @@ class TestWeeklyGoalReversal:
         coord, storage, mod, kid, chore = _family(requires_approval=True)
         self._on(storage)
         with _with(*_goal_clock(mod)):
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             comp = run(coord.async_complete_chore(chore.id, kid.id))
             run(coord.async_approve_chore(comp.id))
             assert run(coord.async_check_weekly_goals()) == 1
@@ -71,7 +71,7 @@ class TestWeeklyGoalReversal:
         coord, storage, mod, kid, chore = _family(requires_approval=False)
         self._on(storage)
         with _with(*_goal_clock(mod)):
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             comp = run(coord.async_complete_chore(chore.id, kid.id))
             run(coord.async_check_weekly_goals())
             wish = run(coord.async_add_wish(kid.id, "Lego", target=100))
@@ -86,7 +86,7 @@ class TestWeeklyGoalReversal:
         coord, storage, mod, kid, chore = _family(requires_approval=False, daily_limit=3)
         self._on(storage)
         with _with(*_goal_clock(mod)):
-            run(coord.async_set_weekly_goal(kid.id, 5))
+            run(coord.async_set_weekly_goal(kid.id, 5, as_parent=True))
             run(coord.async_complete_chore(chore.id, kid.id))
             second = run(coord.async_complete_chore(chore.id, kid.id))
             run(coord.async_check_weekly_goals())

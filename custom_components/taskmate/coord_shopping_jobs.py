@@ -35,6 +35,11 @@ DEFAULT_SHOPPING_TAG = "#tm"
 # every other minute is plenty for "a job appears".
 _POLL_EVERY = timedelta(minutes=2)
 _NAME_MAX = 90
+# Anyone who can write to the to-do list can raise chores, so the list is
+# bounded: this many jobs on the go at once, and this many new ones per read.
+# The rest wait on the list and come through as earlier jobs are done.
+SHOPPING_JOBS_MAX_OPEN = 10
+SHOPPING_JOBS_MAX_PER_POLL = 5
 
 
 def shopping_job_name(summary: str, tag: str) -> str:
@@ -198,14 +203,19 @@ class ShoppingJobsMixin:
                 self.storage.update_chore(chore)
                 changed = True
 
+        open_jobs = sum(1 for record in tracked.values() if not record.get("done"))
         for uid, name in open_items.items():
             if uid in tracked:
                 continue
+            if created >= SHOPPING_JOBS_MAX_PER_POLL or open_jobs >= SHOPPING_JOBS_MAX_OPEN:
+                _LOGGER.debug("TaskMate: shopping job %s waits; %d open, %d raised this read", uid, open_jobs, created)
+                break
             chore = await self._async_raise_shopping_chore(name)
             if chore is None:
                 continue
             tracked[uid] = {"chore_id": chore.id, "added": now.isoformat()}
             created += 1
+            open_jobs += 1
             changed = True
             self._fire_shopping_job("added", chore, uid)
 
@@ -227,6 +237,9 @@ class ShoppingJobsMixin:
         else:
             assigned = pool
             assignment_mode = "first_come" if len(pool) > 1 else "everyone"
+        # A list item is nobody's judgement of the work, so the chore keeps
+        # the default ``requires_approval``: a parent ticks it off, never the
+        # auto-approve timer or a sibling. The caller saves once per read.
         return await self.async_add_chore(
             name=name,
             points=self.shopping_jobs_points(),
@@ -234,6 +247,7 @@ class ShoppingJobsMixin:
             schedule_mode="one_shot",
             time_category="anytime",
             assignment_mode=assignment_mode,
+            refresh=False,
         )
 
     def _fire_shopping_job(self, kind: str, chore, uid: str) -> None:

@@ -394,6 +394,28 @@ def _admin_only(handler):
 # ---------------------------------------------------------------------------
 
 
+# Where a child's picture may come from when it is not an icon: HA's own
+# image and media routes, the www folder, HACS resources, an inline image, or
+# any https origin. The cards put the value straight into an <img src> /
+# <ha-icon>, so a scheme like javascript: or an http:// tracker is refused.
+_AVATAR_URL_PREFIXES = ("/api/", "/local/", "/hacsfiles/", "data:image/", "https://")
+
+
+def validate_avatar(value: Any) -> str:
+    """Accept a blank (the default icon), an ``mdi:`` icon, or a safe picture URL.
+
+    Like ``_image_url_or_blank`` this raises rather than returning False —
+    voluptuous treats a callable as a coercer, so a falsy return would be
+    stored as the value.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    if not photos.has_control_chars(text) and (text.startswith("mdi:") or text.startswith(_AVATAR_URL_PREFIXES)):
+        return text
+    raise vol.Invalid("avatar must be an mdi: icon or a picture URL")
+
+
 def _opt_str(v: Any) -> str:
     """Coerce optional string field to stripped str (or empty)."""
     if v is None:
@@ -578,7 +600,7 @@ async def _ws_get_state(hass, connection, msg, coordinator):
     {
         vol.Required("type"): WS_ADD_CHILD,
         vol.Required("name"): vol.All(str, vol.Length(min=1, max=120)),
-        vol.Optional("avatar", default="mdi:account-circle"): str,
+        vol.Optional("avatar", default="mdi:account-circle"): validate_avatar,
         vol.Optional("availability_entity", default=""): str,
         vol.Optional("availability_inverted", default=False): bool,
         vol.Optional("unavailability_entity", default=""): str,
@@ -603,7 +625,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         return
     child = await coordinator.async_add_child(
         name=msg["name"].strip(),
-        avatar=msg.get("avatar") or "mdi:account-circle",
+        avatar=validate_avatar(msg.get("avatar")) or "mdi:account-circle",
         availability_entity=_opt_str(msg.get("availability_entity")),
         availability_inverted=bool(msg.get("availability_inverted", False)),
         unavailability_entity=_opt_str(msg.get("unavailability_entity")),
@@ -625,7 +647,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Required("type"): WS_UPDATE_CHILD,
         vol.Required("child_id"): str,
         vol.Optional("name"): vol.All(str, vol.Length(min=1, max=120)),
-        vol.Optional("avatar"): str,
+        vol.Optional("avatar"): validate_avatar,
         vol.Optional("availability_entity"): str,
         vol.Optional("availability_inverted"): bool,
         vol.Optional("unavailability_entity"): str,
@@ -649,10 +671,13 @@ async def _ws_update_child(hass, connection, msg, coordinator):
     if not existing:
         connection.send_error(msg["id"], "not_found", f"Child {msg['child_id']} not found")
         return
+    # Checked up front, and here as well as in the schema, so a refused value
+    # leaves the stored child untouched whichever door the message came through.
+    avatar = (validate_avatar(msg["avatar"]) or "mdi:account-circle") if "avatar" in msg else None
     if "name" in msg:
         existing.name = msg["name"].strip()
-    if "avatar" in msg:
-        existing.avatar = msg["avatar"] or "mdi:account-circle"
+    if avatar is not None:
+        existing.avatar = avatar
     if "availability_entity" in msg:
         existing.availability_entity = _opt_str(msg["availability_entity"])
     if "availability_inverted" in msg:

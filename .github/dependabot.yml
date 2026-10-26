@@ -37,6 +37,10 @@ updates:
   # entry doesn't undo that — it just raises one PR when a newer pin exists, so
   # the decision to move is explicit instead of never noticed. Limit 1 on
   # purpose: this should be a quiet trickle, not a queue.
+  #
+  # requirements-docs.in / requirements-docs.txt are a pip-compile pair: the
+  # .txt carries exact versions and hashes for the release and docs jobs, and
+  # Dependabot re-runs pip-compile to bump it, hashes included.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:

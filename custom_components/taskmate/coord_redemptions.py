@@ -121,6 +121,23 @@ class RedemptionsMixin:
             },
         )
 
+    def _settle_offer_for_undone_penalty(self, child_id: str, penalty_name: str, at) -> None:
+        """Taking a penalty back closes the make-it-right offer it opened.
+
+        An open offer is cancelled: the penalty it would have earned back no
+        longer exists, so the chore goes back to paying only its own points.
+        One already redeemed is refused — those points came back through the
+        chore, and undoing the penalty as well would hand them over twice.
+        Shared by the admin undo and an overturned appeal.
+        """
+        offer = self._penalty_offer(child_id, penalty_name, at)
+        if offer is None:
+            return
+        if offer.get("status") == "redeemed":
+            raise ValueError("That penalty was already earned back.")
+        if offer.get("status") == "open":
+            offer["status"] = "cancelled"
+
     def _penalty_redemption_owed(self, completion) -> int:
         """The refund a reversal of ``completion`` would take back, without doing it."""
         for offer in self._redemptions():

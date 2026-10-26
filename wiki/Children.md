@@ -42,7 +42,7 @@ See [Levels and XP](Levels-and-XP.md) for the full mechanics.
 
 A child's avatar is shown in card headers and on the stats sensor icon. There are two ways an avatar can be set:
 
-1. **Parent assignment** — from the [Admin Panel](Admin-Panel.md) a parent can set any avatar (a free-form MDI icon or any catalogue avatar), bypassing unlock requirements.
+1. **Parent assignment** — from the [Admin Panel](Admin-Panel.md) a parent can set any avatar (a free-form MDI icon or any catalogue avatar), bypassing unlock requirements. A picture instead of an icon has to come from somewhere a dashboard may load it: `/api/…`, `/local/…`, `/hacsfiles/…`, an inline `data:image/…` or an `https://` address. Anything else is refused.
 2. **Child self-service via the avatar catalogue (v4.0.0 unlockables)** — children pick from the avatar catalogue, but only avatars they have **unlocked** are selectable. The `taskmate.choose_avatar` service enforces the unlock requirement.
 
 ### Avatar unlockables (v4.0.0)

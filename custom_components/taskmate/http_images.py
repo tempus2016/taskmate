@@ -109,7 +109,7 @@ class TaskMateImageServeView(HomeAssistantView):
         self.hass = hass
 
     async def get(self, request: web.Request, filename: str) -> web.Response:
-        if not images.FILENAME_RE.match(filename):
+        if not images.FILENAME_RE.fullmatch(filename):
             return web.Response(status=HTTPStatus.NOT_FOUND)
 
         path = images.images_path(self.hass) / filename

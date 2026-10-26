@@ -1,0 +1,13 @@
+# Builds the documentation site (wiki/ -> GitHub Pages) and the in-panel Manual.
+# MkDocs 2.0 drops the plugin and theme system Material depends on, so stay on 1.x.
+#
+# This is the INPUT. CI installs from requirements-docs.txt, the pip-compile
+# output (exact versions + hashes, so a release job runs only the packages that
+# were reviewed). Dependabot's pip updater recognises that pairing and
+# regenerates the .txt with fresh hashes in its own PRs. After changing THIS
+# file, regenerate and commit both:
+#
+#   pip-compile --generate-hashes --strip-extras --no-emit-index-url \
+#     -o requirements-docs.txt requirements-docs.in
+mkdocs>=1.6,<2
+mkdocs-material>=9.6,<10

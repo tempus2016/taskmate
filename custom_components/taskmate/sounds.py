@@ -21,7 +21,7 @@ import logging
 import re
 from pathlib import Path
 
-from .photos import matching_files_bytes
+from .photos import has_control_chars, matching_files_bytes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -147,9 +147,9 @@ def is_custom_sound(value: str | None) -> bool:
     Pure (no hass / no filesystem) so it can guard untrusted input at the
     websocket and service boundaries before any filesystem access.
     """
-    if not value or not value.startswith(CUSTOM_PREFIX):
+    if not value or has_control_chars(value) or not value.startswith(CUSTOM_PREFIX):
         return False
-    return bool(FILENAME_RE.match(value[len(CUSTOM_PREFIX) :]))
+    return bool(FILENAME_RE.fullmatch(value[len(CUSTOM_PREFIX) :]))
 
 
 def sound_id_for_value(value: str | None) -> str | None:
@@ -166,7 +166,7 @@ def sound_url_for_name(filename: str) -> str:
 
 def sound_file_for_name(hass, filename: str) -> Path | None:
     """Map a stored filename to its path, or None if it fails validation."""
-    if not FILENAME_RE.match(filename or ""):
+    if not FILENAME_RE.fullmatch(filename or ""):
         return None
     return sounds_path(hass) / filename
 

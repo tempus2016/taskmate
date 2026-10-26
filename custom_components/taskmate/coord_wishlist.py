@@ -58,6 +58,28 @@ OPEN_STATUSES = ("pending", "active", "redeem_requested")
 _SENSOR_PLEDGERS = 6
 
 
+def split_saved_lots(lots: list[dict], amount: int) -> tuple[list[dict], list[dict]]:
+    """Split ``amount`` points off the oldest of a wish's saved lots.
+
+    Returns ``(taken, kept)``. Oldest first, like spending from a balance,
+    so points taken back out are the ones nearest to expiring.
+    """
+    taken: list[dict] = []
+    kept: list[dict] = []
+    owed = max(0, int(amount))
+    for lot in sorted(lots, key=lambda lot: str(lot.get("d", ""))):
+        n = int(lot.get("n", 0) or 0)
+        if n <= 0:
+            continue
+        take = min(owed, n)
+        owed -= take
+        if take:
+            taken.append({"d": lot["d"], "n": take})
+        if n - take:
+            kept.append({"d": lot["d"], "n": n - take})
+    return taken, kept
+
+
 class WishlistMixin:
     """Mixin providing the wishlist: wishes, savings, pledges and redemption."""
 
@@ -162,13 +184,14 @@ class WishlistMixin:
     async def _async_adopt_wish_photo(self, photo_url: str) -> str:
         """Take over a picture the card just uploaded, or refuse it.
 
-        A photo already attached to a chore completion is somebody's evidence
-        — readable only by parents and that child — and must not be copied
-        somewhere every signed-in user can see it.
+        A photo already attached to a chore completion — or held by a team
+        join still waiting for the rest of the team (#928) — is somebody's
+        evidence, readable only by parents and that child, and must not be
+        copied somewhere every signed-in user can see it.
         """
         if not photos.is_taskmate_photo_url(photo_url):
             raise ValueError("That picture can't be used")
-        if any(getattr(c, "photo_url", "") == photo_url for c in self.storage.get_completions()):
+        if photos.is_photo_in_use(self.storage, photo_url):
             raise ValueError("That picture can't be used")
         image_url = await images.async_adopt_photo(self.hass, photo_url)
         if not image_url:
@@ -205,6 +228,9 @@ class WishlistMixin:
             raise ValueError(f"No spendable points available for {child.name}")
         moved = min(int(points), spendable, room)
 
+        # The expiry lots these points came out of travel with the wish, so
+        # they keep their dates when they come back out (coord_points_expiry).
+        wish.saved_lots = wish.saved_lots + self.take_lots(child, moved)
         child.points -= moved
         self.storage.update_child(child)
         wish.saved += moved
@@ -227,6 +253,8 @@ class WishlistMixin:
             raise ValueError(f"Nothing saved in '{wish.name}' to take back")
         taken = min(int(points), wish.saved)
 
+        returned, wish.saved_lots = split_saved_lots(wish.saved_lots, taken)
+        self.restore_lots(child, returned)
         child.points += taken
         self.storage.update_child(child)
         wish.saved -= taken
@@ -408,6 +436,7 @@ class WishlistMixin:
         now = dt_util.now()
         wish.status = "redeemed"
         wish.redeemed_at = now
+        wish.saved_lots = []
         self.storage.upsert_wish(wish)
         claim.approved = True
         claim.approved_at = now
@@ -490,12 +519,34 @@ class WishlistMixin:
             child.points += wish.saved
             self.storage.update_child(child)
             self._wish_log(child.id, wish.saved, f"Wish refund ({why}): {wish.name}", count_for_season=False)
+        # A refund starts the expiry clock again, like every other refund.
         wish.saved = 0
+        wish.saved_lots = []
         if child is not None:
             for pledge in wish.pledges:
                 self._wish_log(child.id, 0, f"Wish pledge voided ({pledge.name}, {pledge.points}): {wish.name}")
         wish.pledges = []
         return cancelled
+
+    def _decay_wish_savings(self, child_id: str, pct: float) -> int:
+        """Points decay (coord_points) reaches into a child's wish savings too.
+
+        Saved points are still the child's, and a wish they can take back out
+        of would otherwise be a place to park a balance while decay passes.
+        Returns the total taken; the caller logs it. The oldest lots go first.
+        """
+        lost = 0
+        for wish in self.storage.get_wishes():
+            if wish.child_id != child_id or wish.status != "active" or wish.saved <= 0:
+                continue
+            cut = round(wish.saved * pct / 100.0)
+            if cut <= 0:
+                continue
+            wish.saved -= cut
+            _gone, wish.saved_lots = split_saved_lots(wish.saved_lots, cut)
+            self.storage.upsert_wish(wish)
+            lost += cut
+        return lost
 
     def _prune_finished_wishes(self, child_id: str, status: str, keep: int) -> list[Wish]:
         """Keep only the newest ``keep`` wishes of a finished status for a child."""

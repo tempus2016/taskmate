@@ -223,6 +223,13 @@ class _PlainFormatter(string.Formatter):
             raise ValueError(f"placeholder {{{field_name}}} may not use attributes or indexes")
         return super().get_field(field_name, args, kwargs)
 
+    def format_field(self, value, format_spec: str):
+        # A width is a memory allocation: ``{child_name:>999999999}`` pads to
+        # a gigabyte. A notification only ever needs the bare ``{name}``.
+        if format_spec:
+            raise ValueError("placeholders may not carry a format spec")
+        return super().format_field(value, format_spec)
+
 
 _PLAIN = _PlainFormatter()
 

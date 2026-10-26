@@ -54,6 +54,17 @@ def _within_seconds(earlier, later, seconds: int) -> bool:
         return False
 
 
+# How many audit entries are kept; the service and panel gates write the
+# "(denied)" marker that keeps a refused attempt in the log past the cap.
+AUDIT_LOG_CAP = 500
+_AUDIT_DENIED_MARKER = "(denied)"
+
+
+def _is_denied_audit_entry(entry: Any) -> bool:
+    """True for an audit line the authorisation gate wrote for a refused call."""
+    return isinstance(entry, dict) and str(entry.get("action", "")).endswith(_AUDIT_DENIED_MARKER)
+
+
 def _finite_number(value: Any, default: int | float) -> int | float:
     """Coerce an imported value to a real, finite number.
 
@@ -1225,7 +1236,7 @@ class TaskMateStorage:
         return list(reversed(self._data.get("audit_log", [])))
 
     def add_audit_entry(self, entry: dict) -> None:
-        """Append an audit entry, capping the log at 500 (oldest dropped).
+        """Append an audit entry, capping the log at 500 (oldest routine dropped).
 
         Truncation is counted, not silent: without a marker, generating 500
         routine entries quietly pushes an earlier one out of the log and the
@@ -1244,9 +1255,22 @@ class TaskMateStorage:
             last["ts"] = entry.get("ts", last.get("ts"))
             return
         log.append(entry)
-        if len(log) > 500:
-            dropped = len(log) - 500
-            del log[:-500]
+        excess = len(log) - AUDIT_LOG_CAP
+        if excess > 0:
+            # Routine lines age out first. A refused attempt is the thing the
+            # log exists to show, and a child who was refused could otherwise
+            # scroll it off the end with a few hundred ordinary completions.
+            # Only when the denials alone are over the cap do the oldest go.
+            keep = []
+            for item in log:
+                if excess > 0 and not _is_denied_audit_entry(item):
+                    excess -= 1
+                    continue
+                keep.append(item)
+            if excess > 0:
+                del keep[:excess]
+            dropped = len(log) - len(keep)
+            log[:] = keep
             self._data["audit_log_dropped"] = int(self._data.get("audit_log_dropped", 0) or 0) + dropped
 
     def get_audit_dropped_count(self) -> int:
@@ -1633,23 +1657,29 @@ class TaskMateStorage:
                 settings.pop(key, None)
         return snap
 
+    # Settings that name devices in *this* house: which switches a child's
+    # screen time drives and which speakers and phones a boost wakes. Like the
+    # unlock allowlist they are kept through an import, not read from the file.
+    _ROUTING_SETTINGS = ("screen_time_devices", "boost_wake_screens", "boost_wake_devices")
+
     def _authorisation_state(self) -> dict:
-        """The parts of the store that say *who may do what* on this instance."""
+        """The parts of the store that say *who may do what* on this instance,
+        and where its notifications and device actions are routed."""
         data = getattr(self, "_data", None)
         data = data if isinstance(data, dict) else {}
         settings = data.get("settings", {}) or {}
         parent_ids = settings.get("parent_user_ids", [])
         pins = data.get("kiosk_pins")
+        children = [c for c in (data.get("children", []) or []) if isinstance(c, dict) and c.get("id")]
         return {
             "parent_user_ids": [str(x) for x in parent_ids if x] if isinstance(parent_ids, list) else [],
             "require_linked_child": settings.get("require_linked_child"),
             "unlock_allowlist": settings.get("unlock_allowlist"),
             "kiosk_pins": dict(pins) if isinstance(pins, dict) else {},
-            "linked_user_ids": {
-                c.get("id"): c.get("linked_user_id", "")
-                for c in (data.get("children", []) or [])
-                if isinstance(c, dict) and c.get("id")
-            },
+            "linked_user_ids": {c.get("id"): c.get("linked_user_id", "") for c in children},
+            "child_routing": {c.get("id"): (c.get("notify_service"), bool(c.get("is_adult", False))) for c in children},
+            "parent_recipients": list(data.get("parent_recipients", []) or []),
+            "routing_settings": {k: settings.get(k) for k in self._ROUTING_SETTINGS},
             "audit_log": list(data.get("audit_log", []) or []),
             "audit_log_dropped": int(data.get("audit_log_dropped", 0) or 0),
         }
@@ -1665,6 +1695,13 @@ class TaskMateStorage:
         them the parent role, a sibling's account or a device. The calendar
         feed token is dropped (regenerate it), any in-flight unlock is
         forgotten, and the audit trail is this instance's, not the file's.
+
+        The same goes for where things are sent and what gets switched: the
+        parent recipients, each child's own notify service and adult flag
+        (an adult's chores approve themselves), the screen-time devices and
+        the boost wake targets are this house's wiring. A child the file adds
+        that this instance has never seen arrives with no device and no
+        auto-approval; a parent sets both here.
         """
         settings = self._data.setdefault("settings", {})
         settings["parent_user_ids"] = list(kept["parent_user_ids"])
@@ -1673,16 +1710,26 @@ class TaskMateStorage:
                 settings.pop(key, None)
             else:
                 settings[key] = kept[key]
+        for key, value in kept.get("routing_settings", {}).items():
+            if value is None:
+                settings.pop(key, None)
+            else:
+                settings[key] = value
         for key in self._EXPORT_SECRET_SETTINGS:
             settings.pop(key, None)
         if kept["kiosk_pins"]:
             self._data["kiosk_pins"] = dict(kept["kiosk_pins"])
         else:
             self._data.pop("kiosk_pins", None)
+        self._data["parent_recipients"] = list(kept.get("parent_recipients", []))
         links = kept["linked_user_ids"]
+        routing = kept.get("child_routing", {})
         for child in self._data.get("children", []) or []:
             if isinstance(child, dict):
                 child["linked_user_id"] = links.get(child.get("id"), "") or ""
+                notify_service, is_adult = routing.get(child.get("id"), ("", False))
+                child["notify_service"] = notify_service
+                child["is_adult"] = is_adult
         self._data["audit_log"] = list(kept["audit_log"])
         if kept["audit_log_dropped"]:
             self._data["audit_log_dropped"] = kept["audit_log_dropped"]

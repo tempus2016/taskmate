@@ -14,6 +14,14 @@ apply as usual, and the linked-child setting decides whether the speaker may
 act for that child. Chores that need a photo, a number or a note are left for
 the child's card. Replies are spoken in Home Assistant's language.
 
+One thing to know about voice satellites (ESPHome, Wyoming and the like): speech
+from a satellite carries no Home Assistant user, so the linked-child setting
+cannot tell who is talking and the request is treated like an automation.
+Anyone in earshot of the satellite can mark a chore done for any child, even
+with the setting on. Approval rules still apply and nothing is paid without a
+parent's say-so where a parent is normally needed, but if that is not what you
+want, keep chore completion to the Assist dialog on a signed-in device.
+
 The intent **handlers** ship with the integration and are registered
 automatically. The **sentences** that trigger them are matched by HA's default
 conversation agent, which loads them from your config's `custom_sentences/<lang>/`

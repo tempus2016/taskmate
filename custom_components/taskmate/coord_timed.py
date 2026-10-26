@@ -137,15 +137,21 @@ class TimedMixin:
             child_undo_allowed=undo_window_seconds(self.storage) > 0,
         )
 
+        # Record first, pay second. Awarding can suspend (a level-up or a
+        # milestone sends a notification), and a second stop arriving in that
+        # gap would still find the live session and pay the same minutes
+        # again. With the session gone and the completion stored before the
+        # award, the second stop finds nothing to stop.
         if not needs_approval:
-            total_awarded = await self._award_points(child, pts)
             completion.approved = True
             completion.approved_at = dt_util.now()
-            completion.points_awarded = total_awarded
-
         self.storage.add_completion(completion)
         self.storage.set_last_completed(chore_id, child_id, now.isoformat())
         self.storage.remove_timed_session(session.id)
+
+        if not needs_approval:
+            completion.points_awarded = await self._award_points(child, pts)
+            self.storage.update_completion(completion)
 
         await self.storage.async_save()
 

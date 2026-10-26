@@ -10,6 +10,12 @@ name: Attach HACS zip to release
 #
 # The zip also carries the Manual (wiki/ bundled by scripts/build_manual.py),
 # which is not in git: a release without it shows "read it on the website".
+#
+# Two jobs, on purpose. Bundling the Manual runs the docs toolchain from PyPI
+# (markdown, pymdown-extensions, …) — third-party code. It runs in a job that
+# can only read, and hands the bundle over as an artifact. The job that holds
+# the release-write and signing tokens runs nothing from PyPI: it checks the
+# bundle with the standard library, zips, attests and uploads.
 
 on:
   release:
@@ -20,14 +26,11 @@ permissions:
   contents: read
 
 jobs:
-  attach-zip:
+  build-manual:
+    name: Bundle the manual
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      # Signed build provenance for the asset HACS actually installs, so a
-      # swapped-in zip can be detected with `gh attestation verify`.
-      id-token: write
-      attestations: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,12 +44,82 @@ jobs:
 
       # The admin panel's Manual page reads wiki/ from inside the integration.
       # It is built here, not committed, so every release carries the docs as
-      # they stood at the tag. Same markdown setup as the website (docs.yml).
+      # they stood at the tag. Same markdown setup as the website (docs.yml),
+      # from the same hash-pinned lock: pip refuses anything that is not the
+      # exact reviewed package.
       - name: Bundle the manual
         run: |
-          python -m pip install -r requirements-docs.txt
+          python -m pip install --require-hashes -r requirements-docs.txt
           python scripts/build_manual.py
           test -s custom_components/taskmate/www/manual/manual.json || (echo "manual bundle missing" && exit 1)
+
+      - name: Hand the bundle to the release job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: manual-bundle
+          path: custom_components/taskmate/www/manual/
+          if-no-files-found: error
+          retention-days: 1
+
+  attach-zip:
+    name: Attach taskmate.zip
+    needs: build-manual
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Signed build provenance for the asset HACS actually installs, so a
+      # swapped-in zip can be detected with `gh attestation verify`.
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Fetch the manual bundle
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: manual-bundle
+          path: custom_components/taskmate/www/manual/
+
+      # Standard library only — this job never installs from PyPI. The bundle
+      # must be the one build_manual.py writes for this tag: well-formed JSON of
+      # a sane size, with the keys the panel reads, versioned for this release,
+      # and its .gz twin identical once inflated.
+      - name: Check the manual bundle
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python3 -I - "$TAG" <<'PY'
+          import gzip, json, os, sys
+          def fail(msg):
+              print(f"::error::{msg}")
+              sys.exit(1)
+          tag = sys.argv[1].lstrip("v")
+          path = "custom_components/taskmate/www/manual/manual.json"
+          size_cap = 16 * 1024 * 1024
+          try:
+              size = os.path.getsize(path)
+          except FileNotFoundError:
+              fail("the manual bundle did not arrive from the build job")
+          if size == 0 or size > size_cap:
+              fail(f"manual.json is {size} bytes; expected between 1 and {size_cap}")
+          raw = open(path, "rb").read()
+          try:
+              bundle = json.loads(raw)
+          except ValueError as err:
+              fail(f"manual.json is not valid JSON: {err}")
+          if not isinstance(bundle, dict) or {"version", "site", "nav", "pages"} - set(bundle):
+              fail("manual.json is missing version/site/nav/pages")
+          if bundle["version"] != tag:
+              fail(f"the bundled Manual is for {bundle['version']!r}, not {tag!r}")
+          if not isinstance(bundle["pages"], dict) or not bundle["pages"]:
+              fail("manual.json has no pages")
+          if gzip.open(path + ".gz").read() != raw:
+              fail("manual.json.gz does not match manual.json")
+          print(f"Manual bundle OK: {len(bundle['pages'])} pages for {tag}, {size} bytes.")
+          PY
 
       - name: Build taskmate.zip
         id: build

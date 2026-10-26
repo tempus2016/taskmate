@@ -91,8 +91,11 @@ FAMILY_EVENTS: dict[str, str] = {
     "shopping_job": "taskmate_shopping_job",
 }
 
-# Payload keys never copied onto the entity: they are long or internal.
-_SKIP_ATTRS = {"timestamp"}
+# Payload keys never copied onto the entity: they are long, internal, or the
+# child's own words. The bus event is for automations; the entity's state is
+# readable by every HA user, and the sensors already keep a help request's
+# message, an appeal's reasoning and a rejection's note off the state machine.
+_SKIP_ATTRS = {"timestamp", "message", "message_text", "note", "reason", "request_id"}
 
 
 def _child_ids(data: dict[str, Any]) -> set[str]:

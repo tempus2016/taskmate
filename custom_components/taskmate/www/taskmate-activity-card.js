@@ -42,6 +42,11 @@ class TaskMateActivityCard extends LitElement {
       "Allocated to pool:", "Pool refund", "Points decay", "Points expired",
       "Savings interest", "Badge", "Streak freeze",
       "Wish savings", "Wish refund", "Wish pledge", "Wish redeemed",
+      "Raffle tickets", "Raffle called off", "Allowance payout", "Made it right",
+      "Quest complete", "Quest reversed", "Challenge complete", "Challenge reversed",
+      "Weekly goal reached", "Weekly goal reversed", "All times done",
+      "Appeal:", "Sibling check:", "Surprise bonus",
+      "Perfect week bonus reversed", "Streak milestone reversed",
     ];
   }
 

@@ -259,11 +259,8 @@ class AppealsMixin:
             txn = next((t for t in self.storage.get_points_transactions() if t.id == appeal["target_id"]), None)
             if txn is None:
                 raise ValueError("That penalty has already been taken back.")
-            offer = self._penalty_offer(child.id, appeal["item_name"], txn.created_at)
-            if offer is not None and offer.get("status") == "redeemed":
-                raise ValueError("That penalty was already earned back.")
-            if offer is not None and offer.get("status") == "open":
-                offer["status"] = "cancelled"
+            # The undo settles the make-it-right offer: cancels an open one,
+            # refuses when the penalty was already earned back.
             await self.async_undo_transaction(txn.id)
             return
         raise ValueError(f"Unknown appeal kind {kind}")

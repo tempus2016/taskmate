@@ -12,7 +12,7 @@ from custom_components.taskmate.models import Child
 
 def _coord(*, enabled=True, rate=10, currency="£", child=None):
     if child is None:
-        child = Child(name="Alex", id="k1")
+        child = Child(name="Alex", id="k1", points=100)
     c = object.__new__(TaskMateCoordinator)
     s = MagicMock()
     settings = {"allowance_enabled": enabled, "allowance_rate": rate, "allowance_currency": currency}
