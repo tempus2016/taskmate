@@ -18528,7 +18528,12 @@ class TaskMatePanel extends HTMLElement {
         .tm-fb-actions > * { flex: 1 1 100%; justify-content: center; }
       }
       @media (max-width: 480px) {
-        .tm-scope { max-width: 46vw; overflow-x: auto; }
+        /* The page title keeps its width (hub titles are one short word);
+           the child chips are what gives way, scrolling sideways when
+           squeezed — otherwise a 375 px phone showed "Fa…" for Family. */
+        .tm-topbar { gap: 8px; }
+        .tm-topbar .tm-crumbs { flex: 0 0 auto; max-width: 34vw; }
+        .tm-scope { flex: 0 1 auto; min-width: 0; max-width: 46vw; overflow-x: auto; }
         .tm-today-quick { grid-template-columns: 1fr; }
       }
 
