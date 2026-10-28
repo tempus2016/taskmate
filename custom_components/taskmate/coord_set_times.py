@@ -320,6 +320,8 @@ class SetTimesMixin:
                 continue
             if hasattr(self, "_is_chore_scheduled_for_date") and not self._is_chore_scheduled_for_date(chore, day):
                 continue
+            if self._chore_hidden_by_gate(chore):
+                continue
             for child_id in self._set_time_owers(chore, day):
                 if child_id in (getattr(chore, "disabled_for", []) or []):
                     continue

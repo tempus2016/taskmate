@@ -58,6 +58,19 @@ class MandatoryMixin:
         cur = getattr(chore, "assignment_current_child_id", "") or ""
         return [cur] if cur else []
 
+    def _chore_hidden_by_gate(self, chore) -> bool:
+        """True while the chore's visibility entity or weather gate hides it.
+
+        A hidden chore isn't on the child's list, so it can't be missed (#1151).
+        """
+        if not self._is_visibility_entity_active(
+            getattr(chore, "visibility_entity", ""),
+            getattr(chore, "visibility_state", "on"),
+            getattr(chore, "visibility_operator", "equals"),
+        ):
+            return True
+        return not self._is_weather_ok_for_chore(chore)
+
     def _child_completed_today(self, chore_id: str, child_id: str, day: date) -> bool:
         for comp in self.storage.get_completions():
             if comp.chore_id != chore_id or comp.child_id != child_id:
@@ -121,6 +134,8 @@ class MandatoryMixin:
             if isinstance(getattr(chore, "times", None), list) and chore.times:
                 continue
             if not self._is_chore_scheduled_for_date(chore, day):
+                continue
+            if self._chore_hidden_by_gate(chore):
                 continue
             for child_id in self._mandatory_owers(chore, day):
                 if self._effective_period_for(chore, child_id, day) != period_id:

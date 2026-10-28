@@ -405,6 +405,22 @@ def test_yesterdays_unfinished_times_are_caught_at_midnight():
     assert sorted(m.time_id for m in storage.get_mandatory_misses()) == ["b", "d", "l"]
 
 
+def test_a_hidden_set_time_chore_owes_no_miss():
+    """#1151: a chore its visibility entity hides is not due, so not missed."""
+    coord, storage, mod, kid, chore = _setup(mandatory=True)
+    chore.visibility_entity = "binary_sensor.away"
+    chore.visibility_state = "off"
+    with patch.object(mod.dt_util, "now", return_value=at(6)):
+        run(coord.async_update_chore(chore))
+    hidden = type("S", (), {"state": "on", "attributes": {}})()
+    coord.hass.states = type(
+        "FakeStates", (), {"get": lambda self, eid: hidden if eid == "binary_sensor.away" else None}
+    )()
+    with patch.object(mod.dt_util, "now", return_value=at(23)):
+        assert run(coord.async_detect_set_time_misses()) == 0
+    assert storage.get_mandatory_misses() == []
+
+
 # ── labels and the sensor ────────────────────────────────────────────────────
 
 
