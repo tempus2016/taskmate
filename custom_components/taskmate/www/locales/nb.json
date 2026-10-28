@@ -2025,6 +2025,8 @@
   "panel.template_name_label": "Navn",
   "panel.template_picker_title": "Legg til fra mal",
   "panel.template_preview_hint": "Se gjennom og tilpass hver oppgave før oppretting. Utvid for å redigere alle felt, eller fjern med ✕.",
+  "panel.template_assign_all_label": "Tildel alle oppgaver til",
+  "panel.template_assign_all_hint": "Trykk på et navn for å gi hver oppgave til det barnet. La stå tomt for alle barn. Du kan endre hver oppgave nedenfor.",
   "panel.template_pts_total": "{count} oppgave(r) · {points} {points_name} totalt",
   "panel.template_requires_approval_label": "Krever godkjenning",
   "panel.template_requires_approval_no": "Nei",

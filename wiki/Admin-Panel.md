@@ -214,6 +214,7 @@ The **Raffles** tab, under **Spend**, lists every raffle with its ticket price, 
 
 ### Templates (v4.0.0+)
 - Browse built-in chore template packs and create chores from them
+- Choose who the chores are for before creating them *(v7.5.0)*: **Assign all chores to** gives every chore in the template to the children you tap, and **Assigned to** inside each chore lets you change single chores. Leave both empty for all children
 - Save your own chores as a custom template
 - Export custom templates as a shareable pack, and import one somebody else made
 - See [Template Packs](Template-Packs.md)

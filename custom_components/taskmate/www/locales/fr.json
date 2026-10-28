@@ -2025,6 +2025,8 @@
   "panel.template_name_label": "Nom",
   "panel.template_picker_title": "Ajouter depuis un modèle",
   "panel.template_preview_hint": "Vérifiez et personnalisez chaque tâche avant de créer. Développez pour modifier tous les champs, ou retirez avec ✕.",
+  "panel.template_assign_all_label": "Assigner toutes les tâches à",
+  "panel.template_assign_all_hint": "Touchez un nom pour donner chaque tâche à cet enfant. Laisser vide pour tous les enfants. Vous pouvez modifier chaque tâche ci-dessous.",
   "panel.template_pts_total": "{count} tâche(s) · {points} {points_name} au total",
   "panel.template_requires_approval_label": "Nécessite approbation",
   "panel.template_requires_approval_no": "Non",

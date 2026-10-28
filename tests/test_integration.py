@@ -234,6 +234,21 @@ class TestTemplateApply:
         assert completion is not None
         assert completion.points_awarded == first_chore.points
 
+    def test_apply_template_keeps_picked_children(self):
+        """Children picked on the preview screen land on the new chore (#1150)."""
+        coord, storage, _mod = _make_system()
+        now = _now()
+
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            child = run(coord.async_add_child("Ivy"))
+            run(coord.async_add_child("Jack"))
+
+        chore_def = {**BUILT_IN_TEMPLATES[0]["chores"][0], "assigned_to": [child.id]}
+        with patch.object(_mod.dt_util, "now", return_value=now):
+            created_ids = run(coord.async_apply_template([chore_def]))
+
+        assert storage.get_chore(created_ids[0]).assigned_to == [child.id]
+
 
 class TestCustomTemplateLifecycle:
     """Custom template lifecycle: save from chores → list → apply → delete."""

@@ -1181,6 +1181,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "tpl-back")         { this._templateView = null; this._templateSelected = null; this._templateChores = []; this._render(); return; }
     if (act === "tpl-remove-chore") { this._templateChores.splice(Number(t.dataset.idx), 1); this._render(); return; }
     if (act === "tpl-toggle-expand"){ const idx = Number(t.dataset.idx); if (this._templateChores[idx]) { this._templateChores[idx]._expanded = !this._templateChores[idx]._expanded; this._render(); } return; }
+    if (act === "tpl-toggle-assign"){ const c = this._templateChores[Number(t.dataset.idx)]; if (c) { const ids = c.assigned_to || []; c.assigned_to = ids.includes(t.dataset.id) ? ids.filter(x => x !== t.dataset.id) : [...ids, t.dataset.id]; this._render(); } return; }
+    if (act === "tpl-toggle-assign-all") { const id = t.dataset.id; const on = this._templateChores.every(c => (c.assigned_to || []).includes(id)); this._templateChores.forEach(c => { const ids = (c.assigned_to || []).filter(x => x !== id); c.assigned_to = on ? ids : [...ids, id]; }); this._render(); return; }
     if (act === "tpl-apply")        { this._doApplyTemplate(); return; }
     if (act === "tpl-save-from")    { this._saveTemplateDialog = true; this._render(); return; }
     if (act === "tpl-save-confirm") { this._doSaveFromChores(); return; }
@@ -1628,6 +1630,8 @@ class TaskMatePanel extends HTMLElement {
       let value = t.value;
       if (tplField === "requires_approval") value = value === "true";
       this._templateChores[Number(tplIdx)][tplField] = value;
+      // "Unassigned" hides the Assigned to chips (#1150).
+      if (tplField === "assignment_mode") this._render();
       return;
     }
     // Template dialog chore field changes (selects)
@@ -11236,6 +11240,7 @@ class TaskMatePanel extends HTMLElement {
     const tpl = this._templateSelected;
     if (!tpl) return "";
     const chores = this._templateChores;
+    const children = this._state.children || [];
     const totalPts = chores.reduce((s, c) => s + (c.points || 0), 0);
     return `
       <div class="tm-toolbar">
@@ -11245,6 +11250,19 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn" data-act="tpl-back">${this._t("panel.btn_back")}</button>
       </div>
       <p class="tm-meta" style="margin-bottom:16px">${this._t("panel.template_preview_hint")}</p>
+      ${children.length > 0 && chores.length > 0 ? `
+        <div class="tm-field" style="margin-bottom:16px">
+          <span class="tm-field-label">${this._t("panel.template_assign_all_label")}</span>
+          <div class="tm-chip-row">
+            ${children.map(ch => `
+              <button type="button" class="tm-chip-btn ${chores.every(c => (c.assigned_to || []).includes(ch.id)) ? "tm-chip-on" : ""}" data-act="tpl-toggle-assign-all" data-id="${this._esc(ch.id)}">
+                ${this._esc(ch.name)}
+              </button>
+            `).join("")}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.template_assign_all_hint")}</span>
+        </div>
+      ` : ""}
       ${chores.map((c, i) => this._renderTemplateChoreCard(c, i)).join("")}
       ${chores.length > 0 ? `
         <div class="tm-tpl-confirm-bar">
@@ -11258,6 +11276,8 @@ class TaskMatePanel extends HTMLElement {
   _renderTemplateChoreCard(chore, idx) {
     const expanded = chore._expanded;
     const schedLabel = (chore.due_days || []).length === 0 ? this._t("panel.common_daily") : (chore.due_days || []).map(d => this._esc(this._labelOf(DAYS, d))).join(", ");
+    const children = this._state.children || [];
+    const assigned = chore.assignment_mode === "unassigned" ? [] : children.filter(c => (chore.assigned_to || []).includes(c.id));
     return `
       <div class="tm-tpl-preview-card">
         <div class="tm-tpl-preview-header" data-act="tpl-toggle-expand" data-idx="${idx}">
@@ -11267,6 +11287,7 @@ class TaskMatePanel extends HTMLElement {
             <span>${this._t("panel.pts_display", {count: chore.points || 0, points_name: this._esc(this._pointsName())})}</span>
             <span>${schedLabel}</span>
             <span>${this._esc(this._timeCategoryLabel(chore.time_category))}</span>
+            ${assigned.length > 0 ? `<span>${assigned.map(c => this._esc(c.name)).join(", ")}</span>` : ""}
           </span>
           <button type="button" class="tm-tpl-remove" data-act="tpl-remove-chore" data-idx="${idx}" title="${this._t("panel.tooltip_remove_batch")}">✕</button>
         </div>
@@ -11288,6 +11309,18 @@ class TaskMatePanel extends HTMLElement {
                 </select>
               </div>
             </div>
+            ${children.length > 0 && chore.assignment_mode !== "unassigned" ? `
+              <div class="tm-field" style="margin-bottom:12px"><span class="tm-field-label">${this._t("panel.chore_assign_label")}</span>
+                <div class="tm-chip-row">
+                  ${children.map(c => `
+                    <button type="button" class="tm-chip-btn ${(chore.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="tpl-toggle-assign" data-idx="${idx}" data-id="${this._esc(c.id)}">
+                      ${this._esc(c.name)}
+                    </button>
+                  `).join("")}
+                </div>
+                <span class="tm-field-hint">${this._t("panel.chore_assign_hint")}</span>
+              </div>
+            ` : ""}
             <div class="tm-field" style="margin-bottom:12px"><span class="tm-field-label">${this._t("panel.template_schedule_days_label")}</span>
               <div class="tm-day-pills">
                 ${DAYS.map(d => `<span class="tm-day-pill ${(chore.due_days || []).includes(d.v) ? "active" : ""}" data-act="tpl-toggle-day" data-idx="${idx}" data-day="${d.v}">${this._t(d.lk)}</span>`).join("")}
@@ -11356,6 +11389,7 @@ class TaskMatePanel extends HTMLElement {
   async _doApplyTemplate() {
     const chores = this._templateChores.map(c => {
       const { _expanded, ...rest } = c;
+      if (rest.assignment_mode === "unassigned") delete rest.assigned_to;
       return rest;
     });
     if (chores.length === 0) return;
@@ -17616,6 +17650,11 @@ class TaskMatePanel extends HTMLElement {
       [dir="rtl"] .tm-rtl-flip { transform: scaleX(-1); }
       .tm-tpl-preview-name { font-size: 14px; font-weight: 600; flex: 1; }
       .tm-tpl-preview-summary { font-size: 12px; color: var(--tm-text-muted); display: flex; gap: 12px; }
+      /* Phones: the summary takes its own line under the name. */
+      @media (max-width: 600px) {
+        .tm-shell .tm-tpl-preview-header { flex-wrap: wrap; row-gap: 4px; }
+        .tm-shell .tm-tpl-preview-summary { order: 1; flex-basis: 100%; flex-wrap: wrap; gap: 2px 12px; padding-inline-start: 23px; }
+      }
       .tm-tpl-remove {
         width: 26px; height: 26px; border: none; background: transparent;
         border-radius: var(--tm-radius-sm); color: var(--tm-text-faint);
