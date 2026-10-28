@@ -197,3 +197,62 @@ def test_recheck_on_a_past_day_always_counts_as_closed():
 
     with patch.object(_mod.dt_util, "now", return_value=now):
         assert run(coord.async_recheck_mandatory_miss("c1", "k1", DAY)) == 1
+
+
+# ── hidden chores owe nothing (#1151) ────────────────────────────────────────
+
+
+def _state(value, **attrs):
+    s = MagicMock()
+    s.state = value
+    s.attributes = attrs
+    return s
+
+
+def _hidden_coord(chore, states):
+    coord = _coord([chore], [Child(name="Kid", id="k1")], [])
+    coord.hass.states.get = MagicMock(side_effect=lambda eid: states.get(eid))
+    return coord
+
+
+def test_no_miss_while_the_visibility_entity_hides_the_chore():
+    chore = Chore(
+        name="Homework",
+        mandatory=True,
+        time_category="afternoon",
+        assigned_to=["k1"],
+        visibility_entity="binary_sensor.school_holiday",
+        visibility_state="off",
+        id="c1",
+    )
+    coord = _hidden_coord(chore, {"binary_sensor.school_holiday": _state("on")})
+    assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 0
+    coord.hass.bus.async_fire.assert_not_called()
+
+
+def test_miss_still_raised_while_the_visibility_entity_shows_the_chore():
+    chore = Chore(
+        name="Homework",
+        mandatory=True,
+        time_category="afternoon",
+        assigned_to=["k1"],
+        visibility_entity="binary_sensor.school_holiday",
+        visibility_state="off",
+        id="c1",
+    )
+    coord = _hidden_coord(chore, {"binary_sensor.school_holiday": _state("off")})
+    assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 1
+
+
+def test_no_miss_while_the_weather_rains_the_chore_off():
+    chore = Chore(
+        name="Mow the lawn",
+        mandatory=True,
+        time_category="afternoon",
+        assigned_to=["k1"],
+        weather_entity="weather.home",
+        weather_block_conditions=["rainy"],
+        id="c1",
+    )
+    coord = _hidden_coord(chore, {"weather.home": _state("rainy")})
+    assert run(coord.async_detect_mandatory_misses("afternoon", DAY)) == 0
