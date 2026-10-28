@@ -2091,6 +2091,8 @@
   "panel.template_name_label": "Naam",
   "panel.template_picker_title": "Toevoegen vanuit sjabloon",
   "panel.template_preview_hint": "Bekijk elke taak voor het maken en pas aan. Klap open om alle velden te bewerken, of haal weg met ✕.",
+  "panel.template_assign_all_label": "Alle taken toewijzen aan",
+  "panel.template_assign_all_hint": "Tik op een naam om elke taak aan dat kind te geven. Leeg laten voor alle kinderen. Hieronder kun je elke taak apart aanpassen.",
   "panel.template_pts_total": "{count} taken · {points} {points_name} totaal",
   "panel.template_requires_approval_label": "Moet worden goedgekeurd",
   "panel.template_requires_approval_no": "Nee",

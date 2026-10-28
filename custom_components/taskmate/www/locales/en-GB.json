@@ -2091,6 +2091,8 @@
   "panel.template_name_label": "Name",
   "panel.template_picker_title": "Add from Template",
   "panel.template_preview_hint": "Review and customise each chore before creating. Expand to edit all fields, or remove with ✕.",
+  "panel.template_assign_all_label": "Assign all chores to",
+  "panel.template_assign_all_hint": "Tap a name to give every chore to that child. Leave empty for all children. You can change each chore below.",
   "panel.template_pts_total": "{count} chore(s) · {points} {points_name} total",
   "panel.template_requires_approval_label": "Requires approval",
   "panel.template_requires_approval_no": "No",

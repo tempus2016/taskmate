@@ -2091,6 +2091,8 @@
   "panel.template_name_label": "Nazwa",
   "panel.template_picker_title": "Dodaj z szablonu",
   "panel.template_preview_hint": "Przejrzyj i dostosuj każdy obowiązek przed utworzeniem. Rozwiń, aby edytować wszystkie pola, lub usuń za pomocą ✕.",
+  "panel.template_assign_all_label": "Przypisz wszystkie obowiązki do",
+  "panel.template_assign_all_hint": "Dotknij imienia, aby przypisać każdy obowiązek temu dziecku. Pozostaw puste dla wszystkich dzieci. Każdy obowiązek możesz zmienić poniżej.",
   "panel.template_pts_total": "Obowiązki: {count} · łącznie {points} {points_name}",
   "panel.template_requires_approval_label": "Wymaga zatwierdzenia",
   "panel.template_requires_approval_no": "Nie",

@@ -2025,6 +2025,8 @@
   "panel.template_name_label": "Name",
   "panel.template_picker_title": "Aus Vorlage hinzufügen",
   "panel.template_preview_hint": "Überprüfe und passe jede Aufgabe vor dem Erstellen an. Zum Bearbeiten aufklappen oder mit ✕ entfernen.",
+  "panel.template_assign_all_label": "Alle Aufgaben zuweisen an",
+  "panel.template_assign_all_hint": "Tippe auf einen Namen, um jede Aufgabe diesem Kind zuzuweisen. Leer lassen für alle Kinder. Unten kannst du jede Aufgabe einzeln ändern.",
   "panel.template_pts_total": "{count} Aufgabe(n) · {points} {points_name} gesamt",
   "panel.template_requires_approval_label": "Erfordert Genehmigung",
   "panel.template_requires_approval_no": "Nein",

@@ -2025,6 +2025,8 @@
   "panel.template_name_label": "Nome",
   "panel.template_picker_title": "Adicionar de Modelo",
   "panel.template_preview_hint": "Revise e personalize cada tarefa antes de criar. Expanda para editar todos os campos ou remova com ✕.",
+  "panel.template_assign_all_label": "Atribuir todas as tarefas a",
+  "panel.template_assign_all_hint": "Toque em um nome para dar cada tarefa a essa criança. Deixe vazio para todas as crianças. Você pode alterar cada tarefa abaixo.",
   "panel.template_pts_total": "{count} tarefa(s) · {points} {points_name} no total",
   "panel.template_requires_approval_label": "Requer aprovação",
   "panel.template_requires_approval_no": "Não",

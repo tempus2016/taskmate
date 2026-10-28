@@ -2091,6 +2091,8 @@
   "panel.template_name_label": "Navn",
   "panel.template_picker_title": "Tilføj fra skabelon",
   "panel.template_preview_hint": "Gennemse og tilpas hver pligt, før den oprettes. Fold ud for at redigere alle felter, eller fjern med ✕.",
+  "panel.template_assign_all_label": "Tildel alle pligter til",
+  "panel.template_assign_all_hint": "Tryk på et navn for at give hver pligt til det barn. Lad feltet være tomt for alle børn. Du kan ændre hver pligt nedenfor.",
   "panel.template_pts_total": "{count} pligt(er) · {points} {points_name} i alt",
   "panel.template_requires_approval_label": "Kræver godkendelse",
   "panel.template_requires_approval_no": "Nej",
