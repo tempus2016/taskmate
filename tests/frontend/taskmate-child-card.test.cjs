@@ -259,7 +259,7 @@ test("weekly target: the overview keeps a chore still short of its quota", () =>
 // Found on ha-dev, not in a unit test: with daily_limit above 1 the row was
 // neither done nor locked, so it still offered a DONE button that
 // complete_chore refuses (#805 all over again). The week's remaining
-// allowance has to cap today's, the way first_come clamps it to 1.
+// allowance has to cap today's daily limit.
 
 test("weekly target: a quota filled today reads as done, with undo still live", () => {
   const card = makeWeeklyCard({

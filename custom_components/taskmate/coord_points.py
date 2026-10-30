@@ -73,7 +73,7 @@ class PointsMixin:
                     continue
                 if getattr(chore, "open_ended", False):
                     continue
-                limit = 1 if mode == "first_come" else max(1, int(getattr(chore, "daily_limit", 1) or 1))
+                limit = max(1, int(getattr(chore, "daily_limit", 1) or 1))
                 # A teamwork chore (#928) pays each member their share (plus any
                 # team bonus), so that is what it can add to a child's week.
                 points = self.team_share_points(chore)

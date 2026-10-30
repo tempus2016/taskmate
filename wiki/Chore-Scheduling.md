@@ -210,13 +210,28 @@ The parent dashboard applies the same filters.
 ### How It Works
 
 - **Shown to everyone in the pool** — every assigned child (or all children, if `assigned_to` is empty) sees the chore until it is claimed. With **Require Availability** on, only currently-available children see it.
-- **Single winner** — the first completion fills a shared quota of one and **locks the chore for the whole pool** for the rest of the day. The daily limit is always treated as `1` for first-come chores regardless of any configured value.
-- **Race losers** — if another child tries to complete it after it has been claimed, the attempt is rejected with *"Chore '…' was already completed by another child."* No points are awarded to the loser.
+- **Single winner by default** — with a daily limit of `1` the first completion **locks the chore for the whole pool** for the rest of the day.
+- **Shared daily limit** — from **v7.6.0** a first-come chore's daily limit is shared by the whole pool. A limit of `2` means two completions in total today, whoever makes them: one each, or both by the same child. Every completion pays the child who made it, and once the limit is used up the chore locks for everyone. A pool-wide **Parent did it** from the admin panel uses one of the slots.
+- **Race losers** — if another child tries to complete it after the limit is used up, the attempt is rejected with *"Chore '…' was already completed by another child."* No points are awarded to the loser.
 - **Daily reset** — the lock is per-day; the chore opens up to the pool again the next day.
+
+For example, to have the dishwasher emptied twice a day by whichever child gets there first, set the chore up in the admin panel's chore dialog like this:
+
+| Setting | Value |
+|---------|-------|
+| Assigned to | Both children |
+| Assignment mode | First come |
+| How often in a day | Up to N times |
+| Daily limit | `2` |
+| Points | `3` |
+
+If one child does it twice they get 6 points and the other gets none. If they do it once each, they get 3 points each. Either way it then locks until tomorrow.
+
+> **Upgrading to v7.6.0:** first-come chores used to ignore their daily limit, and the panel hid the field, so an old value could be sitting on a chore unseen. To stop those chores suddenly allowing several completions, every first-come chore is reset to a limit of `1` once, on the first start after the upgrade. Set a higher limit afterwards and it is kept.
 
 ### Panel Behaviour
 
-- In the chore dialog, the **Daily Limit** field is hidden for first-come chores (the limit is fixed at 1).
+- In the chore dialog, pick **Up to N times** under **How often in a day**, then set the **Daily Limit**. For a first-come chore the field explains that the limit is shared by the group.
 - First-come chores carry a gold **First come** badge in the chore list.
 - First-come chores are **excluded from [Task Groups](Task-Groups.md)** — the group dialog won't list them — and from per-child rotation bookkeeping, because there is no single assignee to coordinate.
 
@@ -232,7 +247,9 @@ From **v5.4.0** the child card's `first_come_claimed_mode` option changes that:
 | `dim` | The row stays, greyed out and not tappable |
 | `show` | The row stays at full opacity, still not tappable |
 
-Under `dim` and `show`, the winner keeps their normal completed row with undo, and everyone else sees a locked row reading *"Already done by {name}"*. A pool-wide dismissal from the admin panel has no single winner, so every child sees *"Already claimed today"* rather than it appearing as done for all of them.
+Under `dim` and `show`, the winner keeps their normal completed row with undo, and everyone else sees a locked row reading *"Already done by {name}"*. With a shared limit every child who took part gets the completed row, and the locked row names them all (*"Already done by Ava, Ben"*).
+
+While a shared limit still has slots left, every child in the pool sees the chore with the pool's progress — `(1/2)` on the classic row, a `👥 1/2` tag on the other designs. A pool-wide dismissal from the admin panel has no single winner, so every child sees *"Already claimed today"* rather than it appearing as done for all of them.
 
 Set it in the card editor under **First-Come Chores — When Claimed**, or in YAML — see [Dashboard Cards](Dashboard-Cards.md#child-card).
 

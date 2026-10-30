@@ -23,8 +23,9 @@ MAX_CALENDAR_PROJECTION_DAYS: Final = 90
 # "alternating" = round-robin through assigned_to (or all children), one child per calendar day
 # "random"      = deterministic per-day random pick from the same pool (each chore picks independently)
 # "balanced"    = split today's balanced-mode chores evenly across the pool so no one child gets swamped
-# "first_come"  = competitive: shown to the whole pool at once; first child to complete it wins and it
-#                 hides for everyone else (shared quota of 1). A parent rejection reopens it for the pool.
+# "first_come"  = competitive: shown to the whole pool at once; the pool shares the chore's daily_limit
+#                 (#1159), so once it has been done that many times today it hides for everyone. Each
+#                 completion pays whoever made it. A parent rejection reopens a slot for the pool.
 ASSIGNMENT_MODES: Final = ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
 
 # Teamwork chores (#928): how a finished team's points are shared out.

@@ -2897,19 +2897,51 @@ class TaskMateChildCard extends LitElement {
   /** Mirror of _renderChoreCard's "completed today" detection, designed branch only. */
   // How many times this chore can still be ticked TODAY.
   //
-  // Normally the chore's own daily_limit, clamped to 1 for a first_come race.
+  // Normally the chore's own daily_limit (first_come included: the pool
+  // shares it, see _firstComeSharedCount).
   // A weekly target (#883) clamps it again: once the week's quota is full there
   // is no allowance left, so a chore with daily_limit 5 and 2/2 done reads as
   // finished rather than staying tappable — the tap would only be one
   // complete_chore refuses (#805). Only applied once the child has ticked it
   // today; a quota filled on earlier days leaves the row locked instead, so a
   // green "done" row never appears with no completion behind it to undo.
-  _effectiveDailyLimit(chore, child, countToday, isFirstCome) {
-    const limit = isFirstCome ? 1 : (chore.daily_limit || 1);
+  _effectiveDailyLimit(chore, child, countToday) {
+    const limit = chore.daily_limit || 1;
     const target = Number(chore.weekly_target) || 0;
     if (target <= 0 || countToday <= 0) return limit;
     const doneThisWeek = Number((child?.weekly_chore_progress || {})[chore.id] || 0);
     return Math.min(limit, countToday + Math.max(0, target - doneThisWeek));
+  }
+
+  // first_come shares its daily_limit across the pool (#1159): every completion
+  // today counts, whoever made it, as does a pool-wide "Parent did it" (one for
+  // a single child, #1096, never fills the race). This child's own optimistic
+  // ticks are added so the shared count moves the moment they tap.
+  _firstComeSharedCount(chore, child, todaysCompletions) {
+    const comps = (todaysCompletions || []).filter(
+      (c) => c.chore_id === chore.id && !c.bonus_subtask_id
+        && (c.child_id !== "__parent__" || !c.for_child_id)
+    );
+    let count = comps.length;
+    const opt = this._optimisticCompletions && this._optimisticCompletions[`${chore.id}_${child.id}`];
+    if (opt) {
+      const ownTs = comps.filter(c => c.child_id === child.id)
+        .map(c => c.completed_at ? new Date(c.completed_at).getTime() : 0);
+      for (const t of (opt.timestamps || [opt.timestamp || Date.now()])) {
+        if (!ownTs.some(a => Math.abs(a - t) < 2000)) count += 1;
+      }
+    }
+    return count;
+  }
+
+  // first_come done state (#1159): finished once the shared count fills the
+  // limit (or this child's weekly quota is full) — but only for a child who
+  // took part. A sibling who didn't falls through to the locked row instead
+  // (chore._isFirstComeLocked), so a pool-wide parent dismissal never paints
+  // a green row with a live undo chip for a chore nobody here did.
+  _firstComeDone(chore, child, ownCount, shared) {
+    if (ownCount <= 0) return false;
+    return shared >= (chore.daily_limit || 1) || ownCount >= this._effectiveDailyLimit(chore, child, ownCount);
   }
 
   // A "Parent did it" completion covers this child: either the whole pool,
@@ -2944,11 +2976,11 @@ class TaskMateChildCard extends LitElement {
         if (!actualTs.some(a => Math.abs(a - t) < 2000)) count += 1;
       }
     }
-    // first_come is a single-winner race whatever quota is stored on the chore —
-    // the filter and the backend both clamp it to 1 (coord_assignments). Reading
-    // the raw daily_limit here would leave the winner's own row looking incomplete
-    // and tappable, and complete_chore would then silently no-op the tap (#805).
-    const done = count >= this._effectiveDailyLimit(chore, child, count, isFirstCome);
+    if (isFirstCome) {
+      const shared = this._firstComeSharedCount(chore, child, todaysCompletions);
+      return { done: this._firstComeDone(chore, child, count, shared), completions: childCompletionsToday, shared };
+    }
+    const done = count >= this._effectiveDailyLimit(chore, child, count);
     return { done, completions: childCompletionsToday };
   }
 
@@ -2996,7 +3028,7 @@ class TaskMateChildCard extends LitElement {
 
     // Annotate each chore with done-state + handlers, preserving the classic path's logic.
     const rows = childChores.map((chore, i) => {
-      const { done, completions } = this._isChoreDone(chore, child, todaysCompletions);
+      const { done, completions, shared } = this._isChoreDone(chore, child, todaysCompletions);
       const loading = !!this._loading[chore.id];
       // Blocked chores only reach here under dim/show — hide is filtered
       // upstream. Either way the tap must be refused (#793).
@@ -3032,7 +3064,7 @@ class TaskMateChildCard extends LitElement {
         stLocked
       );
       return {
-        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked,
+        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked, shared,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: this._boostPoints(chore, child),
@@ -3214,11 +3246,16 @@ class TaskMateChildCard extends LitElement {
       : "";
     // Weekly target (#883): shown from the first tick so the child can see
     // where they are, not only once the quota is full.
+    // first_come with a shared limit (#1159): the pool's progress, the same
+    // "n/N" the classic row shows. Absent for a classic single-winner race.
+    const sharedLabel = r.shared !== undefined && (r.chore.daily_limit || 1) > 1 && !r.firstComeLocked
+      ? `${Math.min(r.shared, r.chore.daily_limit)}/${r.chore.daily_limit}`
+      : "";
     const weeklyLabel = r.chore._weeklyTarget > 0
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
       : "";
     return html`
-      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || weeklyLabel || (r.team && !r.done)
+      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
@@ -3233,6 +3270,7 @@ class TaskMateChildCard extends LitElement {
           ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
           ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
           ${firstComeLabel ? html`<span class="tmd-tag">✅ ${firstComeLabel}</span>` : ""}
+          ${sharedLabel ? html`<span class="tmd-tag tm-shared-limit">👥 ${sharedLabel}</span>` : ""}
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
         </div>` : ""}
@@ -3535,8 +3573,8 @@ class TaskMateChildCard extends LitElement {
             ? assignedToStrings
             : (attrs.children || []).map(c => String(c.id));
           const poolSet = new Set(poolIds);
-          // first_come is a single-winner race regardless of any configured limit.
-          const dailyLimit = assignmentMode === 'first_come' ? 1 : (chore.daily_limit || 1);
+          // The pool shares the limit — first_come included (#1159).
+          const dailyLimit = chore.daily_limit || 1;
           const allTodayCompletions = attrs.todays_completions || [];
           const poolCompletionsToday = allTodayCompletions.filter(
             comp => comp.chore_id === chore.id && (poolSet.has(String(comp.child_id)) || comp.child_id === "__parent__") && !comp.bonus_subtask_id
@@ -3570,15 +3608,16 @@ class TaskMateChildCard extends LitElement {
                 );
                 chore._isFirstComeLocked = !completedByThisChild;
                 if (chore._isFirstComeLocked) {
-                  const winningCompletion = allTodayCompletions.find(
-                    (comp) => comp.chore_id === chore.id && !comp.bonus_subtask_id
-                  );
-                  const winner = winningCompletion
-                    ? (attrs.children || []).find(c => String(c.id) === String(winningCompletion.child_id))
-                    : null;
-                  chore._firstComeCompletedByName = winner
-                    ? winner.name
-                    : (winningCompletion && winningCompletion.child_id === '__parent__' ? this._t('child.parent') : '');
+                  // Everyone who filled the shared limit (#1159), in the order
+                  // they did it — one name for a classic single-winner race.
+                  const names = [];
+                  for (const comp of allTodayCompletions) {
+                    if (comp.chore_id !== chore.id || comp.bonus_subtask_id) continue;
+                    const kid = (attrs.children || []).find(c => String(c.id) === String(comp.child_id));
+                    const name = kid ? kid.name : (comp.child_id === '__parent__' ? this._t('child.parent') : '');
+                    if (name && !names.includes(name)) names.push(name);
+                  }
+                  chore._firstComeCompletedByName = names.join(', ');
                 }
               } else {
                 isAssignedToChild = false;
@@ -4290,7 +4329,9 @@ class TaskMateChildCard extends LitElement {
         && (comp.child_id === child.id || this._parentDidItFor(comp, child.id))
         && !comp.bonus_subtask_id
     );
-    const isDone = childCompletionsToday.length >= dailyLimit;
+    const isDone = chore.assignment_mode === "first_come"
+      ? this._isChoreDone(chore, child, todaysCompletions).done
+      : childCompletionsToday.length >= dailyLimit;
     const isLoading = this._loading[chore.id];
     const available = chore._isAvailableForChild !== false && !chore._isLockedPreview
       && !chore._isDependencyBlocked;
@@ -4378,10 +4419,7 @@ class TaskMateChildCard extends LitElement {
       (comp) => comp.chore_id === chore.id && (comp.child_id === child.id || (!isFirstCome && this._parentDidItFor(comp, child.id))) && !comp.bonus_subtask_id
     );
     let completionsToday = childCompletionsToday.length;
-    // Clamped for first_come the same way the filter and the backend clamp it: a
-    // stored daily_limit > 1 must not make the winner's finished row read as still
-    // outstanding, or it invites a tap that complete_chore silently swallows (#805).
-    const dailyLimit = this._effectiveDailyLimit(chore, child, completionsToday, isFirstCome);
+    const dailyLimit = this._effectiveDailyLimit(chore, child, completionsToday);
 
     // Check for optimistic completions (chores just completed but not yet confirmed by HA)
     const optimisticKey = `${chore.id}_${child.id}`;
@@ -4412,7 +4450,12 @@ class TaskMateChildCard extends LitElement {
       completionsToday += unreflectedOptimistic;
     }
 
-    const isCompletedForToday = completionsToday >= dailyLimit;
+    // first_come (#1159): the pool shares the limit, so the "(n/N)" counter and
+    // the done state follow the shared count — see _firstComeDone.
+    const sharedToday = isFirstCome ? this._firstComeSharedCount(chore, child, todaysCompletions) : 0;
+    const isCompletedForToday = isFirstCome
+      ? this._firstComeDone(chore, child, completionsToday, sharedToday)
+      : completionsToday >= dailyLimit;
 
 
     // Chore number (1-indexed for display) and color class (cycle through 8 colors)
@@ -4553,7 +4596,9 @@ class TaskMateChildCard extends LitElement {
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
               ${isCompletedForToday ? html`+${chore.effective_points ?? chore.points}` : this._boostedPoints(chore, child)}
-              ${dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
+              ${isFirstCome && (chore.daily_limit || 1) > 1
+                ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${Math.min(sharedToday, chore.daily_limit)}/${chore.daily_limit})</span>`
+                : dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
               ${chore._weeklyTarget > 0 ? html`<span style="font-size: 0.8em; opacity: 0.7;">${this._t('child.weekly_target_progress', { done: chore._weeklyProgress, target: chore._weeklyTarget })}</span>` : ''}
             </div>
             ${chore.require_photo && !isCompletedForToday ? html`
@@ -5020,8 +5065,11 @@ class TaskMateChildCard extends LitElement {
     // This is a simplified count - we're being defensive and not trying to dedupe
     const totalCompletions = actualCompletionsToday + existingOptimisticCount;
 
-    // Guard: If daily limit already reached, don't allow another completion
-    if (totalCompletions >= dailyLimit) {
+    // Guard: If daily limit already reached, don't allow another completion.
+    // first_come's limit is shared by the pool (#1159).
+    const sharedFull = chore.assignment_mode === "first_come"
+      && this._firstComeSharedCount(chore, child, todaysCompletions) >= dailyLimit;
+    if (totalCompletions >= dailyLimit || sharedFull) {
       this.requestUpdate(); // Force re-render to show completed state
       return;
     }
@@ -5448,7 +5496,10 @@ class TaskMateChildCard extends LitElement {
       if (chore._hasDueDays && !chore._isDueToday) continue;
       if (chore._isLockedPreview || chore._isRecurrenceLocked || chore._isFirstComeLocked || chore._weeklyTargetMet) continue;
       const done = (todaysCompletions || []).filter(c => c.chore_id === chore.id && c.child_id === child.id && !c.bonus_subtask_id).length;
-      const left = Math.max(0, (Number(chore.daily_limit) || 1) - done);
+      const used = chore.assignment_mode === "first_come"
+        ? this._firstComeSharedCount(chore, child, todaysCompletions)
+        : done;
+      const left = Math.max(0, (Number(chore.daily_limit) || 1) - used);
       total += mins * left;
     }
     return total;
@@ -5482,6 +5533,9 @@ class TaskMateChildCard extends LitElement {
   _isDoneForToday(chore, child, todaysCompletions) {
     const done = (todaysCompletions || []).filter(c => c.chore_id === chore.id && c.child_id === child.id && !c.bonus_subtask_id).length;
     const optimistic = (this._optimisticCompletions || {})[`${chore.id}_${child.id}`]?.count || 0;
+    if (chore.assignment_mode === "first_come") {
+      return this._firstComeSharedCount(chore, child, todaysCompletions) >= (Number(chore.daily_limit) || 1);
+    }
     return done + optimistic >= (Number(chore.daily_limit) || 1);
   }
 

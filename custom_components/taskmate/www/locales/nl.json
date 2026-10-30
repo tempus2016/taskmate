@@ -876,6 +876,7 @@
   "panel.difficulty_medium": "Gemiddeld",
   "panel.chore_daily_cap_label": "Maximaal per dag (minuten, 0 = onbeperkt)",
   "panel.chore_daily_limit_label": "Daglimiet",
+  "panel.chore_daily_limit_shared_hint": "Gedeeld door iedereen in de groep — zodra hij vandaag zo vaak is gedaan, sluit hij voor iedereen. Elke keer krijgt degene die hem deed de punten.",
   "panel.chore_days_label": "Weekdagen (leeg laten = elke dag)",
   "panel.chore_weekly_target_pill": "{count}×/week",
   "panel.chore_weekly_target_hint": "Hoe vaak per week dit moet, op een van de gekozen dagen. Daarna wordt hij niet meer aangeboden, tot maandag.",
