@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Atribuída a",
-          "description": "Lista de IDs de crianças a quem atribuir esta tarefa. Deixe vazio para atribuir a todas as crianças"
+          "description": "Crianças a quem atribuir esta tarefa, por nome ou ID. Deixe vazio para atribuir a todas as crianças"
         },
         "time_category": {
           "name": "Categoria de tempo",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Bónus de todas as horas",
           "description": "Pontos extra uma vez por dia, quando todas as horas definidas estão feitas."
+        },
+        "assignment_mode": {
+          "name": "Modo de atribuição",
+          "description": "Quem faz a tarefa cada dia: everyone (todos), alternating (à vez), random (ao acaso), balanced (quem a fez menos vezes), first_come (a primeira criança a pegar nela) ou unassigned (ninguém)."
+        },
+        "schedule_mode": {
+          "name": "Agenda",
+          "description": "specific_days (os dias da semana em Dias, ou todos os dias se nenhum for escolhido), recurring (no ritmo de Recorrência) ou one_shot (só hoje)."
+        },
+        "due_days": {
+          "name": "Dias",
+          "description": "Dias da semana em que a tarefa é para fazer, na agenda specific_days. Deixe vazio para todos os dias."
+        },
+        "recurrence": {
+          "name": "Recorrência",
+          "description": "Com que frequência volta uma tarefa recorrente: weekly, every_2_weeks, monthly, every_3_months, every_6_months ou every_N_days com N de 2 a 365 (ex. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Dia da recorrência",
+          "description": "O dia da semana em que calha uma tarefa weekly ou every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Início da recorrência",
+          "description": "A data a partir da qual conta o ritmo de uma tarefa recorrente (AAAA-MM-DD)."
+        },
+        "due_time": {
+          "name": "Hora limite",
+          "description": "Hora a que a tarefa deve estar feita (\"HH:MM\"). Terminar antes dá o bónus antecipado, depois aplica-se a penalização por atraso. Vazio para sem hora limite."
+        },
+        "daily_limit": {
+          "name": "Limite diário",
+          "description": "Quantas vezes por dia a tarefa pode ser feita. Tarefas únicas são sempre 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Atualizar tarefa",
+      "description": "Alterar uma tarefa existente pelo seu ID. Só mudam os campos indicados; o resto fica como está.",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa a alterar"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Novo nome da tarefa"
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nova descrição da tarefa"
+        },
+        "points": {
+          "name": "Pontos",
+          "description": "Pontos atribuídos quando esta tarefa é concluída"
+        },
+        "assigned_to": {
+          "name": "Atribuída a",
+          "description": "Crianças a quem atribuir esta tarefa, por nome ou ID. Uma lista vazia atribui-a a todas as crianças"
+        },
+        "time_category": {
+          "name": "Categoria de tempo",
+          "description": "Quando esta tarefa deve ser concluída: morning, afternoon, evening, night ou anytime"
+        },
+        "difficulty": {
+          "name": "Dificuldade",
+          "description": "Nível de dificuldade: easy, medium ou hard. Ajusta os pontos atribuídos (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Requer aprovação",
+          "description": "Se verdadeiro, um pai/mãe deve aprovar a conclusão antes de os pontos serem atribuídos"
+        },
+        "enabled": {
+          "name": "Ativada",
+          "description": "Desligar a tarefa (false) para a esconder em todo o lado sem a apagar, ou voltar a ligá-la (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Bónus de rapidez",
+          "description": "Pontos extra se a tarefa for feita antes do prazo."
+        },
+        "team_size": {
+          "name": "Tamanho da equipa",
+          "description": "Torna esta tarefa numa tarefa de equipa que só conta quando este número de crianças diferentes se juntar. Quando a equipa está completa, é submetida para todas. 0 = uma tarefa normal."
+        },
+        "team_points_mode": {
+          "name": "Pontos da equipa",
+          "description": "Como uma tarefa de equipa paga: \"each\" dá os pontos completos a cada participante, \"split\" divide-os igualmente (arredondado para baixo)."
+        },
+        "team_bonus": {
+          "name": "Bónus de equipa",
+          "description": "Pontos extra que cada participante ganha quando uma tarefa de equipa é concluída."
+        },
+        "times": {
+          "name": "Horas fixas",
+          "description": "Substitui as horas fixas da tarefa. Uma lista de até 5 horas, cada uma com nome, início e fim (\"HH:MM\", mesmo dia, sem sobreposição) e pontos. Uma lista vazia remove-as."
+        },
+        "times_bonus": {
+          "name": "Bónus de todas as horas",
+          "description": "Pontos extra uma vez por dia, quando todas as horas definidas estão feitas."
+        },
+        "assignment_mode": {
+          "name": "Modo de atribuição",
+          "description": "Quem faz a tarefa cada dia: everyone (todos), alternating (à vez), random (ao acaso), balanced (quem a fez menos vezes), first_come (a primeira criança a pegar nela) ou unassigned (ninguém)."
+        },
+        "schedule_mode": {
+          "name": "Agenda",
+          "description": "specific_days (os dias da semana em Dias, ou todos os dias se nenhum for escolhido), recurring (no ritmo de Recorrência) ou one_shot (só hoje)."
+        },
+        "due_days": {
+          "name": "Dias",
+          "description": "Dias da semana em que a tarefa é para fazer, na agenda specific_days. Deixe vazio para todos os dias."
+        },
+        "recurrence": {
+          "name": "Recorrência",
+          "description": "Com que frequência volta uma tarefa recorrente: weekly, every_2_weeks, monthly, every_3_months, every_6_months ou every_N_days com N de 2 a 365 (ex. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Dia da recorrência",
+          "description": "O dia da semana em que calha uma tarefa weekly ou every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Início da recorrência",
+          "description": "A data a partir da qual conta o ritmo de uma tarefa recorrente (AAAA-MM-DD)."
+        },
+        "due_time": {
+          "name": "Hora limite",
+          "description": "Hora a que a tarefa deve estar feita (\"HH:MM\"). Terminar antes dá o bónus antecipado, depois aplica-se a penalização por atraso. Vazio para sem hora limite."
+        },
+        "daily_limit": {
+          "name": "Limite diário",
+          "description": "Quantas vezes por dia a tarefa pode ser feita. Tarefas únicas são sempre 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Apagar tarefa",
+      "description": "Apagar uma tarefa pelo seu ID, com a mesma limpeza do painel. Fica 7 dias em Apagadas recentemente no painel, para poder ser restaurada.",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa a apagar"
+        },
+        "confirm": {
+          "name": "Confirmar",
+          "description": "Tem de ser true. Uma salvaguarda para que uma tarefa nunca seja apagada por engano."
         }
       }
     },

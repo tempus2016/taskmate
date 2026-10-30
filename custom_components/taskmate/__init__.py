@@ -19,6 +19,8 @@ from homeassistant.helpers.service import async_set_service_schema
 from homeassistant.util import dt as dt_util
 
 from . import authz, photos
+from .chore_services import CHORE_SERVICES, async_register_chore_services, resolve_children
+from .chore_services import SCHEDULE_FIELDS as CHORE_SCHEDULE_FIELDS
 from .const import (
     ATTR_AS_PARENT,
     ATTR_AWARDED_BADGE_ID,
@@ -1230,11 +1232,24 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             times = validate_chore_times(call.data.get("times"), team_size=call.data.get("team_size", 0))
         except ValueError as err:
             raise ServiceValidationError(str(err)) from err
+        # Scheduling and assignment (#1156): only the fields the call names,
+        # so everything else keeps the coordinator's defaults.
+        schedule = {
+            key: call.data[key]
+            for key in ("assignment_mode", "due_days", "recurrence", "recurrence_start", "due_time", "daily_limit")
+            if key in call.data
+        }
+        if call.data.get("recurrence_day"):
+            schedule["recurrence_day"] = call.data["recurrence_day"]
+        # one_shot / expires_in_minutes keep their old meaning and win.
+        if not one_shot and call.data.get("schedule_mode"):
+            schedule_mode = call.data["schedule_mode"]
         chore = await coordinator.async_add_chore(
             name=call.data[ATTR_CHORE_NAME],
             description=call.data.get(ATTR_CHORE_DESCRIPTION, ""),
             points=call.data.get(ATTR_CHORE_POINTS, 10),
-            assigned_to=call.data.get(ATTR_CHORE_ASSIGNED_TO, []),
+            # Names as well as ids (#1156); an unknown or ambiguous name refuses the call.
+            assigned_to=resolve_children(coordinator, call.data.get(ATTR_CHORE_ASSIGNED_TO, [])),
             time_category=call.data.get(ATTR_CHORE_TIME_CATEGORY, "anytime"),
             requires_approval=call.data.get(ATTR_CHORE_REQUIRES_APPROVAL, True),
             difficulty=call.data.get("difficulty", "medium"),
@@ -1244,6 +1259,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             team_size=call.data.get("team_size", 0),
             team_points_mode=call.data.get("team_points_mode", "each"),
             team_bonus=call.data.get("team_bonus", 0),
+            **schedule,
         )
         if times:
             chore.times = times
@@ -1925,6 +1941,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 # {name, start "HH:MM", end "HH:MM", points}.
                 vol.Optional("times"): vol.All(cv.ensure_list, [dict]),
                 vol.Optional("times_bonus", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=1000)),
+                # Scheduling and assignment (#1156), shared with update_chore.
+                **CHORE_SCHEDULE_FIELDS,
             }
         ),
     )
@@ -2075,6 +2093,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         get_coordinator=lambda: _get_coordinator(hass),
     )
 
+    # Editing and deleting chores (#1156): admin actions, like add_chore.
+    async_register_chore_services(
+        hass,
+        admin_action=_admin,
+        get_coordinator=lambda: _get_coordinator(hass),
+    )
+
     # Help requests, moods, sick days, weekly goals and raffles.
     from .family_services import async_register_family_services
 
@@ -2157,5 +2182,6 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
     services.extend(WISHLIST_SERVICES)
     services.extend(INSPECTION_SERVICES)
     services.extend(FAMILY_SERVICES)
+    services.extend(CHORE_SERVICES)
     for service in services:
         hass.services.async_remove(DOMAIN, service)

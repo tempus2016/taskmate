@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Voor wie",
-          "description": "Lijst met kind-ID's voor wie deze taak is. Laat leeg voor alle kinderen"
+          "description": "Kinderen voor wie deze taak is, op naam of ID. Laat leeg voor alle kinderen"
         },
         "time_category": {
           "name": "Dagdeel",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Bonus voor alle tijden",
           "description": "Extra punten, één keer per dag, als alle vaste tijden klaar zijn."
+        },
+        "assignment_mode": {
+          "name": "Toewijzing",
+          "description": "Wie de taak elke dag doet: everyone (iedereen), alternating (om de beurt), random (willekeurig), balanced (wie hem het minst heeft gedaan), first_come (het eerste kind dat hem pakt) of unassigned (niemand)."
+        },
+        "schedule_mode": {
+          "name": "Planning",
+          "description": "specific_days (de weekdagen bij Dagen, of elke dag als er geen gekozen zijn), recurring (in het ritme bij Herhaling) of one_shot (alleen vandaag)."
+        },
+        "due_days": {
+          "name": "Dagen",
+          "description": "Weekdagen waarop de taak gedaan moet worden, voor de planning specific_days. Laat leeg voor elke dag."
+        },
+        "recurrence": {
+          "name": "Herhaling",
+          "description": "Hoe vaak een terugkerende taak terugkomt: weekly, every_2_weeks, monthly, every_3_months, every_6_months of every_N_days met N van 2 tot 365 (bijv. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Herhalingsdag",
+          "description": "De weekdag waarop een weekly- of every_2_weeks-taak valt."
+        },
+        "recurrence_start": {
+          "name": "Herhaling vanaf",
+          "description": "De datum vanaf waar het ritme van een terugkerende taak telt (JJJJ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Uiterlijk om",
+          "description": "Tijd waarop de taak klaar moet zijn (\"HH:MM\"). Op tijd klaar geeft de vroegbonus, daarna geldt de te-laat-aftrek. Leeg voor geen tijd."
+        },
+        "daily_limit": {
+          "name": "Daglimiet",
+          "description": "Hoe vaak per dag de taak gedaan kan worden. Eenmalige taken altijd 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Taak wijzigen",
+      "description": "Een bestaande taak wijzigen op ID. Alleen de velden die je invult veranderen; de rest blijft zoals het is.",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "De ID van de taak die je wilt wijzigen"
+        },
+        "name": {
+          "name": "Naam",
+          "description": "Nieuwe naam voor de taak"
+        },
+        "description": {
+          "name": "Beschrijving",
+          "description": "Nieuwe beschrijving van de taak"
+        },
+        "points": {
+          "name": "Punten",
+          "description": "Punten die je krijgt als deze taak klaar is"
+        },
+        "assigned_to": {
+          "name": "Voor wie",
+          "description": "Kinderen voor wie deze taak is, op naam of ID. Een lege lijst wijst de taak aan alle kinderen toe"
+        },
+        "time_category": {
+          "name": "Dagdeel",
+          "description": "Wanneer deze taak gedaan moet worden: ochtend, middag, avond, nacht of altijd"
+        },
+        "difficulty": {
+          "name": "Moeilijkheid",
+          "description": "Moeilijkheidsgraad: easy, medium of hard. Schaalt de punten die je krijgt (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Goedkeuring nodig",
+          "description": "Als dit aan staat, moet een ouder het eerst goedkeuren voordat er punten komen"
+        },
+        "enabled": {
+          "name": "Ingeschakeld",
+          "description": "Zet de taak uit (false) om hem overal te verbergen zonder hem te verwijderen, of weer aan (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Snelheidsbonus",
+          "description": "Extra punten als de taak vóór de deadline klaar is."
+        },
+        "team_size": {
+          "name": "Teamgrootte",
+          "description": "Maak dit een teamtaak die pas telt als zoveel verschillende kinderen hebben meegedaan. Als het team vol is, telt hij voor iedereen mee. 0 = een gewone taak."
+        },
+        "team_points_mode": {
+          "name": "Teampunten",
+          "description": "Zo betaalt een teamtaak uit: “ieder” geeft elke deelnemer alle punten, “delen” verdeelt ze eerlijk (naar beneden afgerond)."
+        },
+        "team_bonus": {
+          "name": "Teambonus",
+          "description": "Extra punten die elke deelnemer krijgt als de teamtaak klaar is."
+        },
+        "times": {
+          "name": "Vaste tijden",
+          "description": "Vervangt de vaste tijden van de taak. Een lijst van maximaal 5 tijden, elk met naam, begin en eind (\"HH:MM\", zelfde dag, zonder overlap) en punten. Een lege lijst haalt ze weg."
+        },
+        "times_bonus": {
+          "name": "Bonus voor alle tijden",
+          "description": "Extra punten, één keer per dag, als alle vaste tijden klaar zijn."
+        },
+        "assignment_mode": {
+          "name": "Toewijzing",
+          "description": "Wie de taak elke dag doet: everyone (iedereen), alternating (om de beurt), random (willekeurig), balanced (wie hem het minst heeft gedaan), first_come (het eerste kind dat hem pakt) of unassigned (niemand)."
+        },
+        "schedule_mode": {
+          "name": "Planning",
+          "description": "specific_days (de weekdagen bij Dagen, of elke dag als er geen gekozen zijn), recurring (in het ritme bij Herhaling) of one_shot (alleen vandaag)."
+        },
+        "due_days": {
+          "name": "Dagen",
+          "description": "Weekdagen waarop de taak gedaan moet worden, voor de planning specific_days. Laat leeg voor elke dag."
+        },
+        "recurrence": {
+          "name": "Herhaling",
+          "description": "Hoe vaak een terugkerende taak terugkomt: weekly, every_2_weeks, monthly, every_3_months, every_6_months of every_N_days met N van 2 tot 365 (bijv. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Herhalingsdag",
+          "description": "De weekdag waarop een weekly- of every_2_weeks-taak valt."
+        },
+        "recurrence_start": {
+          "name": "Herhaling vanaf",
+          "description": "De datum vanaf waar het ritme van een terugkerende taak telt (JJJJ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Uiterlijk om",
+          "description": "Tijd waarop de taak klaar moet zijn (\"HH:MM\"). Op tijd klaar geeft de vroegbonus, daarna geldt de te-laat-aftrek. Leeg voor geen tijd."
+        },
+        "daily_limit": {
+          "name": "Daglimiet",
+          "description": "Hoe vaak per dag de taak gedaan kan worden. Eenmalige taken altijd 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Taak verwijderen",
+      "description": "Een taak verwijderen op ID, met dezelfde opruiming als in het paneel. Hij staat 7 dagen bij Onlangs verwijderd in het paneel en kan teruggezet worden.",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "De ID van de taak die je wilt verwijderen"
+        },
+        "confirm": {
+          "name": "Bevestigen",
+          "description": "Moet true zijn. Een beveiliging zodat een taak nooit per ongeluk wordt verwijderd."
         }
       }
     },

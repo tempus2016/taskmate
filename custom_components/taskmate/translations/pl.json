@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Przypisany do",
-          "description": "Lista ID dzieci, którym przypisać obowiązek. Pozostaw puste, aby przypisać wszystkim dzieciom"
+          "description": "Dzieci, którym przypisać obowiązek, po imieniu lub ID. Pozostaw puste, aby przypisać wszystkim dzieciom"
         },
         "time_category": {
           "name": "Pora dnia",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Premia za wszystkie pory",
           "description": "Dodatkowe punkty raz dziennie, gdy zrobiono wszystkie stałe pory."
+        },
+        "assignment_mode": {
+          "name": "Tryb przypisania",
+          "description": "Kto wykonuje obowiązek każdego dnia: everyone (wszyscy), alternating (na zmianę), random (losowo), balanced (kto robił go najrzadziej), first_come (pierwsze dziecko, które go weźmie) lub unassigned (nikt)."
+        },
+        "schedule_mode": {
+          "name": "Harmonogram",
+          "description": "specific_days (dni tygodnia z pola Dni, albo codziennie, jeśli żadnych nie wybrano), recurring (w rytmie z pola Powtarzanie) lub one_shot (tylko dziś)."
+        },
+        "due_days": {
+          "name": "Dni",
+          "description": "Dni tygodnia, w które obowiązek jest do zrobienia, dla harmonogramu specific_days. Pozostaw puste, by był codziennie."
+        },
+        "recurrence": {
+          "name": "Powtarzanie",
+          "description": "Jak często wraca obowiązek cykliczny: weekly, every_2_weeks, monthly, every_3_months, every_6_months lub every_N_days z N od 2 do 365 (np. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Dzień powtarzania",
+          "description": "Dzień tygodnia, na który przypada obowiązek weekly lub every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Początek powtarzania",
+          "description": "Data, od której liczy się rytm obowiązku cyklicznego (RRRR-MM-DD)."
+        },
+        "due_time": {
+          "name": "Godzina terminu",
+          "description": "Godzina, do której obowiązek ma być zrobiony (\"HH:MM\"). Zrobienie przed nią daje bonus za wcześniejsze wykonanie, po niej obowiązuje kara za spóźnienie. Puste, jeśli bez godziny."
+        },
+        "daily_limit": {
+          "name": "Dzienny limit",
+          "description": "Ile razy dziennie można wykonać obowiązek. Obowiązki jednorazowe zawsze 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Aktualizuj obowiązek",
+      "description": "Zmień istniejący obowiązek po jego ID. Zmieniają się tylko podane pola; reszta zostaje bez zmian.",
+      "fields": {
+        "chore_id": {
+          "name": "ID obowiązku",
+          "description": "ID obowiązku do zmiany"
+        },
+        "name": {
+          "name": "Nazwa",
+          "description": "Nowa nazwa obowiązku"
+        },
+        "description": {
+          "name": "Opis",
+          "description": "Nowy opis obowiązku"
+        },
+        "points": {
+          "name": "Punkty",
+          "description": "Punkty przyznawane za wykonanie obowiązku"
+        },
+        "assigned_to": {
+          "name": "Przypisany do",
+          "description": "Dzieci, którym przypisać obowiązek, po imieniu lub ID. Pusta lista przypisuje go wszystkim dzieciom"
+        },
+        "time_category": {
+          "name": "Pora dnia",
+          "description": "Kiedy obowiązek ma być wykonany: morning (rano), afternoon (po południu), evening (wieczorem), night (w nocy) lub anytime (o dowolnej porze)"
+        },
+        "difficulty": {
+          "name": "Trudność",
+          "description": "Poziom trudności: easy, medium lub hard. Skaluje przyznawane punkty (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Wymaga zatwierdzenia",
+          "description": "Jeśli włączone, rodzic musi zatwierdzić wykonanie, zanim punkty zostaną przyznane"
+        },
+        "enabled": {
+          "name": "Włączony",
+          "description": "Wyłącz obowiązek (false), aby ukryć go wszędzie bez usuwania, albo włącz go ponownie (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Bonus za szybkość",
+          "description": "Dodatkowe punkty, jeśli obowiązek zostanie wykonany przed terminem."
+        },
+        "team_size": {
+          "name": "Wielkość zespołu",
+          "description": "Uczyń z tego obowiązek zespołowy, który liczy się dopiero, gdy dołączy do niego tyle różnych dzieci. Gdy zespół jest pełny, zostaje zgłoszony za wszystkich. 0 = zwykły obowiązek."
+        },
+        "team_points_mode": {
+          "name": "Punkty zespołowe",
+          "description": "Jak wypłacany jest obowiązek zespołowy: „each” daje każdemu uczestnikowi pełne punkty, „split” dzieli je równo (z zaokrągleniem w dół)."
+        },
+        "team_bonus": {
+          "name": "Premia zespołowa",
+          "description": "Dodatkowe punkty, które każdy uczestnik zdobywa po wykonaniu obowiązku zespołowego."
+        },
+        "times": {
+          "name": "Stałe godziny",
+          "description": "Zastępuje stałe godziny obowiązku. Lista do 5 godzin, każda z nazwą, początkiem i końcem (\"HH:MM\", ten sam dzień, bez nakładania się) oraz punktami. Pusta lista je usuwa."
+        },
+        "times_bonus": {
+          "name": "Premia za wszystkie pory",
+          "description": "Dodatkowe punkty raz dziennie, gdy zrobiono wszystkie stałe pory."
+        },
+        "assignment_mode": {
+          "name": "Tryb przypisania",
+          "description": "Kto wykonuje obowiązek każdego dnia: everyone (wszyscy), alternating (na zmianę), random (losowo), balanced (kto robił go najrzadziej), first_come (pierwsze dziecko, które go weźmie) lub unassigned (nikt)."
+        },
+        "schedule_mode": {
+          "name": "Harmonogram",
+          "description": "specific_days (dni tygodnia z pola Dni, albo codziennie, jeśli żadnych nie wybrano), recurring (w rytmie z pola Powtarzanie) lub one_shot (tylko dziś)."
+        },
+        "due_days": {
+          "name": "Dni",
+          "description": "Dni tygodnia, w które obowiązek jest do zrobienia, dla harmonogramu specific_days. Pozostaw puste, by był codziennie."
+        },
+        "recurrence": {
+          "name": "Powtarzanie",
+          "description": "Jak często wraca obowiązek cykliczny: weekly, every_2_weeks, monthly, every_3_months, every_6_months lub every_N_days z N od 2 do 365 (np. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Dzień powtarzania",
+          "description": "Dzień tygodnia, na który przypada obowiązek weekly lub every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Początek powtarzania",
+          "description": "Data, od której liczy się rytm obowiązku cyklicznego (RRRR-MM-DD)."
+        },
+        "due_time": {
+          "name": "Godzina terminu",
+          "description": "Godzina, do której obowiązek ma być zrobiony (\"HH:MM\"). Zrobienie przed nią daje bonus za wcześniejsze wykonanie, po niej obowiązuje kara za spóźnienie. Puste, jeśli bez godziny."
+        },
+        "daily_limit": {
+          "name": "Dzienny limit",
+          "description": "Ile razy dziennie można wykonać obowiązek. Obowiązki jednorazowe zawsze 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Usuń obowiązek",
+      "description": "Usuń obowiązek po jego ID, z tym samym sprzątaniem co w panelu. Przez 7 dni jest w panelu w Ostatnio usuniętych, więc można go przywrócić.",
+      "fields": {
+        "chore_id": {
+          "name": "ID obowiązku",
+          "description": "ID obowiązku do usunięcia"
+        },
+        "confirm": {
+          "name": "Potwierdź",
+          "description": "Musi być true. Zabezpieczenie, by obowiązek nigdy nie został usunięty przez przypadek."
         }
       }
     },
