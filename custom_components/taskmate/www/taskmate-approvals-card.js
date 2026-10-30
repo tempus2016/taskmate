@@ -183,6 +183,8 @@ class TaskMateApprovalsCard extends LitElement {
         border: 1px solid rgba(255, 255, 255, 0.45);
         border-radius: 14px;
         padding: 5px 12px;
+        /* Tall enough to tap comfortably on a phone. */
+        min-height: 32px;
         font-size: 0.82rem;
         font-weight: 600;
         cursor: pointer;
