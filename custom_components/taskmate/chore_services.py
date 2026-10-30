@@ -110,7 +110,7 @@ SCHEDULE_FIELDS: dict = {
     vol.Optional("schedule_mode"): vol.In(SCHEDULE_MODES),
     vol.Optional("due_days"): vol.All(_str_list, [_weekday]),
     vol.Optional("recurrence"): _recurrence,
-    vol.Optional("recurrence_day"): vol.Any(vol.In(["", None]), _weekday),
+    vol.Optional("recurrence_day"): vol.Any("", None, _weekday),
     vol.Optional("recurrence_start"): _iso_date_or_empty,
     vol.Optional("due_time"): _hhmm_or_empty,
     vol.Optional("daily_limit"): vol.All(vol.Coerce(int), vol.Range(min=1)),
