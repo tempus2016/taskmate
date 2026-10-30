@@ -581,6 +581,29 @@ class TaskMateStorage:
             m for m in self._data.get("mandatory_misses", []) if m.get("child_id") != child_id
         ]
 
+    def get_handled_mandatory_keys(self) -> set[str]:
+        """Keys of misses a parent already dealt with (#1161), see add_handled_mandatory."""
+        return {h.get("key", "") for h in self._data.get("mandatory_handled", [])}
+
+    def add_handled_mandatory(self, key: str, due_date: str) -> None:
+        """Remember a dismissed / penalised miss so the detectors never raise it again.
+
+        The detectors are idempotent only while the miss is still stored, and
+        every parent action removes it — so without this the 5-minute set-time
+        check (and the startup catch-up) raised the same miss again (#1161).
+        Only today's and yesterday's misses can be re-detected, so older keys
+        are pruned on the way in.
+        """
+        try:
+            cutoff = (date.fromisoformat(due_date) - timedelta(days=2)).isoformat()
+        except (TypeError, ValueError):
+            cutoff = ""
+        kept = [
+            h for h in self._data.get("mandatory_handled", []) if h.get("date", "") >= cutoff and h.get("key") != key
+        ]
+        kept.append({"key": key, "date": due_date})
+        self._data["mandatory_handled"] = kept
+
     def replace_mandatory_misses(self, misses: list[MandatoryMiss]) -> None:
         """Replace the whole mandatory-miss collection."""
         self._data["mandatory_misses"] = [m.to_dict() for m in misses]

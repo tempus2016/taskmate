@@ -35,6 +35,11 @@ def chore_has_times(chore) -> bool:
     return isinstance(times, list) and bool(times)
 
 
+def mandatory_miss_key(chore_id: str, child_id: str, due_date: str, time_id: str = "") -> str:
+    """One occurrence of a mandatory chore: per day, and per set time (#1161)."""
+    return f"{chore_id}:{child_id}:{due_date}:{time_id or ''}"
+
+
 def set_time_label(chore, time_id: str) -> str:
     """ "Wash hands (Lunch)" for a set-time completion; the bare name otherwise."""
     name = getattr(chore, "name", "") or ""
@@ -312,6 +317,10 @@ class SetTimesMixin:
         existing = {
             (m.chore_id, m.child_id, m.due_date, getattr(m, "time_id", "")) for m in self.storage.get_mandatory_misses()
         }
+        # Dismissed / penalised / postponed misses (#1161): every parent action
+        # removes the stored miss, so `existing` alone let this 5-minute check
+        # raise the same miss again straight after.
+        handled = self.storage.get_handled_mandatory_keys()
         created = 0
         for chore in self.storage.get_chores():
             if not chore_has_times(chore) or not getattr(chore, "mandatory", False):
@@ -327,6 +336,9 @@ class SetTimesMixin:
                     continue
                 if hasattr(self, "is_sick_day") and self.is_sick_day(child_id, day):
                     continue
+                # Away: their chores are hidden, so nothing can be missed (#1161).
+                if hasattr(self, "_child_away") and self._child_away(child_id, day):
+                    continue
                 if self.weekly_target_met(chore, child_id, day):
                     continue
                 done = self.set_time_completions(chore, child_id, day)
@@ -336,6 +348,8 @@ class SetTimesMixin:
                     if day == today and not self.set_time_has_closed(chore, t, now):
                         continue
                     if (chore.id, child_id, day.isoformat(), t.id) in existing:
+                        continue
+                    if mandatory_miss_key(chore.id, child_id, day.isoformat(), t.id) in handled:
                         continue
                     miss = MandatoryMiss(
                         chore_id=chore.id,
