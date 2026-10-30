@@ -824,6 +824,7 @@
   "panel.chore_completion_sound_label": "Som de conclusão",
   "panel.chore_daily_cap_label": "Limite diário (minutos, 0 = ilimitado)",
   "panel.chore_daily_limit_label": "Limite diário",
+  "panel.chore_daily_limit_shared_hint": "Compartilhado por todos do grupo — depois de feito esse número de vezes hoje, fecha para todos. Cada conclusão dá pontos a quem a fez.",
   "panel.chore_days_label": "Dias da semana (vazio = todos os dias)",
   "panel.chore_weekly_target_pill": "{count}×/semana",
   "panel.chore_weekly_target_hint": "Quantas vezes por semana a tarefa precisa ser feita, em qualquer um dos dias escolhidos. Ela deixa de aparecer quando a contagem é atingida e reinicia na segunda-feira.",

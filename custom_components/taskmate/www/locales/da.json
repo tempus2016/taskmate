@@ -876,6 +876,7 @@
   "panel.difficulty_medium": "Middel",
   "panel.chore_daily_cap_label": "Dagligt loft (minutter, 0 = ubegrænset)",
   "panel.chore_daily_limit_label": "Daglig grænse",
+  "panel.chore_daily_limit_shared_hint": "Deles af alle i gruppen — når den er udført så mange gange i dag, lukker den for dem alle. Hver udførelse giver point til den, der gjorde den.",
   "panel.chore_days_label": "Ugedage (tom = hver dag)",
   "panel.chore_weekly_target_pill": "{count}×/uge",
   "panel.chore_weekly_target_hint": "Hvor mange gange om ugen den skal klares, på en af de valgte dage. Den tilbydes ikke længere, når antallet er nået, og nulstilles mandag.",

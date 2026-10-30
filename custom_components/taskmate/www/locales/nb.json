@@ -824,6 +824,7 @@
   "panel.chore_completion_sound_label": "Fullføringslyd",
   "panel.chore_daily_cap_label": "Daglig tak (minutter, 0 = ubegrenset)",
   "panel.chore_daily_limit_label": "Daglig grense",
+  "panel.chore_daily_limit_shared_hint": "Deles av alle i gruppen — når den er gjort så mange ganger i dag, stenges den for alle. Hver fullføring gir poeng til den som gjorde den.",
   "panel.chore_days_label": "Ukedager (la stå tomt = hver dag)",
   "panel.chore_weekly_target_pill": "{count}×/uke",
   "panel.chore_weekly_target_hint": "Hvor mange ganger i uka oppgaven må gjøres, på hvilke som helst av de valgte dagene. Den vises ikke lenger når antallet er nådd, og nullstilles på mandag.",

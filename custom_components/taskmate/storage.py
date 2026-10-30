@@ -211,6 +211,7 @@ class TaskMateStorage:
         await self._migrate_assigned_to_child_ids()
         await self._migrate_pool_allocations_v2()
         await self._migrate_career_score()
+        await self._migrate_first_come_daily_limit()
 
         return data
 
@@ -319,6 +320,35 @@ class TaskMateStorage:
         if data_modified:
             _LOGGER.info("Data migration completed: converted child names to IDs in assigned_to")
             await self.async_save()
+
+    async def _migrate_first_come_daily_limit(self) -> None:
+        """Reset first_come chores to a daily limit of 1, once (#1159).
+
+        first_come used to ignore daily_limit and always close after one
+        completion, so a value above 1 could sit unseen on the chore (the panel
+        hid the field). Now the pool shares that limit, so honouring a stale
+        one would quietly turn a single-winner race into a multi-completion
+        chore. Guarded by a flag: a limit set after the upgrade is kept.
+        """
+        if self._data.get("_first_come_limit_reset"):
+            return
+
+        reset = 0
+        for chore in self._data.get("chores", []):
+            if chore.get("assignment_mode") != "first_come":
+                continue
+            try:
+                limit = int(chore.get("daily_limit", 1) or 1)
+            except (TypeError, ValueError):
+                limit = 1
+            if limit != 1:
+                chore["daily_limit"] = 1
+                reset += 1
+
+        self._data["_first_come_limit_reset"] = True
+        if reset:
+            _LOGGER.info("TaskMate: reset the daily limit of %d first-come chore(s) to 1", reset)
+        await self.async_save()
 
     async def _migrate_career_score(self) -> None:
         """Initialize career_score for existing installations.
