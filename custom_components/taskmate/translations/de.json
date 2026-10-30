@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Zugewiesen an",
-          "description": "Liste der Kinder-IDs, denen diese Aufgabe zugewiesen werden soll. Lassen Sie das Feld leer, um es allen Kindern zuzuweisen"
+          "description": "Kinder, denen diese Aufgabe zugewiesen wird, per Name oder ID. Leer lassen, um sie allen Kindern zuzuweisen"
         },
         "time_category": {
           "name": "Zeitkategorie",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Bonus für alle Zeiten",
           "description": "Extrapunkte einmal am Tag, wenn alle festen Zeiten erledigt sind."
+        },
+        "assignment_mode": {
+          "name": "Zuweisungsmodus",
+          "description": "Wer die Aufgabe jeden Tag macht: everyone (alle), alternating (abwechselnd), random (zufällig), balanced (wer sie am wenigsten gemacht hat), first_come (das erste Kind, das sie übernimmt) oder unassigned (niemand)."
+        },
+        "schedule_mode": {
+          "name": "Zeitplan",
+          "description": "specific_days (die Wochentage unter Fällige Tage, oder jeden Tag, wenn keine gewählt sind), recurring (im Rhythmus unter Wiederholung) oder one_shot (nur heute)."
+        },
+        "due_days": {
+          "name": "Fällige Tage",
+          "description": "Wochentage, an denen die Aufgabe fällig ist, für den Zeitplan specific_days. Leer lassen für jeden Tag."
+        },
+        "recurrence": {
+          "name": "Wiederholung",
+          "description": "Wie oft eine wiederkehrende Aufgabe ansteht: weekly, every_2_weeks, monthly, every_3_months, every_6_months oder every_N_days mit N von 2 bis 365 (z. B. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Wiederholungstag",
+          "description": "Der Wochentag, auf den eine weekly- oder every_2_weeks-Aufgabe fällt."
+        },
+        "recurrence_start": {
+          "name": "Beginn der Wiederholung",
+          "description": "Das Datum, ab dem der Rhythmus einer wiederkehrenden Aufgabe zählt (JJJJ-MM-TT)."
+        },
+        "due_time": {
+          "name": "Fälligkeitszeit",
+          "description": "Uhrzeit, zu der die Aufgabe fällig ist (\"HH:MM\"). Wer bis dahin fertig ist, bekommt den Frühbonus, danach gilt der Verspätungsabzug. Leer für keine Fälligkeitszeit."
+        },
+        "daily_limit": {
+          "name": "Tageslimit",
+          "description": "Wie oft am Tag die Aufgabe erledigt werden kann. Einmalige Aufgaben immer 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Aufgabe aktualisieren",
+      "description": "Eine bestehende Aufgabe über ihre ID ändern. Nur die angegebenen Felder werden geändert, alles andere bleibt wie es ist.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der Aufgabe, die geändert werden soll"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Name der Aufgabe"
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Neue Beschreibung der Aufgabe"
+        },
+        "points": {
+          "name": "Punkte",
+          "description": "Punkte werden vergeben, wenn diese Aufgabe erledigt ist"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Kinder, denen diese Aufgabe zugewiesen wird, per Name oder ID. Eine leere Liste weist sie allen Kindern zu"
+        },
+        "time_category": {
+          "name": "Zeitkategorie",
+          "description": "Wann diese Aufgabe erledigt sein sollte: morgens, nachmittags, abends, abends oder jederzeit"
+        },
+        "difficulty": {
+          "name": "Schwierigkeit",
+          "description": "Schwierigkeitsstufe: easy, medium oder hard. Skaliert die vergebenen Punkte (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Erfordert eine Genehmigung",
+          "description": "Wenn dies zutrifft, muss ein Elternteil den Abschluss genehmigen, bevor Punkte vergeben werden"
+        },
+        "enabled": {
+          "name": "Aktiviert",
+          "description": "Die Aufgabe ausschalten (false), um sie überall auszublenden, ohne sie zu löschen, oder wieder einschalten (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Tempobonus",
+          "description": "Zusätzliche Punkte, wenn die Aufgabe vor ihrer Frist erledigt wird."
+        },
+        "team_size": {
+          "name": "Teamgröße",
+          "description": "Macht daraus eine Teamaufgabe, die erst zählt, wenn so viele verschiedene Kinder mitmachen. Sobald das Team voll ist, wird sie für alle eingereicht. 0 = normale Aufgabe."
+        },
+        "team_points_mode": {
+          "name": "Team-Punkte",
+          "description": "Wie eine Teamaufgabe auszahlt: „each“ gibt jedem Kind die vollen Punkte, „split“ teilt sie gleichmäßig auf (abgerundet)."
+        },
+        "team_bonus": {
+          "name": "Teambonus",
+          "description": "Zusätzliche Punkte für jedes beteiligte Kind, wenn eine Teamaufgabe erledigt ist."
+        },
+        "times": {
+          "name": "Feste Zeiten",
+          "description": "Ersetzt die festen Tageszeiten der Aufgabe. Eine Liste mit bis zu 5 Zeiten, jeweils mit Name, Beginn und Ende (\"HH:MM\", gleicher Tag, ohne Überschneidung) und Punkten. Eine leere Liste entfernt sie."
+        },
+        "times_bonus": {
+          "name": "Bonus für alle Zeiten",
+          "description": "Extrapunkte einmal am Tag, wenn alle festen Zeiten erledigt sind."
+        },
+        "assignment_mode": {
+          "name": "Zuweisungsmodus",
+          "description": "Wer die Aufgabe jeden Tag macht: everyone (alle), alternating (abwechselnd), random (zufällig), balanced (wer sie am wenigsten gemacht hat), first_come (das erste Kind, das sie übernimmt) oder unassigned (niemand)."
+        },
+        "schedule_mode": {
+          "name": "Zeitplan",
+          "description": "specific_days (die Wochentage unter Fällige Tage, oder jeden Tag, wenn keine gewählt sind), recurring (im Rhythmus unter Wiederholung) oder one_shot (nur heute)."
+        },
+        "due_days": {
+          "name": "Fällige Tage",
+          "description": "Wochentage, an denen die Aufgabe fällig ist, für den Zeitplan specific_days. Leer lassen für jeden Tag."
+        },
+        "recurrence": {
+          "name": "Wiederholung",
+          "description": "Wie oft eine wiederkehrende Aufgabe ansteht: weekly, every_2_weeks, monthly, every_3_months, every_6_months oder every_N_days mit N von 2 bis 365 (z. B. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Wiederholungstag",
+          "description": "Der Wochentag, auf den eine weekly- oder every_2_weeks-Aufgabe fällt."
+        },
+        "recurrence_start": {
+          "name": "Beginn der Wiederholung",
+          "description": "Das Datum, ab dem der Rhythmus einer wiederkehrenden Aufgabe zählt (JJJJ-MM-TT)."
+        },
+        "due_time": {
+          "name": "Fälligkeitszeit",
+          "description": "Uhrzeit, zu der die Aufgabe fällig ist (\"HH:MM\"). Wer bis dahin fertig ist, bekommt den Frühbonus, danach gilt der Verspätungsabzug. Leer für keine Fälligkeitszeit."
+        },
+        "daily_limit": {
+          "name": "Tageslimit",
+          "description": "Wie oft am Tag die Aufgabe erledigt werden kann. Einmalige Aufgaben immer 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Aufgabe löschen",
+      "description": "Eine Aufgabe über ihre ID löschen, mit derselben Bereinigung wie im Panel. Sie landet 7 Tage lang unter Kürzlich gelöscht im Panel und kann wiederhergestellt werden.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der Aufgabe, die gelöscht werden soll"
+        },
+        "confirm": {
+          "name": "Bestätigen",
+          "description": "Muss true sein. Eine Sicherung, damit nie versehentlich eine Aufgabe gelöscht wird."
         }
       }
     },
