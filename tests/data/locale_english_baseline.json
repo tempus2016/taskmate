@@ -76,6 +76,7 @@
     "rewards.jackpot",
     "streak.achievement.points100_name",
     "streak.achievement.points50_name",
+    "trophy.shelf_badges",
     "wizard.avatar",
     "wizard.count_dashboards_many",
     "wizard.count_dashboards_one",
@@ -297,6 +298,7 @@
     "rewards.jackpot",
     "streak.achievement.points100_name",
     "streak.achievement.points50_name",
+    "trophy.shelf_badges",
     "wizard.avatar",
     "wizard.pname_points"
   ],

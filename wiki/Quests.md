@@ -62,6 +62,7 @@ Each child's entry in the `sensor.taskmate_overview` `children` attribute carrie
 | `times_completed` | How many times this child has finished the chain |
 | `bonus_points` | The bonus awarded on completion |
 | `next_chore_id` | The chore ID the child needs to do next (empty when done) |
+| `last_completed` | The day this child last finished the chain (`YYYY-MM-DD`); only there once they have finished it. The [Trophy Cabinet card](Trophy-Cabinet-Card.md) uses it to date the quest |
 
 Only **active** quests assigned to the child appear in the array.
 

@@ -6,6 +6,7 @@ import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from homeassistant.util import dt as dt_util
 
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Child, Quest
@@ -178,3 +179,44 @@ class TestQuestRewind:
         tx = coord.storage.add_points_transaction.call_args[0][0]
         assert tx.points == -30
         assert "reversed" in tx.reason.lower()
+
+
+# ---------------------------------------------------------------------------
+# trophy cabinet: a finished quest carries the day it was last finished
+# ---------------------------------------------------------------------------
+
+
+class TestQuestLastCompleted:
+    def test_unfinished_quest_has_no_date(self):
+        q = Quest(name="Morning", steps=["a", "b"], id="q1")
+        coord = _coord([q], Child(name="Mia", id="kid"))
+        run(coord._async_advance_quests("kid", "a"))
+        (entry,) = coord.quest_progress_for_child("kid")
+        assert entry["times_completed"] == 0
+        assert "last_completed" not in entry
+
+    def test_finished_quest_is_dated_by_local_day(self):
+        q = Quest(name="Loop", steps=["a"], bonus_points=0, repeatable=True, id="q1")
+        coord = _coord([q], Child(name="Mia", id="kid", points=0, total_points_earned=0))
+        run(coord._async_advance_quests("kid", "a"))
+        (entry,) = coord.quest_progress_for_child("kid")
+        assert entry["times_completed"] == 1
+        # "now" is whatever the stubbed clock says (other tests move it).
+        assert entry["last_completed"] == dt_util.as_local(dt_util.now()).date().isoformat()
+
+    def test_unreadable_or_rewound_dates_are_left_out(self):
+        q = Quest(name="Loop", steps=["a"], repeatable=True, id="q1")
+        coord = _coord([q], Child(name="Mia", id="kid"))
+        coord._progress["q1"] = {"kid": {"step": 0, "completed_count": 1, "last_completed": "not a date"}}
+        assert "last_completed" not in coord.quest_progress_for_child("kid")[0]
+        # Undone back to zero: the stale date stays in storage but isn't shown.
+        coord._progress["q1"] = {
+            "kid": {"step": 0, "completed_count": 0, "last_completed": "2024-03-01T09:00:00+00:00"}
+        }
+        assert "last_completed" not in coord.quest_progress_for_child("kid")[0]
+
+    def test_naive_timestamp_keeps_its_date(self):
+        q = Quest(name="Loop", steps=["a"], repeatable=True, id="q1")
+        coord = _coord([q], Child(name="Mia", id="kid"))
+        coord._progress["q1"] = {"kid": {"step": 0, "completed_count": 3, "last_completed": "2024-02-11T18:30:00"}}
+        assert coord.quest_progress_for_child("kid")[0]["last_completed"] == "2024-02-11"

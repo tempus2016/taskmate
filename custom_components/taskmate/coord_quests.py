@@ -10,6 +10,7 @@ resets progress (repeatable quests) or marks the quest complete for that child.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from homeassistant.util import dt as dt_util
 
@@ -17,6 +18,17 @@ from . import notify_strings
 from .models import PointsTransaction, Quest
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _local_date(value) -> str:
+    """The local calendar date of a stored ISO timestamp, or "" if unreadable."""
+    if not value:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return ""
+    return (dt_util.as_local(parsed) if parsed.tzinfo else parsed).date().isoformat()
 
 
 class QuestsMixin:
@@ -66,7 +78,9 @@ class QuestsMixin:
 
         Returned shape (for sensors / cards):
         ``{quest_id, name, icon, total_steps, step, done, times_completed,
-        bonus_points, next_chore_id}``.
+        bonus_points, next_chore_id}``, plus ``last_completed`` (the local
+        date, ``YYYY-MM-DD``) once the child has finished it at least once —
+        the trophy cabinet card dates a finished quest by it.
         """
         out: list[dict] = []
         for quest in self.storage.get_quests():
@@ -76,19 +90,21 @@ class QuestsMixin:
             step = int(prog.get("step", 0))
             total = len(quest.steps)
             done = step >= total
-            out.append(
-                {
-                    "quest_id": quest.id,
-                    "name": quest.name,
-                    "icon": quest.icon,
-                    "total_steps": total,
-                    "step": min(step, total),
-                    "done": done,
-                    "times_completed": int(prog.get("completed_count", 0)),
-                    "bonus_points": quest.bonus_points,
-                    "next_chore_id": quest.steps[step] if not done and step < total else "",
-                }
-            )
+            times = int(prog.get("completed_count", 0))
+            entry = {
+                "quest_id": quest.id,
+                "name": quest.name,
+                "icon": quest.icon,
+                "total_steps": total,
+                "step": min(step, total),
+                "done": done,
+                "times_completed": times,
+                "bonus_points": quest.bonus_points,
+                "next_chore_id": quest.steps[step] if not done and step < total else "",
+            }
+            if times > 0 and (last := _local_date(prog.get("last_completed"))):
+                entry["last_completed"] = last
+            out.append(entry)
         return out
 
     # ── Progression ──────────────────────────────────────────────────────

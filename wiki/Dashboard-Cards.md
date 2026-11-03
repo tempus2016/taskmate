@@ -1,6 +1,6 @@
 # Dashboard Cards
 
-TaskMate includes 32 Lovelace cards. They are automatically registered as resources when the integration loads.
+TaskMate includes 33 Lovelace cards. They are automatically registered as resources when the integration loads.
 
 All cards support a `header_color` config option — a hex colour for the card header background. Each card has its own vibrant default.
 
@@ -56,6 +56,7 @@ Everything else is optional and can be added later as you explore:
 | Raffle Card | Children buy raffle tickets with points, and watch the draw |
 | Personal Bests Card | A child's own records — longest streak, best day, best week, biggest award — with today's new ones marked |
 | Heatmap Card | A calendar of the last six weeks for each child — darker green for busier days |
+| Trophy Cabinet Card | The whole family's season wins, personal bests, badges, quests and perfect weeks on shelves, newest marked New |
 
 ---
 
@@ -1070,6 +1071,34 @@ header_color: "#2e7d32"
 **Behaviour:**
 - Hover a square for the date and how many chores were done
 - Each grid says how many chores and on how many of the 42 days
+- Available in every [design style](Card-Design-Styles.md)
+
+---
+
+## Trophy Cabinet Card
+
+**Purpose:** The whole family's achievements on shelves: [season wins](Leaderboard-Seasons.md), [personal bests](Personal-Bests.md), [badges](Achievement-Badges.md), finished [quests](Quests.md), perfect weeks and, if you add the shelf, legendary [pets](Virtual-Pets.md). Each trophy has the colour dot of the child who earned it. See [Trophy Cabinet Card](Trophy-Cabinet-Card.md).
+
+**Default header colour:** Walnut `#8d6e63`
+
+```yaml
+type: custom:taskmate-trophy-cabinet-card
+entity: sensor.taskmate_overview
+title: Mackinnon Trophy Cabinet   # optional — default: Trophy Cabinet
+shelves: [seasons, bests, badges, quests, perfect_weeks]   # optional — add pets for legendary pets
+children: [a8c8376a, 5f2e91bc]    # optional — leave out for every child
+badges_per_shelf: 5               # optional — trophies before the "N more" tile
+new_days: 7                       # optional — days a trophy stays New (0 = off)
+show_spotlight: true              # optional — the "Latest" strip
+header_color: "#8d6e63"
+```
+
+**Behaviour:**
+- Shelves list the newest trophies first; anything from the last `new_days` days is tagged **New**
+- A badge or quest every child shown has earned gets one two-tone *Whole family* dot
+- Tap **N more**, or a shelf's name, to open the whole shelf
+- Under 480 pixels wide: three tiles a shelf, short labels, no spotlight
+- Grown-up profiles are left out unless `show_adults: true`
 - Available in every [design style](Card-Design-Styles.md)
 
 ---
