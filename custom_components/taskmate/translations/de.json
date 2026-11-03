@@ -595,6 +595,22 @@
           "name": "Zuweisungsmodus",
           "description": "Wer die Aufgabe jeden Tag macht: everyone (alle), alternating (abwechselnd), random (zufällig), balanced (wer sie am wenigsten gemacht hat), first_come (das erste Kind, das sie übernimmt) oder unassigned (niemand)."
         },
+        "assignment_rotation_period": {
+          "name": "Rotationszeitraum",
+          "description": "Für abwechselnde Aufgaben: each_time (jedes Mal das nächste Kind), week (ein Kind behält sie ganze Wochen) oder month (ganze Monate)."
+        },
+        "assignment_rotation_every": {
+          "name": "Wechsel alle",
+          "description": "Wie viele Wochen oder Monate jedes Kind eine abwechselnde Aufgabe mit Rotationszeitraum behält (2 = alle zwei Wochen)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Übergabe-Wochentag",
+          "description": "Der Wochentag, an dem eine wöchentliche Rotation an das nächste Kind geht."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Übergabetag im Monat",
+          "description": "Der Tag im Monat, an dem eine monatliche Rotation an das nächste Kind geht (in kürzeren Monaten der letzte Tag)."
+        },
         "schedule_mode": {
           "name": "Zeitplan",
           "description": "specific_days (die Wochentage unter Fällige Tage, oder jeden Tag, wenn keine gewählt sind), recurring (im Rhythmus unter Wiederholung) oder one_shot (nur heute)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Zuweisungsmodus",
           "description": "Wer die Aufgabe jeden Tag macht: everyone (alle), alternating (abwechselnd), random (zufällig), balanced (wer sie am wenigsten gemacht hat), first_come (das erste Kind, das sie übernimmt) oder unassigned (niemand)."
+        },
+        "assignment_rotation_period": {
+          "name": "Rotationszeitraum",
+          "description": "Für abwechselnde Aufgaben: each_time (jedes Mal das nächste Kind), week (ein Kind behält sie ganze Wochen) oder month (ganze Monate)."
+        },
+        "assignment_rotation_every": {
+          "name": "Wechsel alle",
+          "description": "Wie viele Wochen oder Monate jedes Kind eine abwechselnde Aufgabe mit Rotationszeitraum behält (2 = alle zwei Wochen)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Übergabe-Wochentag",
+          "description": "Der Wochentag, an dem eine wöchentliche Rotation an das nächste Kind geht."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Übergabetag im Monat",
+          "description": "Der Tag im Monat, an dem eine monatliche Rotation an das nächste Kind geht (in kürzeren Monaten der letzte Tag)."
         },
         "schedule_mode": {
           "name": "Zeitplan",

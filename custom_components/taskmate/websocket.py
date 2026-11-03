@@ -80,6 +80,8 @@ from .const import (
     MAX_TIME_PERIODS,
     MIN_RECURRENCE_INTERVAL_DAYS,
     REWARD_FULFILMENT_REMINDER_MAX_DAYS,
+    ROTATION_EVERY_MAX,
+    ROTATION_PERIODS,
     SCHEDULE_MODES,
     TAG_ID_MAX_LENGTH,
     TEAM_POINTS_MODES,
@@ -850,6 +852,10 @@ _CHORE_EDITABLE_FIELDS = {
     "mandatory_penalty_points",
     "assignment_mode",
     "assignment_rotation_anchor",
+    "assignment_rotation_period",
+    "assignment_rotation_every",
+    "assignment_rotation_weekday",
+    "assignment_rotation_month_day",
     "require_availability",
     "publish_calendar_entities",
     "bonus_subtasks",
@@ -947,6 +953,13 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("team_bonus"): vol.All(int, vol.Range(min=0)),
         vol.Optional("assignment_mode"): vol.In(ASSIGNMENT_MODES),
         vol.Optional("assignment_rotation_anchor"): str,
+        # Rotation period for alternating chores (#1171).
+        vol.Optional("assignment_rotation_period"): vol.In(ROTATION_PERIODS),
+        vol.Optional("assignment_rotation_every"): vol.All(int, vol.Range(min=1, max=ROTATION_EVERY_MAX)),
+        vol.Optional("assignment_rotation_weekday"): vol.In(
+            ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        ),
+        vol.Optional("assignment_rotation_month_day"): vol.All(int, vol.Range(min=1, max=31)),
         vol.Optional("require_availability"): bool,
         vol.Optional("publish_calendar_entities"): [str],
         vol.Optional("bonus_subtasks"): [

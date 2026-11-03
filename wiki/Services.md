@@ -141,6 +141,10 @@ Create a chore dynamically (for automations).
 | `recurrence_start` |  | (v7.6.0) Date the recurrence counts from, `YYYY-MM-DD` |
 | `due_time` |  | (v7.6.0) Time of day it's due, `HH:MM`. Drives the [early bonus / late penalty](Chores.md) |
 | `daily_limit` |  | (v7.6.0) How many times a day it can be completed (default 1; one-shot chores are always 1) |
+| `assignment_rotation_period` |  | (v7.7.0) For `alternating` chores: `each_time` (the next child each time it comes up, default), `week` or `month` (one child keeps it for the whole period). See [Rotation period](Chores.md#rotation-period) |
+| `assignment_rotation_every` |  | (v7.7.0) Weeks or months per turn, 1–12 (default 1; `2` with `week` = fortnightly) |
+| `assignment_rotation_weekday` |  | (v7.7.0) Weekday a `week` rotation hands over on (default `monday`) |
+| `assignment_rotation_month_day` |  | (v7.7.0) Day of the month a `month` rotation hands over on, 1–31 (default 1; the last day in shorter months) |
 
 ```yaml
 service: taskmate.add_chore
@@ -183,6 +187,7 @@ Change an existing chore by its ID. Only the fields you set change; everything e
 | `speed_bonus_points`, `team_size`, `team_points_mode`, `team_bonus` |  | As on `add_chore` |
 | `times`, `times_bonus` |  | Replace the chore's [set times](Set-Times.md); an empty list removes them |
 | `assignment_mode`, `schedule_mode`, `due_days`, `recurrence`, `recurrence_day`, `recurrence_start`, `due_time`, `daily_limit` |  | As on `add_chore`. An empty `due_time`, `recurrence_day` or `recurrence_start` clears it |
+| `assignment_rotation_period`, `assignment_rotation_every`, `assignment_rotation_weekday`, `assignment_rotation_month_day` |  | (v7.7.0) As on `add_chore`. `assignment_rotation_period: each_time` goes back to moving on each time it comes up |
 
 ```yaml
 service: taskmate.update_chore

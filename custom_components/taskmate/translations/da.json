@@ -595,6 +595,22 @@
           "name": "Tildelingsmåde",
           "description": "Hvem der laver pligten hver dag: everyone (alle), alternating (på skift), random (tilfældigt), balanced (den, der har lavet den mindst), first_come (det første barn, der tager den) eller unassigned (ingen)."
         },
+        "assignment_rotation_period": {
+          "name": "Rotationsperiode",
+          "description": "For skiftevis-opgaver: each_time (næste barn hver gang opgaven skal laves), week (et barn beholder den hele uger) eller month (hele måneder)."
+        },
+        "assignment_rotation_every": {
+          "name": "Skift hver",
+          "description": "Hvor mange uger eller måneder hvert barn beholder en skiftevis-opgave med rotationsperiode (2 = hver anden uge)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Overdragelsesugedag",
+          "description": "Ugedagen hvor en ugentlig rotation går videre til næste barn."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Overdragelsesdag i måneden",
+          "description": "Dagen i måneden hvor en månedlig rotation går videre til næste barn (den sidste dag i kortere måneder)."
+        },
         "schedule_mode": {
           "name": "Plan",
           "description": "specific_days (ugedagene under Forfaldsdage, eller hver dag hvis ingen er valgt), recurring (i rytmen under Gentagelse) eller one_shot (kun i dag)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Tildelingsmåde",
           "description": "Hvem der laver pligten hver dag: everyone (alle), alternating (på skift), random (tilfældigt), balanced (den, der har lavet den mindst), first_come (det første barn, der tager den) eller unassigned (ingen)."
+        },
+        "assignment_rotation_period": {
+          "name": "Rotationsperiode",
+          "description": "For skiftevis-opgaver: each_time (næste barn hver gang opgaven skal laves), week (et barn beholder den hele uger) eller month (hele måneder)."
+        },
+        "assignment_rotation_every": {
+          "name": "Skift hver",
+          "description": "Hvor mange uger eller måneder hvert barn beholder en skiftevis-opgave med rotationsperiode (2 = hver anden uge)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Overdragelsesugedag",
+          "description": "Ugedagen hvor en ugentlig rotation går videre til næste barn."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Overdragelsesdag i måneden",
+          "description": "Dagen i måneden hvor en månedlig rotation går videre til næste barn (den sidste dag i kortere måneder)."
         },
         "schedule_mode": {
           "name": "Plan",

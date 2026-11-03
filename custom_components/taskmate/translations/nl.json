@@ -595,6 +595,22 @@
           "name": "Toewijzing",
           "description": "Wie de taak elke dag doet: everyone (iedereen), alternating (om de beurt), random (willekeurig), balanced (wie hem het minst heeft gedaan), first_come (het eerste kind dat hem pakt) of unassigned (niemand)."
         },
+        "assignment_rotation_period": {
+          "name": "Roulatieperiode",
+          "description": "Voor taken op beurt: each_time (het volgende kind elke keer dat de taak aan de beurt is), week (één kind houdt hem hele weken) of month (hele maanden)."
+        },
+        "assignment_rotation_every": {
+          "name": "Wissel elke",
+          "description": "Hoeveel weken of maanden elk kind een beurt-taak met roulatieperiode houdt (2 = om de week)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Overdrachtsweekdag",
+          "description": "De weekdag waarop een wekelijkse roulatie naar het volgende kind gaat."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Overdrachtsdag van de maand",
+          "description": "De dag van de maand waarop een maandelijkse roulatie naar het volgende kind gaat (de laatste dag in kortere maanden)."
+        },
         "schedule_mode": {
           "name": "Planning",
           "description": "specific_days (de weekdagen bij Dagen, of elke dag als er geen gekozen zijn), recurring (in het ritme bij Herhaling) of one_shot (alleen vandaag)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Toewijzing",
           "description": "Wie de taak elke dag doet: everyone (iedereen), alternating (om de beurt), random (willekeurig), balanced (wie hem het minst heeft gedaan), first_come (het eerste kind dat hem pakt) of unassigned (niemand)."
+        },
+        "assignment_rotation_period": {
+          "name": "Roulatieperiode",
+          "description": "Voor taken op beurt: each_time (het volgende kind elke keer dat de taak aan de beurt is), week (één kind houdt hem hele weken) of month (hele maanden)."
+        },
+        "assignment_rotation_every": {
+          "name": "Wissel elke",
+          "description": "Hoeveel weken of maanden elk kind een beurt-taak met roulatieperiode houdt (2 = om de week)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Overdrachtsweekdag",
+          "description": "De weekdag waarop een wekelijkse roulatie naar het volgende kind gaat."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Overdrachtsdag van de maand",
+          "description": "De dag van de maand waarop een maandelijkse roulatie naar het volgende kind gaat (de laatste dag in kortere maanden)."
         },
         "schedule_mode": {
           "name": "Planning",

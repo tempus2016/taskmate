@@ -595,6 +595,22 @@
           "name": "Tryb przypisania",
           "description": "Kto wykonuje obowiązek każdego dnia: everyone (wszyscy), alternating (na zmianę), random (losowo), balanced (kto robił go najrzadziej), first_come (pierwsze dziecko, które go weźmie) lub unassigned (nikt)."
         },
+        "assignment_rotation_period": {
+          "name": "Okres rotacji",
+          "description": "Dla obowiązków na zmianę: each_time (następne dziecko za każdym razem), week (jedno dziecko ma go przez całe tygodnie) lub month (całe miesiące)."
+        },
+        "assignment_rotation_every": {
+          "name": "Zmiana co",
+          "description": "Przez ile tygodni lub miesięcy każde dziecko ma obowiązek na zmianę z okresem rotacji (2 = co dwa tygodnie)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Dzień tygodnia przekazania",
+          "description": "Dzień tygodnia, w którym rotacja tygodniowa przechodzi do następnego dziecka."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Dzień miesiąca przekazania",
+          "description": "Dzień miesiąca, w którym rotacja miesięczna przechodzi do następnego dziecka (ostatni dzień w krótszych miesiącach)."
+        },
         "schedule_mode": {
           "name": "Harmonogram",
           "description": "specific_days (dni tygodnia z pola Dni, albo codziennie, jeśli żadnych nie wybrano), recurring (w rytmie z pola Powtarzanie) lub one_shot (tylko dziś)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Tryb przypisania",
           "description": "Kto wykonuje obowiązek każdego dnia: everyone (wszyscy), alternating (na zmianę), random (losowo), balanced (kto robił go najrzadziej), first_come (pierwsze dziecko, które go weźmie) lub unassigned (nikt)."
+        },
+        "assignment_rotation_period": {
+          "name": "Okres rotacji",
+          "description": "Dla obowiązków na zmianę: each_time (następne dziecko za każdym razem), week (jedno dziecko ma go przez całe tygodnie) lub month (całe miesiące)."
+        },
+        "assignment_rotation_every": {
+          "name": "Zmiana co",
+          "description": "Przez ile tygodni lub miesięcy każde dziecko ma obowiązek na zmianę z okresem rotacji (2 = co dwa tygodnie)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Dzień tygodnia przekazania",
+          "description": "Dzień tygodnia, w którym rotacja tygodniowa przechodzi do następnego dziecka."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Dzień miesiąca przekazania",
+          "description": "Dzień miesiąca, w którym rotacja miesięczna przechodzi do następnego dziecka (ostatni dzień w krótszych miesiącach)."
         },
         "schedule_mode": {
           "name": "Harmonogram",

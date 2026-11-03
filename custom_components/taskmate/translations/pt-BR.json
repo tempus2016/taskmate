@@ -595,6 +595,22 @@
           "name": "Modo de atribuição",
           "description": "Quem faz a tarefa a cada dia: everyone (todos), alternating (revezando), random (aleatório), balanced (quem fez menos vezes), first_come (a primeira criança a pegar) ou unassigned (ninguém)."
         },
+        "assignment_rotation_period": {
+          "name": "Período de rodízio",
+          "description": "Para tarefas em rodízio: each_time (a próxima criança sempre que for devida), week (uma criança fica com ela semanas inteiras) ou month (meses inteiros)."
+        },
+        "assignment_rotation_every": {
+          "name": "Trocar a cada",
+          "description": "Quantas semanas ou meses cada criança fica com uma tarefa em rodízio com período definido (2 = quinzenal)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Dia da semana da troca",
+          "description": "O dia da semana em que um rodízio semanal passa para a próxima criança."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Dia do mês da troca",
+          "description": "O dia do mês em que um rodízio mensal passa para a próxima criança (o último dia nos meses mais curtos)."
+        },
         "schedule_mode": {
           "name": "Agenda",
           "description": "specific_days (os dias da semana em Dias, ou todo dia se nenhum for escolhido), recurring (no ritmo de Recorrência) ou one_shot (só hoje)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Modo de atribuição",
           "description": "Quem faz a tarefa a cada dia: everyone (todos), alternating (revezando), random (aleatório), balanced (quem fez menos vezes), first_come (a primeira criança a pegar) ou unassigned (ninguém)."
+        },
+        "assignment_rotation_period": {
+          "name": "Período de rodízio",
+          "description": "Para tarefas em rodízio: each_time (a próxima criança sempre que for devida), week (uma criança fica com ela semanas inteiras) ou month (meses inteiros)."
+        },
+        "assignment_rotation_every": {
+          "name": "Trocar a cada",
+          "description": "Quantas semanas ou meses cada criança fica com uma tarefa em rodízio com período definido (2 = quinzenal)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Dia da semana da troca",
+          "description": "O dia da semana em que um rodízio semanal passa para a próxima criança."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Dia do mês da troca",
+          "description": "O dia do mês em que um rodízio mensal passa para a próxima criança (o último dia nos meses mais curtos)."
         },
         "schedule_mode": {
           "name": "Agenda",

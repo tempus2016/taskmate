@@ -595,6 +595,22 @@
           "name": "Tildelingsmåte",
           "description": "Kven som gjer oppgåva kvar dag: everyone (alle), alternating (på omgang), random (tilfeldig), balanced (den som har gjort ho minst), first_come (det første barnet som tek ho) eller unassigned (ingen)."
         },
+        "assignment_rotation_period": {
+          "name": "Rotasjonsperiode",
+          "description": "For oppgåver som går på omgang: each_time (neste barn kvar gong oppgåva skal gjerast), week (eitt barn held på henne heile veker) eller month (heile månader)."
+        },
+        "assignment_rotation_every": {
+          "name": "Byt kvar",
+          "description": "Kor mange veker eller månader kvart barn held på ei oppgåve på omgang med rotasjonsperiode (2 = annakvar veke)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Overleveringsvekedag",
+          "description": "Vekedagen ein vekentleg rotasjon går vidare til neste barn."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Overleveringsdag i månaden",
+          "description": "Dagen i månaden ein månadleg rotasjon går vidare til neste barn (siste dagen i kortare månader)."
+        },
         "schedule_mode": {
           "name": "Plan",
           "description": "specific_days (vekedagane under Forfallsdagar, eller kvar dag om ingen er valde), recurring (i rytmen under Gjentaking) eller one_shot (berre i dag)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Tildelingsmåte",
           "description": "Kven som gjer oppgåva kvar dag: everyone (alle), alternating (på omgang), random (tilfeldig), balanced (den som har gjort ho minst), first_come (det første barnet som tek ho) eller unassigned (ingen)."
+        },
+        "assignment_rotation_period": {
+          "name": "Rotasjonsperiode",
+          "description": "For oppgåver som går på omgang: each_time (neste barn kvar gong oppgåva skal gjerast), week (eitt barn held på henne heile veker) eller month (heile månader)."
+        },
+        "assignment_rotation_every": {
+          "name": "Byt kvar",
+          "description": "Kor mange veker eller månader kvart barn held på ei oppgåve på omgang med rotasjonsperiode (2 = annakvar veke)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Overleveringsvekedag",
+          "description": "Vekedagen ein vekentleg rotasjon går vidare til neste barn."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Overleveringsdag i månaden",
+          "description": "Dagen i månaden ein månadleg rotasjon går vidare til neste barn (siste dagen i kortare månader)."
         },
         "schedule_mode": {
           "name": "Plan",

@@ -890,6 +890,54 @@ add_chore:
             - balanced
             - first_come
             - unassigned
+    assignment_rotation_period:
+      name: Rotation period
+      description: >-
+        For alternating chores: each_time (the next child each time the chore comes up), week (one
+        child keeps it for whole weeks) or month (whole months).
+      required: false
+      selector:
+        select:
+          options:
+            - each_time
+            - week
+            - month
+    assignment_rotation_every:
+      name: Rotate every
+      description: >-
+        How many weeks or months each child keeps an alternating chore that has a rotation period
+        (2 = fortnightly).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 12
+          mode: box
+    assignment_rotation_weekday:
+      name: Handover weekday
+      description: The weekday a weekly rotation passes to the next child.
+      required: false
+      selector:
+        select:
+          options:
+            - monday
+            - tuesday
+            - wednesday
+            - thursday
+            - friday
+            - saturday
+            - sunday
+    assignment_rotation_month_day:
+      name: Handover day of month
+      description: >-
+        The day of the month a monthly rotation passes to the next child (the last day in shorter
+        months).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 31
+          mode: box
     schedule_mode:
       name: Schedule
       description: >-
@@ -1116,6 +1164,54 @@ update_chore:
             - balanced
             - first_come
             - unassigned
+    assignment_rotation_period:
+      name: Rotation period
+      description: >-
+        For alternating chores: each_time (the next child each time the chore comes up), week (one
+        child keeps it for whole weeks) or month (whole months).
+      required: false
+      selector:
+        select:
+          options:
+            - each_time
+            - week
+            - month
+    assignment_rotation_every:
+      name: Rotate every
+      description: >-
+        How many weeks or months each child keeps an alternating chore that has a rotation period
+        (2 = fortnightly).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 12
+          mode: box
+    assignment_rotation_weekday:
+      name: Handover weekday
+      description: The weekday a weekly rotation passes to the next child.
+      required: false
+      selector:
+        select:
+          options:
+            - monday
+            - tuesday
+            - wednesday
+            - thursday
+            - friday
+            - saturday
+            - sunday
+    assignment_rotation_month_day:
+      name: Handover day of month
+      description: >-
+        The day of the month a monthly rotation passes to the next child (the last day in shorter
+        months).
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 31
+          mode: box
     schedule_mode:
       name: Schedule
       description: >-
