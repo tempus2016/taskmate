@@ -587,7 +587,18 @@ class TaskMateStickerChartCard extends LitElement {
       const perChild = availability[chore.id];
       if (perChild && perChild[childId] === false && mine.length === 0) continue;
 
-      let limit = mode === "first_come" ? 1 : Math.max(1, Number(chore.daily_limit) || 1);
+      let limit = Math.max(1, Number(chore.daily_limit) || 1);
+      // first_come (#1159): the pool shares the limit, so ticks by anyone else
+      // (or a pool-wide "Parent did it") use it up. A chore the others have
+      // filled is gone; one this child ticked stays so it can be undone.
+      if (mode === "first_come") {
+        const others = completions.filter(c => c.chore_id === chore.id
+          && String(c.child_id) !== childId
+          && (c.child_id !== "__parent__" || !c.for_child_id)).length;
+        limit = Math.max(0, limit - others);
+        if (limit === 0 && mine.length === 0) continue;
+        limit = Math.max(limit, mine.length);
+      }
       // Weekly target (#883): the quota caps it a level above the day. Once the
       // other days have filled it there is nothing left to tick, so the row
       // goes; a tick made on this day that filled it stays, so it can still be

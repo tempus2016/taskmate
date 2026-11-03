@@ -25,6 +25,8 @@ Detection runs at the end of each period. A midnight pass handles **Anytime** ch
 
 A chore that is hidden by its [visibility entity](Dynamic-Chore-Visibility.md) or weather setting is never recorded as missed while it's hidden, because it isn't on the child's list *(v7.5.0)*.
 
+The same goes for a child who is away *(v7.6.0)*: on a family vacation, while the vacation calendar has an event, on a sick day, or while their own availability sensor says they're away with **Pause streak while away** turned on. Their chores are hidden then, so nothing is recorded as missed.
+
 See [Chore Scheduling](Chore-Scheduling.md) for how time-of-day periods work.
 
 ## Escalating a miss
@@ -42,8 +44,10 @@ Each miss offers three parent actions, each backed by a [service](Services.md):
 | Action | Service | Effect |
 | --- | --- | --- |
 | **Apply Penalty** | `taskmate.apply_mandatory_penalty` | Deducts the configured penalty points and clears the review item. The Apply-penalty button only appears when the chore's penalty points are greater than 0. |
-| **Postpone** | `taskmate.postpone_mandatory_chore` | Gives the chore the next period today, rolling to tomorrow after the last period. Repeatable, and applies no penalty. |
+| **Postpone** | `taskmate.postpone_mandatory_chore` | Gives the chore the next period today, rolling to tomorrow after the last period. Repeatable, and applies no penalty. A [set time](Set-Times.md) has already closed, so postponing one just clears it with no penalty. |
 | **Dismiss** | `taskmate.dismiss_mandatory_chore` | Clears the review item with no penalty. |
+
+Once you've applied a penalty to a miss, dismissed it, or postponed a set time, that miss is never raised again — not on the next check, and not after Home Assistant restarts *(v7.6.0)*. Before v7.6.0 a set-time miss came back within five minutes.
 
 Every one of these services takes a single parameter:
 

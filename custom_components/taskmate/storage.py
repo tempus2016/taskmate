@@ -211,6 +211,7 @@ class TaskMateStorage:
         await self._migrate_assigned_to_child_ids()
         await self._migrate_pool_allocations_v2()
         await self._migrate_career_score()
+        await self._migrate_first_come_daily_limit()
 
         return data
 
@@ -319,6 +320,35 @@ class TaskMateStorage:
         if data_modified:
             _LOGGER.info("Data migration completed: converted child names to IDs in assigned_to")
             await self.async_save()
+
+    async def _migrate_first_come_daily_limit(self) -> None:
+        """Reset first_come chores to a daily limit of 1, once (#1159).
+
+        first_come used to ignore daily_limit and always close after one
+        completion, so a value above 1 could sit unseen on the chore (the panel
+        hid the field). Now the pool shares that limit, so honouring a stale
+        one would quietly turn a single-winner race into a multi-completion
+        chore. Guarded by a flag: a limit set after the upgrade is kept.
+        """
+        if self._data.get("_first_come_limit_reset"):
+            return
+
+        reset = 0
+        for chore in self._data.get("chores", []):
+            if chore.get("assignment_mode") != "first_come":
+                continue
+            try:
+                limit = int(chore.get("daily_limit", 1) or 1)
+            except (TypeError, ValueError):
+                limit = 1
+            if limit != 1:
+                chore["daily_limit"] = 1
+                reset += 1
+
+        self._data["_first_come_limit_reset"] = True
+        if reset:
+            _LOGGER.info("TaskMate: reset the daily limit of %d first-come chore(s) to 1", reset)
+        await self.async_save()
 
     async def _migrate_career_score(self) -> None:
         """Initialize career_score for existing installations.
@@ -580,6 +610,29 @@ class TaskMateStorage:
         self._data["mandatory_misses"] = [
             m for m in self._data.get("mandatory_misses", []) if m.get("child_id") != child_id
         ]
+
+    def get_handled_mandatory_keys(self) -> set[str]:
+        """Keys of misses a parent already dealt with (#1161), see add_handled_mandatory."""
+        return {h.get("key", "") for h in self._data.get("mandatory_handled", [])}
+
+    def add_handled_mandatory(self, key: str, due_date: str) -> None:
+        """Remember a dismissed / penalised miss so the detectors never raise it again.
+
+        The detectors are idempotent only while the miss is still stored, and
+        every parent action removes it — so without this the 5-minute set-time
+        check (and the startup catch-up) raised the same miss again (#1161).
+        Only today's and yesterday's misses can be re-detected, so older keys
+        are pruned on the way in.
+        """
+        try:
+            cutoff = (date.fromisoformat(due_date) - timedelta(days=2)).isoformat()
+        except (TypeError, ValueError):
+            cutoff = ""
+        kept = [
+            h for h in self._data.get("mandatory_handled", []) if h.get("date", "") >= cutoff and h.get("key") != key
+        ]
+        kept.append({"key": key, "date": due_date})
+        self._data["mandatory_handled"] = kept
 
     def replace_mandatory_misses(self, misses: list[MandatoryMiss]) -> None:
         """Replace the whole mandatory-miss collection."""

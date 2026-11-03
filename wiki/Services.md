@@ -123,7 +123,7 @@ Create a chore dynamically (for automations).
 | `name` | ✅ | Chore title |
 | `description` |  | Optional details |
 | `points` |  | Point value (default 10) |
-| `assigned_to` |  | List of child IDs (empty = all) |
+| `assigned_to` |  | List of children, by name or ID (empty = all). Names match case-insensitively; an unknown name, or one two children share, refuses the call and the error lists the valid names |
 | `time_category` |  | `morning` / `afternoon` / `evening` / `night` / `anytime` (default `anytime`) |
 | `difficulty` |  | Difficulty tier — `easy` / `medium` / `hard` (default `medium`). Scales awarded points by the tier multiplier; `medium` = ×1.0 baseline. See [Difficulty Tiers](Difficulty-Tiers.md). |
 | `one_shot` |  | Single-day auto-expiring chore (boolean, default false) |
@@ -133,6 +133,14 @@ Create a chore dynamically (for automations).
 | `team_size` |  | (v6.0.0) Make it a [teamwork chore](Teamwork-Chores.md) that only counts once this many children (2–10) have joined. `0` = a normal chore (default) |
 | `team_points_mode` |  | (v6.0.0) `each` (everyone gets the full points, default) or `split` (the points are divided evenly, rounded down) |
 | `team_bonus` |  | (v6.0.0) Extra points each team member earns when the team completes the chore (default 0) |
+| `assignment_mode` |  | (v7.6.0) Who does it each day: `everyone` (default), `alternating`, `random`, `balanced`, `first_come` or `unassigned`. See [Chore Scheduling](Chore-Scheduling.md) |
+| `schedule_mode` |  | (v7.6.0) `specific_days` (default), `recurring` or `one_shot`. `one_shot: true` or `expires_in_minutes` still make it one-shot whatever this says |
+| `due_days` |  | (v7.6.0) Weekdays for `specific_days`, e.g. `[monday, thursday]` (empty = every day) |
+| `recurrence` |  | (v7.6.0) For `recurring`: `weekly` (default), `every_2_weeks`, `monthly`, `every_3_months`, `every_6_months` or `every_N_days` (N 2–365) |
+| `recurrence_day` |  | (v7.6.0) Weekday a `weekly` / `every_2_weeks` chore falls on |
+| `recurrence_start` |  | (v7.6.0) Date the recurrence counts from, `YYYY-MM-DD` |
+| `due_time` |  | (v7.6.0) Time of day it's due, `HH:MM`. Drives the [early bonus / late penalty](Chores.md) |
+| `daily_limit` |  | (v7.6.0) How many times a day it can be completed (default 1; one-shot chores are always 1) |
 
 ```yaml
 service: taskmate.add_chore
@@ -145,7 +153,67 @@ data:
     - ef19c56175c14bd9
 ```
 
-> **Note:** Some advanced chore fields — `expires_on`, photo proof (`require_photo`), time incentives (`due_time` / `early_bonus` / `late_penalty`), weather conditions, and `first_come` assignment mode — are not exposed on the `add_chore` service. Configure them in the [Admin Panel](Admin-Panel.md) chore editor. See [Difficulty Tiers](Difficulty-Tiers.md), [Photo Proof](Photo-Proof.md), and [Chores](Chores.md).
+A rotating chore on a fortnightly rhythm, assigned by name:
+
+```yaml
+service: taskmate.add_chore
+data:
+  name: "Clean the bathroom"
+  points: 20
+  assigned_to: [Malia, Vaiha]
+  assignment_mode: alternating
+  schedule_mode: recurring
+  recurrence: every_2_weeks
+  recurrence_day: saturday
+  recurrence_start: "2026-11-07"
+  due_time: "11:00"
+```
+
+> **Note:** Some advanced chore fields — `expires_on`, photo proof (`require_photo`), the early bonus / late penalty amounts (`early_bonus` / `late_penalty`) and weather conditions — are not exposed on the `add_chore` service. Configure them in the [Admin Panel](Admin-Panel.md) chore editor. See [Difficulty Tiers](Difficulty-Tiers.md), [Photo Proof](Photo-Proof.md), and [Chores](Chores.md).
+
+### `taskmate.update_chore` (v7.6.0)
+Change an existing chore by its ID. Only the fields you set change; everything else stays as it is.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `chore_id` | ✅ | ID of the chore |
+| `name`, `description`, `points`, `time_category`, `difficulty`, `requires_approval` |  | As on `add_chore` |
+| `assigned_to` |  | Children by name or ID, as on `add_chore`. An empty list assigns it to all children |
+| `enabled` |  | `false` hides the chore everywhere without deleting it; `true` turns it back on |
+| `speed_bonus_points`, `team_size`, `team_points_mode`, `team_bonus` |  | As on `add_chore` |
+| `times`, `times_bonus` |  | Replace the chore's [set times](Set-Times.md); an empty list removes them |
+| `assignment_mode`, `schedule_mode`, `due_days`, `recurrence`, `recurrence_day`, `recurrence_start`, `due_time`, `daily_limit` |  | As on `add_chore`. An empty `due_time`, `recurrence_day` or `recurrence_start` clears it |
+
+```yaml
+service: taskmate.update_chore
+data:
+  chore_id: 3f2a9c1b7e5d4a10
+  points: 15
+  schedule_mode: specific_days
+  due_days: [tuesday, friday]
+  due_time: "19:30"
+```
+
+- Switching a chore to `one_shot` makes it today's one-off: its daily limit becomes 1.
+- The same rules as the panel's chore editor apply (teamwork, set times and so on). A call that breaks one is refused and the chore is left exactly as it was.
+- A call with only `chore_id` is refused, as is an unknown chore ID.
+
+### `taskmate.delete_chore` (v7.6.0)
+Delete a chore by its ID, with the same clean-up as deleting it in the panel: its completions, calendar entries, task-group membership, queued scheduled changes, swap requests and auctions go with it. It goes to **Recently deleted** in the panel for 7 days, so it can be restored.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `chore_id` | ✅ | ID of the chore |
+| `confirm` | ✅ | Must be `true`, so a chore is never deleted by accident |
+
+```yaml
+service: taskmate.delete_chore
+data:
+  chore_id: 3f2a9c1b7e5d4a10
+  confirm: true
+```
+
+`add_chore`, `update_chore` and `delete_chore` need an administrator when a signed-in user calls them; automations and scripts with no user behind them run as before. Every call is recorded in the [audit log](Admin-Audit-Log.md).
 
 ### `taskmate.skip_chore`
 Skip today's assigned child in a rotation-mode chore and reassign to the next child in the pool.
@@ -1225,7 +1293,7 @@ Several services trigger additional actions beyond their primary purpose:
 
 The full set of `taskmate.*` services registered by the integration:
 
-`complete_chore`, `complete_bonus_subtask`, `complete_next_chore`, `approve_chore`, `approve_all_chores`, `reject_chore`, `undo_chore`, `leave_team_chore`, `apply_mandatory_penalty`, `postpone_mandatory_chore`, `dismiss_mandatory_chore`, `undo_transaction`, `undo_chore_approval`, `record_allowance_payout`, `test_notification`, `gift_points`, `adjust_streak_freezes`, `request_swap`, `choose_avatar`, `claim_reward`, `approve_reward`, `reject_reward`, `allocate_points_to_pool`, `add_points`, `remove_points`, `preview_sound`, `set_chore_order`, `add_penalty`, `update_penalty`, `remove_penalty`, `apply_penalty`, `add_bonus`, `update_bonus`, `remove_bonus`, `apply_bonus`, `add_chore`, `skip_chore`, `set_chore_manual_start`, `add_task_group`, `update_task_group`, `remove_task_group`, `start_timed_task`, `pause_timed_task`, `stop_timed_task`, `add_badge`, `update_badge`, `remove_badge`, `award_badge_manually`, `revoke_badge`, `rebuild_badges`, `read_aloud`, `spin_roulette`, `post_bounty`, `update_bounty`, `remove_bounty`, `claim_bounty`, `give_back_bounty`, `complete_bounty`, `add_wish`, `withdraw_wish`, `move_points_to_wish`, `take_points_from_wish`, `request_wish_redeem`, `approve_wish`, `decline_wish`, `pledge_to_wish`, `remove_wish_pledge`, `remove_wish`, `start_inspection`, `pass_inspection`, `fail_inspection`, `cancel_inspection`, `request_help`, `answer_help`, `log_mood`, `set_sick_day`, `set_weekly_goal`, `buy_raffle_tickets`, `draw_raffle`, `adopt_pet`.
+`complete_chore`, `complete_bonus_subtask`, `complete_next_chore`, `approve_chore`, `approve_all_chores`, `reject_chore`, `undo_chore`, `leave_team_chore`, `apply_mandatory_penalty`, `postpone_mandatory_chore`, `dismiss_mandatory_chore`, `undo_transaction`, `undo_chore_approval`, `record_allowance_payout`, `test_notification`, `gift_points`, `adjust_streak_freezes`, `request_swap`, `choose_avatar`, `claim_reward`, `approve_reward`, `reject_reward`, `allocate_points_to_pool`, `add_points`, `remove_points`, `preview_sound`, `set_chore_order`, `add_penalty`, `update_penalty`, `remove_penalty`, `apply_penalty`, `add_bonus`, `update_bonus`, `remove_bonus`, `apply_bonus`, `add_chore`, `update_chore`, `delete_chore`, `skip_chore`, `set_chore_manual_start`, `add_task_group`, `update_task_group`, `remove_task_group`, `start_timed_task`, `pause_timed_task`, `stop_timed_task`, `add_badge`, `update_badge`, `remove_badge`, `award_badge_manually`, `revoke_badge`, `rebuild_badges`, `read_aloud`, `spin_roulette`, `post_bounty`, `update_bounty`, `remove_bounty`, `claim_bounty`, `give_back_bounty`, `complete_bounty`, `add_wish`, `withdraw_wish`, `move_points_to_wish`, `take_points_from_wish`, `request_wish_redeem`, `approve_wish`, `decline_wish`, `pledge_to_wish`, `remove_wish_pledge`, `remove_wish`, `start_inspection`, `pass_inspection`, `fail_inspection`, `cancel_inspection`, `request_help`, `answer_help`, `log_mood`, `set_sick_day`, `set_weekly_goal`, `buy_raffle_tickets`, `draw_raffle`, `adopt_pet`.
 
 [Chore auctions](Chore-Auctions.md) have no services: they are run from the admin panel's **Auctions** page and the auction card. Raffles are created, edited and called off from the admin panel's **Raffles** tab; only buying tickets and drawing have services.
 

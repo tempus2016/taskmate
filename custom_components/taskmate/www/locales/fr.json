@@ -824,6 +824,7 @@
   "panel.chore_completion_sound_label": "Son de complétion",
   "panel.chore_daily_cap_label": "Plafond journalier (minutes, 0 = illimité)",
   "panel.chore_daily_limit_label": "Limite quotidienne",
+  "panel.chore_daily_limit_shared_hint": "Partagée par tout le groupe — une fois faite autant de fois aujourd'hui, elle se ferme pour tout le monde. Chaque réalisation rapporte des points à l'enfant qui l'a faite.",
   "panel.chore_days_label": "Jours de la semaine (vide = tous les jours)",
   "panel.chore_weekly_target_pill": "{count}×/semaine",
   "panel.chore_weekly_target_hint": "Combien de fois par semaine la tâche doit être faite, n'importe lesquels des jours choisis. Elle n'est plus proposée une fois le compte atteint et repart le lundi.",

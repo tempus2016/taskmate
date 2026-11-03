@@ -14455,7 +14455,8 @@ class TaskMatePanel extends HTMLElement {
             ${this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
           </div>` : `<div class="tm-field-row">
             ${d._freq === "set" ? "" : this._field(this._t("panel.chore_points_label"), "points", d.points, "number")}
-            ${d.assignment_mode === "first_come" || d._freq !== "limit" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number")}
+            ${d._freq !== "limit" ? "" : this._field(this._t("panel.chore_daily_limit_label"), "daily_limit", d.daily_limit, "number",
+              d.assignment_mode === "first_come" ? this._esc(this._t("panel.chore_daily_limit_shared_hint")) : "")}
           </div>`,
           `<div class="tm-field-row">
             ${this._select(this._t("panel.chore_difficulty_label"), "difficulty", d.difficulty || "medium", [

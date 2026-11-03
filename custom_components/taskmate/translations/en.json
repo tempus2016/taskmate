@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Assigned To",
-          "description": "List of child IDs to assign this chore to. Leave empty to assign to all children"
+          "description": "Children to assign this chore to, by name or ID. Leave empty to assign to all children"
         },
         "time_category": {
           "name": "Time Category",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "All-times bonus",
           "description": "Extra points paid once a day when every set time is done."
+        },
+        "assignment_mode": {
+          "name": "Assignment mode",
+          "description": "Who does the chore each day: everyone, alternating (take turns), random, balanced (whoever has done it least), first_come (the first child to claim it) or unassigned."
+        },
+        "schedule_mode": {
+          "name": "Schedule",
+          "description": "specific_days (the weekdays in Due days, or every day if none), recurring (on the Recurrence rhythm) or one_shot (today only)."
+        },
+        "due_days": {
+          "name": "Due days",
+          "description": "Weekdays the chore is due on, for the specific_days schedule. Leave empty for every day."
+        },
+        "recurrence": {
+          "name": "Recurrence",
+          "description": "How often a recurring chore comes round: weekly, every_2_weeks, monthly, every_3_months, every_6_months, or every_N_days with N from 2 to 365 (e.g. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Recurrence day",
+          "description": "The weekday a weekly or every_2_weeks chore falls on."
+        },
+        "recurrence_start": {
+          "name": "Recurrence start",
+          "description": "The date a recurring chore's rhythm starts from (YYYY-MM-DD)."
+        },
+        "due_time": {
+          "name": "Due time",
+          "description": "Time of day the chore is due (\"HH:MM\"). Finishing by then earns the early bonus, after it the late penalty. Empty for no due time."
+        },
+        "daily_limit": {
+          "name": "Daily limit",
+          "description": "How many times a day the chore can be completed. One-shot chores are always 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Update Chore",
+      "description": "Change an existing chore by its ID. Only the fields you set are changed; everything else stays as it is.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to change"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name for the chore"
+        },
+        "description": {
+          "name": "Description",
+          "description": "New description of the chore"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points awarded when this chore is completed"
+        },
+        "assigned_to": {
+          "name": "Assigned To",
+          "description": "Children to assign this chore to, by name or ID. An empty list assigns it to all children"
+        },
+        "time_category": {
+          "name": "Time Category",
+          "description": "When this chore should be completed: morning, afternoon, evening, night, or anytime"
+        },
+        "difficulty": {
+          "name": "Difficulty",
+          "description": "Difficulty tier: easy, medium or hard. Scales the points awarded (medium = ×1.0)."
+        },
+        "requires_approval": {
+          "name": "Requires Approval",
+          "description": "If true, a parent must approve the completion before points are awarded"
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Turn the chore off (false) to hide it everywhere without deleting it, or back on (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Speed bonus points",
+          "description": "Extra points awarded if the chore is completed before its deadline."
+        },
+        "team_size": {
+          "name": "Team size",
+          "description": "Make this a teamwork chore that only counts once this many different children have joined it. When the team is full it submits for all of them. 0 = a normal chore."
+        },
+        "team_points_mode": {
+          "name": "Team points",
+          "description": "How a teamwork chore pays out: \"each\" gives every participant the full points, \"split\" divides them evenly (rounded down)."
+        },
+        "team_bonus": {
+          "name": "Team bonus",
+          "description": "Extra points each participant earns when a teamwork chore is completed."
+        },
+        "times": {
+          "name": "Set times",
+          "description": "Replace the chore's set times of day. A list of up to 5 times, each with name, start and end (\"HH:MM\", same day, no overlaps) and points. An empty list removes them."
+        },
+        "times_bonus": {
+          "name": "All-times bonus",
+          "description": "Extra points paid once a day when every set time is done."
+        },
+        "assignment_mode": {
+          "name": "Assignment mode",
+          "description": "Who does the chore each day: everyone, alternating (take turns), random, balanced (whoever has done it least), first_come (the first child to claim it) or unassigned."
+        },
+        "schedule_mode": {
+          "name": "Schedule",
+          "description": "specific_days (the weekdays in Due days, or every day if none), recurring (on the Recurrence rhythm) or one_shot (today only)."
+        },
+        "due_days": {
+          "name": "Due days",
+          "description": "Weekdays the chore is due on, for the specific_days schedule. Leave empty for every day."
+        },
+        "recurrence": {
+          "name": "Recurrence",
+          "description": "How often a recurring chore comes round: weekly, every_2_weeks, monthly, every_3_months, every_6_months, or every_N_days with N from 2 to 365 (e.g. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Recurrence day",
+          "description": "The weekday a weekly or every_2_weeks chore falls on."
+        },
+        "recurrence_start": {
+          "name": "Recurrence start",
+          "description": "The date a recurring chore's rhythm starts from (YYYY-MM-DD)."
+        },
+        "due_time": {
+          "name": "Due time",
+          "description": "Time of day the chore is due (\"HH:MM\"). Finishing by then earns the early bonus, after it the late penalty. Empty for no due time."
+        },
+        "daily_limit": {
+          "name": "Daily limit",
+          "description": "How many times a day the chore can be completed. One-shot chores are always 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Delete Chore",
+      "description": "Delete a chore by its ID, with the same clean-up as the panel. It goes to Recently deleted in the panel for 7 days, so it can be restored.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the chore to delete"
+        },
+        "confirm": {
+          "name": "Confirm",
+          "description": "Must be true. A safeguard so a chore is never deleted by accident."
         }
       }
     },

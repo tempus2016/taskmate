@@ -824,6 +824,7 @@
   "panel.chore_completion_sound_label": "Fullføringslyd",
   "panel.chore_daily_cap_label": "Dagleg tak (minutt, 0 = uavgrensa)",
   "panel.chore_daily_limit_label": "Dagleg grense",
+  "panel.chore_daily_limit_shared_hint": "Delt av alle i gruppa — når han er gjord så mange gonger i dag, vert han stengd for alle. Kvar fullføring gjev poeng til den som gjorde han.",
   "panel.chore_days_label": "Vekedagar (la stå tomt = kvar dag)",
   "panel.chore_weekly_target_pill": "{count}×/veke",
   "panel.chore_weekly_target_hint": "Kor mange gonger i veka oppgåva må gjerast, på kva som helst av dei valde dagane. Ho blir ikkje vist meir når talet er nådd, og blir nullstilt på måndag.",

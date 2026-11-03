@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Tildelt til",
-          "description": "Liste over barn-ID'er, pligten tildeles. Lad feltet være tomt for at tildele den til alle børn"
+          "description": "Børn, pligten tildeles, efter navn eller ID. Lad feltet være tomt for at tildele den til alle børn"
         },
         "time_category": {
           "name": "Tidspunkt",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Bonus for alle tidspunkter",
           "description": "Ekstra point én gang om dagen, når alle faste tidspunkter er klaret."
+        },
+        "assignment_mode": {
+          "name": "Tildelingsmåde",
+          "description": "Hvem der laver pligten hver dag: everyone (alle), alternating (på skift), random (tilfældigt), balanced (den, der har lavet den mindst), first_come (det første barn, der tager den) eller unassigned (ingen)."
+        },
+        "schedule_mode": {
+          "name": "Plan",
+          "description": "specific_days (ugedagene under Forfaldsdage, eller hver dag hvis ingen er valgt), recurring (i rytmen under Gentagelse) eller one_shot (kun i dag)."
+        },
+        "due_days": {
+          "name": "Forfaldsdage",
+          "description": "Ugedage, hvor pligten skal laves, for planen specific_days. Lad stå tomt for hver dag."
+        },
+        "recurrence": {
+          "name": "Gentagelse",
+          "description": "Hvor ofte en tilbagevendende pligt kommer igen: weekly, every_2_weeks, monthly, every_3_months, every_6_months eller every_N_days med N fra 2 til 365 (f.eks. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Gentagelsesdag",
+          "description": "Den ugedag, en weekly- eller every_2_weeks-pligt falder på."
+        },
+        "recurrence_start": {
+          "name": "Gentagelse fra",
+          "description": "Datoen, en tilbagevendende pligts rytme regnes fra (ÅÅÅÅ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Forfaldstid",
+          "description": "Klokkeslæt, hvor pligten skal være lavet (\"HH:MM\"). Færdig inden da giver tidlig bonus, efter giver for sent-fradrag. Tom for intet klokkeslæt."
+        },
+        "daily_limit": {
+          "name": "Daglig grænse",
+          "description": "Hvor mange gange om dagen pligten kan laves. Engangspligter er altid 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Opdater pligt",
+      "description": "Ret en eksisterende pligt ud fra dens ID. Kun de felter, du angiver, ændres; resten forbliver som det er.",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den pligt, der skal ændres"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Nyt navn til pligten"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Ny beskrivelse af pligten"
+        },
+        "points": {
+          "name": "Point",
+          "description": "Point der gives, når pligten er fuldført"
+        },
+        "assigned_to": {
+          "name": "Tildelt til",
+          "description": "Børn, pligten tildeles, efter navn eller ID. En tom liste tildeler den til alle børn"
+        },
+        "time_category": {
+          "name": "Tidspunkt",
+          "description": "Hvornår pligten skal udføres: morning, afternoon, evening, night eller anytime"
+        },
+        "difficulty": {
+          "name": "Sværhedsgrad",
+          "description": "Sværhedsgrad: easy, medium eller hard. Skalerer de point, der gives (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Kræver godkendelse",
+          "description": "Hvis sand, skal en forælder godkende fuldførelsen, før der gives point"
+        },
+        "enabled": {
+          "name": "Aktiveret",
+          "description": "Slå pligten fra (false) for at skjule den overalt uden at slette den, eller til igen (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Hurtighedsbonus",
+          "description": "Ekstra point, hvis pligten laves før fristen."
+        },
+        "team_size": {
+          "name": "Holdstørrelse",
+          "description": "Gør pligten til en holdpligt, der først tæller, når så mange forskellige børn er med. Når holdet er fuldt, indsendes den for dem alle. 0 = en normal pligt."
+        },
+        "team_points_mode": {
+          "name": "Holdpoint",
+          "description": "Hvordan en holdpligt udbetaler: \"each\" giver alle deltagere de fulde point, \"split\" deler dem ligeligt (rundet ned)."
+        },
+        "team_bonus": {
+          "name": "Holdbonus",
+          "description": "Ekstra point, hver deltager får, når en holdpligt er fuldført."
+        },
+        "times": {
+          "name": "Faste tidspunkter",
+          "description": "Erstatter pligtens faste tidspunkter på dagen. En liste med op til 5 tidspunkter, hver med navn, start og slut (\"HH:MM\", samme dag, uden overlap) og point. En tom liste fjerner dem."
+        },
+        "times_bonus": {
+          "name": "Bonus for alle tidspunkter",
+          "description": "Ekstra point én gang om dagen, når alle faste tidspunkter er klaret."
+        },
+        "assignment_mode": {
+          "name": "Tildelingsmåde",
+          "description": "Hvem der laver pligten hver dag: everyone (alle), alternating (på skift), random (tilfældigt), balanced (den, der har lavet den mindst), first_come (det første barn, der tager den) eller unassigned (ingen)."
+        },
+        "schedule_mode": {
+          "name": "Plan",
+          "description": "specific_days (ugedagene under Forfaldsdage, eller hver dag hvis ingen er valgt), recurring (i rytmen under Gentagelse) eller one_shot (kun i dag)."
+        },
+        "due_days": {
+          "name": "Forfaldsdage",
+          "description": "Ugedage, hvor pligten skal laves, for planen specific_days. Lad stå tomt for hver dag."
+        },
+        "recurrence": {
+          "name": "Gentagelse",
+          "description": "Hvor ofte en tilbagevendende pligt kommer igen: weekly, every_2_weeks, monthly, every_3_months, every_6_months eller every_N_days med N fra 2 til 365 (f.eks. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Gentagelsesdag",
+          "description": "Den ugedag, en weekly- eller every_2_weeks-pligt falder på."
+        },
+        "recurrence_start": {
+          "name": "Gentagelse fra",
+          "description": "Datoen, en tilbagevendende pligts rytme regnes fra (ÅÅÅÅ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Forfaldstid",
+          "description": "Klokkeslæt, hvor pligten skal være lavet (\"HH:MM\"). Færdig inden da giver tidlig bonus, efter giver for sent-fradrag. Tom for intet klokkeslæt."
+        },
+        "daily_limit": {
+          "name": "Daglig grænse",
+          "description": "Hvor mange gange om dagen pligten kan laves. Engangspligter er altid 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Slet pligt",
+      "description": "Slet en pligt ud fra dens ID, med samme oprydning som i panelet. Den ligger i Nyligt slettet i panelet i 7 dage, så den kan gendannes.",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID'et på den pligt, der skal slettes"
+        },
+        "confirm": {
+          "name": "Bekræft",
+          "description": "Skal være true. En sikring, så en pligt aldrig slettes ved et uheld."
         }
       }
     },

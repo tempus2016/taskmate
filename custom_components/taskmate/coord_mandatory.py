@@ -17,7 +17,7 @@ from .const import (
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
 )
-from .coord_set_times import set_time_label
+from .coord_set_times import mandatory_miss_key, set_time_label
 from .models import MandatoryMiss, parse_datetime
 
 # How often the escalation ladder is re-evaluated (FEAT-6).
@@ -57,6 +57,22 @@ class MandatoryMixin:
             return [c.id for c in self.storage.get_children()]
         cur = getattr(chore, "assignment_current_child_id", "") or ""
         return [cur] if cur else []
+
+    def _mark_miss_handled(self, miss: MandatoryMiss) -> None:
+        """A parent dealt with this miss: never raise it again (#1161)."""
+        self.storage.add_handled_mandatory(
+            mandatory_miss_key(miss.chore_id, miss.child_id, miss.due_date, getattr(miss, "time_id", "")),
+            miss.due_date,
+        )
+
+    def _child_away(self, child_id: str, day: date) -> bool:
+        """True while the child is away — a family vacation, the vacation
+        calendar, a sick day, or their own availability sensor with "pause
+        when unavailable" on. Their chores are hidden then, so nothing can be
+        missed (#1161), the same rule as a hidden chore (#1151).
+        """
+        child = self.storage.get_child(child_id)
+        return self._is_child_on_vacation(child, day)
 
     def _chore_hidden_by_gate(self, chore) -> bool:
         """True while the chore's visibility entity or weather gate hides it.
@@ -124,6 +140,7 @@ class MandatoryMixin:
     async def async_detect_mandatory_misses(self, period_id: str, day: date) -> int:
         """Create misses for due+incomplete mandatory chores in `period_id`."""
         existing = {(m.chore_id, m.child_id, m.due_date) for m in self.storage.get_mandatory_misses()}
+        handled = self.storage.get_handled_mandatory_keys()
         created = 0
         for chore in self.storage.get_chores():
             if not getattr(chore, "mandatory", False):
@@ -142,8 +159,8 @@ class MandatoryMixin:
                     continue
                 if child_id in (getattr(chore, "disabled_for", []) or []):
                     continue
-                # A sick day owes nothing.
-                if self.is_sick_day(child_id, day):
+                # A sick day or time away owes nothing.
+                if self.is_sick_day(child_id, day) or self._child_away(child_id, day):
                     continue
                 if self._child_completed_today(chore.id, child_id, day):
                     continue
@@ -153,6 +170,10 @@ class MandatoryMixin:
                 if self.weekly_target_met(chore, child_id):
                     continue
                 if (chore.id, child_id, day.isoformat()) in existing:
+                    continue
+                # Already dismissed or penalised — the startup catch-up re-runs
+                # periods that ended earlier today (#1161).
+                if mandatory_miss_key(chore.id, child_id, day.isoformat()) in handled:
                     continue
                 miss = MandatoryMiss(
                     chore_id=chore.id,
@@ -211,6 +232,7 @@ class MandatoryMixin:
                 miss.penalty_points,
                 reason=f"Penalty: {name} (missed mandatory)",
             )
+        self._mark_miss_handled(miss)
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
         self.hass.bus.async_fire(
@@ -236,6 +258,11 @@ class MandatoryMixin:
             key = f"{miss.chore_id}:{miss.child_id}:{miss.due_date}"
             self.mandatory_postpone[key] = nxt
         # else: no window left today -> let normal scheduling resurface tomorrow
+        # A set time has no later window to move to — it closed — so postponing
+        # it can only mean "not now"; left unrecorded, the 5-minute check
+        # raised it straight back (#1161).
+        if getattr(miss, "time_id", ""):
+            self._mark_miss_handled(miss)
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
         self.hass.bus.async_fire(
@@ -254,6 +281,7 @@ class MandatoryMixin:
         miss = self._get_miss(miss_id)
         if miss is None:
             return
+        self._mark_miss_handled(miss)
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
         self.hass.bus.async_fire(

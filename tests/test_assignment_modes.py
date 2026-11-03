@@ -1352,7 +1352,7 @@ def test_first_come_first_claim_hides_for_others_and_reopens_on_reject():
     assert coord.is_chore_available_for_child(chore, b.id) is True
 
 
-def test_first_come_clamps_quota_to_one_winner():
+def test_first_come_shares_daily_limit_across_pool():
     from custom_components.taskmate.models import ChoreCompletion
 
     a, b = Child(name="A"), Child(name="B")
@@ -1360,10 +1360,14 @@ def test_first_come_clamps_quota_to_one_winner():
     coord.storage.get_last_completed = MagicMock(return_value={})
     today = date(2026, 4, 20)
     dt_util_mock._now = dt.datetime.combine(today, dt.time(9, 0), tzinfo=UTC)
-    # Even if daily_limit is mis-set to 2, first_come allows only one winner.
+    # #1159: a daily_limit of 2 is shared by the pool — one completion leaves a
+    # slot open for anyone, the second (by either child) closes it for all.
     chore = Chore(name="Feed cat", assigned_to=[a.id, b.id], assignment_mode="first_come", daily_limit=2)
-    claim = ChoreCompletion(chore_id=chore.id, child_id=a.id, completed_at=dt_util_mock.now(), approved=True)
-    coord.storage.get_completions = MagicMock(return_value=[claim])
+    first = ChoreCompletion(chore_id=chore.id, child_id=a.id, completed_at=dt_util_mock.now(), approved=True)
+    coord.storage.get_completions = MagicMock(return_value=[first])
+    assert coord._is_rotation_done_today(chore) is False
+    second = ChoreCompletion(chore_id=chore.id, child_id=b.id, completed_at=dt_util_mock.now(), approved=True)
+    coord.storage.get_completions = MagicMock(return_value=[first, second])
     assert coord._is_rotation_done_today(chore) is True
 
 

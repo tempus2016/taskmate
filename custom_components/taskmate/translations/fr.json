@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Assignée à",
-          "description": "Liste des IDs d'enfants à qui assigner cette corvée. Laisser vide pour l'assigner à tous les enfants"
+          "description": "Enfants à qui assigner cette corvée, par nom ou par ID. Laisser vide pour l'assigner à tous les enfants"
         },
         "time_category": {
           "name": "Catégorie horaire",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Bonus tous horaires",
           "description": "Points en plus, une fois par jour, quand tous les horaires fixes sont faits."
+        },
+        "assignment_mode": {
+          "name": "Mode d'attribution",
+          "description": "Qui fait la corvée chaque jour : everyone (tout le monde), alternating (à tour de rôle), random (au hasard), balanced (celui qui l'a le moins faite), first_come (le premier enfant qui la prend) ou unassigned (personne)."
+        },
+        "schedule_mode": {
+          "name": "Planification",
+          "description": "specific_days (les jours choisis dans Jours prévus, ou tous les jours si aucun), recurring (au rythme de Récurrence) ou one_shot (aujourd'hui seulement)."
+        },
+        "due_days": {
+          "name": "Jours prévus",
+          "description": "Jours de la semaine où la corvée est à faire, pour la planification specific_days. Laisser vide pour tous les jours."
+        },
+        "recurrence": {
+          "name": "Récurrence",
+          "description": "À quelle fréquence revient une corvée récurrente : weekly, every_2_weeks, monthly, every_3_months, every_6_months, ou every_N_days avec N de 2 à 365 (ex. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Jour de récurrence",
+          "description": "Le jour de la semaine où tombe une corvée weekly ou every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Début de la récurrence",
+          "description": "La date à partir de laquelle compte le rythme d'une corvée récurrente (AAAA-MM-JJ)."
+        },
+        "due_time": {
+          "name": "Heure limite",
+          "description": "Heure à laquelle la corvée est due (\"HH:MM\"). Finir avant rapporte le bonus d'avance, après s'applique la pénalité de retard. Vide pour aucune heure limite."
+        },
+        "daily_limit": {
+          "name": "Limite quotidienne",
+          "description": "Combien de fois par jour la corvée peut être faite. Toujours 1 pour une corvée ponctuelle."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Mettre à jour la corvée",
+      "description": "Modifier une corvée existante à partir de son ID. Seuls les champs renseignés changent ; le reste ne bouge pas.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'ID de la corvée à modifier"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Nouveau nom de la corvée"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Nouvelle description de la corvée"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points attribués à l'achèvement de cette corvée"
+        },
+        "assigned_to": {
+          "name": "Assignée à",
+          "description": "Enfants à qui assigner cette corvée, par nom ou par ID. Une liste vide l'assigne à tous les enfants"
+        },
+        "time_category": {
+          "name": "Catégorie horaire",
+          "description": "Quand cette corvée doit être effectuée : morning, afternoon, evening, night ou anytime"
+        },
+        "difficulty": {
+          "name": "Difficulté",
+          "description": "Niveau de difficulté : easy, medium ou hard. Ajuste les points attribués (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Nécessite approbation",
+          "description": "Si vrai, un parent doit approuver l'exécution avant que les points soient attribués"
+        },
+        "enabled": {
+          "name": "Activée",
+          "description": "Désactiver la corvée (false) pour la masquer partout sans la supprimer, ou la réactiver (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Bonus de rapidité",
+          "description": "Points en plus si la corvée est faite avant son échéance."
+        },
+        "team_size": {
+          "name": "Taille de l'équipe",
+          "description": "Fait de cette corvée une tâche d'équipe qui ne compte qu'une fois que ce nombre d'enfants différents l'ont rejointe. Quand l'équipe est complète, elle est soumise pour tous. 0 = corvée normale."
+        },
+        "team_points_mode": {
+          "name": "Points d'équipe",
+          "description": "Comment une tâche d'équipe rapporte : « each » donne tous les points à chaque participant, « split » les partage à parts égales (arrondi à l'inférieur)."
+        },
+        "team_bonus": {
+          "name": "Bonus d'équipe",
+          "description": "Points supplémentaires gagnés par chaque participant quand une tâche d'équipe est terminée."
+        },
+        "times": {
+          "name": "Heures fixes",
+          "description": "Remplace les heures fixes de la corvée. Une liste de 5 heures maximum, chacune avec un nom, un début et une fin (\"HH:MM\", même jour, sans chevauchement) et des points. Une liste vide les supprime."
+        },
+        "times_bonus": {
+          "name": "Bonus tous horaires",
+          "description": "Points en plus, une fois par jour, quand tous les horaires fixes sont faits."
+        },
+        "assignment_mode": {
+          "name": "Mode d'attribution",
+          "description": "Qui fait la corvée chaque jour : everyone (tout le monde), alternating (à tour de rôle), random (au hasard), balanced (celui qui l'a le moins faite), first_come (le premier enfant qui la prend) ou unassigned (personne)."
+        },
+        "schedule_mode": {
+          "name": "Planification",
+          "description": "specific_days (les jours choisis dans Jours prévus, ou tous les jours si aucun), recurring (au rythme de Récurrence) ou one_shot (aujourd'hui seulement)."
+        },
+        "due_days": {
+          "name": "Jours prévus",
+          "description": "Jours de la semaine où la corvée est à faire, pour la planification specific_days. Laisser vide pour tous les jours."
+        },
+        "recurrence": {
+          "name": "Récurrence",
+          "description": "À quelle fréquence revient une corvée récurrente : weekly, every_2_weeks, monthly, every_3_months, every_6_months, ou every_N_days avec N de 2 à 365 (ex. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Jour de récurrence",
+          "description": "Le jour de la semaine où tombe une corvée weekly ou every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Début de la récurrence",
+          "description": "La date à partir de laquelle compte le rythme d'une corvée récurrente (AAAA-MM-JJ)."
+        },
+        "due_time": {
+          "name": "Heure limite",
+          "description": "Heure à laquelle la corvée est due (\"HH:MM\"). Finir avant rapporte le bonus d'avance, après s'applique la pénalité de retard. Vide pour aucune heure limite."
+        },
+        "daily_limit": {
+          "name": "Limite quotidienne",
+          "description": "Combien de fois par jour la corvée peut être faite. Toujours 1 pour une corvée ponctuelle."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Supprimer la corvée",
+      "description": "Supprimer une corvée à partir de son ID, avec le même nettoyage que le panneau. Elle reste 7 jours dans Récemment supprimées du panneau et peut être restaurée.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'ID de la corvée à supprimer"
+        },
+        "confirm": {
+          "name": "Confirmer",
+          "description": "Doit valoir true. Une sécurité pour qu'une corvée ne soit jamais supprimée par accident."
         }
       }
     },

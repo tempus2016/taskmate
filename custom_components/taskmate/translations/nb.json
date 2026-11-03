@@ -557,7 +557,7 @@
         },
         "assigned_to": {
           "name": "Tildelt",
-          "description": "Liste over barne-ID-er oppgaven skal tildeles. La stå tom for å tildele alle barn"
+          "description": "Barn oppgaven skal tildeles, med navn eller ID. La stå tom for å tildele alle barn"
         },
         "time_category": {
           "name": "Tidskategori",
@@ -590,6 +590,150 @@
         "times_bonus": {
           "name": "Bonus for alle tidspunkter",
           "description": "Ekstra poeng én gang om dagen når alle faste tider er gjort."
+        },
+        "assignment_mode": {
+          "name": "Tildelingsmåte",
+          "description": "Hvem som gjør oppgaven hver dag: everyone (alle), alternating (på omgang), random (tilfeldig), balanced (den som har gjort den minst), first_come (det første barnet som tar den) eller unassigned (ingen)."
+        },
+        "schedule_mode": {
+          "name": "Plan",
+          "description": "specific_days (ukedagene under Forfallsdager, eller hver dag om ingen er valgt), recurring (i rytmen under Gjentakelse) eller one_shot (bare i dag)."
+        },
+        "due_days": {
+          "name": "Forfallsdager",
+          "description": "Ukedager oppgaven skal gjøres, for planen specific_days. La stå tom for hver dag."
+        },
+        "recurrence": {
+          "name": "Gjentakelse",
+          "description": "Hvor ofte en gjentakende oppgave kommer igjen: weekly, every_2_weeks, monthly, every_3_months, every_6_months eller every_N_days med N fra 2 til 365 (f.eks. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Gjentakelsesdag",
+          "description": "Ukedagen en weekly- eller every_2_weeks-oppgave faller på."
+        },
+        "recurrence_start": {
+          "name": "Gjentakelse fra",
+          "description": "Datoen rytmen til en gjentakende oppgave regnes fra (ÅÅÅÅ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Forfallstid",
+          "description": "Klokkeslett oppgaven skal være gjort (\"HH:MM\"). Ferdig før det gir tidligbonus, etter det gir forsinkelsestrekk. Tom for ingen forfallstid."
+        },
+        "daily_limit": {
+          "name": "Daglig grense",
+          "description": "Hvor mange ganger om dagen oppgaven kan gjøres. Engangsoppgaver er alltid 1."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Oppdater oppgave",
+      "description": "Endre en eksisterende oppgave ut fra ID-en. Bare feltene du fyller ut endres; resten blir som det er.",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgave-ID",
+          "description": "ID-en til oppgaven som skal endres"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Nytt navn på oppgaven"
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Ny beskrivelse av oppgaven"
+        },
+        "points": {
+          "name": "Poeng",
+          "description": "Poeng som tildeles når denne oppgaven fullføres"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Barn oppgaven skal tildeles, med navn eller ID. En tom liste tildeler den til alle barn"
+        },
+        "time_category": {
+          "name": "Tidskategori",
+          "description": "Når oppgaven skal fullføres: morning, afternoon, evening, night eller anytime"
+        },
+        "difficulty": {
+          "name": "Vanskelighetsgrad",
+          "description": "Vanskelighetsgrad: easy, medium eller hard. Skalerer poengene som gis (medium = ×1,0)."
+        },
+        "requires_approval": {
+          "name": "Krever godkjenning",
+          "description": "Hvis sann må en forelder godkjenne fullføringen før poeng tildeles"
+        },
+        "enabled": {
+          "name": "Aktivert",
+          "description": "Slå av oppgaven (false) for å skjule den overalt uten å slette den, eller på igjen (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Hurtighetsbonus",
+          "description": "Ekstra poeng hvis oppgaven gjøres før fristen."
+        },
+        "team_size": {
+          "name": "Lagstørrelse",
+          "description": "Gjør dette til en lagoppgave som først teller når så mange ulike barn er med. Når laget er fullt, sendes den inn for alle. 0 = en vanlig oppgave."
+        },
+        "team_points_mode": {
+          "name": "Lagpoeng",
+          "description": "Hvordan en lagoppgave betaler ut: «each» gir alle deltakerne fulle poeng, «split» deler dem likt (rundet ned)."
+        },
+        "team_bonus": {
+          "name": "Lagbonus",
+          "description": "Ekstra poeng hver deltaker får når en lagoppgave er fullført."
+        },
+        "times": {
+          "name": "Faste tider",
+          "description": "Erstatter de faste tidene på dagen for oppgaven. En liste med opptil 5 tider, hver med navn, start og slutt (\"HH:MM\", samme dag, uten overlapp) og poeng. En tom liste fjerner dem."
+        },
+        "times_bonus": {
+          "name": "Bonus for alle tidspunkter",
+          "description": "Ekstra poeng én gang om dagen når alle faste tider er gjort."
+        },
+        "assignment_mode": {
+          "name": "Tildelingsmåte",
+          "description": "Hvem som gjør oppgaven hver dag: everyone (alle), alternating (på omgang), random (tilfeldig), balanced (den som har gjort den minst), first_come (det første barnet som tar den) eller unassigned (ingen)."
+        },
+        "schedule_mode": {
+          "name": "Plan",
+          "description": "specific_days (ukedagene under Forfallsdager, eller hver dag om ingen er valgt), recurring (i rytmen under Gjentakelse) eller one_shot (bare i dag)."
+        },
+        "due_days": {
+          "name": "Forfallsdager",
+          "description": "Ukedager oppgaven skal gjøres, for planen specific_days. La stå tom for hver dag."
+        },
+        "recurrence": {
+          "name": "Gjentakelse",
+          "description": "Hvor ofte en gjentakende oppgave kommer igjen: weekly, every_2_weeks, monthly, every_3_months, every_6_months eller every_N_days med N fra 2 til 365 (f.eks. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Gjentakelsesdag",
+          "description": "Ukedagen en weekly- eller every_2_weeks-oppgave faller på."
+        },
+        "recurrence_start": {
+          "name": "Gjentakelse fra",
+          "description": "Datoen rytmen til en gjentakende oppgave regnes fra (ÅÅÅÅ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Forfallstid",
+          "description": "Klokkeslett oppgaven skal være gjort (\"HH:MM\"). Ferdig før det gir tidligbonus, etter det gir forsinkelsestrekk. Tom for ingen forfallstid."
+        },
+        "daily_limit": {
+          "name": "Daglig grense",
+          "description": "Hvor mange ganger om dagen oppgaven kan gjøres. Engangsoppgaver er alltid 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Slett oppgave",
+      "description": "Slett en oppgave ut fra ID-en, med samme opprydding som i panelet. Den ligger i Nylig slettet i panelet i 7 dager, så den kan gjenopprettes.",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgave-ID",
+          "description": "ID-en til oppgaven som skal slettes"
+        },
+        "confirm": {
+          "name": "Bekreft",
+          "description": "Må være true. En sikring så en oppgave aldri slettes ved et uhell."
         }
       }
     },

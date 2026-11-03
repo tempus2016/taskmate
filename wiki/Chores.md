@@ -299,7 +299,7 @@ Controls how a chore is distributed when assigned to multiple children.
 | `alternating` | Round-robin through assigned children, one child per day. Uses the rotation anchor date to determine whose turn it is. |
 | `random` | Deterministic per-day random pick from the assigned pool. Stable within a day — refreshing won't change the pick. Each chore rolls independently. |
 | `balanced` | Splits today's balanced-mode chores evenly across the pool so no single child gets swamped. |
-| `first_come` | Competitive — the chore is shown to the whole pool and the first child to complete it wins; it then locks for everyone else for the day. See [First Come First Served](Chore-Scheduling.md#first-come-first-served). |
+| `first_come` | Competitive — the chore is shown to the whole pool and the first child to complete it wins; it then locks for everyone else for the day. With a daily limit above 1 the pool shares the limit: it stays open until it has been done that many times in total, by anyone (v7.6.0+). See [First Come First Served](Chore-Scheduling.md#first-come-first-served). |
 | `unassigned` | Not auto-assigned to any child. The chore is hidden from child cards — a parent must complete it on behalf of a child via a service call or the admin panel. Use for parent-only or optional tasks. |
 
 For `alternating` and `random` modes, an **Assignment Rotation Anchor** date is used as the starting reference point for the rotation/randomisation algorithm.

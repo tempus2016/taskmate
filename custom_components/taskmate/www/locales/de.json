@@ -824,6 +824,7 @@
   "panel.chore_completion_sound_label": "Abschluss-Sound",
   "panel.chore_daily_cap_label": "Tageslimit (Minuten, 0 = unbegrenzt)",
   "panel.chore_daily_limit_label": "Tageslimit",
+  "panel.chore_daily_limit_shared_hint": "Gilt für die ganze Gruppe gemeinsam — sobald die Aufgabe heute so oft erledigt wurde, ist sie für alle geschlossen. Jede Erledigung bringt dem Kind Punkte, das sie gemacht hat.",
   "panel.chore_days_label": "Wochentage (leer = jeden Tag)",
   "panel.chore_weekly_target_pill": "{count}×/Woche",
   "panel.chore_weekly_target_hint": "Wie oft pro Woche die Aufgabe erledigt werden muss, an beliebigen der gewählten Tage. Ist die Anzahl erreicht, wird sie nicht mehr angezeigt; montags beginnt die Zählung neu.",

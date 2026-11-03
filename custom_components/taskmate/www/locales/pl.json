@@ -876,6 +876,7 @@
   "panel.difficulty_medium": "Średnie",
   "panel.chore_daily_cap_label": "Dzienny limit (minuty, 0 = bez limitu)",
   "panel.chore_daily_limit_label": "Dzienny limit",
+  "panel.chore_daily_limit_shared_hint": "Wspólny dla całej grupy — gdy zadanie zostanie dziś wykonane tyle razy, zamyka się dla wszystkich. Każde wykonanie nagradza tego, kto je zrobił.",
   "panel.chore_days_label": "Dni tygodnia (puste = codziennie)",
   "panel.chore_weekly_target_pill": "{count}×/tydz.",
   "panel.chore_weekly_target_hint": "Ile razy w tygodniu trzeba to zrobić, w dowolnym z wybranych dni. Po osiągnięciu liczby przestaje być proponowane; resetuje się w poniedziałek.",
