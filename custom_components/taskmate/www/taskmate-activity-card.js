@@ -46,7 +46,7 @@ class TaskMateActivityCard extends LitElement {
       "Quest complete", "Quest reversed", "Challenge complete", "Challenge reversed",
       "Weekly goal reached", "Weekly goal reversed", "All times done",
       "Appeal:", "Sibling check:", "Surprise bonus",
-      "Perfect week bonus reversed", "Streak milestone reversed",
+      "Perfect week bonus reversed", "Streak milestone reversed", "Pet shop:",
     ];
   }
 

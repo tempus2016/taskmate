@@ -2375,6 +2375,7 @@ class TaskMateStorage:
             "sick_days",
             "weekly_goals",
             "pets",
+            "pet_wardrobe",
             "screen_time",
             "points_expiry",
             "penalty_warnings",
@@ -2386,7 +2387,7 @@ class TaskMateStorage:
         devices = self._data.get("settings", {}).get("screen_time_devices")
         if isinstance(devices, dict):
             devices.pop(child_id, None)
-        for key in ("help_requests", "penalty_redemptions", "sibling_checks"):
+        for key in ("help_requests", "penalty_redemptions", "sibling_checks", "pet_shop_pending"):
             section = self._data.get(key)
             if isinstance(section, list):
                 self._data[key] = [r for r in section if not (isinstance(r, dict) and r.get("child_id") == child_id)]

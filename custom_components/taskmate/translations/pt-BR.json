@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Comprar um item para o bichinho",
+      "description": "Uma criança compra um item na lojinha do bichinho com os pontos que pode gastar. Acima do limite de aprovação dos pais, a compra espera um adulto.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que compra"
+        },
+        "item_id": {
+          "name": "ID do item",
+          "description": "O item da lojinha"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Vestir o bichinho",
+      "description": "Coloca no bichinho da criança um item que ela tem ou desbloqueou por nível (substitui o que está nesse lugar), ou tira.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "item_id": {
+          "name": "ID do item",
+          "description": "Um item da lojinha, ou bow, top_hat, scarf ou crown"
+        },
+        "wear": {
+          "name": "Usar",
+          "description": "Ligado coloca, desligado tira."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Marcar recompensa como entregue",
       "description": "Uma recompensa resgatada foi entregue e sai da lista de pendentes. Informe child_id quando for a criança confirmando.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Penalidade recuperada",
               "raffle_won": "Sorteio ganho",
               "pet_evolved": "O bichinho cresceu",
+              "pet_item_bought": "Item do bichinho comprado",
               "reward_delivered": "Recompensa entregue",
               "personal_best": "Recorde pessoal",
               "appeal_submitted": "Recurso enviado",

@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Kup rzecz dla zwierzaka",
+      "description": "Dziecko kupuje rzecz w sklepiku zwierzaka za swoje dostępne punkty. Powyżej progu zgody rodziców zakup czeka na rodzica.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko, które kupuje"
+        },
+        "item_id": {
+          "name": "ID rzeczy",
+          "description": "Rzecz ze sklepiku zwierzaka"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Ubierz zwierzaka",
+      "description": "Załóż zwierzakowi dziecka posiadaną lub odblokowaną poziomem rzecz (zastępuje to, co jest w tym miejscu) albo ją zdejmij.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "Dziecko"
+        },
+        "item_id": {
+          "name": "ID rzeczy",
+          "description": "Rzecz ze sklepiku albo bow, top_hat, scarf lub crown"
+        },
+        "wear": {
+          "name": "Załóż",
+          "description": "Włączone zakłada, wyłączone zdejmuje."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Oznacz nagrodę jako wręczoną",
       "description": "Odebrana nagroda została wręczona i znika z listy należnych. Podaj child_id, gdy potwierdza samo dziecko.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Odrobiono karę",
               "raffle_won": "Wygrano losowanie",
               "pet_evolved": "Zwierzak urósł",
+              "pet_item_bought": "Kupiono rzecz dla zwierzaka",
               "reward_delivered": "Nagroda wręczona",
               "personal_best": "Rekord życiowy",
               "appeal_submitted": "Złożono odwołanie",

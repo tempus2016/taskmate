@@ -1,5 +1,8 @@
 """``taskmate.*`` services for help requests, moods, sick days, weekly goals, raffles and pets.
 
+The pet shop's two child services (``buy_pet_item``, ``equip_pet_item``) sit
+behind the same linked-child gate: a child buys and dresses only their own pet.
+
 Kept out of ``__init__.py`` like the wishlist and inspection services. A child
 may ask for help, save screen time in their jar, log a mood, set their own weekly goal and buy raffle
 tickets for themselves (through the same linked-child gate as completing a
@@ -36,6 +39,8 @@ SERVICE_SET_WEEKLY_GOAL = "set_weekly_goal"
 SERVICE_BUY_RAFFLE_TICKETS = "buy_raffle_tickets"
 SERVICE_DRAW_RAFFLE = "draw_raffle"
 SERVICE_ADOPT_PET = "adopt_pet"
+SERVICE_BUY_PET_ITEM = "buy_pet_item"
+SERVICE_EQUIP_PET_ITEM = "equip_pet_item"
 SERVICE_MARK_REWARD_DELIVERED = "mark_reward_delivered"
 SERVICE_START_BOOST = "start_boost"
 SERVICE_APPEAL = "appeal"
@@ -66,6 +71,8 @@ FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_BUY_RAFFLE_TICKETS,
     SERVICE_DRAW_RAFFLE,
     SERVICE_ADOPT_PET,
+    SERVICE_BUY_PET_ITEM,
+    SERVICE_EQUIP_PET_ITEM,
 )
 
 Handler = Callable[[ServiceCall], Awaitable[None]]
@@ -119,6 +126,12 @@ def async_register_family_services(
         await coordinator.async_adopt_pet(
             call.data["child_id"], call.data["species"], call.data["name"], hatch_egg=call.data.get("hatch_egg", False)
         )
+
+    async def buy_pet_item(coordinator, call):
+        await coordinator.async_buy_pet_item(call.data["child_id"], call.data["item_id"])
+
+    async def equip_pet_item(coordinator, call):
+        await coordinator.async_equip_pet_item(call.data["child_id"], call.data["item_id"], call.data.get("wear", True))
 
     async def draw_raffle(coordinator, call):
         await coordinator.async_draw_raffle(call.data["raffle_id"])
@@ -339,6 +352,22 @@ def async_register_family_services(
                 vol.Required("species"): vol.In(PET_SPECIES),
                 vol.Required("name"): vol.All(cv.string, vol.Length(min=1, max=PET_NAME_MAX)),
                 vol.Optional("hatch_egg", default=False): cv.boolean,
+            },
+        ),
+        (
+            SERVICE_BUY_PET_ITEM,
+            buy_pet_item,
+            True,
+            {vol.Required("child_id"): cv.string, vol.Required("item_id"): cv.string},
+        ),
+        (
+            SERVICE_EQUIP_PET_ITEM,
+            equip_pet_item,
+            True,
+            {
+                vol.Required("child_id"): cv.string,
+                vol.Required("item_id"): cv.string,
+                vol.Optional("wear", default=True): cv.boolean,
             },
         ),
     )

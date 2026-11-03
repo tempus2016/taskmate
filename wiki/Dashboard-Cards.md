@@ -993,12 +993,15 @@ entity: sensor.taskmate_overview
 child_id: a8c8376a            # required — whose pet this is
 title: Sparky                 # optional — default: the pet's name
 header_color: "#16a085"
+show_shop: true               # optional (v7.7.0) — the Shop tab, while the pet shop is open
+hide_unaffordable: false      # optional (v7.7.0) — leave out items the child can't pay for yet
 ```
 
 **Behaviour:**
 - The pet grows from egg to baby, little, big and fully grown. A bar shows how far it is to the next step
 - It is happy on days the child does a chore, proud of a streak, and sleepy after a missed day or two. Nothing is ever lost: a sleepy pet perks up with the next chore
 - Accessories (bow, top hat, scarf, crown) unlock as the child goes up [levels](Levels-and-XP.md)
+- *(v7.7.0)* With the [pet shop](Virtual-Pets.md#pet-shop) open, a **Shop** tab: the earned accessories to put on or take off, and the catalogue at the fixed prices the parents set, with a confirm sheet before anything is spent. Both options are in the visual editor
 - After fully grown, whatever the parents switched on in Settings: its home fills up, it turns legendary gold, it lays an egg the child hatches into a new pet (earlier pets stay in the pet family row), and it gains pet levels
 - A short "evolving" moment plays the first time each device sees the pet grow
 - Shows "Pets are switched off" until a parent turns pets on in **Settings → Virtual pets**

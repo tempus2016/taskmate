@@ -89,7 +89,9 @@ Accessories are unlocked by the **child's** [level](Levels-and-XP.md), not the p
 | 🧣 Scarf | Level 15 |
 | 👑 Crown | Level 25 |
 
-The pet wears every accessory the child has unlocked. Locked ones show greyed out on the card with the level they need.
+Out of the box the pet wears its best unlocked accessory in each spot: the crown (or else the top hat) on its head, the scarf (or else the bow) round its neck. Locked ones show greyed out on the card with the level they need.
+
+With the [pet shop](#pet-shop) open, the child can take an accessory off, or swap it for another, on the card's **Shop** tab under **Earned (free)**. A family that never opens the shop sees exactly what it always did.
 
 ---
 
@@ -109,6 +111,76 @@ Once the pet is fully grown, four things can keep it going. Each one can be swit
 When the pet lays an egg, the card shows **Hatch the egg**. The child picks a creature and a name, and the new pet starts again from an egg. The previous pet joins the **Pet family** row at the bottom of the card, legendary ones still in gold.
 
 **Largest pet family** (6 by default, 2–12) caps how many pets a child can have, counting the current one. Once the family is full, no more eggs are laid.
+
+---
+
+## Pet Shop
+
+> **New in v7.7.0**
+
+The pet shop lets a child spend points on cosmetics for their pet: sunglasses, a cap, a balloon to hold, wings, a cosy bed for its home, a new colour. You keep the catalogue and set every price. Prices are fixed: whatever number you type is what the item costs, always.
+
+![A pet dressed from the shop, and the Pet card's Shop tab](images/pet-shop.png)
+
+### Opening the shop
+
+The shop is off until you switch it on:
+
+**TaskMate panel → Settings → Virtual pets → Pet shop → Turn on the pet shop**
+
+| Setting | Key | Default | Description |
+|---------|-----|---------|-------------|
+| Turn on the pet shop | `pet_shop_enabled` | off | Shows the **Shop** tab on every Pet card and lets children buy |
+| Purchases over this many points need a parent's OK | `pet_shop_approve_over` | `0` | `0` never asks. Above it, a purchase waits for a parent instead of going through |
+| Bought items carry over to the next pet | `pet_shop_carry_over` | on | Off: when a child hatches a new pet from an egg, it starts with nothing bought and the level accessories back to their defaults |
+
+These three save with the rest of the Settings page.
+
+### The catalogue
+
+Below the settings is the catalogue: one row per item with its emoji, the slot it goes in, its cost, an optional level it needs, and a **Shown** switch. The pencil edits an item; the bin removes it. **+ Add item** adds your own, and **Reset to defaults** puts the starting catalogue back (removing anything you added). Changes to the catalogue take effect straight away and are recorded in the [admin audit log](Admin-Audit-Log.md).
+
+| Field | Notes |
+|-------|-------|
+| Name | Up to 30 characters. The built-in items can leave it blank, so each family member sees the name in their own language |
+| Emoji | One emoji (up to 8 characters, so flags and families work). This is what's drawn on the pet |
+| Slot | `hat`, `face`, `neck`, `held`, `back`, `body`, `colour` or `home` |
+| Cost | A whole number, 1 to 100,000 |
+| Needs level | `0` for any level, or the child's [level](Levels-and-XP.md) it unlocks at |
+| Colour | Colour items only: a colour like `#ff8800`, or `rainbow` |
+| Shown | Hidden items can't be bought. A child who already owns one keeps it and can still wear it, so you can hide seasonal items out of season |
+
+The shop starts with:
+
+| Item | Slot | Cost | Notes |
+|------|------|------|-------|
+| 🕶️ Sunglasses | face | 15 | |
+| 🧢 Cap | hat | 20 | |
+| 🎈 Balloon | held | 25 | |
+| 🛏️ Cosy bed | home | 40 | |
+| 🌈 Rainbow colour | colour | 60 | A rainbow glow round the pet |
+| 🦋 Wings | back | 80 | Needs level 12 |
+| 👻 Ghost sheet | body | 30 | Hidden until you show it (a Halloween one) |
+
+### Where things go on the pet
+
+One item per slot. The hat and neck slots are the ones the level accessories use, so a cap replaces the top hat while it's on. The face slot sits over the eyes, a held item beside the pet, the back slot behind it (wings), the body slot over it (a costume), a colour item tints the pet (or gives it a rainbow glow), and a home item stands in the pet's home. Nothing is drawn on an egg except a home item.
+
+### Buying
+
+On the Pet card the child opens the **Shop** tab, taps **Buy**, and confirms on the sheet that pops up ("Buy Sunglasses for ⭐15? You'll have 71 left. This doesn't touch your savings jars."). The cost comes out of their spendable balance only: never a [savings jar](Pool-Mode-(Savings-Jars).md) or [wish](Wishlist.md) savings, and points already promised to a reward waiting for approval don't count as spendable. It shows in the activity history as **Pet shop: Sunglasses**, and spending never lowers their career score or the pet's growth.
+
+A bought item isn't worn yet: the card offers **Put on** (and **Take off** once it's on).
+
+A purchase is refused when the shop or pets are off, the child hasn't adopted a pet, the item is hidden or gone, their level is too low, they already own it, it is already waiting for a parent, or they don't have enough points. An undo from the activity history isn't offered for a pet shop row; if a purchase was a mistake, give the points back with **Add points**.
+
+### Parent approval
+
+With **Purchases over this many points need a parent's OK** above 0, buying anything that costs more makes a request instead. Nothing is taken yet. The parents get the **Pet shop request** push (on by default; see [Notifications](Notifications.md)), and the request appears under **Waiting for you** in the Pet shop section. **Approve** takes the points then (and is refused if the child no longer has enough); **Decline** drops the request and takes nothing. A child can have one request per item at a time, and points in a waiting request aren't spendable on anything else in the shop.
+
+### Event
+
+Every completed purchase (straight away or on approval) fires `taskmate_pet_item_bought` with `child_id`, `child_name`, `item_id`, `item_name` and `cost`. It also appears as **Pet item bought** on the child's [event entity](Event-Entities.md).
 
 ---
 
@@ -134,6 +206,9 @@ When the pet lays an egg, the card shows **Hatch the egg**. The child picks a cr
 | Largest pet family | `pet_family_max` | `6` | 2–12, counting the current pet |
 | Pet levels | `pet_levels_enabled` | off | |
 | New level every | `pet_level_every` | `300` | |
+| Turn on the pet shop | `pet_shop_enabled` | off | See [Pet Shop](#pet-shop) |
+| Purchases over this many points need a parent's OK | `pet_shop_approve_over` | `0` | `0` = never ask |
+| Bought items carry over to the next pet | `pet_shop_carry_over` | on | |
 
 Each stage number must be higher than the one before, and legendary and the egg must come after fully grown; the panel won't save numbers that break the order. Beside each number the panel shows roughly how many 5-point chores it takes. **Reset numbers to defaults** puts them all back.
 
@@ -158,6 +233,8 @@ child_id: 8e16ad66b23f404e
 | `title` | string | the pet's name | Card title. Before adoption it reads "My pet" |
 | `card_design` | string | global default | `classic`, `playroom`, `console`, `cleanpro`, `accessible` or `graphite` |
 | `header_color` | string | `#16a085` | Header banner colour (YAML only) |
+| `show_shop` | boolean | `true` | *(v7.7.0)* Show the **Shop** tab while the [pet shop](#pet-shop) is open |
+| `hide_unaffordable` | boolean | `false` | *(v7.7.0)* Leave out shop items the child can't pay for yet, instead of showing them with a disabled **Buy** |
 
 Before adoption the card is the adoption form. After that it shows the pet in its current stage and mood, the progress bar to the next goal, the accessories, the **Hatch the egg** box when an egg is ready, and the pet family.
 
@@ -189,14 +266,16 @@ Growth is checked once a minute, so a pet grows up within a minute of the chore 
 | Service | Fields | Description |
 |---------|--------|-------------|
 | `taskmate.adopt_pet` | `child_id`, `species` (`dragon`, `cat`, `dog`, `bunny`, `dino`, `unicorn`), `name` (up to 24 characters), `hatch_egg` (optional) | Adopt a pet, or rename/re-choose the current one (growth is kept). With `hatch_egg: true`, hatch the egg the grown pet laid; the old pet joins the pet family |
+| `taskmate.buy_pet_item` | `child_id`, `item_id` | *(v7.7.0)* Buy a pet shop item, or ask a parent when it costs over the approval limit |
+| `taskmate.equip_pet_item` | `child_id`, `item_id`, `wear` (optional, default `true`) | *(v7.7.0)* Put an owned item, or an unlocked `bow` / `top_hat` / `scarf` / `crown`, on the pet (replacing what's in that slot), or take it off with `wear: false` |
 
-While pets are on, each child's entry in `sensor.taskmate_overview`'s `children` attribute carries a `pet` object (stage, mood, growth, accessories, the next goal, and anything reached after fully grown).
+While pets are on, each child's entry in `sensor.taskmate_overview`'s `children` attribute carries a `pet` object (stage, mood, growth, accessories, the next goal, and anything reached after fully grown). With the shop open (or once a child has changed what their pet wears) it also carries `worn`, what is in each slot, and `shop` with the child's `owned` item ids (while 40 or fewer), `pending` requests and `approve_over`. The catalogue itself is not on the sensor: the card fetches it when the Shop tab opens.
 
 ---
 
 ## Related
 
-- [Levels and XP](Levels-and-XP.md) — the child levels that unlock accessories
+- [Levels and XP](Levels-and-XP.md) — the child levels that unlock accessories and level-gated shop items
 - [Dashboard Cards](Dashboard-Cards.md) — every TaskMate card
 - [Notifications](Notifications.md) — switching on the Pet grew up notification
 - [Weekly Goals](Weekly-Goals.md) — another motivator for the week

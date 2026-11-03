@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Haustier-Artikel kaufen",
+      "description": "Ein Kind kauft mit seinen verfügbaren Punkten einen Artikel im Haustier-Shop. Über der Freigabegrenze der Eltern wartet der Kauf stattdessen auf ein Elternteil.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das kaufende Kind"
+        },
+        "item_id": {
+          "name": "Artikel-ID",
+          "description": "Der Artikel aus dem Haustier-Shop"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Haustier anziehen",
+      "description": "Einen eigenen oder per Level freigeschalteten Artikel am Haustier des Kindes anlegen (ersetzt, was an dieser Stelle sitzt) oder ablegen.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Das Kind"
+        },
+        "item_id": {
+          "name": "Artikel-ID",
+          "description": "Ein Artikel aus dem Haustier-Shop oder bow, top_hat, scarf bzw. crown"
+        },
+        "wear": {
+          "name": "Anlegen",
+          "description": "An legt ihn an, aus legt ihn ab."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Belohnung als übergeben markieren",
       "description": "Eine eingelöste Belohnung wurde übergeben und verlässt die Liste der ausstehenden. child_id angeben, wenn das Kind selbst bestätigt.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Strafe wieder verdient",
               "raffle_won": "Verlosung gewonnen",
               "pet_evolved": "Haustier gewachsen",
+              "pet_item_bought": "Haustier-Artikel gekauft",
               "reward_delivered": "Belohnung übergeben",
               "personal_best": "Persönliche Bestleistung",
               "appeal_submitted": "Einspruch eingelegt",

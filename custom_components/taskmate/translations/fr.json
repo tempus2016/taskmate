@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Acheter un article pour l’animal",
+      "description": "Un enfant achète un article dans la boutique de l’animal avec ses points disponibles. Au-delà du seuil d’accord des parents, l’achat attend un parent.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant qui achète"
+        },
+        "item_id": {
+          "name": "ID de l’article",
+          "description": "L’article de la boutique"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Habiller l’animal",
+      "description": "Mettre à l’animal de l’enfant un article possédé ou débloqué par niveau (il remplace ce qui occupe cet emplacement), ou l’enlever.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l’enfant",
+          "description": "L’enfant"
+        },
+        "item_id": {
+          "name": "ID de l’article",
+          "description": "Un article de la boutique, ou bow, top_hat, scarf ou crown"
+        },
+        "wear": {
+          "name": "Le porter",
+          "description": "Activé le met, désactivé l’enlève."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Marquer la récompense comme remise",
       "description": "Une récompense échangée a été remise : elle quitte la liste des récompenses dues. Indiquez child_id quand c’est l’enfant qui confirme.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Pénalité regagnée",
               "raffle_won": "Tombola gagnée",
               "pet_evolved": "L’animal a grandi",
+              "pet_item_bought": "Article pour l’animal acheté",
               "reward_delivered": "Récompense remise",
               "personal_best": "Record personnel",
               "appeal_submitted": "Appel envoyé",

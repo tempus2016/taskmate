@@ -274,6 +274,8 @@ All auction events carry `auction_id`, `chore_id`, `chore_name`, `occurrence` (t
 | `taskmate_shopping_job` | `kind` (`added` / `done` / `removed`), `chore_id`, `chore_name`, `item_uid`, `child_ids`, `timestamp` — a [shopping-list job](Shopping-List-Jobs.md) was raised, ticked off, or dropped because its item left the list |
 | `taskmate_personal_best` | `child_id`, `child_name`, `record`, `value`, `previous`, `date`, `timestamp` — (v7.1.0) a child beat one of their own records. `record` is `longest_streak`, `best_day_points`, `best_day_chores`, `best_week_points` or `best_single_award`. See [Personal Bests](Personal-Bests.md). The notification's own event is `taskmate_personal_best_notification` |
 | `taskmate_pet_evolved` | `child_id`, `child_name`, `pet_name`, `species`, `kind`, `news`, `recipients` (no `timestamp`), plus `pet_level` when `kind` is `level` — a [virtual pet](Virtual-Pets.md) reached something new. `kind` is `stage`, `legendary`, `egg` or `level`; `news` is the ready-made sentence |
+| `taskmate_pet_item_bought` | `child_id`, `child_name`, `item_id`, `item_name`, `cost` — (v7.7.0) a child bought something in the [pet shop](Virtual-Pets.md#pet-shop), straight away or when a parent approved it |
+| `taskmate_pet_item_requested` | `child_name`, `item_name`, `pet_name`, `cost`, `points_name`, `recipients` — (v7.7.0) the **Pet shop request** notification was dispatched: a purchase over the approval limit is waiting for a parent |
 
 The events with a `recipients` list come from the notification system and fire whether or not the matching notification is switched on (`recipients` is then empty). See [Notifications](Notifications.md#bus-events).
 

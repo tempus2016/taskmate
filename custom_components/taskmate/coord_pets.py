@@ -4,7 +4,8 @@ A gentler motivator than a streak for young children. Once pets are switched
 on, a child adopts one (picks a species and a name). It hatches and grows with
 every chore the child finishes from then on, is happy on days they do one,
 gets sleepy after a missed day or two, and wears accessories the child unlocks
-by levelling up. Nothing is ever lost: a sleepy pet perks up with the next
+by levelling up (and, with the pet shop open, ones they buy: see
+coord_pet_shop.py). Nothing is ever lost: a sleepy pet perks up with the next
 chore.
 
 Growth: every chore since adoption is worth ``pet_xp_per_chore`` and, unless
@@ -61,6 +62,8 @@ PET_INT_SETTINGS: dict[str, tuple[int, int, int]] = {
     "pet_egg_at": (3000, 1, PET_GROWTH_MAX),
     "pet_family_max": (6, 2, PET_FAMILY_LIMIT),
     "pet_level_every": (300, 1, PET_GROWTH_MAX),
+    # Pet shop: purchases over this many points wait for a parent (0 = never ask).
+    "pet_shop_approve_over": (0, 0, 100_000),
 }
 PET_BOOL_SETTINGS: dict[str, bool] = {
     "pet_points_count": True,
@@ -68,6 +71,9 @@ PET_BOOL_SETTINGS: dict[str, bool] = {
     "pet_legendary_enabled": True,
     "pet_eggs_enabled": True,
     "pet_levels_enabled": False,
+    # Pet shop (coord_pet_shop.py): off until a parent opens it.
+    "pet_shop_enabled": False,
+    "pet_shop_carry_over": True,
 }
 
 
@@ -151,6 +157,8 @@ class PetsMixin:
                 }
             )
             pets[child_id] = {**fresh, "family": family}
+            # Bought items stay with the child unless the parent says otherwise.
+            self._pet_shop_on_hatch(child_id)
         elif existing:
             # Renaming or re-choosing keeps the growth: it's still the same friend.
             existing.update({"species": species, "name": name})
@@ -271,6 +279,8 @@ class PetsMixin:
             state["pet_level"] = view["level"]
         if view["egg_ready"]:
             state["egg_ready"] = True
+        # Pet shop: what it's wearing, and the shop's compact fields while open.
+        state.update(self.pet_shop_state(child))
         if view["family"]:
             state["family"] = [
                 {
