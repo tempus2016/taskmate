@@ -566,14 +566,19 @@ class ChoresMixin:
         prev_images = {
             (getattr(existing, key, "") or "") for key in ("image_url", "reference_image_url") if existing
         } - {""}
-        # A chore just switched to alternating starts its rotation today with
-        # the first child in the pool (#1172). One that was already alternating
-        # keeps counting from its own anchor (or the fixed fallback) so an unrelated
-        # edit doesn't reshuffle whose turn it is.
+        # An alternating chore with no anchor starts its rotation today with the
+        # first child in the pool when it has just been switched to alternating
+        # (#1172) or given a rotation period (#1171), which counts whole
+        # weeks/months from the anchor. One that was already alternating keeps
+        # counting from the fixed fallback so an unrelated edit doesn't
+        # reshuffle whose turn it is.
         if (
             getattr(chore, "assignment_mode", "everyone") == "alternating"
             and not getattr(chore, "assignment_rotation_anchor", "")
-            and getattr(existing, "assignment_mode", "") != "alternating"
+            and (
+                getattr(existing, "assignment_mode", "") != "alternating"
+                or getattr(chore, "assignment_rotation_period", "")
+            )
         ):
             chore.assignment_rotation_anchor = today.isoformat()
         # Persist the incoming chore so _compute_daily_assignments sees the

@@ -28,6 +28,13 @@ MAX_CALENDAR_PROJECTION_DAYS: Final = 90
 #                 completion pays whoever made it. A parent rejection reopens a slot for the pool.
 ASSIGNMENT_MODES: Final = ["everyone", "alternating", "random", "balanced", "first_come", "unassigned"]
 
+# How long an alternating chore stays with one child (#1171). "" = it moves on
+# each time the chore comes up (the original behaviour); "week" / "month" =
+# the same child keeps it for whole weeks or months, handing over on the
+# chosen weekday or day of the month, every `assignment_rotation_every` of them.
+ROTATION_PERIODS: Final = ["", "week", "month"]
+ROTATION_EVERY_MAX: Final = 12
+
 # Teamwork chores (#928): how a finished team's points are shared out.
 # "each"  = every participant earns the chore's full points
 # "split" = the points are divided evenly across the team, rounded down

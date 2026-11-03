@@ -359,3 +359,31 @@ async def test_every_schema_field_is_declared_and_translated(service):
         for field in keys & {str(k.schema) for k in cs.SCHEDULE_FIELDS} | (keys if service != "add_chore" else set()):
             assert field in declared, field
             assert entry["fields"][field]["name"] and entry["fields"][field]["description"], (path.name, field)
+
+
+@pytest.mark.asyncio
+async def test_add_chore_applies_a_rotation_period(monkeypatch):
+    """The rotation-period fields (#1171) land on the new chore and are saved."""
+    coordinator = _coordinator()
+    monkeypatch.setattr(tm, "_get_coordinator", lambda hass: coordinator)
+    handler, _ = (await _registered())["add_chore"]
+    data = {
+        "name": "Feed the dog",
+        "assignment_mode": "alternating",
+        "assignment_rotation_period": "week",
+        "assignment_rotation_weekday": "sunday",
+    }
+    await handler(_call("add_chore", data))
+    saved = coordinator.async_update_chore.await_args.args[0]
+    assert saved.assignment_rotation_period == "week"
+    assert saved.assignment_rotation_weekday == "sunday"
+    assert "assignment_rotation_period" not in coordinator.async_add_chore.await_args.kwargs
+
+
+@pytest.mark.asyncio
+async def test_add_chore_without_a_rotation_period_saves_once(monkeypatch):
+    coordinator = _coordinator()
+    monkeypatch.setattr(tm, "_get_coordinator", lambda hass: coordinator)
+    handler, _ = (await _registered())["add_chore"]
+    await handler(_call("add_chore", {"name": "Bins", "assignment_mode": "alternating"}))
+    coordinator.async_update_chore.assert_not_awaited()

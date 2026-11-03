@@ -618,6 +618,14 @@ class Chore:
     # Dynamic assignment (sibling rotation)
     assignment_mode: str = "everyone"  # everyone | alternating | random
     assignment_rotation_anchor: str = ""  # ISO date; day-0 of the rotation for alternating
+    # Rotation period for alternating (#1171): "" = next child each time the
+    # chore comes up; "week" / "month" = one child for the whole period,
+    # handing over on assignment_rotation_weekday / _month_day, every
+    # assignment_rotation_every periods (1 = weekly/monthly, 2 = fortnightly…).
+    assignment_rotation_period: str = ""
+    assignment_rotation_every: int = 1
+    assignment_rotation_weekday: str = "monday"
+    assignment_rotation_month_day: int = 1
     assignment_current_child_id: str = (
         ""  # cached active child ID for today (computed at midnight and on create/update)
     )
@@ -734,6 +742,10 @@ class Chore:
             team_bonus=max(0, int(data.get("team_bonus", 0) or 0)),
             assignment_mode=data.get("assignment_mode", "everyone"),
             assignment_rotation_anchor=data.get("assignment_rotation_anchor", ""),
+            assignment_rotation_period=data.get("assignment_rotation_period", "") or "",
+            assignment_rotation_every=int(data.get("assignment_rotation_every", 1) or 1),
+            assignment_rotation_weekday=data.get("assignment_rotation_weekday", "monday") or "monday",
+            assignment_rotation_month_day=int(data.get("assignment_rotation_month_day", 1) or 1),
             assignment_current_child_id=data.get("assignment_current_child_id", ""),
             require_availability=data.get("require_availability", False),
             skip_date=data.get("skip_date", ""),
@@ -815,6 +827,10 @@ class Chore:
             "team_bonus": self.team_bonus,
             "assignment_mode": self.assignment_mode,
             "assignment_rotation_anchor": self.assignment_rotation_anchor,
+            "assignment_rotation_period": self.assignment_rotation_period,
+            "assignment_rotation_every": self.assignment_rotation_every,
+            "assignment_rotation_weekday": self.assignment_rotation_weekday,
+            "assignment_rotation_month_day": self.assignment_rotation_month_day,
             "assignment_current_child_id": self.assignment_current_child_id,
             "require_availability": self.require_availability,
             "skip_date": self.skip_date,

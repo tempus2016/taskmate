@@ -30,6 +30,8 @@ from .const import (
     DIFFICULTY_TIERS,
     DOMAIN,
     RECURRENCE_PERIOD_DAYS,
+    ROTATION_EVERY_MAX,
+    ROTATION_PERIODS,
     SCHEDULE_MODES,
     TEAM_POINTS_MODES,
     TEAM_SIZE_MAX,
@@ -114,7 +116,22 @@ SCHEDULE_FIELDS: dict = {
     vol.Optional("recurrence_start"): _iso_date_or_empty,
     vol.Optional("due_time"): _hhmm_or_empty,
     vol.Optional("daily_limit"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+    # Rotation period for alternating chores (#1171).
+    vol.Optional("assignment_rotation_period"): vol.All(
+        lambda v: "" if v in (None, "each_time") else str(v).strip().lower(), vol.In(ROTATION_PERIODS)
+    ),
+    vol.Optional("assignment_rotation_every"): vol.All(vol.Coerce(int), vol.Range(min=1, max=ROTATION_EVERY_MAX)),
+    vol.Optional("assignment_rotation_weekday"): _weekday,
+    vol.Optional("assignment_rotation_month_day"): vol.All(vol.Coerce(int), vol.Range(min=1, max=31)),
 }
+
+# The rotation-period fields add_chore applies once the chore exists.
+ROTATION_FIELDS: tuple[str, ...] = (
+    "assignment_rotation_period",
+    "assignment_rotation_every",
+    "assignment_rotation_weekday",
+    "assignment_rotation_month_day",
+)
 
 # Everything update_chore can change: the add_chore fields, minus the ones
 # that only make sense at creation (one_shot / expires_in_minutes — use

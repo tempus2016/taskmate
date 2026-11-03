@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from . import authz, photos
 from .chore_services import CHORE_SERVICES, async_register_chore_services, resolve_children
+from .chore_services import ROTATION_FIELDS as CHORE_ROTATION_FIELDS
 from .chore_services import SCHEDULE_FIELDS as CHORE_SCHEDULE_FIELDS
 from .const import (
     ATTR_AS_PARENT,
@@ -1261,9 +1262,13 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             team_bonus=call.data.get("team_bonus", 0),
             **schedule,
         )
-        if times:
-            chore.times = times
-            chore.times_bonus = call.data.get("times_bonus", 0)
+        rotation = {key: call.data[key] for key in CHORE_ROTATION_FIELDS if key in call.data}
+        if times or rotation:
+            if times:
+                chore.times = times
+                chore.times_bonus = call.data.get("times_bonus", 0)
+            for key, value in rotation.items():
+                setattr(chore, key, value)
             await coordinator.async_update_chore(chore)
 
     async def handle_add_badge(call: ServiceCall) -> None:

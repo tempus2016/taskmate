@@ -595,6 +595,22 @@
           "name": "Modo de atribuição",
           "description": "Quem faz a tarefa cada dia: everyone (todos), alternating (à vez), random (ao acaso), balanced (quem a fez menos vezes), first_come (a primeira criança a pegar nela) ou unassigned (ninguém)."
         },
+        "assignment_rotation_period": {
+          "name": "Período de rotação",
+          "description": "Para tarefas alternadas: each_time (a criança seguinte sempre que for devida), week (uma criança fica com ela semanas inteiras) ou month (meses inteiros)."
+        },
+        "assignment_rotation_every": {
+          "name": "Trocar a cada",
+          "description": "Quantas semanas ou meses cada criança fica com uma tarefa alternada com período de rotação (2 = quinzenal)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Dia da semana de passagem",
+          "description": "O dia da semana em que uma rotação semanal passa para a criança seguinte."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Dia do mês de passagem",
+          "description": "O dia do mês em que uma rotação mensal passa para a criança seguinte (o último dia nos meses mais curtos)."
+        },
         "schedule_mode": {
           "name": "Agenda",
           "description": "specific_days (os dias da semana em Dias, ou todos os dias se nenhum for escolhido), recurring (no ritmo de Recorrência) ou one_shot (só hoje)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Modo de atribuição",
           "description": "Quem faz a tarefa cada dia: everyone (todos), alternating (à vez), random (ao acaso), balanced (quem a fez menos vezes), first_come (a primeira criança a pegar nela) ou unassigned (ninguém)."
+        },
+        "assignment_rotation_period": {
+          "name": "Período de rotação",
+          "description": "Para tarefas alternadas: each_time (a criança seguinte sempre que for devida), week (uma criança fica com ela semanas inteiras) ou month (meses inteiros)."
+        },
+        "assignment_rotation_every": {
+          "name": "Trocar a cada",
+          "description": "Quantas semanas ou meses cada criança fica com uma tarefa alternada com período de rotação (2 = quinzenal)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Dia da semana de passagem",
+          "description": "O dia da semana em que uma rotação semanal passa para a criança seguinte."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Dia do mês de passagem",
+          "description": "O dia do mês em que uma rotação mensal passa para a criança seguinte (o último dia nos meses mais curtos)."
         },
         "schedule_mode": {
           "name": "Agenda",

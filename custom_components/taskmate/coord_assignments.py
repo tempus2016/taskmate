@@ -5,7 +5,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
-from datetime import date
+from calendar import monthrange
+from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import callback
@@ -99,6 +100,56 @@ def rotation_steps(chore: Chore, anchor: date, day: date) -> int:
             return whole // months
 
     return span
+
+
+def _handover_on_or_before(day: date, month_day: int) -> date:
+    """The latest monthly handover day on or before ``day``.
+
+    ``month_day`` past the end of a short month means its last day, so a
+    handover on the 31st happens on 30 April and 28/29 February.
+    """
+    this_month = date(day.year, day.month, min(month_day, monthrange(day.year, day.month)[1]))
+    if this_month <= day:
+        return this_month
+    year, month = (day.year, day.month - 1) if day.month > 1 else (day.year - 1, 12)
+    return date(year, month, min(month_day, monthrange(year, month)[1]))
+
+
+def rotation_period_steps(chore: Chore, anchor: date, day: date) -> int | None:
+    """Whole rotation periods between ``anchor`` and ``day`` (#1171), or None.
+
+    None when the chore has no rotation period, so the caller keeps its
+    per-occurrence rotation. Otherwise both dates are snapped back to the
+    handover day of the period they fall in (the chosen weekday, or day of
+    the month) and the periods between them are counted, divided by
+    ``assignment_rotation_every``. The child picked therefore stays the same
+    from one handover to the next, whatever the chore's own schedule, and the
+    anchor's period always belongs to the first child in the pool.
+
+    Negative for a ``day`` before the anchor (floor division keeps the modulo
+    in the caller walking the pool backwards).
+    """
+    period = getattr(chore, "assignment_rotation_period", "") or ""
+    if period not in ("week", "month"):
+        return None
+    try:
+        every = max(1, int(getattr(chore, "assignment_rotation_every", 1) or 1))
+    except (TypeError, ValueError):
+        every = 1
+    if period == "week":
+        weekday_name = (getattr(chore, "assignment_rotation_weekday", "") or "monday").lower()
+        weekday = _WEEKDAY_NAMES.index(weekday_name) if weekday_name in _WEEKDAY_NAMES else 0
+
+        def start(d: date) -> date:
+            return d - timedelta(days=(d.weekday() - weekday) % 7)
+
+        return ((start(day) - start(anchor)).days // 7) // every
+    try:
+        month_day = min(31, max(1, int(getattr(chore, "assignment_rotation_month_day", 1) or 1)))
+    except (TypeError, ValueError):
+        month_day = 1
+    a, d = _handover_on_or_before(anchor, month_day), _handover_on_or_before(day, month_day)
+    return ((d.year - a.year) * 12 + (d.month - a.month)) // every
 
 
 class AssignmentsMixin:
@@ -447,7 +498,9 @@ class AssignmentsMixin:
 
         - everyone: whatever `assigned_to` already said (empty = all children).
         - alternating: one child picked by occurrences-since-anchor % len(pool)
-          (see ``rotation_steps``).
+          (see ``rotation_steps``), or by whole rotation periods since the
+          anchor when the chore has a rotation period (#1171, see
+          ``rotation_period_steps``).
         - random: one child picked by a deterministic per-day+chore-id hash.
         - balanced: today's balanced-mode chores sharing this pool are evenly
           split across the pool via a round-robin anchored by the date — so 10
@@ -544,7 +597,10 @@ class AssignmentsMixin:
             skip_offset = int(getattr(chore, "skip_count", 0) or 0)
 
         if mode == "alternating":
-            offset = rotation_steps(chore, rotation_anchor(chore), today)
+            anchor = rotation_anchor(chore)
+            offset = rotation_period_steps(chore, anchor, today)
+            if offset is None:
+                offset = rotation_steps(chore, anchor, today)
             idx = (offset + skip_offset) % len(pool)
             picked = self._skip_unavailable(pool, idx, require_availability)
             return [picked] if picked else []

@@ -193,6 +193,14 @@ const DAYS = [
   { v: "sunday",    lk: "panel.day_sun" },
 ];
 
+// How long an alternating chore stays with one child (#1171).
+const ROTATION_PERIODS = [
+  { v: "",      lk: "panel.chore_rotation_period_each" },
+  { v: "week",  lk: "panel.chore_rotation_period_week" },
+  { v: "month", lk: "panel.chore_rotation_period_month" },
+];
+const ROTATION_EVERY_MAX = 12;
+
 const STREAK_MODES = [
   { v: "reset", lk: "panel.streak_reset" },
   { v: "pause", lk: "panel.streak_pause" },
@@ -2687,6 +2695,8 @@ class TaskMatePanel extends HTMLElement {
       due_days: [], recurrence: "weekly", recurrence_interval: 3, recurrence_day: "", recurrence_start: "",
       first_occurrence_mode: "available_immediately",
       assignment_mode: "everyone", assignment_rotation_anchor: "",
+      assignment_rotation_period: "", assignment_rotation_every: 1,
+      assignment_rotation_weekday: "monday", assignment_rotation_month_day: 1,
       manual_start_child_id: "",
       require_availability: false,
       icon: "",
@@ -2991,6 +3001,11 @@ class TaskMatePanel extends HTMLElement {
       first_occurrence_mode: d.first_occurrence_mode || "available_immediately",
       assignment_mode: d.assignment_mode || "everyone",
       assignment_rotation_anchor: d.assignment_rotation_anchor || "",
+      // Rotation period (#1171): "" = next child each time it's due.
+      assignment_rotation_period: ["week", "month"].includes(d.assignment_rotation_period) ? d.assignment_rotation_period : "",
+      assignment_rotation_every: Math.min(ROTATION_EVERY_MAX, Math.max(1, Math.round(Number(d.assignment_rotation_every) || 1))),
+      assignment_rotation_weekday: DAYS.some(x => x.v === d.assignment_rotation_weekday) ? d.assignment_rotation_weekday : "monday",
+      assignment_rotation_month_day: Math.min(31, Math.max(1, Math.round(Number(d.assignment_rotation_month_day) || 1))),
       require_availability: !!d.require_availability,
       visibility_entity: d.visibility_entity || "",
       visibility_state: d.visibility_state || "on",
@@ -14496,6 +14511,7 @@ class TaskMatePanel extends HTMLElement {
             [{ v: "", l: this._t("panel.chore_rotation_no_override") }, ...children.map(c => ({ v: c.id, l: c.name }))],
             this._t("panel.chore_rotation_hint")
           ) : "",
+          d.assignment_mode === "alternating" ? this._choreRotationPeriodFields(d) : "",
         ]),
         section("when", [
           isTimedTask ? "" : this._choreFreqField(d),
@@ -15399,6 +15415,25 @@ class TaskMatePanel extends HTMLElement {
         >
         ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;
+  }
+
+  // Rotation period for alternating chores (#1171): who keeps the chore for a
+  // whole week or month, and the day it hands over to the next child.
+  _choreRotationPeriodFields(d) {
+    const period = d.assignment_rotation_period || "";
+    const picker = this._select(this._t("panel.chore_rotation_period_label"), "assignment_rotation_period", period,
+      ROTATION_PERIODS, this._t("panel.chore_rotation_period_hint"), true);
+    if (period !== "week" && period !== "month") return picker;
+    const every = this._field(
+      this._t(period === "week" ? "panel.chore_rotation_every_week_label" : "panel.chore_rotation_every_month_label"),
+      "assignment_rotation_every", d.assignment_rotation_every || 1, "number",
+      this._t("panel.chore_rotation_every_hint", { max: ROTATION_EVERY_MAX }));
+    const handover = period === "week"
+      ? this._select(this._t("panel.chore_rotation_weekday_label"), "assignment_rotation_weekday",
+          d.assignment_rotation_weekday || "monday", DAYS)
+      : this._field(this._t("panel.chore_rotation_month_day_label"), "assignment_rotation_month_day",
+          d.assignment_rotation_month_day || 1, "number", this._t("panel.chore_rotation_month_day_hint"));
+    return `${picker}<div class="tm-field-row">${every}${handover}</div>`;
   }
 
   _select(label, name, value, options, hintHtml = "", rerender = false) {

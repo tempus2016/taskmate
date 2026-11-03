@@ -595,6 +595,22 @@
           "name": "Assignment mode",
           "description": "Who does the chore each day: everyone, alternating (take turns), random, balanced (whoever has done it least), first_come (the first child to claim it) or unassigned."
         },
+        "assignment_rotation_period": {
+          "name": "Rotation period",
+          "description": "For alternating chores: each_time (the next child each time the chore comes up), week (one child keeps it for whole weeks) or month (whole months)."
+        },
+        "assignment_rotation_every": {
+          "name": "Rotate every",
+          "description": "How many weeks or months each child keeps an alternating chore that has a rotation period (2 = fortnightly)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Handover weekday",
+          "description": "The weekday a weekly rotation passes to the next child."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Handover day of month",
+          "description": "The day of the month a monthly rotation passes to the next child (the last day in shorter months)."
+        },
         "schedule_mode": {
           "name": "Schedule",
           "description": "specific_days (the weekdays in Due days, or every day if none), recurring (on the Recurrence rhythm) or one_shot (today only)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Assignment mode",
           "description": "Who does the chore each day: everyone, alternating (take turns), random, balanced (whoever has done it least), first_come (the first child to claim it) or unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Rotation period",
+          "description": "For alternating chores: each_time (the next child each time the chore comes up), week (one child keeps it for whole weeks) or month (whole months)."
+        },
+        "assignment_rotation_every": {
+          "name": "Rotate every",
+          "description": "How many weeks or months each child keeps an alternating chore that has a rotation period (2 = fortnightly)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Handover weekday",
+          "description": "The weekday a weekly rotation passes to the next child."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Handover day of month",
+          "description": "The day of the month a monthly rotation passes to the next child (the last day in shorter months)."
         },
         "schedule_mode": {
           "name": "Schedule",

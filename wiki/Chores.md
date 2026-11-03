@@ -306,6 +306,29 @@ For `alternating` and `random` modes, an **Assignment Rotation Anchor** date is 
 
 > **Note:** When a child's availability entity is unavailable and **Require Availability** is on, they are skipped in the rotation.
 
+### Rotation period
+
+*(v7.7.0)* An `alternating` chore normally passes to the next child each time it comes up. **Hand over to the next child** in the chore editor (under **Who**, shown when the assignment mode is Alternating) lets one child keep it for longer:
+
+| Setting | Behaviour |
+|---------|-----------|
+| **Each time it's due** (default) | The next child each time the chore comes up |
+| **Weekly** | One child has it for the whole week, every day it comes up, then it moves on. **Handover day** picks the weekday the new week starts on (Monday by default) |
+| **Monthly** | One child has it for the whole month. **Handover day of the month** picks the day it moves on (1st by default; a day past the end of a shorter month means its last day) |
+
+**Weeks per turn** / **Months per turn** stretch a turn further: 2 weeks per turn is fortnightly. The pattern works whatever the chore's own schedule is, so a family can share out daily jobs (feed the dog) and weekly ones (bins) and swap them all on the same day each week. Put them in a [task group](Task-Groups.md) with the **spread** policy and each child gets a different job, all swapping on the same day.
+
+The period that contains the rotation anchor belongs to the first child in the list. **Start rotation with** puts a chosen child on the current period. **Skip** (`taskmate.skip_chore`) and approved swaps only change today. The next day the chore goes back to the child whose period it is.
+
+```yaml
+service: taskmate.update_chore
+data:
+  chore_id: 3f2a9c1b7e5d4a10
+  assignment_mode: alternating
+  assignment_rotation_period: week
+  assignment_rotation_weekday: sunday
+```
+
 ### Manual Start Override
 
 Use `taskmate.set_chore_manual_start` to force the rotation to start with a specific child:

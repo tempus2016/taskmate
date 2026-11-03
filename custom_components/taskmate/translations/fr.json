@@ -595,6 +595,22 @@
           "name": "Mode d'attribution",
           "description": "Qui fait la corvée chaque jour : everyone (tout le monde), alternating (à tour de rôle), random (au hasard), balanced (celui qui l'a le moins faite), first_come (le premier enfant qui la prend) ou unassigned (personne)."
         },
+        "assignment_rotation_period": {
+          "name": "Période de rotation",
+          "description": "Pour les tâches en alternance : each_time (l'enfant suivant à chaque échéance), week (un enfant la garde des semaines entières) ou month (des mois entiers)."
+        },
+        "assignment_rotation_every": {
+          "name": "Changer tous les",
+          "description": "Combien de semaines ou de mois chaque enfant garde une tâche en alternance avec période de rotation (2 = toutes les deux semaines)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Jour de passation",
+          "description": "Le jour de la semaine où une rotation hebdomadaire passe à l'enfant suivant."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Jour de passation du mois",
+          "description": "Le jour du mois où une rotation mensuelle passe à l'enfant suivant (le dernier jour les mois plus courts)."
+        },
         "schedule_mode": {
           "name": "Planification",
           "description": "specific_days (les jours choisis dans Jours prévus, ou tous les jours si aucun), recurring (au rythme de Récurrence) ou one_shot (aujourd'hui seulement)."
@@ -692,6 +708,22 @@
         "assignment_mode": {
           "name": "Mode d'attribution",
           "description": "Qui fait la corvée chaque jour : everyone (tout le monde), alternating (à tour de rôle), random (au hasard), balanced (celui qui l'a le moins faite), first_come (le premier enfant qui la prend) ou unassigned (personne)."
+        },
+        "assignment_rotation_period": {
+          "name": "Période de rotation",
+          "description": "Pour les tâches en alternance : each_time (l'enfant suivant à chaque échéance), week (un enfant la garde des semaines entières) ou month (des mois entiers)."
+        },
+        "assignment_rotation_every": {
+          "name": "Changer tous les",
+          "description": "Combien de semaines ou de mois chaque enfant garde une tâche en alternance avec période de rotation (2 = toutes les deux semaines)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Jour de passation",
+          "description": "Le jour de la semaine où une rotation hebdomadaire passe à l'enfant suivant."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Jour de passation du mois",
+          "description": "Le jour du mois où une rotation mensuelle passe à l'enfant suivant (le dernier jour les mois plus courts)."
         },
         "schedule_mode": {
           "name": "Planification",
