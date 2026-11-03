@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  RUFF_VERSION: "0.16.10"
+  RUFF_VERSION: "0.17.3"
 
 jobs:
   ruff:
