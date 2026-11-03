@@ -39,7 +39,7 @@ TaskMate listens for `state_changed` events on all entities configured as a chil
 
 | Mode | Algorithm |
 |------|-----------|
-| `alternating` | Round-robin using `(today - anchor_date) mod pool_size` to pick the child index |
+| `alternating` | Round-robin: the number of times the chore has come up since the anchor date, `mod pool_size`, picks the child index. Only the chore's due days count (v7.6.1+; before that it counted calendar days, so a chore that wasn't daily could get stuck on one child) |
 | `random` | Deterministic daily pick using `SHA256(chore_id + date)` — stable within a day, changes at midnight |
 | `balanced` | Groups all balanced-mode chores sharing the same child pool, sorts by ID, and distributes evenly via round-robin so no child gets more than one extra chore |
 

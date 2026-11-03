@@ -134,6 +134,10 @@ class ChoresMixin:
         if manual_start_child_id and resolved_mode == "alternating" and manual_start_child_id in pool:
             pool = [manual_start_child_id] + [c for c in pool if c != manual_start_child_id]
             assignment_rotation_anchor = today.isoformat()
+        elif resolved_mode == "alternating" and not assignment_rotation_anchor:
+            # Without an anchor the first child in the pool starts today and
+            # the rotation moves on from there (#1172).
+            assignment_rotation_anchor = today.isoformat()
 
         chore = Chore(
             name=name,
@@ -562,6 +566,16 @@ class ChoresMixin:
         prev_images = {
             (getattr(existing, key, "") or "") for key in ("image_url", "reference_image_url") if existing
         } - {""}
+        # A chore just switched to alternating starts its rotation today with
+        # the first child in the pool (#1172). One that was already alternating
+        # keeps counting from its own anchor (or the fixed fallback) so an unrelated
+        # edit doesn't reshuffle whose turn it is.
+        if (
+            getattr(chore, "assignment_mode", "everyone") == "alternating"
+            and not getattr(chore, "assignment_rotation_anchor", "")
+            and getattr(existing, "assignment_mode", "") != "alternating"
+        ):
+            chore.assignment_rotation_anchor = today.isoformat()
         # Persist the incoming chore so _compute_daily_assignments sees the
         # latest pool / mode / etc. when applying group policies.
         self.storage.update_chore(chore)
