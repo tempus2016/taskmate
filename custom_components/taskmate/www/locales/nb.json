@@ -2573,6 +2573,8 @@
   "panel.reward_restock_daily": "Dag",
   "panel.reward_restock_weekly": "Uke (man)",
   "panel.reward_restock_monthly": "Måned (1.)",
+  "panel.chore_one_off_date_label": "Dag",
+  "panel.chore_one_off_date_hint": "Oppgaven vises bare denne dagen og slås av samme natt. Velg en senere dag for å planlegge den på forhånd.",
   "panel.chore_expires_label": "Utløpsdato (valgfritt)",
   "panel.chore_expires_hint": "Etter denne datoen deaktiveres gjøremålet automatisk. La stå tomt for ingen utløp.",
   "panel.bulk_select": "Velg",

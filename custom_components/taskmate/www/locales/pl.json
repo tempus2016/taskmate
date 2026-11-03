@@ -2522,6 +2522,8 @@
   "panel.reward_restock_daily": "Dzień",
   "panel.reward_restock_weekly": "Tydzień (pn)",
   "panel.reward_restock_monthly": "Miesiąc (1.)",
+  "panel.chore_one_off_date_label": "Dzień",
+  "panel.chore_one_off_date_hint": "Zadanie pojawia się tylko tego dnia i wyłącza się tej samej nocy. Wybierz późniejszy dzień, aby zaplanować je z wyprzedzeniem.",
   "panel.chore_expires_label": "Data wygaśnięcia (opcjonalnie)",
   "panel.chore_expires_hint": "Po tej dacie obowiązek wyłączy się automatycznie. Pozostaw puste, aby nie wygasał.",
   "panel.bulk_select": "Zaznacz",

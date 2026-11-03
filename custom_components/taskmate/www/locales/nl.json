@@ -2573,6 +2573,8 @@
   "panel.reward_restock_daily": "Dag",
   "panel.reward_restock_weekly": "Week (ma)",
   "panel.reward_restock_monthly": "Maand (1e)",
+  "panel.chore_one_off_date_label": "Dag",
+  "panel.chore_one_off_date_hint": "De taak staat alleen op deze dag op het bord en wordt die nacht uitgeschakeld. Kies een latere dag om hem vooruit te plannen.",
   "panel.chore_expires_label": "Vervaldatum (optioneel)",
   "panel.chore_expires_hint": "Na deze datum gaat de taak vanzelf uit. Leeg laten is nooit laten verlopen.",
   "panel.bulk_select": "Kiezen",

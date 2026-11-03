@@ -107,7 +107,7 @@ Recurrence windows are tracked in a dedicated store separate from the prunable c
 
 ## Mode C — One-Shot (Non-Recurring)
 
-A one-shot chore is a single-use task that is valid only for the day it is created. Once completed and approved (or once midnight passes), the chore soft-disables itself. This is ideal for non-routine tasks that deserve a reward but don't happen on a schedule.
+A one-shot chore is a single-use task that is valid on one day only — today, or a day you pick ahead of time. Once completed and approved (or once midnight passes), the chore soft-disables itself. This is ideal for non-routine tasks that deserve a reward but don't happen on a schedule.
 
 **Use cases:**
 - "Help wash the car" — sunny Saturday task
@@ -118,15 +118,18 @@ A one-shot chore is a single-use task that is valid only for the day it is creat
 
 1. Open the **TaskMate** panel → **Chores** → **+ Add chore**
 2. Fill in the chore details (name, points, etc.)
-3. For **Schedule Mode**, select **"One-time task (single day)"**
-4. The chore is created immediately — no second scheduling step is needed
+3. For **Schedule Mode**, select **"One-time task"**
+4. A **Day** field appears, set to today. Leave it for a job today, or pick a later day to plan ahead — e.g. on Friday evening, set "Tidy the garden" for Saturday
+5. Save. A chore set for a later day stays off the board and the to-do lists until that morning
+
+> **Tip:** to move a one-off to another day, edit it and change **Day**. Moving it gives it a fresh run on the new day: it switches back on, and children who did it last time can do it again. A day that has already gone can't be picked.
 
 > **Note:** `daily_limit` is automatically forced to `1` for one-shot chores.
 
 ### Lifecycle
 
 ```
-Creation (today)
+Its day arrives (today, or the day picked in Day)
   │
   ├─ Child completes it
   │   ├─ requires_approval = off → points awarded, chore disables for this child
@@ -147,7 +150,7 @@ One-shot chores use **soft-disabling** rather than deletion:
 |-------|---------|
 | `enabled` | `false` when the chore is globally disabled (all children done or expired) |
 | `disabled_for` | List of child IDs for whom this chore is individually disabled |
-| `created_date` | ISO date (e.g. `2026-04-16`) — the chore is only available on this date |
+| `created_date` | ISO date (e.g. `2026-04-16`) — the chore is only available on this date (the **Day** field in the chore dialog) |
 
 Disabled chores remain in storage for history and audit purposes. Points and completion records are preserved.
 
@@ -272,7 +275,7 @@ Each chore in `sensor.taskmate_overview` → `chores` exposes:
 | `first_occurrence_mode` | `available_immediately` or `wait_for_first_occurrence` |
 | `enabled` | `true` / `false` — whether the chore is active (one-shot soft-disable) |
 | `disabled_for` | List of child IDs this chore is individually disabled for |
-| `created_date` | ISO date — creation date used for one-shot expiry |
+| `created_date` | ISO date — the day a one-shot chore is for, used for its availability and expiry |
 | `is_available` | `{ child_id: bool }` — pre-calculated availability per child |
 | `last_completed_at` | `{ child_id: ISO datetime }` — most recent completion per child |
 
