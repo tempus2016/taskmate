@@ -302,7 +302,7 @@ Controls how a chore is distributed when assigned to multiple children.
 | `first_come` | Competitive — the chore is shown to the whole pool and the first child to complete it wins; it then locks for everyone else for the day. With a daily limit above 1 the pool shares the limit: it stays open until it has been done that many times in total, by anyone (v7.6.0+). See [First Come First Served](Chore-Scheduling.md#first-come-first-served). |
 | `unassigned` | Not auto-assigned to any child. The chore is hidden from child cards — a parent must complete it on behalf of a child via a service call or the admin panel. Use for parent-only or optional tasks. |
 
-For `alternating` and `random` modes, an **Assignment Rotation Anchor** date is used as the starting reference point for the rotation/randomisation algorithm. An alternating chore gets today as its anchor when it is created, or when an existing chore is switched to alternating, so the first child in the list starts today (v7.6.1+). Alternating chores saved before v7.6.1 without an anchor count from a fixed date instead; they used to give the chore to the first child every day.
+For `alternating` and `random` modes, an **Assignment Rotation Anchor** date is used as the starting reference point for the rotation/randomisation algorithm. An alternating chore gets today as its anchor when it is created, or when an existing chore is switched to alternating, so the first child in the list starts today (v7.7.0+). Alternating chores saved before v7.7.0 without an anchor count from a fixed date instead; they used to give the chore to the first child every day.
 
 > **Note:** When a child's availability entity is unavailable and **Require Availability** is on, they are skipped in the rotation.
 
