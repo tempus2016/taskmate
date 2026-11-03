@@ -872,6 +872,7 @@ class TaskMateKioskCard extends LitElement {
     this._avatarPicker = false;
     this._screen = "picker";
     this._kid = null;
+    this._tourFor = null;
     this._pin = "";
     this._pinError = "";
     this._idle = 0;
@@ -1439,7 +1440,8 @@ class TaskMateKioskCard extends LitElement {
     if (this._queue.length && this._online()) this._flushQueue();
     if (this._screen !== "picker") {
       const photo = this._uploading || (this._photoSince && Date.now() - this._photoSince < PHOTO_GRACE_MS);
-      if (!photo) this._idle += 1;
+      // The first-time tour holds the timer: a child reading it isn't idle.
+      if (!photo && !this._tourFor) this._idle += 1;
       if (this._idle >= this._timeout()) {
         this._resetToPicker();
       }
@@ -1455,6 +1457,81 @@ class TaskMateKioskCard extends LitElement {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
+
+  // ── Kid onboarding tour ──────────────────────────────────────────────────
+  // The shared <taskmate-tour> (taskmate-tour.js) over the child screen,
+  // once the face/PIN step is done. The kiosk has one layout, so one set of
+  // anchors; no pre-reader variant (the kiosk has no picture mode).
+
+  _tourAnchor(key) {
+    const root = this.shadowRoot;
+    if (!root) return null;
+    const vis = (el) => (el && el.getClientRects && el.getClientRects().length ? el : null);
+    const q = (sel) => root.querySelector(sel);
+    const tile = (sel) => { const el = q(sel); return el && el.closest ? el.closest(".km-tile") : null; };
+    switch (key) {
+      case "hello": return vis(q(".km-head"));
+      // Only a row with a live Done button: a missed, not-yet-open, queued
+      // or done row has none, and then the step is skipped.
+      case "tick": {
+        for (const row of root.querySelectorAll(".km-row.todo:not(.km-bounty)")) {
+          if (vis(row) && row.querySelector("button.km-done:not([disabled])")) return row;
+        }
+        return null;
+      }
+      case "points": return vis(q(".km-pts-pill"));
+      case "streak": return vis(tile(".km-tile b.warm"));
+      // The next-reward tile, not the badges tile (which reuses the row class).
+      case "rewards": return vis(tile(".km-side > .km-tile > .km-reward-row"));
+      default: return null;
+    }
+  }
+
+  _renderTour(child, attrs) {
+    const T = window.__taskmate_tour;
+    if (!T || !child || !this.hass) return "";
+    if (this._tourClosed && this._tourClosed[child.id]) return "";
+    if (this._tourFor !== child.id) {
+      const flag = T.syncFlag(this.hass, child);
+      if (!T.shouldStart({ child, attrs, config: this.config, userId: this.hass.user && this.hass.user.id, localFlag: flag })) {
+        return "";
+      }
+      this._tourFor = child.id;
+    }
+    const tour = attrs.tour || {};
+    const d = window.__taskmate_design;
+    const childId = child.id;
+    return html`<taskmate-tour .opts=${{
+      preReader: false,
+      resolve: (k) => this._tourAnchor(k),
+      t: (k, p) => this._t(k, p),
+      params: { name: child.name, points_name: attrs.points_name || this._t("common.stars") },
+      pointsIcon: attrs.points_icon || "mdi:star",
+      speak: !!tour.speak,
+      autoRead: false,
+      design: (this.getAttribute && this.getAttribute("data-tm-design")) || "classic",
+      dark: !!(d && d.isDark && d.isDark(this.hass, this)),
+      // The completion popup, the all-done party, confetti and the bounty
+      // dialog sit below the tour's layer: step aside while one is up.
+      paused: !!(this._popup || this._celebrating || (this._confetti && this._confetti.length) || this._bountyDlg),
+      onSpeak: (k) => T.speak(this.hass, childId, k),
+      onActivity: () => { this._idle = 0; },
+      onFinish: (status, step) => this._finishTour(childId, status, step),
+    }}></taskmate-tour>`;
+  }
+
+  _finishTour(childId, status, step) {
+    const T = window.__taskmate_tour;
+    // Once per child per tablet session, whatever the server says next.
+    this._tourClosed = { ...(this._tourClosed || {}), [childId]: true };
+    this._tourFor = null;
+    this._idle = 0;
+    if (T) {
+      T.writeFlag(childId, status, step);
+      T.mark(this.hass, childId, status, step);
+    }
+    this.requestUpdate();
+  }
 
   _face(child, tone, size = "") {
     // The child's photo first (the shared face helper), then their avatar.
@@ -1508,6 +1585,7 @@ class TaskMateKioskCard extends LitElement {
         </div>
         ${this._renderBoostStrip()}
         <div class="km-main">${body}</div>
+        ${this._screen === "child" && entry ? this._renderTour(entry.child, attrs) : ""}
         ${this._renderRaffleReveal()}
         ${this._renderBoostTakeover(attrs)}
         ${this._showBounties() ? html`
@@ -2569,6 +2647,7 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_pet", selector: { boolean: {} } },
       { name: "show_badges", selector: { boolean: {} } },
       { name: "allow_avatar_change", selector: { boolean: {} } },
+      { name: "show_tour", selector: { boolean: {} } },
     ];
   }
 
@@ -2597,6 +2676,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_pet: this._t("kiosk.editor.show_pet"),
     show_badges: this._t("kiosk.editor.show_badges"),
     allow_avatar_change: this._t("kiosk.editor.allow_avatar_change"),
+    show_tour: this._t("child.editor.show_tour"),
   })[entry.name] ?? entry.name;
 
   _computeHelper = (entry) => ({
@@ -2611,6 +2691,7 @@ class TaskMateKioskCardEditor extends LitElement {
     play_sounds: this._t("kiosk.editor.play_sounds_helper"),
     show_completion_popup: this._t("kiosk.editor.show_completion_popup_helper"),
     seasonal: this._t("child.editor.seasonal_helper"),
+    show_tour: this._t("child.editor.show_tour_helper"),
   })[entry.name] ?? "";
 
   /** Every child, configured ones first in their order, each with shown/require_pin. */
@@ -2684,6 +2765,7 @@ class TaskMateKioskCardEditor extends LitElement {
       show_pet: this.config.show_pet !== false,
       show_badges: this.config.show_badges !== false,
       allow_avatar_change: this.config.allow_avatar_change !== false,
+      show_tour: this.config.show_tour !== false,
     };
     const rows = this._childRows();
     const pins = this._pins || {};

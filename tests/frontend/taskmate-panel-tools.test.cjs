@@ -322,7 +322,8 @@ test("view as child mounts the real child card with the chosen design", () => {
   } finally {
     elements.delete("taskmate-child-card");
   }
-  assert.deepEqual(plain(config), [{ entity: "sensor.taskmate_overview", child_id: "kid2", card_design: "console" }]);
+  // show_tour: false — a grown-up previewing the card mustn't use up the child's first-time tour.
+  assert.deepEqual(plain(config), [{ entity: "sensor.taskmate_overview", child_id: "kid2", show_tour: false, card_design: "console" }]);
   assert.equal(card.hass, p._hass);
   assert.equal(host.appended, card);
 });

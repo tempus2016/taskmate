@@ -535,6 +535,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "points_transactions": transactions[-100:],  # most recent 100 for audit log
         "badges": list(data.get("badges", [])),
         "awarded_badges": list(data.get("awarded_badges", [])),
+        # Kid onboarding tour: {child_id: {done | skipped, on, migrated}}.
+        "kid_tour": coordinator.tour_status_all(),
         "custom_sounds": coordinator.custom_sounds_state(),  # uploaded completion sounds (#856)
         "audit_log": coordinator.storage.get_audit_log()[:100],  # newest 100 for the panel
         "swap_requests": [r for r in coordinator.storage.get_swap_requests() if r.get("status") == "pending"],
@@ -2313,6 +2315,9 @@ _SUBKEY_SETTINGS = {
     "read_aloud_one_template",
     "read_aloud_done_template",
     "read_aloud_joiner",
+    # Kid onboarding tour
+    "tour_enabled",
+    "tour_auto_read",
     "roulette_enabled",
     "roulette_multiplier",
     "roulette_daily_spins",
@@ -2699,6 +2704,8 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("read_aloud_one_template"): vol.All(str, vol.Length(max=300)),
     vol.Optional("read_aloud_done_template"): vol.All(str, vol.Length(max=300)),
     vol.Optional("read_aloud_joiner"): vol.All(str, vol.Length(max=20)),
+    vol.Optional("tour_enabled"): bool,
+    vol.Optional("tour_auto_read"): bool,
     vol.Optional("roulette_enabled"): bool,
     vol.Optional("roulette_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
     vol.Optional("roulette_daily_spins"): vol.All(int, vol.Range(min=1, max=10)),
@@ -3790,6 +3797,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .websocket_recaps import RECAP_COMMANDS
     from .websocket_rewards_extra import REWARD_EXTRA_COMMANDS
     from .websocket_setup import SETUP_COMMANDS
+    from .websocket_tour import TOUR_COMMANDS
 
     extra = (
         *KIOSK_COMMANDS,
@@ -3805,6 +3813,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *CHORE_EXTRA_COMMANDS,
         *PET_SHOP_COMMANDS,
         *PLANNER_COMMANDS,
+        *TOUR_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

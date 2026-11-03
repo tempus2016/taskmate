@@ -196,6 +196,23 @@ DEFAULTS: dict[str, str] = {
     "action_reject": "Reject",
     "action_reject_placeholder": "Reason (optional)",
     "approve_in_panel_hint": "Open the TaskMate panel to approve or reject.",
+    # Kid onboarding tour: shown on the cards AND spoken by taskmate/tour/speak.
+    "tour_hello_title": "Hi {name}! This is your jobs page",
+    "tour_hello_body": "Here's everything to do today. Let's take a quick look around.",
+    "tour_tick_title": "Tap here when a job is done",
+    "tour_tick_body": "Your {points_name} show up right away. Some jobs wait for a grown-up to check them first.",
+    "tour_points_title": "{points_name} add up here",
+    "tour_points_body": "Every job you finish earns {points_name}.",
+    "tour_streak_title": "Do jobs every day for a streak",
+    "tour_streak_body": "Keep going day after day and watch the number grow.",
+    "tour_rewards_title": "Save {points_name} for rewards",
+    "tour_rewards_body": "When you've saved enough, you can swap them for a treat.",
+    "tour_pre_tick_title": "Tap your job!",
+    "tour_pre_tick_body": "when you've done it",
+    "tour_pre_points_title": "You get {points_name}!",
+    "tour_pre_points_body": "for every job",
+    "tour_pre_rewards_title": "Save up for a treat!",
+    "tour_pre_rewards_body": "look how close you are",
 }
 
 _EVENT_CORE_CONFIG_UPDATE = "core_config_updated"

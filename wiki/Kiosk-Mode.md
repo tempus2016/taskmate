@@ -71,9 +71,16 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `allow_avatar_change` | boolean | `true` | *(v7.3.0)* Let a child tap their face to switch between the avatars they've unlocked |
 | `seasonal` | boolean | `true` | *(v7.3.0)* Dress the child screen for a [seasonal theme](Card-Looks.md#seasonal-themes) while one is on; `false` keeps it plain |
 | `show_boost_alert` | boolean | `true` | *(v7.1.0)* Leave ambient mode and fill the screen when a [boost](Boost-Windows.md) starts, until someone taps. The countdown strip shows either way |
+| `show_tour` | boolean | `true` | Walk a child round their screen the first time they open it, after the face/PIN step. Once per child, while the tour is on in Settings. See [Kid Onboarding Tour](Kid-Onboarding-Tour.md) |
 | `children` | list | all children | Which children appear on the picker, in order. Each entry is `child_id` plus an optional `require_pin` (default `true`) |
 
 Leave `children` out and every child is shown (guest profiles excepted), with a PIN asked for wherever one is set. The visual editor lists each child with a tick box to show or hide them, up/down arrows to set the order, and a **Require PIN** switch. That switch is greyed out ("No PIN set — goes straight in") until you give the child a PIN.
+
+---
+
+## First-Time Tour
+
+The first time a child opens their screen (after tapping their face and typing their PIN), the kiosk walks them round it: their name banner, the first **Done** button, their points, the day-streak tile and the next-reward tile. Each child sees it once, wherever they finish it, and the tablet also remembers it, so a dropped connection doesn't make it replay. The "back to the picker" countdown waits while the tour is open. Turn it off for this tablet with `show_tour: false`. See [Kid Onboarding Tour](Kid-Onboarding-Tour.md).
 
 ---
 

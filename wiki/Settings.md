@@ -208,7 +208,7 @@ Wording comes from these parent-editable templates rather than TaskMate's transl
 
 | Setting | Default | Placeholders |
 |---------|---------|--------------|
-| **Default media player** (`read_aloud_media_player`) | empty | — |
+| **Default media player** (`read_aloud_media_player`) | empty | — set it in **Settings → First-time tour → Read-aloud speaker** |
 | **Default TTS entity** (`read_aloud_tts_entity`) | empty | — |
 | `read_aloud_template` | `{name}, you have {count} things left: {chores}.` | `{name}` `{count}` `{chores}` |
 | `read_aloud_one_template` | `{name}, you have one thing left: {chores}.` | same |
@@ -321,6 +321,18 @@ In **Settings → Personal weekly goals**. See [Weekly Goals](Weekly-Goals.md).
 |---------|---------|-------|-------------|
 | **Let children set a weekly goal** (`weekly_goal_enabled`) | `off` | on / off | Shows the goal on the child card, where each child picks their own points target for the week |
 | **Bonus for reaching it** (`weekly_goal_bonus`) | `10` | 0–100000 | Paid once a week, the first time the child's points earned since Monday reach their goal. `0` = no bonus |
+
+### First-Time Tour
+
+In **Settings → First-time tour**. A short walkthrough of the Child card and the Kiosk, once per child. See [Kid Onboarding Tour](Kid-Onboarding-Tour.md).
+
+| Setting | Default | Range | Description |
+|---------|---------|-------|-------------|
+| **Show a first-time tour on the Child card and Kiosk** (`tour_enabled`) | `on` | on / off | The tour for every child who hasn't finished or skipped it. Children who had already done a chore when you upgraded are marked as not needing it |
+| **Read each step aloud automatically** (`tour_auto_read`) | `on` | on / off | Picture-only ([pre-reader](Pre-Reader-Mode.md)) cards speak each step as it appears. Needs a read-aloud speaker |
+| **Read-aloud speaker** (`read_aloud_media_player`) | empty | a media player | Where the tour's 🔊 button talks. The same setting as the [Read Aloud](#read-aloud-v500) default media player; leave it empty and there's no 🔊 button |
+
+Under **Per child**, each child's status (**Finished** *date*, **Skipped at step** *N*, **Not needed**, **Not yet**) with a **Show again** button.
 
 ### Virtual Pets (v7.0.0)
 

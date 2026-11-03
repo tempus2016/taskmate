@@ -68,6 +68,7 @@ from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
 from .coord_templates import TemplatesMixin
 from .coord_timed import TimedMixin
+from .coord_tour import KidTourMixin
 from .coord_trash import RecentlyDeletedMixin
 from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
@@ -120,6 +121,7 @@ class TaskMateCoordinator(
     ReportsMixin,
     RouletteMixin,
     ReadAloudMixin,
+    KidTourMixin,
     GuestsMixin,
     UnlocksMixin,
     SoundsMixin,

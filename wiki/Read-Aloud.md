@@ -74,5 +74,6 @@ actions:
 - [Services](Services.md) — the full `taskmate.read_aloud` signature
 - [Voice Assistants](Voice-Assistants.md) — asking Assist about chores and points
 - [Settings](Settings.md) — the templates, default media player and TTS entity
+- [Kid Onboarding Tour](Kid-Onboarding-Tour.md) — the first-time tour's 🔊 button talks through the same speaker
 - [Notifications](Notifications.md) — the push side of the same job
 - [Localization](Localization.md) — why these templates are editable rather than translated
