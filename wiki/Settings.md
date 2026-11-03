@@ -352,6 +352,19 @@ A pet never loses a stage, home item, level or egg it has reached: raising a num
 
 Below the pet shop switches are the shop's catalogue (add, edit, hide, remove, **Reset to defaults**) and any purchases **Waiting for you**. Those act straight away rather than with **Save**.
 
+### Seasons & Events
+
+In **Settings → Seasons & events** (it used to be called *Seasonal themes*; the old switches keep their settings). One row per season: Halloween, Christmas, Easter, Summer and Back to school. See [Season Event Packs](Season-Event-Packs.md) and [Card Looks](Card-Looks.md#seasonal-themes).
+
+| Setting | Default | Range | Description |
+|---------|---------|-------|-------------|
+| **Theme** (`seasonal_halloween`, `seasonal_christmas`, `seasonal_easter`, `seasonal_summer`, `seasonal_back_to_school`) | `off` | on / off | Dress the child and kiosk cards for the season while it's in its window |
+| **Pack** (`season_pack_halloween`, `season_pack_christmas`, `season_pack_easter`, `season_pack_summer`, `season_pack_back_to_school`) | `off` | on / off | Install the season's chores, quest, reward and badge when its window starts, and hide them when it ends. A pack switched on mid-season installs when you save |
+| **First school day** (`season_school_start`) | *(empty)* | a date | Back to school runs for 14 days from this date. Its theme and pack do nothing until it's set |
+| **Assign to** (`season_pack_children`) | every child | children | Who each pack is for, per season. Pick nobody for every child. Grown-up profiles never get pack items. Changing it re-assigns an installed pack's items |
+
+**Preview** lists everything a pack holds with its points. **Remove pack** deletes what it installed (chores, reward and quest via [Recently Deleted](Recently-Deleted.md)) and switches it off. A badge a child has already earned is kept for the children who have it.
+
 ### Per-child settings (v6.0.0)
 
 Set under **Children → Edit** for each child, not globally.

@@ -637,6 +637,26 @@ class TaskMateKioskCard extends LitElement {
     return best;
   }
 
+  /** Season event packs: the advent calendar as a small side tile (today's
+   *  door stays in the chore list, where the kiosk ticks it off). */
+  _adventTile(child, attrs) {
+    const adv = attrs && attrs.advent;
+    const doors = child && child.advent;
+    if (!adv || typeof doors !== "string" || doors.length !== 24) return "";
+    const letters = doors.split("");
+    const opened = letters.filter(l => l === "o").length;
+    const counted = letters.filter(l => l === "o" || l === "p" || l === "m" || l === "t").length;
+    return html`
+      <div class="km-tile km-advent">
+        <h3><span aria-hidden="true">🎄</span> ${this._t("child.advent_title")}</h3>
+        <div class="km-advent-grid" role="list">
+          ${letters.map((l, i) => html`<span role="listitem" class="km-door ${l === "-" ? "x" : l}"
+            aria-label="${this._t("child.advent_door_aria", { n: i + 1, state: this._t(`child.advent_state_${l === "-" ? "l" : l}`) })}">${i + 1}</span>`)}
+        </div>
+        <div class="km-dim km-small">${_ltrNums(this._t("child.advent_opened", { done: opened, total: counted }))}</div>
+      </div>`;
+  }
+
   _badgesTile(child) {
     if (this.config.show_badges === false) return "";
     const badges = this._badgesEntity(child);
@@ -1663,6 +1683,7 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-bar"><i style="width:${Math.min(100, Math.round(((Number(child.points) || 0) / next.cost) * 100))}%"></i></div>
                 <div class="km-dim km-small">${this._t("kiosk.to_go", { points: next.cost - (Number(child.points) || 0) })}</div>
               </div>` : ""}
+            ${this._adventTile(child, attrs)}
             ${this._badgesTile(child)}
             ${this._petTile(child)}
           </div>
@@ -2355,6 +2376,14 @@ class TaskMateKioskCard extends LitElement {
       .km-big-ring small { display: block; color: var(--tmd-dim, var(--secondary-text-color)); }
       .km-stat2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       .km-stat2 .km-tile { text-align: center; padding: 12px; }
+      .km-advent-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin: 6px 0; }
+      .km-door { border-radius: 6px; text-align: center; font-size: 12px; font-weight: 800; line-height: 24px; color: #fff; background: #c62828; }
+      .km-door.o { background: #2e7d32; }
+      .km-door.p { background: #f9a825; color: #3e2700; }
+      .km-door.l { background: #b0bec5; color: #eceff1; }
+      .km-door.m { background: transparent; color: #ef5350; box-shadow: inset 0 0 0 2px #ef5350; }
+      .km-door.x { background: transparent; color: inherit; opacity: .4; }
+      .km-door.t { box-shadow: 0 0 0 2px #ffd54f; }
       .km-stat2 b { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 1.5rem; font-weight: 800; }
       .km-stat2 b.gold { color: var(--tmd-gold, #f39c12); }
       .km-stat2 b.warm { color: var(--tmd-bad, #e67e22); }

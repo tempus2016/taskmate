@@ -643,12 +643,13 @@ class ChoresMixin:
             return
         await images.async_delete_image(self.hass, image_url)
 
-    async def async_remove_chore(self, chore_id: str, *, keep_deleted: bool = True) -> None:
+    async def async_remove_chore(self, chore_id: str, *, keep_deleted: bool = True, refresh: bool = True) -> None:
         """Remove a chore and all associated data.
 
         ``keep_deleted=False`` is for chores TaskMate raised and retires itself
         (a shopping-list job whose item left the list): nobody deleted them, so
-        they don't belong in Recently deleted.
+        they don't belong in Recently deleted. ``refresh=False`` leaves the
+        coordinator refresh to a caller removing several at once.
         """
         existing = self.storage.get_chore(chore_id)
         if existing is not None and getattr(existing, "publish_calendar_entities", []):
@@ -678,7 +679,8 @@ class ChoresMixin:
                 child.chore_order.remove(chore_id)
                 self.storage.update_child(child)
         await self.storage.async_save()
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
         for auction, bidders in called_off:
             await self._async_tell_bidders_called_off(auction, bidders)
 
@@ -1305,6 +1307,9 @@ class ChoresMixin:
                 await self._async_advance_quests(child.id, chore.id, _completion.id)
             if hasattr(self, "_async_evaluate_challenges"):
                 await self._async_evaluate_challenges(child.id)
+            # Season event packs: a pack's badge once enough of its jobs are done.
+            if hasattr(self, "_async_check_season_pack_badges"):
+                await self._async_check_season_pack_badges(child.id)
 
     # How far back a grown-up may log a job that was done but not ticked.
     BACKDATE_MAX_DAYS = 7
@@ -1847,6 +1852,10 @@ class ChoresMixin:
                     # Evaluate daily/weekly challenges (parent completions only)
                     if not is_bonus and hasattr(self, "_async_evaluate_challenges"):
                         await self._async_evaluate_challenges(completion.child_id)
+
+                    # Season event packs: the pack's badge once enough jobs are done.
+                    if not is_bonus and hasattr(self, "_async_check_season_pack_badges"):
+                        await self._async_check_season_pack_badges(completion.child_id)
 
                     # All-chores-done celebration — fire once per child per day
                     today_iso = dt_util.now().date().isoformat()

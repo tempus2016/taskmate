@@ -357,8 +357,10 @@ test("panel: saving a child sends the style", async () => {
 test("panel: Settings has a switch per season, off until set", () => {
   const p = panel();
   const off = p._renderSeasonalSettings({});
-  for (const s of ["halloween", "christmas", "summer"]) assert.match(off, new RegExp(`data-setting="seasonal_${s}" >`));
-  assert.match(p._renderSeasonalSettings({ seasonal_christmas: true }), /data-setting="seasonal_christmas" checked/);
+  for (const s of ["halloween", "christmas", "easter", "summer", "back_to_school"]) {
+    assert.match(off, new RegExp(`data-setting="seasonal_${s}" aria-label="[^"]*" >`));
+  }
+  assert.match(p._renderSeasonalSettings({ seasonal_christmas: true }), /data-setting="seasonal_christmas" aria-label="[^"]*" checked/);
 });
 
 // The compact avatar icon rule also matched the pencil inside the edit dot,

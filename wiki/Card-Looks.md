@@ -21,13 +21,17 @@ density: compact   # normal (default) | compact
 
 ## Seasonal themes
 
-Optional accents that switch on by date. Turn each one on in the admin panel under **Settings → Seasonal themes**. All three are off by default.
+Optional accents that switch on by date. Turn each one on in the admin panel under **Settings → Seasons & events** with the season's **Theme** switch. All of them are off by default. The **Pack** switch on the same row adds seasonal content (chores, a quest, a reward, a badge, an advent calendar): see [Season Event Packs](Season-Event-Packs.md).
 
 | Season | Dates | Header | Emoji | Celebration |
 |--------|-------|--------|-------|-------------|
 | Halloween | 24–31 October | Orange to purple | 🎃 | Bats instead of confetti |
 | Christmas | 1–26 December | Red to green | 🎄 | Snow instead of confetti |
+| Easter | The 7 days ending on Easter Sunday | Purple to green | 🐣 | Confetti (or the child's own) |
+| Back to school | 14 days from the first school day you set | Blue to yellow | 🎒 | Confetti (or the child's own) |
 | Summer | 21 June – 31 August | Orange to sea blue | ☀️ | Suns instead of confetti |
+
+Easter's dates are worked out for each year. Back to school needs a **First school day** on its row in Settings; until one is set it never shows. When Back to school and Summer overlap, the cards dress for Back to school.
 
 While a season is on and in its window, the child card and the kiosk card's child screen get:
 
@@ -35,7 +39,7 @@ While a season is on and in its window, the child card and the kiosk card's chil
 - the season's emoji on the child's avatar and in the points pill,
 - the season's celebration in place of confetti, unless the child has picked their own [done animation](#done-animation-per-child).
 
-The overview sensor carries the active season as a `season` attribute (`halloween`, `christmas` or `summer`), present only while one is showing, so the cards don't each work out the dates.
+The overview sensor carries the active season as a `season` attribute (`halloween`, `christmas`, `easter`, `back_to_school` or `summer`), present only while one is showing, so the cards don't each work out the dates.
 
 A single card can stay plain with `seasonal: false` (the **Seasonal themes** switch in the card editor):
 

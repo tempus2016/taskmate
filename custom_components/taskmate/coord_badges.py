@@ -303,8 +303,12 @@ class BadgeCoordinator:
 
         return new_awards
 
-    async def award_manually(self, child_id: str, badge_id: str):
-        """Manually award a badge to a child via parent action."""
+    async def award_manually(self, child_id: str, badge_id: str, *, manual: bool = True):
+        """Manually award a badge to a child via parent action.
+
+        ``manual=False`` is TaskMate awarding a badge whose rule it checks
+        itself (a season pack's badge), so it isn't shown as a parent's gift.
+        """
         from .models import AwardedBadge
 
         child = self.storage.get_child(child_id)
@@ -318,7 +322,7 @@ class BadgeCoordinator:
         award = AwardedBadge(
             child_id=child_id,
             badge_id=badge_id,
-            manually_awarded=True,
+            manually_awarded=manual,
             silent=False,
             bonus_credited=bonus,
         )
