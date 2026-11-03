@@ -60,6 +60,7 @@ CARDS: Final = [
     "taskmate-pet-card.js",
     "taskmate-personal-bests-card.js",
     "taskmate-heatmap-card.js",
+    "taskmate-trophy-cabinet-card.js",
 ]
 
 # Cards that USED to ship but were removed. Their files no longer exist, so any

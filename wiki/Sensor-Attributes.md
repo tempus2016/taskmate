@@ -75,7 +75,7 @@ This is the main sensor. Its `extra_state_attributes` contain everything most ca
 | `chore_order` | list[string] | Custom ordering of chore IDs |
 | `career_score` | int | Long-term performance metric (`total_points_earned − total_penalties_received`) |
 | `total_penalties_received` | int | Lifetime count of penalties applied |
-| `quests` | list | (v4.0+) Per-child [quest](Quests.md) progress (`quest_id`, `name`, `icon`, `total_steps`, `step`, `done`, `times_completed`, `bonus_points`, `next_chore_id`) |
+| `quests` | list | (v4.0+) Per-child [quest](Quests.md) progress (`quest_id`, `name`, `icon`, `total_steps`, `step`, `done`, `times_completed`, `bonus_points`, `next_chore_id`, plus `last_completed` once finished) |
 | `challenges` | list | (v4.0+) Per-child [challenge](Challenges.md) progress (`challenge_id`, `name`, `icon`, `scope`, `metric`, `target`, `progress`, `value`, `bonus_points`, `complete`, `awarded`) |
 | `avatar_options` | list | (v4.0+) [Avatar](Avatars.md) catalogue for this child (`id`, `label`, `icon`, `unlocked`, `requirement`) |
 | `birthday` | object | (v6.0.0) Only on the child's [birthday](Birthday-Mode.md): `multiplier`, `age` (when the year is known), `chores_off` |

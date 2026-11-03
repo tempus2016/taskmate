@@ -130,11 +130,12 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 
 | Topic | Description |
 |-------|-------------|
-| [Dashboard Cards](Dashboard-Cards.md) | All 32 Lovelace cards |
+| [Dashboard Cards](Dashboard-Cards.md) | All 33 Lovelace cards |
 | [Routine Mode](Routine-Mode.md) | Guided one-task-at-a-time flow for morning and bedtime |
 | [Kiosk Mode](Kiosk-Mode.md) | A full-screen card for a shared wall tablet, with optional PINs and bounties |
 | [Sticker Chart Card](Sticker-Chart-Card.md) | Today's jobs as stickers to tap, with stars filling towards a reward |
 | [Completion Heatmap](Completion-Heatmap.md) | A calendar grid per child, darker green for busier days, in Insights and as a card |
+| [Trophy Cabinet Card](Trophy-Cabinet-Card.md) | The whole family's season wins, personal bests, badges, quests and perfect weeks on shelves |
 | [Watch Complications](Watch-Complications.md) | Chores left, points and streak on an Apple Watch or Wear OS watch |
 | [Pre-Reader Mode](Pre-Reader-Mode.md) | Picture-only child card for children who can't read yet |
 | [Card Design Styles](Card-Design-Styles.md) | Per-card visual themes: Classic, Playroom, Console, Clean Pro, Accessible |

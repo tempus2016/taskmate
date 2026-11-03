@@ -86,7 +86,7 @@ Each entry in the `children` array:
 | `awarded_perfect_weeks` | list | Monday ISO dates of awarded perfect weeks |
 | `career_score` | int | Long-term score (`total_points_earned − total_penalties_received`) |
 | `total_penalties_received` | int | Lifetime count of penalties applied |
-| `quests` | list | This child's [quest](Quests.md) progress — each entry has `quest_id`, `name`, `icon`, `total_steps`, `step`, `done`, `times_completed`, `bonus_points`, `next_chore_id` |
+| `quests` | list | This child's [quest](Quests.md) progress — each entry has `quest_id`, `name`, `icon`, `total_steps`, `step`, `done`, `times_completed`, `bonus_points`, `next_chore_id`, and `last_completed` once finished |
 | `challenges` | list | This child's [challenge](Challenges.md) progress — each entry has `challenge_id`, `name`, `icon`, `scope`, `metric`, `target`, `progress`, `value`, `bonus_points`, `complete`, `awarded` |
 | `avatar_options` | list | The [avatar catalogue](Avatars.md) resolved for this child — each entry has `id`, `label`, `icon`, `unlocked`, `requirement` (human-readable unlock condition) |
 | `is_guest` | bool | (v5.0.0) Present only for [guest profiles](Guest-Child-Profiles.md) |
@@ -129,6 +129,7 @@ Each entry in the `children` array:
 | `times_completed` | int | How many times this child has completed the chain |
 | `bonus_points` | int | Points awarded on completing the final step |
 | `next_chore_id` | string | Chore ID of the next step to complete (empty when done) |
+| `last_completed` | string | Day this child last finished the chain, `YYYY-MM-DD`. Only present once `times_completed` is above 0 |
 
 **`challenges` entry fields:**
 
