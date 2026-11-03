@@ -59,6 +59,7 @@ from typing import Any, Final
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 
 from . import images, photos
 from .const import (
@@ -898,6 +899,41 @@ def _tag_id_list(value):
     return normalize_tag_ids(value)
 
 
+def _iso_date_or_blank(value):
+    """An ISO date (YYYY-MM-DD) or an empty string; raises on anything else."""
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    try:
+        return date.fromisoformat(text).isoformat()
+    except ValueError as err:
+        raise vol.Invalid("Use a date in the form YYYY-MM-DD") from err
+
+
+def _one_off_date(msg: dict, existing=None) -> str | None:
+    """The day a one-off chore is for (#1169), or None when it isn't a one-off.
+
+    A one-off is only on the board on its ``created_date`` and is switched off
+    the night after. A blank date means today on a new one-off and "keep it" on
+    an existing one; a chore just switched to one-off starts today, so it can't
+    sit on the board forever with no date. A day already gone is refused
+    unless it is the date the chore already has, so an older one-off still
+    saves untouched.
+    """
+    was_one_off = existing is not None and getattr(existing, "schedule_mode", "") == "one_shot"
+    mode = msg.get("schedule_mode", getattr(existing, "schedule_mode", "specific_days"))
+    if mode != "one_shot":
+        return None
+    today = dt_util.as_local(dt_util.now()).date()
+    stored = (getattr(existing, "created_date", "") or "") if was_one_off else ""
+    wanted = msg.get("created_date") or ""
+    if not wanted:
+        return stored or today.isoformat()
+    if wanted != stored and date.fromisoformat(wanted) < today:
+        raise ValueError("A one-off chore can't be set for a day that has already gone")
+    return wanted
+
+
 def _chore_payload_schema(*, require_name: bool):
     """Build a vol.Schema for add/update chore. require_name=True for add."""
     name_field = vol.Required("name") if require_name else vol.Optional("name")
@@ -938,6 +974,8 @@ def _chore_payload_schema(*, require_name: bool):
         vol.Optional("speed_bonus_points"): vol.All(int, vol.Range(min=0)),
         vol.Optional("enabled"): bool,
         vol.Optional("expires_on"): str,
+        # The day a one-off chore is for (#1169); see _one_off_date.
+        vol.Optional("created_date"): _iso_date_or_blank,
         vol.Optional("due_time"): str,
         vol.Optional("early_bonus"): vol.All(int, vol.Range(min=0)),
         vol.Optional("late_penalty"): vol.All(int, vol.Range(min=0)),
@@ -1040,6 +1078,7 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         quantity_unit=msg.get("quantity_unit", ""),
         team_size=msg.get("team_size", 0),
     )
+    one_off_date = _one_off_date(msg)
     chore = await coordinator.async_add_chore(
         name=msg["name"].strip(),
         points=msg.get("points", 10),
@@ -1051,6 +1090,7 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         daily_limit=msg.get("daily_limit", 1),
         completion_sound=msg.get("completion_sound", "coin"),
         schedule_mode=msg.get("schedule_mode", "specific_days"),
+        created_date=one_off_date or "",
     )
     extra_fields = (set(msg.keys()) & _CHORE_EDITABLE_FIELDS) - {
         "name",
@@ -1110,6 +1150,13 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
             quantity_unit=msg.get("quantity_unit", getattr(existing, "quantity_unit", "")),
             team_size=msg.get("team_size", getattr(existing, "team_size", 0)),
         )
+    # Worked out from the chore as it was, before the loop below changes it.
+    one_off_date = _one_off_date(msg, existing)
+    moved_one_off = (
+        one_off_date is not None
+        and getattr(existing, "schedule_mode", "") == "one_shot"
+        and one_off_date != (getattr(existing, "created_date", "") or "")
+    )
     for field in _CHORE_EDITABLE_FIELDS:
         if field in msg:
             value = msg[field]
@@ -1122,6 +1169,14 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
             elif field == "name":
                 value = value.strip()
             setattr(existing, field, value)
+    if one_off_date is not None:
+        existing.created_date = one_off_date
+    if moved_one_off:
+        # A one-off moved to another day is a fresh run on that day: an
+        # expired or finished one-off would otherwise stay switched off, or
+        # stay done for the children who did it last time.
+        existing.enabled = True
+        existing.disabled_for = []
     await coordinator.async_update_chore(existing)
     await _maybe_apply_manual_start(coordinator, existing.id, msg.get("manual_start_child_id"))
     connection.send_result(msg["id"], {"id": existing.id})

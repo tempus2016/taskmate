@@ -2573,6 +2573,8 @@
   "panel.reward_restock_daily": "Dia",
   "panel.reward_restock_weekly": "Semana (seg)",
   "panel.reward_restock_monthly": "Mês (dia 1)",
+  "panel.chore_one_off_date_label": "Dia",
+  "panel.chore_one_off_date_hint": "A tarefa só aparece neste dia e é desativada nessa noite. Escolha um dia futuro para planejá-la com antecedência.",
   "panel.chore_expires_label": "Data de expiração (opcional)",
   "panel.chore_expires_hint": "Após esta data a tarefa se desativa automaticamente. Deixe vazio para sem expiração.",
   "panel.bulk_select": "Selecionar",

@@ -2705,6 +2705,7 @@ class TaskMatePanel extends HTMLElement {
       weather_temp_min: "", weather_temp_max: "", weather_wind_max: "",
       enabled: true,
       expires_on: "",
+      created_date: "",
       due_time: "", early_bonus: 0, late_penalty: 0,
       mandatory: false, mandatory_penalty_points: 0,
       require_photo: false,
@@ -2743,6 +2744,9 @@ class TaskMatePanel extends HTMLElement {
         weather_temp_max: c.weather_temp_max ?? "",
         weather_wind_max: c.weather_wind_max ?? "",
         manual_start_child_id: "",
+        // A one-off's day (#1169). Any other chore's leftover date is dropped,
+        // so switching it to one-off starts from today, not some old day.
+        created_date: c.schedule_mode === "one_shot" ? (c.created_date || "") : "",
         times: (c.times || []).map(t => ({ ...t })),
         times_bonus: Number(c.times_bonus) || 0,
         _freq: (c.times || []).length ? "set" : ((Number(c.daily_limit) || 1) > 1 ? "limit" : "once"),
@@ -3017,6 +3021,8 @@ class TaskMatePanel extends HTMLElement {
       weather_wind_max: this._optNum(d.weather_wind_max),
       enabled: d.enabled !== false,
       expires_on: (d.expires_on || "").trim(),
+      // Blank = today on a new one-off, "keep its day" on an existing one.
+      created_date: d.schedule_mode === "one_shot" ? (d.created_date || "") : "",
       due_time: (d.due_time || "").trim(),
       early_bonus: Math.max(0, Number(d.early_bonus) || 0),
       late_penalty: Math.max(0, Number(d.late_penalty) || 0),
@@ -9359,7 +9365,7 @@ class TaskMatePanel extends HTMLElement {
     const schedLabel = c.schedule_mode === "recurring"
       ? this._recurrenceLabel(c.recurrence) + (c.recurrence_day && c.recurrence_day !== "any_day" ? ` · ${this._labelOf(DAYS, c.recurrence_day)}` : "")
       : c.schedule_mode === "one_shot"
-      ? this._t("panel.common_one_shot")
+      ? this._t("panel.common_one_shot") + this._oneOffDaySuffix(c.created_date)
       : ((c.due_days || []).length === 0 ? this._t("panel.common_daily") : (c.due_days || []).map(d => this._labelOf(DAYS, d)).join(" · "));
     const schedClass = c.schedule_mode === "recurring" ? "tm-pill-accent" : c.schedule_mode === "one_shot" ? "tm-pill-warn" : "tm-pill-success";
     // A weekly quota doesn't replace the day list — the chore is still only
@@ -14433,6 +14439,7 @@ class TaskMatePanel extends HTMLElement {
     const memberInGroup = (d.id && groups.find(g => (g.chore_ids || []).includes(d.id))) || null;
     const showSpecificDays = d.schedule_mode === "specific_days";
     const showRecurring    = d.schedule_mode === "recurring";
+    const showOneOff       = d.schedule_mode === "one_shot";
     const showRotation     = ["alternating", "random", "balanced"].includes(d.assignment_mode);
     const isUnassigned     = d.assignment_mode === "unassigned";
     const calendarEntities = Object.keys((this._hass && this._hass.states) || {})
@@ -14548,6 +14555,11 @@ class TaskMatePanel extends HTMLElement {
               ${this._select(this._t("panel.chore_first_occurrence_label"), "first_occurrence_mode", d.first_occurrence_mode, FIRST_OCCURRENCE)}
             </div>
           ` : "",
+          // The day a one-off is for (#1169): on the board that day only.
+          // Today is HA's today — the backend refuses a day already gone.
+          showOneOff ? this._dateField(this._t("panel.chore_one_off_date_label"), "created_date",
+            d.created_date || this._haTodayKey(), this._t("panel.chore_one_off_date_hint"),
+            (d.created_date && d.created_date < this._haTodayKey()) ? d.created_date : this._haTodayKey()) : "",
           this._dateField(this._t("panel.chore_expires_label"), "expires_on", d.expires_on, this._t("panel.chore_expires_hint")),
           `<div class="tm-field-row">
             ${this._field(this._t("panel.chore_due_time_label"), "due_time", d.due_time, "time", this._t("panel.chore_due_time_hint"))}
@@ -15389,7 +15401,34 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
-  _dateField(label, name, value, hintHtml = "") {
+  // " · Sat 7 Nov" after a one-off's pill when it's set for another day, so
+  // a job planned ahead (#1169) reads as planned, not as today's.
+  _oneOffDaySuffix(created) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(created || "");
+    if (!m || created === this._haTodayKey()) return "";
+    const lang = this._hass?.locale?.language || this._hass?.language || undefined;
+    const when = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
+    let text;
+    try {
+      text = when.toLocaleDateString(lang, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+    } catch (_err) {
+      text = created;
+    }
+    return ` · ${text}`;
+  }
+
+  // Today as YYYY-MM-DD in Home Assistant's time zone, not the browser's:
+  // the backend judges "today" and "a day already gone" by its own clock.
+  _haTodayKey() {
+    const tz = this._hass?.config?.time_zone;
+    try {
+      return new Date().toLocaleDateString("en-CA", tz ? { timeZone: tz } : undefined);
+    } catch (_err) {
+      return new Date().toLocaleDateString("en-CA");
+    }
+  }
+
+  _dateField(label, name, value, hintHtml = "", min = "") {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._esc(label)}</span>
@@ -15398,6 +15437,7 @@ class TaskMatePanel extends HTMLElement {
           data-field="${name}"
           value="${this._esc(value || "")}"
           type="date"
+          ${min ? `min="${this._esc(min)}"` : ""}
         >
         ${hintHtml ? `<span class="tm-field-hint">${hintHtml}</span>` : ""}
       </div>`;

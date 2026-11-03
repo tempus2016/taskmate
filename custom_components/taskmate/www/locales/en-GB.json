@@ -2573,6 +2573,8 @@
   "panel.reward_restock_daily": "Day",
   "panel.reward_restock_weekly": "Week (Mon)",
   "panel.reward_restock_monthly": "Month (1st)",
+  "panel.chore_one_off_date_label": "Day",
+  "panel.chore_one_off_date_hint": "The chore is on the board on this day only and switches off that night. Pick a day ahead to plan it in advance.",
   "panel.chore_expires_label": "Expiry date (optional)",
   "panel.chore_expires_hint": "After this date the chore auto-disables. Leave blank for no expiry.",
   "panel.bulk_select": "Select",

@@ -2573,6 +2573,8 @@
   "panel.reward_restock_daily": "Jour",
   "panel.reward_restock_weekly": "Semaine (lun)",
   "panel.reward_restock_monthly": "Mois (1er)",
+  "panel.chore_one_off_date_label": "Jour",
+  "panel.chore_one_off_date_hint": "La tâche n'apparaît que ce jour-là et se désactive la nuit suivante. Choisissez un jour à venir pour la planifier à l'avance.",
   "panel.chore_expires_label": "Date d'expiration (facultatif)",
   "panel.chore_expires_hint": "Après cette date, la tâche se désactive automatiquement. Laisser vide pour aucune expiration.",
   "panel.bulk_select": "Sélectionner",
