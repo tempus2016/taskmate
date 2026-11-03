@@ -2588,6 +2588,47 @@ adopt_pet:
       selector:
         boolean:
 
+buy_pet_item:
+  name: Buy a pet item
+  description: A child buys an item from the pet shop with their spendable points. Over the parents' approval threshold it waits for a parent instead.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child buying
+      required: true
+      selector:
+        text:
+    item_id:
+      name: Item ID
+      description: The pet shop item
+      required: true
+      selector:
+        text:
+
+equip_pet_item:
+  name: Dress the pet
+  description: Put an owned or level-unlocked item on the child's pet (replacing whatever is in that slot), or take it off.
+  fields:
+    child_id:
+      name: Child ID
+      description: The child
+      required: true
+      selector:
+        text:
+    item_id:
+      name: Item ID
+      description: A pet shop item, or bow, top_hat, scarf or crown
+      required: true
+      selector:
+        text:
+    wear:
+      name: Wear it
+      description: On puts it on; off takes it off.
+      required: false
+      default: true
+      selector:
+        boolean:
+
 rate_reward:
   name: Rate a reward
   description: The child gives a reward they have had 1 to 3 stars. Once the reward is handed over (or approved, when fulfilment tracking is off), for 3 days.

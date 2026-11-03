@@ -1025,7 +1025,7 @@ Call off an open inspection, as if it never started.
 
 A child's account may make at most 120 child-facing service calls a minute; a burst beyond that is refused ("Too many requests from this account") and recorded in the audit log. Parents, admins and automations are not limited.
 
-Services for the v7.0.0 family features. The ones a child can use for themselves (`request_help`, `log_mood`, `set_weekly_goal`, `buy_raffle_tickets`, `adopt_pet`) go through the same linked-child check as `complete_chore`, so a child's account can only act for that child. `answer_help`, `set_sick_day` and `draw_raffle` are parent actions (an HA admin or a [TaskMate parent](Parent-Access.md); automations are allowed).
+Services for the v7.0.0 family features. The ones a child can use for themselves (`request_help`, `log_mood`, `set_weekly_goal`, `buy_raffle_tickets`, `adopt_pet`, `buy_pet_item`, `equip_pet_item`) go through the same linked-child check as `complete_chore`, so a child's account can only act for that child. `answer_help`, `set_sick_day` and `draw_raffle` are parent actions (an HA admin or a [TaskMate parent](Parent-Access.md); automations are allowed).
 
 ### `taskmate.request_help`
 A child says they are stuck on a chore. Sends the parents a push; nothing is completed or skipped. See [Help Requests](Help-Requests.md).
@@ -1163,6 +1163,40 @@ data:
 
 Refused while pets are switched off in Settings. Calling it again for a child who already has a pet renames it (or changes its species) and keeps its growth. `hatch_egg: true` is refused until the pet has laid an egg.
 
+### `taskmate.buy_pet_item`
+*(v7.7.0)* A child buys an item from the [pet shop](Virtual-Pets.md#pet-shop) with their spendable points. When it costs more than **Purchases over this many points need a parent's OK**, it becomes a request a parent approves or declines in the panel instead, and no points move until then.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `child_id` | ✅ | The child buying |
+| `item_id` | ✅ | The item (`sunglasses`, `cap`, `balloon`, `cosy_bed`, `rainbow`, `wings`, `ghost_sheet`, or the id of one you added; switch on **Show IDs** to see them) |
+
+```yaml
+service: taskmate.buy_pet_item
+data:
+  child_id: ef19c56175c14bd9
+  item_id: sunglasses
+```
+
+Refused while pets or the shop are off, before the child has adopted a pet, for a hidden item, below the item's level, for something they own or already asked for, and when they don't have enough points. The cost comes out of the spendable balance only, never a savings pool.
+
+### `taskmate.equip_pet_item`
+*(v7.7.0)* Put an item on the child's pet, replacing whatever is in that slot, or take it off.
+
+| Field | Required | Default | Description |
+| --- | --- | --- | --- |
+| `child_id` | ✅ | — | The child |
+| `item_id` | ✅ | — | An owned pet shop item, or an unlocked `bow`, `top_hat`, `scarf` or `crown` |
+| `wear` |  | `true` | `false` takes it off |
+
+```yaml
+service: taskmate.equip_pet_item
+data:
+  child_id: ef19c56175c14bd9
+  item_id: top_hat
+  wear: false
+```
+
 ## Miscellaneous
 
 ### `taskmate.set_chore_order`
@@ -1298,7 +1332,7 @@ Several services trigger additional actions beyond their primary purpose:
 
 The full set of `taskmate.*` services registered by the integration:
 
-`complete_chore`, `complete_bonus_subtask`, `complete_next_chore`, `approve_chore`, `approve_all_chores`, `reject_chore`, `undo_chore`, `leave_team_chore`, `apply_mandatory_penalty`, `postpone_mandatory_chore`, `dismiss_mandatory_chore`, `undo_transaction`, `undo_chore_approval`, `record_allowance_payout`, `test_notification`, `gift_points`, `adjust_streak_freezes`, `request_swap`, `choose_avatar`, `claim_reward`, `approve_reward`, `reject_reward`, `allocate_points_to_pool`, `add_points`, `remove_points`, `preview_sound`, `set_chore_order`, `add_penalty`, `update_penalty`, `remove_penalty`, `apply_penalty`, `add_bonus`, `update_bonus`, `remove_bonus`, `apply_bonus`, `add_chore`, `update_chore`, `delete_chore`, `skip_chore`, `set_chore_manual_start`, `add_task_group`, `update_task_group`, `remove_task_group`, `start_timed_task`, `pause_timed_task`, `stop_timed_task`, `add_badge`, `update_badge`, `remove_badge`, `award_badge_manually`, `revoke_badge`, `rebuild_badges`, `read_aloud`, `spin_roulette`, `post_bounty`, `update_bounty`, `remove_bounty`, `claim_bounty`, `give_back_bounty`, `complete_bounty`, `add_wish`, `withdraw_wish`, `move_points_to_wish`, `take_points_from_wish`, `request_wish_redeem`, `approve_wish`, `decline_wish`, `pledge_to_wish`, `remove_wish_pledge`, `remove_wish`, `start_inspection`, `pass_inspection`, `fail_inspection`, `cancel_inspection`, `request_help`, `answer_help`, `log_mood`, `set_sick_day`, `set_weekly_goal`, `buy_raffle_tickets`, `draw_raffle`, `adopt_pet`.
+`complete_chore`, `complete_bonus_subtask`, `complete_next_chore`, `approve_chore`, `approve_all_chores`, `reject_chore`, `undo_chore`, `leave_team_chore`, `apply_mandatory_penalty`, `postpone_mandatory_chore`, `dismiss_mandatory_chore`, `undo_transaction`, `undo_chore_approval`, `record_allowance_payout`, `test_notification`, `gift_points`, `adjust_streak_freezes`, `request_swap`, `choose_avatar`, `claim_reward`, `approve_reward`, `reject_reward`, `allocate_points_to_pool`, `add_points`, `remove_points`, `preview_sound`, `set_chore_order`, `add_penalty`, `update_penalty`, `remove_penalty`, `apply_penalty`, `add_bonus`, `update_bonus`, `remove_bonus`, `apply_bonus`, `add_chore`, `update_chore`, `delete_chore`, `skip_chore`, `set_chore_manual_start`, `add_task_group`, `update_task_group`, `remove_task_group`, `start_timed_task`, `pause_timed_task`, `stop_timed_task`, `add_badge`, `update_badge`, `remove_badge`, `award_badge_manually`, `revoke_badge`, `rebuild_badges`, `read_aloud`, `spin_roulette`, `post_bounty`, `update_bounty`, `remove_bounty`, `claim_bounty`, `give_back_bounty`, `complete_bounty`, `add_wish`, `withdraw_wish`, `move_points_to_wish`, `take_points_from_wish`, `request_wish_redeem`, `approve_wish`, `decline_wish`, `pledge_to_wish`, `remove_wish_pledge`, `remove_wish`, `start_inspection`, `pass_inspection`, `fail_inspection`, `cancel_inspection`, `request_help`, `answer_help`, `log_mood`, `set_sick_day`, `set_weekly_goal`, `buy_raffle_tickets`, `draw_raffle`, `adopt_pet`, `buy_pet_item`, `equip_pet_item`.
 
 [Chore auctions](Chore-Auctions.md) have no services: they are run from the admin panel's **Auctions** page and the auction card. Raffles are created, edited and called off from the admin panel's **Raffles** tab; only buying tickets and drawing have services.
 

@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Comprar um artigo para o animal",
+      "description": "Uma criança compra um artigo na loja do animal com os pontos que pode gastar. Acima do limite de aprovação dos pais, a compra fica à espera de um adulto.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança que compra"
+        },
+        "item_id": {
+          "name": "ID do artigo",
+          "description": "O artigo da loja do animal"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Vestir o animal",
+      "description": "Pôr no animal da criança um artigo que tem ou desbloqueou por nível (substitui o que está nesse lugar), ou tirá-lo.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "A criança"
+        },
+        "item_id": {
+          "name": "ID do artigo",
+          "description": "Um artigo da loja, ou bow, top_hat, scarf ou crown"
+        },
+        "wear": {
+          "name": "Usar",
+          "description": "Ligado põe, desligado tira."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Marcar recompensa como entregue",
       "description": "Uma recompensa resgatada foi entregue e sai da lista de pendentes. Indica child_id quando é a criança a confirmar.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Penalização recuperada",
               "raffle_won": "Sorteio ganho",
               "pet_evolved": "O animal cresceu",
+              "pet_item_bought": "Artigo para o animal comprado",
               "reward_delivered": "Recompensa entregue",
               "personal_best": "Recorde pessoal",
               "appeal_submitted": "Recurso enviado",

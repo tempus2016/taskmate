@@ -385,6 +385,8 @@ NOTIF_TYPE_MOOD_LOW: Final = "mood_low"
 # Personal weekly goals: a child reached the target they set.
 NOTIF_TYPE_WEEKLY_GOAL_REACHED: Final = "weekly_goal_reached"
 NOTIF_TYPE_PET_EVOLVED: Final = "pet_evolved"
+# Pet shop: a child asked to buy an item that costs over the approval threshold.
+NOTIF_TYPE_PET_ITEM_REQUESTED: Final = "pet_item_requested"
 # Make it right: a child earned a penalty back by doing its chore.
 NOTIF_TYPE_PENALTY_REDEEMED: Final = "penalty_redeemed"
 # Raffles: the winner was drawn.

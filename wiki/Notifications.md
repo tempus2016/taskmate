@@ -66,6 +66,7 @@ TaskMate ships with these built-in notification types:
 | **Penalty earned back** | `penalty_redeemed` | Both | No | No | Off |
 | **Raffle drawn** | `raffle_drawn` | Both | No | No | Off |
 | **Pet grew up** | `pet_evolved` | Both | No | No | Off |
+| **Pet shop request** | `pet_item_requested` | Parents | No | No | **On** |
 | **Reward still owed** | `reward_owed` | Parents | No | No | **On** |
 | **Personal best** | `personal_best` | Both | No | No | Off |
 | **Boost started** | `boost_started` | Children | No | No | Off |
@@ -196,6 +197,10 @@ For [Chore Auctions](Chore-Auctions.md). **Auction Opened** and **Auction Closin
 
 **Raffle drawn** announces a [raffle](Raffles.md)'s winner and how many tickets were in the draw. **Pet grew up** tells the child and parents a [virtual pet](Virtual-Pets.md) reached a new stage, turned legendary, laid an egg or reached a new pet level.
 
+### Pet shop request *(v7.7.0)*
+
+**Pet shop request** tells parents a child wants to buy a [pet shop](Virtual-Pets.md#pet-shop) item that costs more than the approval limit. It is on from the start, like **Appeal submitted**, because it only fires once a parent has opened the shop and set a limit. Approve or decline it in **Settings → Virtual pets → Pet shop**.
+
 ---
 
 ## Notification Messages
@@ -246,6 +251,7 @@ Changing Home Assistant's language takes effect straight away, with no restart. 
 | Weekly goal reached | `"🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!"` |
 | Penalty earned back | `"🤝 {child_name} made it right with '{chore_name}' and earned back {points} {points_name}."` |
 | Raffle drawn | `"🎟️ {raffle_name}: {winner_name} won! ({tickets} tickets in the draw)"` |
+| Pet shop request | `"🛍️ {child_name} wants to buy {item_name} for {pet_name} ({cost} {points_name}). Approve it in TaskMate."` |
 | Pet grew up | `"{news}"` — one of: `"🐣 {pet_name} just grew up! Have a look at {child_name}'s pet."`, `"✨ {pet_name} turned legendary! {child_name}'s pet is shining gold."`, `"🥚 {pet_name} laid an egg! {child_name} can hatch a new pet."`, `"💖 {pet_name} reached pet level {pet_level}!"` |
 
 ---

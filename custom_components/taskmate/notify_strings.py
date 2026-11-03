@@ -101,6 +101,7 @@ DEFAULTS: dict[str, str] = {
     "pet_news_legendary": "✨ {pet_name} turned legendary! {child_name}'s pet is shining gold.",
     "pet_news_egg": "🥚 {pet_name} laid an egg! {child_name} can hatch a new pet.",
     "pet_news_level": "💖 {pet_name} reached pet level {pet_level}!",
+    "pet_item_requested": "🛍️ {child_name} wants to buy {item_name} for {pet_name} ({cost} {points_name}). Approve it in TaskMate.",
     "penalty_redeemed": "🤝 {child_name} made it right with '{chore_name}' and earned back {points} {points_name}.",
     "raffle_drawn": "🎟️ {raffle_name}: {winner_name} won! ({tickets} tickets in the draw)",
     # Voice assistant replies (intents.py).

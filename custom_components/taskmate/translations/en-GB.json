@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Buy a pet item",
+      "description": "A child buys an item from the pet shop with their spendable points. Over the parents' approval threshold it waits for a parent instead.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child buying"
+        },
+        "item_id": {
+          "name": "Item ID",
+          "description": "The pet shop item"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Dress the pet",
+      "description": "Put an owned or level-unlocked item on the child's pet (replacing whatever is in that slot), or take it off.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The child"
+        },
+        "item_id": {
+          "name": "Item ID",
+          "description": "A pet shop item, or bow, top_hat, scarf or crown"
+        },
+        "wear": {
+          "name": "Wear it",
+          "description": "On puts it on; off takes it off."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Mark reward delivered",
       "description": "A redeemed reward has been handed over, so it leaves the owed list. Give child_id when the child is confirming their own.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Penalty earned back",
               "raffle_won": "Raffle won",
               "pet_evolved": "Pet grew up",
+              "pet_item_bought": "Pet item bought",
               "reward_delivered": "Reward handed over",
               "personal_best": "Personal best",
               "appeal_submitted": "Appeal submitted",

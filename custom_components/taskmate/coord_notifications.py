@@ -55,6 +55,7 @@ from .const import (
     NOTIF_TYPE_PENDING_REWARD_CLAIM,
     NOTIF_TYPE_PERSONAL_BEST,
     NOTIF_TYPE_PET_EVOLVED,
+    NOTIF_TYPE_PET_ITEM_REQUESTED,
     NOTIF_TYPE_POINTS_EXPIRING,
     NOTIF_TYPE_PRESENCE_ARRIVAL,
     NOTIF_TYPE_RAFFLE_DRAWN,
@@ -196,6 +197,9 @@ NOTIFICATION_TYPES: list[NotificationTypeMeta] = [
     NotificationTypeMeta(NOTIF_TYPE_PENALTY_REDEEMED, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_RAFFLE_DRAWN, "both", False, False, False, False),
     NotificationTypeMeta(NOTIF_TYPE_PET_EVOLVED, "both", False, False, False, False),
+    # Pet shop: on for parents like an appeal; it only fires once a parent
+    # has opened the shop and set an approval threshold.
+    NotificationTypeMeta(NOTIF_TYPE_PET_ITEM_REQUESTED, "parent", False, False, False, True),
     # Reward fulfilment (#1098): on by default like inspection_reminder — it
     # only ever fires once a parent has switched the tracker on, and a
     # tracker that nags nobody is just a list.

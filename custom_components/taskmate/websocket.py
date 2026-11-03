@@ -340,6 +340,8 @@ def _audit_target(coordinator, msg: dict) -> str:
         "bounty_id",
         "auction_id",
         "inspection_id",
+        "item_id",
+        "purchase_id",
     ):
         if msg.get(key):
             return str(msg[key])
@@ -575,6 +577,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "sick_today": [c.id for c in coordinator.storage.get_children() if coordinator.is_sick_day(c.id)],
         "moods_today": {c.id: m for c in coordinator.storage.get_children() if (m := coordinator.mood_on(c.id))},
         "raffles": coordinator.all_raffles(),
+        # Pet shop: the catalogue and purchases waiting for a parent.
+        "pet_shop": {"items": coordinator.pet_shop_items(), "pending": coordinator.pet_shop_pending_state()},
     }
 
 
@@ -3731,6 +3735,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .websocket_household import HOUSEHOLD_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
     from .websocket_panel_tools import PANEL_TOOL_COMMANDS
+    from .websocket_pet_shop import PET_SHOP_COMMANDS
     from .websocket_raffles import RAFFLE_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
     from .websocket_rewards_extra import REWARD_EXTRA_COMMANDS
@@ -3748,6 +3753,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *PANEL_TOOL_COMMANDS,
         *REWARD_EXTRA_COMMANDS,
         *CHORE_EXTRA_COMMANDS,
+        *PET_SHOP_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

@@ -12,7 +12,13 @@
  * adoption the card is the adoption form: pick a creature, give it a name.
  *
  * Reads `pet` from the child's entry in the overview sensor's `children`
- * (present only while pets are switched on in the admin panel). Single
+ * (present only while pets are switched on in the admin panel).
+ *
+ * Pet shop: while a parent has the shop open, `pet.shop` is on the sensor and
+ * the card grows a Shop tab (config `show_shop`, default on). The catalogue
+ * itself is fetched over `taskmate/pet_shop/catalogue` when the tab opens;
+ * buying and dressing go through the `buy_pet_item` / `equip_pet_item`
+ * services. `hide_unaffordable` hides items the child can't pay for yet. Single
  * layout consuming the design tokens, like the bounty card; layout classes
  * carry a pt- prefix.
  */
@@ -488,12 +494,48 @@ const HOME_ITEMS = [
 const HOME_ITEM_COUNT = HOME_ITEMS.length;
 
 const HEAD_ACC = { crown: "👑", top_hat: "🎩" };
-const NECK_ACC = { scarf: "🧣", bow: "🎀" };
+// Pet shop slots, in the order the shop lists them.
+const SHOP_SLOTS = ["hat", "face", "neck", "held", "back", "body", "colour", "home"];
+const ACC_LEVEL = { bow: 3, top_hat: 8, scarf: 15, crown: 25 };
+
+// Item emoji are a parent's text: escape them before they go into SVG markup.
+const _xml = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c]));
+
+/**
+ * What the pet wears, slot by slot, as { slot: { id, emoji, tint } }.
+ * The sensor sends `worn` once the shop is open (or the child changed what
+ * their pet wears); without it, the level accessories are worn as they always
+ * were: the crown over the top hat, the scarf over the bow.
+ */
+function petWorn(pet) {
+  const out = {};
+  if (pet && pet.worn && typeof pet.worn === "object") {
+    for (const slot of SHOP_SLOTS) {
+      const w = pet.worn[slot];
+      if (!w || !w.id) continue;
+      out[slot] = { id: w.id, emoji: ACC_ICON[w.id] || w.emoji || "", tint: w.tint || "" };
+    }
+    return out;
+  }
+  const acc = (pet && Array.isArray(pet.accessories)) ? pet.accessories : [];
+  const hat = acc.includes("crown") ? "crown" : acc.includes("top_hat") ? "top_hat" : "";
+  const neck = acc.includes("scarf") ? "scarf" : acc.includes("bow") ? "bow" : "";
+  if (hat) out.hat = { id: hat, emoji: ACC_ICON[hat], tint: "" };
+  if (neck) out.neck = { id: neck, emoji: ACC_ICON[neck], tint: "" };
+  return out;
+}
+
+const _emoji = (x, y, size, glyph, extra = "") =>
+  `<text x="${f(x)}" y="${f(y)}" font-size="${f(size)}" text-anchor="middle" dominant-baseline="central"${extra}>${_xml(glyph)}</text>`;
 
 /**
  * The whole scene: home items unlocked so far, the pet (gold if legendary)
- * with its hat and scarf, and the egg it laid when there is one.
- * opts: { legendary, home (0–10), egg (bool), accessories: [...] }.
+ * with what it wears, and the egg it laid when there is one.
+ * opts: { legendary, home (0–10), egg (bool), accessories: [...], worn: {slot: {id, emoji, tint}} }.
+ * With `worn` the shop slots are drawn: hat and neck on the old anchors, face
+ * over the eyes, held beside it, back behind it, body over it, a colour as a
+ * tint baked into the picture (old-iPad safe: no live filters), and a home
+ * item standing in the scene. Without it, the level accessories as before.
  *
  * Returned as stacked layers { back, pet, front, egg } (egg is "" when there
  * is none), each a full-size SVG on the same canvas. The card draws each layer
@@ -503,15 +545,35 @@ function petScene(species, stage, opts = {}) {
   const home = Math.max(0, Math.min(HOME_ITEM_COUNT, Number(opts.home) || 0));
   const items = HOME_ITEMS.slice(0, home);
   const layer = (name) => items.filter(([l]) => l === name).map(([, m]) => m).join("");
-  const acc = Array.isArray(opts.accessories) ? opts.accessories : [];
-  const headAcc = acc.includes("crown") ? HEAD_ACC.crown : acc.includes("top_hat") ? HEAD_ACC.top_hat : "";
-  const neckAcc = acc.includes("scarf") ? NECK_ACC.scarf : acc.includes("bow") ? NECK_ACC.bow : "";
+  const worn = opts.worn || petWorn({ accessories: opts.accessories });
+  const glyph = (slot) => (worn[slot] && worn[slot].emoji) || "";
+  const headAcc = glyph("hat");
+  const neckAcc = glyph("neck");
   const a = petAnchors(species, stage);
   const px = (HOME_W - 200) / 2;
   const py = HOME_GROUND - 186;
-  const dress = stage === "egg" ? "" : `
-      ${neckAcc ? `<text x="${a.neck.x}" y="${a.neck.y + 14}" font-size="22" text-anchor="middle">${neckAcc}</text>` : ""}
-      ${headAcc ? `<text x="${a.head.x}" y="${a.head.y + 2}" font-size="${headAcc === HEAD_ACC.crown ? 32 : 38}" text-anchor="middle" transform="rotate(-8 ${a.head.x} ${a.head.y})">${headAcc}</text>` : ""}`;
+  const grownUp = stage !== "egg";
+  const L = grownUp ? petLayout(stage) : null;
+  // Behind the pet (wings), and over it (a costume), sized to the body.
+  const backItem = grownUp && glyph("back") ? _emoji(100, L.bodyCy - L.bodyRy * 0.7, L.bodyRx * 3.4, glyph("back")) : "";
+  const bodyItem = grownUp && glyph("body") ? _emoji(100, L.bodyCy - L.bodyRy * 0.2, L.bodyRx * 2.4, glyph("body"), ' opacity=".9"') : "";
+  const faceItem = grownUp && glyph("face") ? _emoji(100, L.headCy + L.headR * 0.08, (L.eyeGap + L.eyeR) * 2.2, glyph("face")) : "";
+  const heldItem = grownUp && glyph("held") ? _emoji(100 + L.bodyRx + 30, L.bodyCy - L.bodyRy * 0.5, 30, glyph("held")) : "";
+  const dress = !grownUp ? "" : `${bodyItem}
+      ${neckAcc ? `<text x="${a.neck.x}" y="${a.neck.y + 14}" font-size="22" text-anchor="middle">${_xml(neckAcc)}</text>` : ""}
+      ${headAcc ? `<text x="${a.head.x}" y="${a.head.y + 2}" font-size="${headAcc === HEAD_ACC.crown ? 32 : 38}" text-anchor="middle" transform="rotate(-8 ${a.head.x} ${a.head.y})">${_xml(headAcc)}</text>` : ""}${faceItem}${heldItem}`;
+  // A colour: a tint over the pet's own shapes, or a rainbow glow behind it.
+  const tint = worn.colour ? (worn.colour.tint || "rainbow") : "";
+  const hexTint = /^#[0-9a-fA-F]{6}$/.test(tint) ? tint : "";
+  const tintDefs = hexTint
+    ? `<defs><filter id="pt-tint" x="0" y="0" width="1" height="1"><feFlood flood-color="${hexTint}" flood-opacity=".55" result="c"/><feComposite in="c" in2="SourceGraphic" operator="in" result="m"/><feBlend in="m" in2="SourceGraphic" mode="multiply"/></filter></defs>`
+    : "";
+  const aura = grownUp && tint === "rainbow"
+    ? RAINBOW.map((c, i) => `<ellipse cx="100" cy="${f(L.bodyCy - 6)}" rx="${f(L.bodyRx + 26 - i * 4)}" ry="${f(L.bodyRy + L.headR + 22 - i * 4)}" fill="none" stroke="${c}" stroke-width="4" opacity=".55"/>`).join("")
+    : "";
+  const body = petBody(species, stage, !!opts.legendary);
+  const tinted = hexTint ? `<g filter="url(#pt-tint)">${body}</g>` : body;
+  const homeItem = glyph("home") ? _emoji(270, HOME_GROUND - 22, 46, glyph("home")) : "";
   const EX = 44;
   const newEgg = opts.egg
     ? `<g><ellipse cx="${EX}" cy="${HOME_GROUND + 1}" rx="18" ry="4" fill="#000" opacity=".14"/>
@@ -521,8 +583,8 @@ function petScene(species, stage, opts = {}) {
     : "";
   const svg = (cls, inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${HOME_W} ${HOME_H}" class="${cls}" aria-hidden="true">${inner}</svg>`;
   return {
-    back: svg("tm-pet-scene", `${layer("sky")}${layer("back")}${layer("ground")}`),
-    pet: svg("pt-layer", `<g transform="translate(${px} ${py})">${petBody(species, stage, !!opts.legendary)}${dress}</g>`),
+    back: svg("tm-pet-scene", `${layer("sky")}${layer("back")}${layer("ground")}${homeItem}`),
+    pet: svg("pt-layer", `${tintDefs}<g transform="translate(${px} ${py})">${aura}${backItem}${tinted}${dress}</g>`),
     front: svg("pt-layer", layer("front")),
     egg: newEgg ? svg("pt-layer", newEgg) : "",
   };
@@ -555,7 +617,7 @@ function _artSrc(markup) {
   }
   return src;
 }
-window.__taskmate_pet_art = { petArt, petScene, petAnchors };
+window.__taskmate_pet_art = { petArt, petScene, petAnchors, petWorn };
 
 class TaskMatePetCard extends LitElement {
   static get properties() {
@@ -568,6 +630,11 @@ class TaskMatePetCard extends LitElement {
       _petting: { type: Boolean },
       _evolving: { type: String },
       _hatching: { type: Boolean },
+      _tab: { type: String },
+      _shop: { type: Object },
+      _shopBusy: { type: Boolean },
+      _shopMsg: { type: String },
+      _confirm: { type: Object },
     };
   }
 
@@ -579,6 +646,11 @@ class TaskMatePetCard extends LitElement {
     this._petting = false;
     this._evolving = "";
     this._hatching = false;
+    this._tab = "pet";
+    this._shop = null;
+    this._shopBusy = false;
+    this._shopMsg = "";
+    this._confirm = null;
   }
 
   setConfig(config) {
@@ -704,6 +776,12 @@ class TaskMatePetCard extends LitElement {
     if (changed.has("hass") && this.config) {
       const child = this._child();
       if (child && child.pet) this._checkEvolve(child.pet);
+      // A purchase approved or a balance changed elsewhere: refresh the shop.
+      if (child && this._tab === "shop" && this._shop && !this._shopBusy) {
+        const key = JSON.stringify([child.points, child.level, child.pet && child.pet.shop]);
+        if (this._shopKey !== undefined && key !== this._shopKey) this._loadShop();
+        this._shopKey = key;
+      }
     }
   }
 
@@ -723,7 +801,204 @@ class TaskMatePetCard extends LitElement {
         ${pet.adopted ? this._renderPet(child, pet) : this._renderAdopt(child)}
       </ha-card>`;
     }
-    return html`<ha-card>${this._header(title, pet)}${pet.adopted ? this._renderPet(child, pet) : this._renderAdopt(child)}</ha-card>`;
+    if (!pet.adopted) return html`<ha-card>${this._header(title, pet)}${this._renderAdopt(child)}</ha-card>`;
+    const shopTab = this._shopShown(pet);
+    // No shop: the card renders exactly as it did before the shop existed.
+    if (!shopTab) return html`<ha-card>${this._header(title, pet)}${this._renderPet(child, pet)}</ha-card>`;
+    const tab = this._tab;
+    return html`<ha-card>${this._header(title, pet)}
+      ${this._renderTabs(tab)}
+      ${tab === "shop" ? this._renderShop(child, pet) : this._renderPet(child, pet)}
+    </ha-card>`;
+  }
+
+  // ── pet shop ───────────────────────────────────────────────────────
+
+  _shopShown(pet) {
+    return !!(pet && pet.adopted && pet.shop) && this.config.show_shop !== false;
+  }
+
+  _renderTabs(tab) {
+    const btn = (id, icon, label) => html`
+      <button type="button" role="tab" class="pt-tab ${tab === id ? "on" : ""}" aria-selected="${tab === id}"
+              @click=${() => this._openTab(id)}><span aria-hidden="true">${icon}</span> ${label}</button>`;
+    return html`<div class="pt-tabs" role="tablist">
+      ${btn("pet", "🐾", this._t("pet.tab_pet"))}
+      ${btn("shop", "🛍️", this._t("pet.tab_shop"))}
+    </div>`;
+  }
+
+  _openTab(id) {
+    this._tab = id;
+    this._shopMsg = "";
+    this._confirm = null;
+    this._shopKey = undefined;
+    return id === "shop" ? this._loadShop() : undefined;
+  }
+
+  async _loadShop() {
+    if (!this.hass || !this.hass.callWS) return;
+    try {
+      const res = await this.hass.callWS({ type: "taskmate/pet_shop/catalogue", child_id: this.config.child_id });
+      const child = this._child();
+      this._shop = { ...res, points_at: child ? Number(child.points) || 0 : 0 };
+    } catch (err) {
+      this._shopMsg = String(err?.message || err);
+    }
+  }
+
+  _pointsIcon() {
+    return this._attrs().points_icon || "mdi:star";
+  }
+
+  _itemName(item) {
+    if (ACC_ICON[item.id] && !item.cost) return this._t(`pet.acc_${item.id}`);
+    return item.name || this._t(`pet.item_${item.id}`);
+  }
+
+  // What the child can spend now: the wallet less anything already promised,
+  // kept in step with the sensor between fetches.
+  _spendable(child) {
+    if (!this._shop) return Number(child.points) || 0;
+    const drift = (Number(child.points) || 0) - (this._shop.points_at || 0);
+    return Math.max(0, (Number(this._shop.spendable) || 0) + drift);
+  }
+
+  _renderShop(child, pet) {
+    const shop = this._shop;
+    const sensorShop = pet.shop || {};
+    const worn = petWorn(pet);
+    const wornIds = new Set(Object.values(worn).map(w => w.id));
+    const level = Number(child.level) || 1;
+    // The sensor is live; it leaves out empty lists, and a very long owned list.
+    const owned = new Set(sensorShop.owned || (shop && (shop.owned || []).length > 40 ? shop.owned : []));
+    const pending = new Set(sensorShop.pending || []);
+    const spendable = this._spendable(child);
+    const icon = this._pointsIcon();
+    const price = (cost) => html`<span class="pt-price"><ha-icon icon="${icon}"></ha-icon>${cost}</span>`;
+    const earned = Object.keys(ACC_ICON).map(id => {
+      const unlocked = level >= ACC_LEVEL[id];
+      const on = wornIds.has(id);
+      return html`
+        <div class="pt-item ${on ? "worn" : ""} ${unlocked ? "" : "locked"}">
+          ${on ? html`<span class="pt-badge on">${this._t("pet.shop_on")}</span>` : ""}
+          ${unlocked ? "" : html`<span class="pt-badge lvl">${this._t("pet.shop_level_short", { level: ACC_LEVEL[id] })}</span>`}
+          <span class="pt-item-emoji" aria-hidden="true">${ACC_ICON[id]}</span>
+          <span class="pt-item-name">${this._t(`pet.acc_${id}`)}</span>
+          <span class="pt-item-meta">${this._t("pet.level", { level: ACC_LEVEL[id] })}</span>
+          ${unlocked
+            ? html`<button type="button" class="pt-btn pt-btn-ghost pt-btn-sm" ?disabled=${this._shopBusy}
+                     @click=${() => this._wear(id, !on)}>${this._t(on ? "pet.shop_take_off" : "pet.shop_put_on")}</button>`
+            : html`<span class="pt-btn pt-btn-ghost pt-btn-sm pt-btn-off">${this._t("pet.shop_locked")}</span>`}
+        </div>`;
+    });
+    let items = shop ? (shop.items || []) : [];
+    if (this.config.hide_unaffordable) {
+      items = items.filter(i => owned.has(i.id) || pending.has(i.id) || (Number(i.cost) || 0) <= spendable);
+    }
+    const cards = items.map(item => {
+      const name = this._itemName(item);
+      const isOwned = owned.has(item.id);
+      const isPending = pending.has(item.id);
+      const gate = Number(item.level) || 0;
+      const locked = !isOwned && gate > level;
+      const on = wornIds.has(item.id);
+      let action;
+      if (isOwned) {
+        action = html`<button type="button" class="pt-btn pt-btn-ghost pt-btn-sm" ?disabled=${this._shopBusy}
+          @click=${() => this._wear(item.id, !on)}>${this._t(on ? "pet.shop_take_off" : "pet.shop_put_on")}</button>`;
+      } else if (isPending) {
+        action = html`<span class="pt-wait">${this._t("pet.shop_waiting")}</span>`;
+      } else if (locked) {
+        action = html`<span class="pt-btn pt-btn-ghost pt-btn-sm pt-btn-off">${this._t("pet.shop_locked")}</span>`;
+      } else {
+        const short = (Number(item.cost) || 0) > spendable;
+        action = html`<button type="button" class="pt-btn pt-btn-sm" ?disabled=${this._shopBusy || short}
+          title="${short ? this._t("pet.shop_need_more", { count: (Number(item.cost) || 0) - spendable }) : ""}"
+          @click=${() => { this._confirm = item; this._shopMsg = ""; }}>${this._t("pet.shop_buy")}</button>`;
+      }
+      return html`
+        <div class="pt-item ${isOwned ? "owned" : ""} ${on ? "worn" : ""} ${locked ? "locked" : ""}">
+          ${isOwned ? html`<span class="pt-badge owned">${this._t(on ? "pet.shop_on" : "pet.shop_owned")}</span>` : ""}
+          ${locked ? html`<span class="pt-badge lvl">${this._t("pet.shop_level_short", { level: gate })}</span>` : ""}
+          <span class="pt-item-emoji" aria-hidden="true">${item.emoji}</span>
+          <span class="pt-item-name">${name}</span>
+          <span class="pt-item-meta">${price(item.cost)}${locked ? html` · ${this._t("pet.level", { level: gate })}` : ""}</span>
+          ${action}
+        </div>`;
+    });
+    const over = Number(sensorShop.approve_over) || 0;
+    const carry = shop ? shop.carry_over !== false : true;
+    return html`
+      <div class="pt-shop">
+        <div class="pt-wallet">${this._t("pet.shop_wallet")} ${price(spendable)}</div>
+        <div class="pt-shop-title">${this._t("pet.shop_earned")}</div>
+        <div class="pt-grid">${earned}</div>
+        <div class="pt-shop-title">${this._t("pet.shop_title")}</div>
+        ${!shop
+          ? html`<div class="pt-shop-note">${this._shopMsg || this._t("pet.shop_loading")}</div>`
+          : cards.length
+            ? html`<div class="pt-grid">${cards}</div>`
+            : html`<div class="pt-shop-note">${this._t(this.config.hide_unaffordable && (shop.items || []).length ? "pet.shop_none_affordable" : "pet.shop_empty")}</div>`}
+        ${shop && this._shopMsg ? html`<div class="pt-shop-msg" role="status">${this._shopMsg}</div>` : ""}
+        <div class="pt-shop-foot">
+          ${this._t(carry ? "pet.shop_carry_on" : "pet.shop_carry_off")}
+          ${over ? html` ${this._t("pet.shop_ask_over", { cost: `${over} ${this._attrs().points_name || "⭐"}` })}` : ""}
+        </div>
+        ${this._confirm ? this._renderConfirm(this._confirm, spendable, over) : ""}
+      </div>`;
+  }
+
+  _renderConfirm(item, spendable, over) {
+    const cost = Number(item.cost) || 0;
+    const ask = over > 0 && cost > over;
+    const icon = this._pointsIcon();
+    const pts = (n) => html`<span class="pt-price"><ha-icon icon="${icon}"></ha-icon>${n}</span>`;
+    return html`
+      <div class="pt-sheet-scrim" @click=${() => { this._confirm = null; }}></div>
+      <div class="pt-sheet" role="dialog" aria-modal="true" aria-label="${this._t("pet.shop_confirm_title", { name: this._itemName(item) })}">
+        <div class="pt-sheet-row">
+          <span class="pt-sheet-emoji" aria-hidden="true">${item.emoji}</span>
+          <div>
+            <div class="pt-sheet-q">${this._t("pet.shop_confirm_title", { name: this._itemName(item) })} ${pts(cost)}?</div>
+            <div class="pt-sheet-sub">${ask
+              ? this._t("pet.shop_confirm_ask")
+              : this._t("pet.shop_confirm_left", { remaining: Math.max(0, spendable - cost) })}</div>
+          </div>
+        </div>
+        <div class="pt-sheet-btns">
+          <button type="button" class="pt-btn pt-btn-ghost" @click=${() => { this._confirm = null; }}>${this._t("pet.shop_not_now")}</button>
+          <button type="button" class="pt-btn" ?disabled=${this._shopBusy} @click=${() => this._buy(item)}>${this._t(ask ? "pet.shop_ask_parent" : "pet.shop_buy_it")}</button>
+        </div>
+      </div>`;
+  }
+
+  async _buy(item) {
+    this._shopBusy = true;
+    try {
+      await this.hass.callService("taskmate", "buy_pet_item", { child_id: this.config.child_id, item_id: item.id });
+      this._confirm = null;
+      await this._loadShop();
+      const pending = this._shop && (this._shop.pending || []).includes(item.id);
+      this._shopMsg = this._t(pending ? "pet.shop_asked" : "pet.shop_bought", { name: this._itemName(item) });
+    } catch (err) {
+      this._confirm = null;
+      this._shopMsg = String(err?.message || err);
+    } finally {
+      this._shopBusy = false;
+    }
+  }
+
+  async _wear(itemId, on) {
+    this._shopBusy = true;
+    this._shopMsg = "";
+    try {
+      await this.hass.callService("taskmate", "equip_pet_item", { child_id: this.config.child_id, item_id: itemId, wear: on });
+    } catch (err) {
+      this._shopMsg = String(err?.message || err);
+    } finally {
+      this._shopBusy = false;
+    }
   }
 
   _speciesName(id) { return this._t(`pet.species_${id}`); }
@@ -761,13 +1036,24 @@ class TaskMatePetCard extends LitElement {
     const g = pet.goal;
     const span = g ? Math.max(1, g.at - g.from) : 1;
     const pct = g ? Math.max(0, Math.min(100, Math.floor(((pet.xp - g.from) / span) * 100))) : 100;
+    const worn = petWorn(pet);
+    // The accessory strip: without a wardrobe (no shop, nothing changed) an
+    // unlocked accessory is a worn one, as it always was. With one, only what
+    // is worn is highlighted; unlocked but off is shown plain, not greyed.
+    const wornIds = pet.worn ? new Set(Object.values(worn).map(w => w.id)) : null;
+    const stripClass = (a) => {
+      if (!acc.includes(a)) return "";
+      if (!wornIds) return "on";
+      return wornIds.has(a) ? "on" : "earned";
+    };
     const scene = petScene(pet.species, pet.stage, {
       legendary: !!pet.legendary,
       home: pet.home || 0,
       egg: !!pet.egg_ready,
       accessories: acc,
+      worn,
     });
-    const homeClass = pet.home ? "has-home" : "";
+    const homeClass = pet.home || worn.home ? "has-home" : "";
     return html`
       <div class="pt-body">
         <button type="button" class="pt-stage ${homeClass} mood-${pet.mood} stage-${pet.stage} ${pet.legendary ? "legendary" : ""} ${this._petting ? "petting" : ""} ${this._evolving ? "evolving" : ""}"
@@ -791,7 +1077,7 @@ class TaskMatePetCard extends LitElement {
         ${pet.egg_ready ? this._renderEggReady(child, pet) : ""}
         ${this.config.compact ? "" : html`<div class="pt-acc">
           ${["bow", "top_hat", "scarf", "crown"].map(a => html`
-            <span class="pt-acc-item ${acc.includes(a) ? "on" : ""}" title="${this._t(`pet.acc_${a}`)}">
+            <span class="pt-acc-item ${stripClass(a)}" title="${this._t(`pet.acc_${a}`)}">
               <span>${ACC_ICON[a]}</span>
               <small>${acc.includes(a) ? this._t(`pet.acc_${a}`) : this._t("pet.acc_locked", { level: { bow: 3, top_hat: 8, scarf: 15, crown: 25 }[a] })}</small>
             </span>`)}
@@ -901,6 +1187,7 @@ class TaskMatePetCard extends LitElement {
       .pt-acc-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 10px; border-radius: 12px; min-width: 64px;
         background: var(--tmd-surface-2, rgba(127,127,127,.1)); opacity: .45; filter: grayscale(1); }
       .pt-acc-item.on { opacity: 1; filter: none; background: color-mix(in srgb, var(--pt-accent) 14%, transparent); }
+      .pt-acc-item.earned { opacity: 1; filter: none; }
       .pt-acc-item span { font-size: 24px; }
       .pt-acc-item small { font-size: .7rem; }
       .pt-family { width: 100%; }
@@ -924,6 +1211,47 @@ class TaskMatePetCard extends LitElement {
       .pt-btn { border: 0; border-radius: 999px; padding: 10px 22px; font: inherit; font-weight: 800; cursor: pointer; background: var(--pt-accent); color: #fff; }
       .pt-btn:disabled { opacity: .5; }
       .pt-err { color: var(--tmd-bad, var(--error-color, #c62828)); font-size: .85rem; }
+      /* Pet shop */
+      .pt-tabs { display: flex; gap: 4px; padding: 0 12px; border-bottom: 1px solid var(--tmd-border, var(--divider-color, #e0e0e0)); }
+      .pt-tab { border: 0; background: none; font: inherit; color: var(--tmd-dim, var(--secondary-text-color)); padding: 10px 14px; cursor: pointer;
+        border-bottom: 3px solid transparent; font-weight: 600; }
+      .pt-tab.on { color: var(--pt-accent); border-bottom-color: var(--pt-accent); }
+      .pt-shop { position: relative; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+      .pt-wallet { align-self: flex-end; font-weight: 700; font-size: .9rem; }
+      .pt-price { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; }
+      .pt-price ha-icon { --mdc-icon-size: 16px; color: #f5b301; }
+      .pt-shop-title { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+      .pt-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 14px 6px 10px; border-radius: 14px; text-align: center;
+        border: 2px solid var(--tmd-border, var(--divider-color, #e3e3e3)); background: var(--tmd-surface, var(--card-background-color, #fff)); }
+      .pt-item.owned { background: color-mix(in srgb, #2e7d32 8%, var(--tmd-surface, var(--card-background-color, #fff))); border-color: color-mix(in srgb, #2e7d32 35%, transparent); }
+      .pt-item.worn { border-color: var(--pt-accent); background: color-mix(in srgb, var(--pt-accent) 10%, var(--tmd-surface, var(--card-background-color, #fff))); }
+      .pt-item.locked { opacity: .55; }
+      .pt-item-emoji { font-size: 34px; line-height: 1.1; }
+      .pt-item-name { font-weight: 700; font-size: .9rem; overflow-wrap: anywhere; }
+      .pt-item-meta { font-size: .8rem; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .pt-badge { position: absolute; top: 5px; inset-inline-end: 5px; font-size: .62rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; text-transform: uppercase; }
+      .pt-badge.on { background: var(--pt-accent); color: #fff; }
+      .pt-badge.owned { background: #2e7d32; color: #fff; }
+      .pt-badge.lvl { background: rgba(127,127,127,.25); }
+      /* Child-facing: Take off / Put on / Buy stay at least 36px tall. */
+      .pt-btn-sm { box-sizing: border-box; min-height: 36px; max-width: 100%; display: inline-flex; align-items: center; justify-content: center;
+        padding: 6px 16px; font-size: .9rem; line-height: 1.15; margin-top: 4px; }
+      .pt-btn-ghost { background: transparent; color: var(--pt-accent); box-shadow: inset 0 0 0 2px var(--pt-accent); }
+      .pt-btn-off { color: var(--tmd-dim, var(--secondary-text-color)); box-shadow: inset 0 0 0 1px var(--tmd-border, var(--divider-color, #ccc)); cursor: default; }
+      .pt-wait { font-size: .75rem; font-weight: 700; margin-top: 6px; color: #b26a00; }
+      .pt-shop-note, .pt-shop-foot { font-size: .85rem; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .pt-shop-msg { font-weight: 700; color: var(--pt-accent); }
+      /* The confirm sheet sits at the bottom of the screen, so it is in view
+         whichever item the child tapped on a long, scrolled card. */
+      .pt-sheet-scrim { position: fixed; inset: 0; z-index: 8; background: rgba(0,0,0,.3); }
+      .pt-sheet { position: fixed; inset-inline: 10px; bottom: 12px; z-index: 9; max-width: 500px; margin: 0 auto; padding: 16px; border-radius: 18px; box-shadow: 0 8px 28px rgba(0,0,0,.22);
+        background: var(--tmd-surface, var(--card-background-color, #fff)); display: flex; flex-direction: column; gap: 14px; }
+      .pt-sheet-row { display: flex; gap: 14px; align-items: center; text-align: start; }
+      .pt-sheet-emoji { font-size: 44px; }
+      .pt-sheet-q { font-weight: 800; font-size: 1.05rem; }
+      .pt-sheet-sub { font-size: .88rem; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .pt-sheet-btns { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
       @keyframes pt-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
       @keyframes pt-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
       @keyframes pt-wobble { 0%, 80%, 100% { transform: rotate(0); } 85% { transform: rotate(-7deg); } 92% { transform: rotate(7deg); } }
@@ -961,6 +1289,8 @@ class TaskMatePetCardEditor extends LitElement {
       { name: "entity", selector: { entity: { domain: "sensor" } } },
       { name: "child_id", selector: { select: { options: children.map(c => ({ value: c.id, label: c.name })), mode: "dropdown" } } },
       { name: "title", selector: { text: {} } },
+      { name: "show_shop", selector: { boolean: {} } },
+      { name: "hide_unaffordable", selector: { boolean: {} } },
       {
         name: "card_design",
         selector: {
@@ -979,6 +1309,8 @@ class TaskMatePetCardEditor extends LitElement {
     entity: this._t("common.editor.overview_entity"),
     child_id: this._t("pet.editor.child"),
     title: this._t("common.editor.card_title"),
+    show_shop: this._t("pet.editor.show_shop"),
+    hide_unaffordable: this._t("pet.editor.hide_unaffordable"),
     card_design: this._t("common.design.field_label"),
   }[entry.name] ?? entry.name);
 
@@ -988,6 +1320,8 @@ class TaskMatePetCardEditor extends LitElement {
       entity: this.config.entity || "",
       child_id: this.config.child_id || "",
       title: this.config.title || "",
+      show_shop: this.config.show_shop !== false,
+      hide_unaffordable: this.config.hide_unaffordable === true,
       card_design: this.config.card_design || "global",
     };
     return html`<ha-form .hass=${this.hass} .data=${data} .schema=${this._buildSchema()}
@@ -997,7 +1331,8 @@ class TaskMatePetCardEditor extends LitElement {
   _formChanged(e) {
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(e.detail.value || {})) {
-      if (value === "" || value === null || value === undefined || (key === "card_design" && value === "global")) delete newConfig[key];
+      if (value === "" || value === null || value === undefined || (key === "card_design" && value === "global")
+        || (key === "show_shop" && value === true) || (key === "hide_unaffordable" && value === false)) delete newConfig[key];
       else newConfig[key] = value;
     }
     this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: newConfig }, bubbles: true, composed: true }));

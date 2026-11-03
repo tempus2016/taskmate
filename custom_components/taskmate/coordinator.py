@@ -40,6 +40,7 @@ from .coord_guests import GuestsMixin
 from .coord_inspections import InspectionsMixin
 from .coord_mandatory import MandatoryMixin
 from .coord_notifications import NotificationCoordinator
+from .coord_pet_shop import PetShopMixin
 from .coord_pets import PetsMixin
 from .coord_points import PointsMixin
 from .coord_points_expiry import PointsExpiryMixin
@@ -140,6 +141,7 @@ class TaskMateCoordinator(
     WeeklyGoalsMixin,
     RedemptionsMixin,
     RafflesMixin,
+    PetShopMixin,
     PetsMixin,
     ScreenTimeMixin,
     BinDaysMixin,

@@ -49,7 +49,7 @@ The entity's state is the time of the latest event. Its `event_type` attribute s
 | `screen_time_out` | Screen time ran out | `screen_time_changed` | Screen time changed |
 | `screen_time_saved` | Screen time saved | `screen_time_jar_opened` | Screen-time jar opened |
 | `points_expired` | Points expired | `points_expiring` | Points about to expire |
-| `reward_rated` | Reward rated | | |
+| `reward_rated` | Reward rated | `pet_item_bought` | Pet item bought (v7.7.0) |
 | `penalty_warning` | Penalty warning | `sibling_check` | Sibling check |
 
 An event about more than one child lands on each of their entities: a [gift of points](Gifting-Points.md) on both the giver's and the receiver's, a [teamwork chore](Teamwork-Chores.md) on everyone in the team.

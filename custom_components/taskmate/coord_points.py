@@ -658,6 +658,8 @@ class PointsMixin:
         "Surprise bonus",
         "Perfect week bonus reversed",
         "Streak milestone reversed",
+        # The item stays bought; a parent sorts out a mistaken purchase by hand.
+        "Pet shop:",
     )
 
     async def async_undo_transaction(self, transaction_id: str) -> None:

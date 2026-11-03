@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Kjøp en ting til kjæledyret",
+      "description": "Et barn kjøper en ting i kjæledyrbutikken med poengene sine. Over foreldrenes godkjenningsgrense venter kjøpet på en forelder i stedet.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet som kjøper"
+        },
+        "item_id": {
+          "name": "Ting-ID",
+          "description": "Tingen fra kjæledyrbutikken"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Kle på kjæledyret",
+      "description": "Ta en eid eller nivålåst ting på barnets kjæledyr (i stedet for det som er på den plassen), eller ta den av.",
+      "fields": {
+        "child_id": {
+          "name": "Barne-ID",
+          "description": "Barnet"
+        },
+        "item_id": {
+          "name": "Ting-ID",
+          "description": "En ting fra kjæledyrbutikken, eller bow, top_hat, scarf eller crown"
+        },
+        "wear": {
+          "name": "Ta på",
+          "description": "På tar den på, av tar den av."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Merk belønning som gitt",
       "description": "En innløst belønning er gitt og forlater listen over utestående. Oppgi child_id når barnet selv bekrefter.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Straff tjent inn igjen",
               "raffle_won": "Loddtrekning vunnet",
               "pet_evolved": "Kjæledyret vokste",
+              "pet_item_bought": "Kjæledyrting kjøpt",
               "reward_delivered": "Belønning gitt",
               "personal_best": "Personlig rekord",
               "appeal_submitted": "Klage sendt",

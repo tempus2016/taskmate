@@ -344,8 +344,13 @@ In **Settings → Virtual pets**. Growth is counted from the day the pet is adop
 | **Largest pet family** (`pet_family_max`) | `6` | 2–12 | Pets per child, counting the current one. No more eggs once it's full |
 | **Pet levels** (`pet_levels_enabled`) | `off` | on / off | A level badge that keeps going up after fully grown |
 | **New level every** (`pet_level_every`) | `300` | 1–1000000 | Growth between pet levels |
+| **Turn on the pet shop** (`pet_shop_enabled`) | `off` | on / off | *(v7.7.0)* Children spend points on cosmetics for their pet. See [Pet Shop](Virtual-Pets.md#pet-shop) |
+| **Purchases over this many points need a parent's OK** (`pet_shop_approve_over`) | `0` | 0–100000 | `0` never asks; dearer items wait for a parent |
+| **Bought items carry over to the next pet** (`pet_shop_carry_over`) | `on` | on / off | Off: a newly hatched pet starts with nothing bought |
 
 A pet never loses a stage, home item, level or egg it has reached: raising a number, undoing a chore or turning an option off only changes what happens next. **Reset numbers to defaults** puts every number back.
+
+Below the pet shop switches are the shop's catalogue (add, edit, hide, remove, **Reset to defaults**) and any purchases **Waiting for you**. Those act straight away rather than with **Save**.
 
 ### Per-child settings (v6.0.0)
 

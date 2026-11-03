@@ -38,7 +38,7 @@ const DERIVED_REASON_PREFIXES = [
   "Quest complete", "Quest reversed", "Challenge complete", "Challenge reversed",
   "Weekly goal reached", "Weekly goal reversed", "All times done",
   "Appeal:", "Sibling check:", "Surprise bonus",
-  "Perfect week bonus reversed", "Streak milestone reversed",
+  "Perfect week bonus reversed", "Streak milestone reversed", "Pet shop:",
 ];
 
 test("the panel refuses to undo every derived transaction reason", () => {

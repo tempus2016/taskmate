@@ -1645,6 +1645,38 @@
         }
       }
     },
+    "buy_pet_item": {
+      "name": "Iets kopen voor het huisdier",
+      "description": "Een kind koopt met zijn besteedbare punten iets in de huisdierwinkel. Boven de goedkeuringsgrens van de ouders wacht de aankoop op een ouder.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind dat koopt"
+        },
+        "item_id": {
+          "name": "Artikel-ID",
+          "description": "Het artikel uit de huisdierwinkel"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Huisdier aankleden",
+      "description": "Doe het huisdier van het kind iets aan dat het bezit of met een level heeft vrijgespeeld (in plaats van wat er op die plek zit), of doe het uit.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het kind"
+        },
+        "item_id": {
+          "name": "Artikel-ID",
+          "description": "Een artikel uit de huisdierwinkel, of bow, top_hat, scarf of crown"
+        },
+        "wear": {
+          "name": "Aandoen",
+          "description": "Aan doet het aan, uit doet het uit."
+        }
+      }
+    },
     "mark_reward_delivered": {
       "name": "Beloning als gegeven markeren",
       "description": "Een ingewisselde beloning is overhandigd en verdwijnt van de lijst met nog te geven beloningen. Geef child_id op als het kind het zelf bevestigt.",
@@ -1901,6 +1933,7 @@
               "penalty_redeemed": "Puntenaftrek goedgemaakt",
               "raffle_won": "Loterij gewonnen",
               "pet_evolved": "Huisdier gegroeid",
+              "pet_item_bought": "Huisdierspullen gekocht",
               "reward_delivered": "Beloning overhandigd",
               "personal_best": "Persoonlijk record",
               "appeal_submitted": "Bezwaar ingediend",

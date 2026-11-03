@@ -612,7 +612,7 @@ class TaskMatePanel extends HTMLElement {
       "Quest complete", "Quest reversed", "Challenge complete", "Challenge reversed",
       "Weekly goal reached", "Weekly goal reversed", "All times done",
       "Appeal:", "Sibling check:", "Surprise bonus",
-      "Perfect week bonus reversed", "Streak milestone reversed",
+      "Perfect week bonus reversed", "Streak milestone reversed", "Pet shop:",
     ];
   }
 
@@ -929,6 +929,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "adjust-points-custom") { this._openAdjustDialog(t.dataset.id); return; }
     if (act === "answer-help") { this._answerHelp(t.dataset.id); return; }
     if (act && act.startsWith("boost-") && this._boostClick(act, t)) return;
+    if (act && act.startsWith("petshop-") && this._petShopClick(act, t)) return;
     if (act && (act.startsWith("st-") || act.startsWith("bin-") || act.startsWith("shop-")) && this._householdClick(act, t)) return;
     if (act === "appeal-overturn" || act === "appeal-uphold") { this._decideAppeal(t.dataset.id, act === "appeal-overturn"); return; }
     if (act === "reward-delivered") { this._markRewardDelivered(t.dataset.id); return; }
@@ -14124,6 +14125,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "bounty")       return this._renderBountyDialog();
     if (this._dialog.kind === "boost")        return this._renderBoostDialog();
     if (this._dialog.kind === "boost-rule")   return this._renderBoostRuleDialog();
+    if (this._dialog.kind === "pet-item")     return this._renderPetItemDialog();
     if (this._dialog.kind === "auction")      return this._renderAuctionDialog();
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
@@ -15892,7 +15894,173 @@ class TaskMatePanel extends HTMLElement {
       ${sw("pet_levels_enabled", false)}
       ${row("pet_level_every", 300, 1, 1000000, chores(int("pet_level_every", 300)))}
       <div class="tm-setting-row"><div class="tm-setting-label"></div>
-        <button type="button" class="tm-btn tm-btn-ghost" data-act="pet-defaults">${this._t("panel.pet_reset_defaults")}</button></div>`;
+        <button type="button" class="tm-btn tm-btn-ghost" data-act="pet-defaults">${this._t("panel.pet_reset_defaults")}</button></div>
+      ${this._renderPetShopSettings(s, row, sw)}`;
+  }
+
+  // ── Pet shop: settings, purchases waiting for a parent, the catalogue ──
+  // The three settings save with the page; the catalogue and the approvals
+  // act straight away, like the boost rules.
+  _petItemName(item) {
+    return (item && (item.name || item.item_name)) || this._t(`pet.item_${item && (item.item_id || item.id)}`);
+  }
+
+  _renderPetShopSettings(s, row, sw) {
+    const shop = this._state.pet_shop || {};
+    const items = shop.items || [];
+    const pending = shop.pending || [];
+    const pts = this._esc(this._pointsName());
+    const slot = (id) => `<span class="tm-pill">${this._esc(this._t(`pet.slot_${id}`))}</span>`;
+    const btn = (act, id, icon, label) => `<button type="button" class="tm-icon-btn" data-act="${act}" data-id="${this._esc(id)}" title="${this._esc(label)}" aria-label="${this._esc(label)}"><ha-icon icon="${icon}"></ha-icon></button>`;
+    const pendingRows = pending.map(p => `
+      <div class="tm-petshop-pending">
+        <span class="tm-petshop-emoji" aria-hidden="true">${this._esc(p.emoji)}</span>
+        <div class="tm-help-text"><strong>${this._esc(this._petItemName(p))}</strong>
+          <div class="tm-meta">${this._t("panel.petshop_pending_meta", { name: this._esc(p.child_name), cost: this._num(p.cost), points: pts })}</div></div>
+        <div class="tm-petshop-tools">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="petshop-decline" data-id="${this._esc(p.id)}">${this._t("panel.petshop_decline")}</button>
+          <button type="button" class="tm-btn tm-btn-sm tm-btn-raised" data-act="petshop-approve" data-id="${this._esc(p.id)}">${this._t("panel.petshop_approve")}</button>
+        </div>
+      </div>`).join("");
+    const rows = items.map(it => `
+      <tr class="tm-row">
+        <td class="tm-col-sticky"><span class="tm-petshop-emoji" aria-hidden="true">${this._esc(it.emoji)}</span> <strong>${this._esc(this._petItemName(it))}</strong>
+          ${it.slot === "colour" && it.tint && it.tint !== "rainbow" ? `<span class="tm-petshop-swatch" style="background:${this._esc(it.tint)}"></span>` : ""}</td>
+        <td>${slot(it.slot)}</td>
+        <td class="tm-numeric">${this._num(it.cost)}</td>
+        <td class="tm-numeric">${Number(it.level) > 0 ? this._num(it.level) : "—"}</td>
+        <td><ha-switch data-act="petshop-shown" data-id="${this._esc(it.id)}" ${it.shown ? "checked" : ""} title="${this._esc(this._t("panel.petshop_col_shown"))}"></ha-switch></td>
+        <td><div class="tm-petshop-acts">${btn("petshop-edit", it.id, "mdi:pencil", this._t("panel.btn_edit"))}${btn("petshop-delete", it.id, "mdi:delete-outline", this._t("panel.tooltip_remove"))}</div></td>
+      </tr>`).join("");
+    return `
+      <div class="tm-setting-row tm-petshop-head"><div class="tm-setting-label"><strong>${this._t("panel.petshop_title")}</strong><small>${this._t("panel.petshop_hint")}</small></div></div>
+      ${sw("pet_shop_enabled", false)}
+      ${row("pet_shop_approve_over", 0, 0, 100000, this._t("panel.pet_shop_approve_over_hint"))}
+      ${sw("pet_shop_carry_over", true)}
+      ${pending.length ? `
+        <div class="tm-setting-row tm-setting-top"><div class="tm-setting-label">${this._t("panel.petshop_pending_title")}<small>${this._t("panel.petshop_pending_hint")}</small></div>
+          <div class="tm-petshop-pendings">${pendingRows}</div></div>` : ""}
+      <div class="tm-petshop-cat">
+        <div class="tm-toolbar">
+          <h3 class="tm-toolbar-title">${this._t("panel.petshop_catalogue")} <span class="tm-toolbar-count">${items.length}</span></h3>
+          <div class="tm-petshop-tools">
+            <button type="button" class="tm-btn" data-act="petshop-reset">${this._t("panel.petshop_reset")}</button>
+            <button type="button" class="tm-btn tm-btn-raised" data-act="petshop-add">+ ${this._t("panel.petshop_add")}</button>
+          </div>
+        </div>
+        ${items.length ? `
+          <div class="tm-table-wrap">
+            <table class="tm-table">
+              <thead><tr>
+                <th class="tm-col-sticky">${this._t("panel.petshop_col_item")}</th><th>${this._t("panel.petshop_col_slot")}</th>
+                <th>${this._t("panel.petshop_col_cost")}</th><th>${this._t("panel.petshop_col_level")}</th><th>${this._t("panel.petshop_col_shown")}</th><th></th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>` : `<p class="tm-meta">${this._t("panel.petshop_empty")}</p>`}
+        <p class="tm-meta">${this._t("panel.petshop_foot")}</p>
+      </div>`;
+  }
+
+  _petShopClick(act, t) {
+    const id = t.dataset.id;
+    const items = (this._state.pet_shop && this._state.pet_shop.items) || [];
+    switch (act) {
+      case "petshop-add":
+        this._openDialog({ kind: "pet-item", mode: "add", data: { id: "", name: "", emoji: "", slot: "hat", cost: 10, level: 0, shown: true, tint: "" } });
+        return true;
+      case "petshop-edit": {
+        const it = items.find(x => x.id === id);
+        if (it) this._openDialog({ kind: "pet-item", mode: "edit", data: { ...it, tint: it.tint || "" } });
+        return true;
+      }
+      case "petshop-save": this._savePetItem(); return true;
+      case "petshop-shown": {
+        const it = items.find(x => x.id === id);
+        if (it) this._petShopWS({ type: "taskmate/pet_shop/set_shown", item_id: id, shown: !it.shown }, "panel.petshop_saved");
+        return true;
+      }
+      case "petshop-delete": {
+        const it = items.find(x => x.id === id);
+        if (it && confirm(this._t("panel.petshop_delete_confirm", { name: this._petItemName(it) }))) {
+          this._petShopWS({ type: "taskmate/pet_shop/remove_item", item_id: id }, "panel.petshop_deleted");
+        }
+        return true;
+      }
+      case "petshop-reset":
+        if (confirm(this._t("panel.petshop_reset_confirm"))) this._petShopWS({ type: "taskmate/pet_shop/reset" }, "panel.petshop_reset_done");
+        return true;
+      case "petshop-approve":
+      case "petshop-decline":
+        this._petShopWS({ type: "taskmate/pet_shop/decide", purchase_id: id, approve: act === "petshop-approve" },
+          act === "petshop-approve" ? "panel.petshop_approved" : "panel.petshop_declined");
+        return true;
+    }
+    return false;
+  }
+
+  async _petShopWS(payload, okKey) {
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", err); return false; }
+    await this._fetchState();
+    this._showToast("ok", this._t(okKey));
+    return true;
+  }
+
+  _renderPetItemDialog() {
+    const d = this._dialog.data;
+    const builtIn = d.id && !d.name && ["sunglasses", "cap", "balloon", "cosy_bed", "rainbow", "wings", "ghost_sheet"].includes(d.id);
+    const slots = ["hat", "face", "neck", "held", "back", "body", "colour", "home"];
+    const body = `
+      <div class="tm-field-row">
+        <div class="tm-field">
+          <span class="tm-field-label">${this._esc(this._t("panel.petshop_name"))}</span>
+          <input class="tm-input" type="text" maxlength="30" data-field="name" value="${this._esc(d.name || "")}"
+            placeholder="${this._esc(builtIn ? this._t(`pet.item_${d.id}`) : "")}">
+          ${builtIn ? `<span class="tm-field-hint">${this._t("panel.petshop_name_builtin_hint")}</span>` : ""}
+        </div>
+        <div class="tm-field" style="max-width:140px">
+          <span class="tm-field-label">${this._esc(this._t("panel.petshop_emoji"))}</span>
+          <input class="tm-input" type="text" maxlength="8" data-field="emoji" value="${this._esc(d.emoji || "")}" placeholder="🧢">
+        </div>
+      </div>
+      <div class="tm-field-row">
+        <div class="tm-field">
+          <span class="tm-field-label">${this._esc(this._t("panel.petshop_col_slot"))}</span>
+          <select class="tm-select" data-field="slot">
+            ${slots.map(x => `<option value="${x}" ${d.slot === x ? "selected" : ""}>${this._esc(this._t(`pet.slot_${x}`))}</option>`).join("")}
+          </select>
+        </div>
+        ${this._field(this._t("panel.petshop_col_cost"), "cost", d.cost, "number", this._t("panel.petshop_cost_hint"))}
+      </div>
+      <div class="tm-field-row">
+        ${this._field(this._t("panel.petshop_col_level"), "level", d.level || 0, "number", this._t("panel.petshop_level_hint"))}
+        ${this._field(this._t("panel.petshop_tint"), "tint", d.tint || "", "text", this._t("panel.petshop_tint_hint"))}
+      </div>
+      ${this._switch(this._t("panel.petshop_shown_label"), "shown", d.shown !== false, this._t("panel.petshop_shown_hint"))}`;
+    return this._dialogShell(this._t(this._dialog.mode === "add" ? "panel.petshop_dialog_add" : "panel.petshop_dialog_edit"), body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="petshop-save">${this._t("panel.btn_save")}</button>`);
+  }
+
+  async _savePetItem() {
+    const d = this._dialog.data;
+    const builtIn = ["sunglasses", "cap", "balloon", "cosy_bed", "rainbow", "wings", "ghost_sheet"].includes(d.id);
+    const name = String(d.name || "").trim();
+    const emoji = String(d.emoji || "").trim();
+    const cost = Math.round(Number(d.cost));
+    const level = Math.max(0, Math.round(Number(d.level) || 0));
+    if (!name && !builtIn) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    if (!emoji) { this._showToast("err", this._t("panel.petshop_emoji_required")); return; }
+    if (!Number.isFinite(cost) || cost < 1) { this._showToast("err", this._t("panel.petshop_cost_invalid")); return; }
+    const payload = { type: "taskmate/pet_shop/save_item", name, emoji, slot: d.slot || "hat", cost, level,
+      shown: d.shown !== false, tint: d.slot === "colour" ? String(d.tint || "").trim() : "" };
+    if (d.id) payload.item_id = d.id;
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.petshop_saved"));
   }
 
   _num(v, fallback = 0) {
@@ -18364,6 +18532,15 @@ class TaskMatePanel extends HTMLElement {
       .tm-boost-tag { font-size: .72rem; padding: 2px 7px; border-radius: 999px; background: var(--secondary-background-color); color: var(--secondary-text-color); }
       .tm-boost-rule { display: flex; align-items: center; gap: 12px; border: 1px solid var(--divider-color); border-radius: 10px; padding: 10px 12px; }
       .tm-boost-rule.off { opacity: .6; }
+      .tm-petshop-cat { padding: 12px 20px 8px; }
+      .tm-petshop-acts { display: flex; gap: 2px; justify-content: flex-end; }
+      .tm-petshop-cat .tm-toolbar { flex-wrap: wrap; gap: 8px; }
+      .tm-petshop-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tm-petshop-emoji { font-size: 1.25rem; }
+      .tm-petshop-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; margin-inline-start: 6px; border: 1px solid var(--divider-color); }
+      .tm-petshop-pendings { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+      .tm-petshop-pending { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1px solid var(--divider-color); border-radius: 10px; padding: 8px 12px; }
+      .tm-petshop-pending .tm-help-text { flex: 1; min-width: 140px; }
       .tm-boost-rule .tm-help-text { flex: 1; min-width: 0; }
       .tm-boost-days { display: flex; gap: 3px; flex: none; }
       .tm-boost-days span { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: .66rem; font-weight: 700;
