@@ -296,13 +296,13 @@ Controls how a chore is distributed when assigned to multiple children.
 | Mode | Behaviour |
 |------|-----------|
 | `everyone` | All assigned children see the chore every day (default) |
-| `alternating` | Round-robin through assigned children, one child per day. Uses the rotation anchor date to determine whose turn it is. |
+| `alternating` | Round-robin through assigned children: each time the chore comes up, it passes to the next child. A daily chore moves on every day; a Monday/Wednesday/Friday chore moves on each of those days; a weekly chore moves on each week. Uses the rotation anchor date to determine whose turn it is. |
 | `random` | Deterministic per-day random pick from the assigned pool. Stable within a day — refreshing won't change the pick. Each chore rolls independently. |
 | `balanced` | Splits today's balanced-mode chores evenly across the pool so no single child gets swamped. |
 | `first_come` | Competitive — the chore is shown to the whole pool and the first child to complete it wins; it then locks for everyone else for the day. With a daily limit above 1 the pool shares the limit: it stays open until it has been done that many times in total, by anyone (v7.6.0+). See [First Come First Served](Chore-Scheduling.md#first-come-first-served). |
 | `unassigned` | Not auto-assigned to any child. The chore is hidden from child cards — a parent must complete it on behalf of a child via a service call or the admin panel. Use for parent-only or optional tasks. |
 
-For `alternating` and `random` modes, an **Assignment Rotation Anchor** date is used as the starting reference point for the rotation/randomisation algorithm.
+For `alternating` and `random` modes, an **Assignment Rotation Anchor** date is used as the starting reference point for the rotation/randomisation algorithm. An alternating chore gets today as its anchor when it is created, or when an existing chore is switched to alternating, so the first child in the list starts today (v7.6.1+). Alternating chores saved before v7.6.1 without an anchor count from a fixed date instead; they used to give the chore to the first child every day.
 
 > **Note:** When a child's availability entity is unavailable and **Require Availability** is on, they are skipped in the rotation.
 

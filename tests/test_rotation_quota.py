@@ -72,7 +72,10 @@ def _alternating_chore(coord, _mod, now):
                 assigned_to=[alice.id, bob.id],
             )
         )
-    active = coord._compute_active_children(chore)[0]
+        # Asked on the same day the chore was created: a fresh alternating
+        # chore is anchored to that day (#1172), so asking about another day
+        # would land on the other child.
+        active = coord._compute_active_children(chore)[0]
     inactive = next(c.id for c in (alice, bob) if c.id != active)
     return chore, active, inactive
 

@@ -62,7 +62,7 @@ Make sure you're on **v4.2.1 or newer**. Earlier versions only showed a claim bu
 The card has no `child_id` set, so TaskMate doesn't know which child is making the deposit. Either set `child_id:` in the card YAML, or use one card per child.
 
 ### What are assignment modes?
-Assignment modes control how a chore is distributed among assigned children. `everyone` (default) shows it to all children. `alternating` rotates one child per day. `random` picks a random child each day. `balanced` distributes today's chores evenly so no one child gets overloaded.
+Assignment modes control how a chore is distributed among assigned children. `everyone` (default) shows it to all children. `alternating` passes the chore to the next child each time it comes up. `random` picks a random child each day. `balanced` distributes today's chores evenly so no one child gets overloaded.
 
 ### Can I publish chores to a calendar?
 Yes. On each chore, select one or more HA calendar entities in the **Calendar Entities** field. TaskMate creates all-day events for each assigned child, projected ahead by the configured number of days (default 14, up to 90). Configure the projection horizon in Settings.

@@ -11,12 +11,94 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.core import callback
 from homeassistant.util import dt as dt_util
 
+from .const import recurrence_interval_days
 from .models import Chore, optional_float
 
 if TYPE_CHECKING:
     pass
 
 _LOGGER = logging.getLogger(__name__)
+
+_WEEKDAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_FIXED_STEP_DAYS = {"weekly": 7, "every_2_weeks": 14}
+_MONTH_STEP_COUNT = {"monthly": 1, "every_3_months": 3, "every_6_months": 6}
+
+# Day-0 for an alternating chore that was never given a rotation anchor and
+# has no created_date either (#1172). Any fixed date works; it only has to be
+# the same on every read so the rotation actually moves.
+_FALLBACK_ROTATION_ANCHOR = date(2024, 1, 1)
+
+
+def rotation_anchor(chore: Chore) -> date:
+    """Day-0 of an alternating chore's rotation.
+
+    The stored anchor when there is one. Chores saved without one (#1172 —
+    the editor's "starting child" left on its default) used to fall back to
+    *today*, so every day was day-0 and the first child got the chore for
+    ever. They now count from a fixed day instead (``created_date`` when the
+    chore has one, which only one-shot chores do), so the rotation moves.
+    """
+    for raw in (getattr(chore, "assignment_rotation_anchor", ""), getattr(chore, "created_date", "")):
+        if raw:
+            try:
+                return date.fromisoformat(str(raw)[:10])
+            except ValueError:
+                continue
+    return _FALLBACK_ROTATION_ANCHOR
+
+
+def _weekdays_in(start: date, days: int, weekdays: set[int]) -> int:
+    """How many of the ``days`` days from ``start`` fall on one of ``weekdays``."""
+    full_weeks, rest = divmod(days, 7)
+    count = full_weeks * len(weekdays)
+    first = start.weekday()
+    count += sum(1 for i in range(rest) if (first + i) % 7 in weekdays)
+    return count
+
+
+def rotation_steps(chore: Chore, anchor: date, day: date) -> int:
+    """How many times an alternating chore comes up between ``anchor`` and ``day``.
+
+    Counts occurrences in ``[anchor, day)``, so the child picked moves on once
+    per occurrence rather than once per calendar day (#1172). Counting days
+    broke any chore that isn't daily: an every-2-days chore with two children
+    always landed on the same child, and a weekly one with seven never moved.
+
+    - specific_days: the chosen weekdays between the two dates (every day when
+      none or all seven are chosen — the old behaviour, unchanged).
+    - recurring every N days / weekly / every 2 weeks: whole steps between the
+      dates. Each due day falls in its own step, so this moves on exactly once
+      per occurrence whatever weekday the anchor fell on.
+    - monthly / every 3 or 6 months: whole calendar-month steps.
+    - one-shot (and anything unrecognised): days, as before.
+
+    Negative when ``day`` is before ``anchor`` (calendar look-backs), so the
+    modulo in the caller still walks the pool backwards correctly.
+    """
+    if day < anchor:
+        return -rotation_steps(chore, day, anchor)
+    span = (day - anchor).days
+    schedule_mode = getattr(chore, "schedule_mode", "specific_days") or "specific_days"
+
+    if schedule_mode == "specific_days":
+        wanted = {_WEEKDAY_NAMES.index(d) for d in (getattr(chore, "due_days", None) or []) if d in _WEEKDAY_NAMES}
+        if not wanted or len(wanted) == 7:
+            return span
+        return _weekdays_in(anchor, span, wanted)
+
+    if schedule_mode == "recurring":
+        recurrence = getattr(chore, "recurrence", "weekly") or "weekly"
+        step_days = recurrence_interval_days(recurrence) or _FIXED_STEP_DAYS.get(recurrence)
+        if step_days:
+            return span // step_days
+        months = _MONTH_STEP_COUNT.get(recurrence)
+        if months:
+            whole = (day.year - anchor.year) * 12 + (day.month - anchor.month)
+            if day.day < anchor.day:
+                whole -= 1
+            return whole // months
+
+    return span
 
 
 class AssignmentsMixin:
@@ -364,7 +446,8 @@ class AssignmentsMixin:
         """Return the child IDs the chore is active for today.
 
         - everyone: whatever `assigned_to` already said (empty = all children).
-        - alternating: one child picked by `(today - anchor).days % len(pool)`.
+        - alternating: one child picked by occurrences-since-anchor % len(pool)
+          (see ``rotation_steps``).
         - random: one child picked by a deterministic per-day+chore-id hash.
         - balanced: today's balanced-mode chores sharing this pool are evenly
           split across the pool via a round-robin anchored by the date — so 10
@@ -461,12 +544,7 @@ class AssignmentsMixin:
             skip_offset = int(getattr(chore, "skip_count", 0) or 0)
 
         if mode == "alternating":
-            anchor_iso = getattr(chore, "assignment_rotation_anchor", "") or ""
-            try:
-                anchor = date.fromisoformat(anchor_iso) if anchor_iso else today
-            except ValueError:
-                anchor = today
-            offset = (today - anchor).days
+            offset = rotation_steps(chore, rotation_anchor(chore), today)
             idx = (offset + skip_offset) % len(pool)
             picked = self._skip_unavailable(pool, idx, require_availability)
             return [picked] if picked else []
