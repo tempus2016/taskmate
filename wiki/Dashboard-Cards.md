@@ -161,6 +161,7 @@ header_color: "#9b59b6"       # leave unset to use the child's own colour
 - When all chores are done, an animated "All Done!" state is shown
 - A confetti and celebration popup appears on completion — or the child's own [done animation](Card-Looks.md#done-animation-per-child) (stamp, fireworks or sticker)
 - **Card looks** — a [compact layout](Card-Looks.md#compact-child-card), [seasonal themes](Card-Looks.md#seasonal-themes), dark care strips in dark mode, and the [child's own colour](Card-Looks.md#the-childs-colour-on-their-cards) for the header when the card sets no `header_color`
+- **Advent calendar** — while the Christmas [season pack](Season-Event-Packs.md) is in its window, a 24-door strip sits above today's chores (opened, missed, today, still to come) with today's door as a **Done** button. Every design style shows it
 - **Timed tasks** show Start/Pause/Stop buttons with a live elapsed timer instead of a checkbox — see [Timed Tasks](Timed-Tasks.md)
 - **Bonus subtasks** appear as completable items below the parent chore after it's ticked off — see [Bonus Subtasks](Bonus-Subtasks.md)
 - **Badge strip** shows up to 5 most-recently-earned badges below the points readout — tap to open the admin panel's badges section. Disable with `show_badges: false`. See [Achievement Badges](Achievement-Badges.md)

@@ -168,6 +168,27 @@ def _inspection_redo_ids(coordinator) -> set[str]:
         return set()
 
 
+def _season_advent(coordinator) -> dict | None:
+    """The Christmas pack's advent calendar, or None (also for a stand-in coordinator)."""
+    getter = getattr(coordinator, "season_pack_advent", None)
+    try:
+        advent = getter() if callable(getter) else None
+    except Exception:  # noqa: BLE001
+        _LOGGER.debug("advent calendar unavailable", exc_info=True)
+        return None
+    return advent if isinstance(advent, dict) else None
+
+
+def _season_hidden_ids(coordinator, kind: str) -> set[str]:
+    """Ids of ``kind`` items whose season pack is out of season (hidden from the cards)."""
+    getter = getattr(coordinator, "season_pack_item_ids", None)
+    try:
+        ids = getter(kind, state="retired") if callable(getter) else None
+    except Exception:  # noqa: BLE001
+        return set()
+    return ids if isinstance(ids, set) else set()
+
+
 def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> list[dict]:
     """Build compact per-child summary used on the overview sensor."""
     children = common["children"]
@@ -182,6 +203,9 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     # one pass over the completions for the whole family.
     chore_streaks = coordinator.chore_streaks(children, common.get("chores", []), common.get("all_completions", []))
     praise = _todays_praise(common)
+    # Season event packs: each child's advent doors as 24 letters, only while
+    # the Christmas pack is in its window.
+    advent_doors = (_season_advent(coordinator) or {}).get("children") or {}
     summary = []
     for c in children:
         committed_amount = committed.get(c.id, 0)
@@ -298,6 +322,7 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                     else {}
                 ),
                 **({"appeals": mine} if (mine := coordinator.appeals_for_child(c.id)) else {}),
+                **({"advent": doors} if (doors := advent_doors.get(c.id)) else {}),
                 # Points expiry: the next points to fade, inside the warning window.
                 **({"points_expiry": exp} if (exp := coordinator.points_expiry_summary(c.id)) else {}),
                 # Savings forecast: average points earned a day, when there are any.
@@ -787,6 +812,10 @@ def _build_active_timed_sessions(coordinator: TaskMateCoordinator) -> list[dict]
 def _build_rewards_list(common: dict, coordinator: TaskMateCoordinator | None = None) -> list[dict]:
     """Build the rewards list with calculated_costs and pool allocations."""
     rewards = common["rewards"]
+    # A season pack's reward is out of sight between its seasons.
+    hidden = _season_hidden_ids(coordinator, "reward") if coordinator is not None else set()
+    if hidden:
+        rewards = [r for r in rewards if r.id not in hidden]
     # Per-child limits need every claim, not just the pending ones.
     all_claims = (
         coordinator.storage.get_reward_claims()
@@ -1390,6 +1419,13 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             "set_times_layout": "pills" if settings.get("set_times_layout") == "pills" else "rows",
             # Seasonal themes: the season the cards dress for today, only while one is.
             **({"season": today_season} if (today_season := active_season(settings, dt_util.now().date())) else {}),
+            # Season event packs: today's advent door (the per-child doors are
+            # on each child), only while the Christmas pack is in its window.
+            **(
+                {"advent": {k: v for k, v in advent.items() if k != "children"}}
+                if (advent := _season_advent(self.coordinator))
+                else {}
+            ),
             # Non-admin parent role (#661): cards unlock parent controls for
             # these HA users. Deliberately still published in the clear, and
             # deliberately never trusted: every privileged path re-resolves the
@@ -2092,6 +2128,11 @@ class ChildBadgesSensor(TaskMateBaseSensor):
 
         awarded_records = storage.get_awarded_badges_for_child(self.child_id)
         record_by_id = {a.badge_id: a for a in awarded_records}
+        # A season pack's badge between its seasons: kept by those who earned
+        # it, not offered to anyone else until the season is back.
+        hidden = _season_hidden_ids(self.coordinator, "badge")
+        if hidden:
+            applicable = [b for b in applicable if b.id in record_by_id or b.id not in hidden]
 
         earned: list[dict] = []
         available: list[dict] = []

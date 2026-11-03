@@ -56,6 +56,7 @@ from .coord_rewards import RewardsMixin
 from .coord_roulette import RouletteMixin
 from .coord_scheduled import ScheduledChangesMixin
 from .coord_screen_time import ScreenTimeMixin
+from .coord_season_packs import SeasonPacksMixin
 from .coord_set_times import SetTimesMixin
 from .coord_setup import SetupWizardMixin
 from .coord_shopping_jobs import ShoppingJobsMixin
@@ -113,6 +114,7 @@ class TaskMateCoordinator(
     TimedMixin,
     CalendarMixin,
     TemplatesMixin,
+    SeasonPacksMixin,
     ScheduledChangesMixin,
     ReportsMixin,
     RouletteMixin,
@@ -487,6 +489,11 @@ class TaskMateCoordinator(
         await self.async_remove_orphaned_auctions()
         await self.async_sweep_auctions(refresh=False)
         self._arm_auction_timer()
+        # Season event packs: install or retire whatever changed while HA was off.
+        try:
+            await self.async_sync_season_packs(refresh=False)
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("TaskMate: could not sync the season event packs")
         await self.async_refresh()
         # Schedule midnight streak check at 00:00:05
         self._unsub_midnight = async_track_time_change(
@@ -978,6 +985,9 @@ class TaskMateCoordinator(
             self._async_check_streaks,
             # Birthday mode (#924): badge + celebration, once per child per day.
             self.async_check_birthdays,
+            # Season event packs install / retire by date (before the one-shot
+            # expiry, which then leaves today's advent door alone).
+            self.async_sync_season_packs,
             self._async_expire_one_shot_chores,
             self._async_expire_dated_chores,
             self._async_expire_deadline_chores,

@@ -1,7 +1,7 @@
 """WebSocket commands for admin-panel tools (admin-only, like every panel command).
 
-Recently deleted (list + restore), the parent's reward order, and the
-Economy insight.
+Recently deleted (list + restore), the parent's reward order, the
+Economy insight, and removing a season event pack.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import voluptuous as vol
 from homeassistant.components import websocket_api
 
+from .const import SEASON_ORDER
 from .coord_trash import TRASH_KINDS
 from .websocket import _admin_only
 
@@ -16,6 +17,7 @@ WS_TRASH_LIST = "taskmate/recently_deleted/list"
 WS_TRASH_RESTORE = "taskmate/recently_deleted/restore"
 WS_REWARD_ORDER = "taskmate/rewards/set_order"
 WS_REPORT_ECONOMY = "taskmate/reports/economy"
+WS_SEASON_PACK_REMOVE = "taskmate/season_packs/remove"
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_TRASH_LIST})
@@ -59,4 +61,17 @@ async def ws_report_economy(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], coordinator.economy_report())
 
 
-PANEL_TOOL_COMMANDS = (ws_trash_list, ws_trash_restore, ws_reward_order, ws_report_economy)
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SEASON_PACK_REMOVE,
+        vol.Required("season"): vol.In(SEASON_ORDER),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def ws_season_pack_remove(hass, connection, msg, coordinator):
+    removed = await coordinator.async_remove_season_pack(msg["season"])
+    connection.send_result(msg["id"], {"removed": removed})
+
+
+PANEL_TOOL_COMMANDS = (ws_trash_list, ws_trash_restore, ws_reward_order, ws_report_economy, ws_season_pack_remove)

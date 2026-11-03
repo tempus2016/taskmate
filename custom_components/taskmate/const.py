@@ -332,6 +332,18 @@ SEASONS: Final = {
     "christmas": ("seasonal_christmas", (12, 1), (12, 26)),
     "summer": ("seasonal_summer", (6, 21), (8, 31)),
 }
+# Seasons whose dates move: Easter (the week up to Easter Sunday) and Back to
+# school (14 days from a first school day the parent sets). seasons.py works
+# out their windows. The order is the order a card picks between two seasons
+# on the same day, and the order of the rows in Settings.
+SEASON_ORDER: Final = ("halloween", "christmas", "easter", "back_to_school", "summer")
+SEASON_THEME_KEYS: Final = {season: f"seasonal_{season}" for season in SEASON_ORDER}
+SEASON_PACK_KEYS: Final = {season: f"season_pack_{season}" for season in SEASON_ORDER}
+# The first school day (ISO date, "" = not set); Back to school needs one.
+SEASON_SCHOOL_START_KEY: Final = "season_school_start"
+SEASON_SCHOOL_DAYS: Final = 14
+# {season: [child ids]} — who a pack is for; missing or empty = every child.
+SEASON_PACK_CHILDREN_KEY: Final = "season_pack_children"
 
 # --- Chore quality rating (#927) ---
 # When the "quality_rating_enabled" setting is on, a parent may rate an approval

@@ -220,6 +220,16 @@ const WZ_REVIEW = WZ_STEPS.indexOf("review");
 const WZ_DONE = WZ_STEPS.indexOf("done");
 const WZ_KID_ICONS = ["mdi:star", "mdi:heart", "mdi:paw", "mdi:white-balance-sunny", "mdi:weather-night", "mdi:trophy",
   "mdi:leaf", "mdi:creation", "mdi:fire", "mdi:medal", "mdi:book-open-variant", "mdi:car-sports"];
+// Settings → Seasons & events: the rows in order, and the look of each
+// season's header (the same emoji and gradient the cards' theme uses).
+const SEASON_PACK_ORDER = ["halloween", "christmas", "easter", "summer", "back_to_school"];
+const SEASON_PACK_LOOK = {
+  halloween: { emoji: "🎃", grad: "linear-gradient(135deg,#e8590c,#6a1b9a)" },
+  christmas: { emoji: "🎄", grad: "linear-gradient(135deg,#c62828,#2e7d32)" },
+  easter: { emoji: "🐣", grad: "linear-gradient(135deg,#8e24aa,#43a047)" },
+  summer: { emoji: "☀️", grad: "linear-gradient(135deg,#e65100,#0277bd)" },
+  back_to_school: { emoji: "🎒", grad: "linear-gradient(135deg,#1565c0,#f9a825)" },
+};
 const CHILD_AUTO_COLORS = ["#e91e63", "#2196f3", "#009688", "#ff9800", "#9c27b0", "#795548", "#3f51b5", "#8bc34a"];
 const WZ_KID_COLORS = ["#ff6b9d", "#3498db", "#1abc9c", "#9b59b6", "#e67e22", "#f1c40f", "#e74c3c", "#2ecc71"];
 const WZ_POINT_NAMES = [["points", "mdi:star"], ["stars", "mdi:star"], ["coins", "mdi:circle-multiple"], ["gems", "mdi:diamond-stone"]];
@@ -931,6 +941,7 @@ class TaskMatePanel extends HTMLElement {
     if (act && act.startsWith("boost-") && this._boostClick(act, t)) return;
     if (act && act.startsWith("petshop-") && this._petShopClick(act, t)) return;
     if (act && (act.startsWith("st-") || act.startsWith("bin-") || act.startsWith("shop-")) && this._householdClick(act, t)) return;
+    if (act && act.startsWith("spack-") && this._seasonPackClick(act, t)) return;
     if (act === "appeal-overturn" || act === "appeal-uphold") { this._decideAppeal(t.dataset.id, act === "appeal-overturn"); return; }
     if (act === "reward-delivered") { this._markRewardDelivered(t.dataset.id); return; }
     if (act === "print-voucher") { this._printVoucher(t.dataset.id); return; }
@@ -3888,6 +3899,26 @@ class TaskMatePanel extends HTMLElement {
     const shopKids = root.querySelectorAll("[data-shop-kid]");
     if (shopKids.length) {
       payload.shopping_jobs_children = Array.from(shopKids).filter(el => el.classList.contains("tm-chip-on")).map(el => el.dataset.shopKid);
+    }
+    // Season event packs: who each pack is for (none picked = every child).
+    // Sent only when a pick changed, so saving Settings never re-assigns a
+    // pack's items the parent has edited.
+    const packKids = root.querySelectorAll("[data-spack-kid]");
+    if (packKids.length) {
+      const map = {};
+      packKids.forEach(el => {
+        const raw = el.dataset.spackKid;
+        const cut = raw.indexOf(":");
+        const season = raw.slice(0, cut);
+        if (!map[season]) map[season] = [];
+        if (el.classList.contains("tm-chip-on")) map[season].push(raw.slice(cut + 1));
+      });
+      const before = (this._state.settings && this._state.settings.season_pack_children) || {};
+      const kidIds = new Set((this._state.children || []).filter(c => !c.is_adult).map(c => c.id));
+      const norm = list => (list || []).filter(id => kidIds.has(id)).slice().sort().join(",");
+      if (Object.keys(map).some(k => norm(map[k]) !== norm(before[k]))) {
+        payload.season_pack_children = { ...before, ...map };
+      }
     }
     // Surprise inspections (#981): the children the random pick may choose.
     const inspKids = root.querySelectorAll("[data-insp-kid]");
@@ -14147,6 +14178,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "insp-pass")    return this._renderInspectionPassDialog();
     if (this._dialog.kind === "insp-fail")    return this._renderInspectionFailDialog();
     if (this._dialog.kind === "manual-help")  return this._renderManualHelpDialog();
+    if (this._dialog.kind === "spack-preview") return this._renderSeasonPackPreview();
     return "";
   }
 
@@ -14286,22 +14318,168 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
-  /** Seasonal themes for the child and kiosk cards, each off by default. */
+  /** Seasons & events: each season's theme (the card look, as before) and
+   *  its event pack (the content). Theme and pack switches and the first
+   *  school day save with the rest of Settings; Preview and Remove act now. */
   _renderSeasonalSettings(s) {
-    const row = (key, emoji) => `
-            <div class="tm-setting-row">
-              <div class="tm-setting-label">${emoji} ${this._t(`panel.seasonal_${key}`)}<small>${this._t(`panel.seasonal_${key}_dates`)}</small></div>
-              <ha-switch data-setting="seasonal_${key}" ${s[`seasonal_${key}`] ? "checked" : ""}></ha-switch>
-            </div>`;
+    const packs = {};
+    ((this._state && this._state.season_packs) || []).forEach(p => { packs[p.season] = p; });
     return `
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.seasonal_title")}</h3><p class="tm-meta">${this._t("panel.seasonal_hint")}</p></div></div>
-          <div class="tm-section-body">
-            ${row("halloween", "🎃")}
-            ${row("christmas", "🎄")}
-            ${row("summer", "☀️")}
+          <div class="tm-section-pad tm-spacks">
+            ${SEASON_PACK_ORDER.map(key => this._seasonPackCard(key, s, packs[key])).join("")}
           </div>
         </div>`;
+  }
+
+  /** A date range like "30 Mar – 5 Apr" in the panel's language. */
+  _seasonRange(win) {
+    if (!win || win.length !== 2) return "";
+    const fmt = iso => {
+      const d = new Date(`${iso}T12:00:00`);
+      return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(this._hass?.locale?.language || [], { day: "numeric", month: "short" });
+    };
+    return `${fmt(win[0])} – ${fmt(win[1])}`;
+  }
+
+  _seasonDate(iso) {
+    const d = new Date(`${iso}T12:00:00`);
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(this._hass?.locale?.language || [], { day: "numeric", month: "short" });
+  }
+
+  /** One pack's name for a key in season_pack.<season>.<key>. */
+  _seasonItemName(season, key) {
+    return this._t(`season_pack.${season}.${key}`);
+  }
+
+  /** The chips that say what a pack holds. */
+  _seasonPackChips(key, p, have) {
+    const name = k => this._esc(this._seasonItemName(key, k));
+    const chip = (ic, kind, text) => `<div class="tm-spack-it ${have ? "tm-spack-have" : ""}"><span class="ic" aria-hidden="true">${ic}</span><span><span class="k">${this._esc(kind)}</span>${text}</span></div>`;
+    return ((p && p.contents) || []).map(c => {
+      if (c.kind === "advent") return chip("📅", this._t("panel.season_kind_advent"), this._esc(this._t("panel.season_advent_doors", { count: c.count })));
+      if (c.kind === "hunt") return chip("🥚", this._t("panel.season_kind_hunt"), this._esc(this._t("panel.season_hunt_eggs")));
+      if (c.kind === "quest") return chip("🗺️", this._t("panel.season_kind_quest"), this._esc(this._t("panel.season_quest_steps", { name: this._seasonItemName(key, c.key), count: c.steps })));
+      if (c.kind === "challenge") return chip("📚", this._t("panel.season_kind_challenge"), name(c.key));
+      if (c.kind === "chores") return chip("🧹", this._t("panel.season_kind_chores", { count: c.items.length }), c.items.map(i => name(i.key)).join(" · "));
+      if (c.kind === "reward") return chip("🎁", this._t("panel.season_kind_reward"), `${name(c.key)} · ⭐ ${this._num(c.points)}`);
+      if (c.kind === "badge") return chip("🏅", this._t("panel.season_kind_badge"), name(c.key));
+      return "";
+    }).join("");
+  }
+
+  _seasonPackCard(key, s, p) {
+    const look = SEASON_PACK_LOOK[key];
+    const label = this._t(`panel.seasonal_${key}`);
+    const movable = key === "easter" || key === "back_to_school";
+    const range = p && p.window ? this._seasonRange(p.window) : "";
+    const dates = this._t(`panel.seasonal_${key}_dates`) + (movable && range ? ` · ${range}` : "");
+    const state = (p && p.state) || "off";
+    const stateChip = state === "installed"
+      ? `<span class="tm-spack-chip tm-spack-ok">${this._esc(this._t("panel.season_state_installed", { date: this._seasonDate(p.installed_on || "") }))}</span>`
+      : state === "scheduled"
+      ? `<span class="tm-spack-chip tm-spack-info">${this._esc(this._t("panel.season_state_scheduled", { date: this._seasonDate(p.window[0]) }))}</span>`
+      : state === "needs_date"
+      ? `<span class="tm-spack-chip tm-spack-warn">${this._esc(this._t("panel.season_state_needs_date"))}</span>`
+      : `<span class="tm-spack-chip">${this._esc(this._t("panel.season_state_off"))}</span>`;
+    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const picked = (p && p.children) || [];
+    const kidChips = kids.map(c => {
+      const on = picked.includes(c.id);
+      return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="spack-kid" data-spack-kid="${this._esc(key)}:${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+    }).join("");
+    return `
+      <div class="tm-spack" data-season="${this._esc(key)}">
+        <div class="tm-spack-hd" style="background:${look.grad}">
+          <span class="tm-spack-em" aria-hidden="true">${look.emoji}</span>
+          <div class="tm-spack-title"><b>${this._esc(label)}</b><small>${this._esc(dates)}</small></div>
+          <label class="tm-spack-tog">${this._t("panel.season_theme")}
+            <ha-switch data-setting="seasonal_${key}" aria-label="${this._esc(this._t("panel.season_theme_aria", { season: label }))}" ${s[`seasonal_${key}`] ? "checked" : ""}></ha-switch></label>
+          <label class="tm-spack-tog">${this._t("panel.season_pack")}
+            <ha-switch data-setting="season_pack_${key}" aria-label="${this._esc(this._t("panel.season_pack_aria", { season: label }))}" ${s[`season_pack_${key}`] ? "checked" : ""}></ha-switch></label>
+        </div>
+        <div class="tm-spack-bd">
+          <div class="tm-spack-row">${this._seasonPackChips(key, p, state === "installed")}</div>
+          ${key === "back_to_school" ? `
+          <label class="tm-spack-date">
+            <span>${this._t("panel.season_school_start")}<small>${this._t("panel.season_school_start_hint")}</small></span>
+            <input type="date" class="tm-input" data-setting="season_school_start" value="${this._esc(s.season_school_start || "")}">
+          </label>` : ""}
+          ${kids.length ? `
+          <div class="tm-spack-assign" role="group" aria-label="${this._esc(this._t("panel.season_assign"))}">
+            <span class="tm-spack-assign-lbl">${this._t("panel.season_assign")}</span>
+            ${kidChips}
+            <small>${this._t("panel.season_assign_hint")}</small>
+          </div>` : ""}
+          <div class="tm-spack-st">
+            ${stateChip}
+            <span class="tm-spack-gap"></span>
+            <button type="button" class="tm-btn tm-btn-sm" data-act="spack-preview" data-season="${this._esc(key)}">${this._t("panel.season_preview")}</button>
+            ${p && p.items > 0 ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="spack-remove" data-season="${this._esc(key)}">${this._t("panel.season_remove")}</button>` : ""}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /** Preview: everything the pack will install, with its fixed numbers. */
+  _renderSeasonPackPreview() {
+    const key = this._dialog.data.season;
+    const p = ((this._state && this._state.season_packs) || []).find(x => x.season === key);
+    const label = this._t(`panel.seasonal_${key}`);
+    const name = k => this._esc(this._seasonItemName(key, k));
+    const pts = n => `<span class="tm-spack-pts">⭐ ${this._num(n)}</span>`;
+    const li = (text, n) => `<li><span>${text}</span>${n == null ? "" : pts(n)}</li>`;
+    const block = (ic, title, items) => `<div class="tm-spack-pv"><h4><span aria-hidden="true">${ic}</span> ${this._esc(title)}</h4><ul>${items.join("")}</ul></div>`;
+    const parts = ((p && p.contents) || []).map(c => {
+      if (c.kind === "advent") {
+        const doors = Array.from({ length: c.count }, (_, i) => li(this._esc(this._t("season_pack.door", { n: i + 1, job: this._seasonItemName(key, `advent_${i + 1}`) })), c.points));
+        return block("📅", `${this._t("panel.season_kind_advent")} · ${this._t("panel.season_advent_doors", { count: c.count })}`, doors);
+      }
+      if (c.kind === "hunt") {
+        const eggs = Array.from({ length: c.count }, (_, i) => li(this._esc(this._t("season_pack.easter.egg", { n: i + 1 })), c.points));
+        return block("🥚", `${this._t("panel.season_kind_hunt")} · ${this._t("panel.season_hunt_eggs")}`, eggs);
+      }
+      if (c.kind === "quest") return block("🗺️", `${this._t("panel.season_kind_quest")} · ${this._seasonItemName(key, c.key)}`, [...(c.items || []).map((k, i) => li(`${i + 1}. ${name(k)}`)), li(`<b>${this._esc(this._t("panel.season_kind_reward"))}</b>`, c.points)]);
+      if (c.kind === "challenge") return block("📚", this._t("panel.season_kind_challenge"), [li(`<b>${name(c.key)}</b><br><small>${name(`${c.key}_desc`)}</small>`, c.points)]);
+      if (c.kind === "chores") return block("🧹", this._t("panel.season_kind_chores", { count: c.items.length }), c.items.map(i => li(name(i.key), i.points)));
+      if (c.kind === "reward") return block("🎁", this._t("panel.season_kind_reward"), [li(name(c.key), c.points)]);
+      if (c.kind === "badge") return block("🏅", this._t("panel.season_kind_badge"), [li(`<b>${name(c.key)}</b><br><small>${this._esc(this._t(`season_pack.${key}.${c.key}_desc`, { count: c.goal }))}</small>`, c.points)]);
+      return "";
+    });
+    return this._dialogShell(
+      this._t("panel.season_preview_title", { season: label }),
+      `<p class="tm-meta">${this._t("panel.season_preview_note")}</p><div class="tm-spack-pvs">${parts.join("")}</div>`,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("common.close")}</button>`,
+      { wide: true }
+    );
+  }
+
+  _seasonPackClick(act, t) {
+    if (act === "spack-kid") {
+      const on = !t.classList.contains("tm-chip-on");
+      t.classList.toggle("tm-chip-on", on);
+      t.setAttribute("aria-pressed", String(on));
+      return true;
+    }
+    if (act === "spack-preview") {
+      this._openDialog({ kind: "spack-preview", data: { season: t.dataset.season } });
+      return true;
+    }
+    if (act === "spack-remove") {
+      this._removeSeasonPack(t.dataset.season);
+      return true;
+    }
+    return false;
+  }
+
+  async _removeSeasonPack(season) {
+    const label = this._t(`panel.seasonal_${season}`);
+    if (!confirm(this._t("panel.season_remove_confirm", { season: label }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/season_packs/remove", season });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.season_removed", { season: label }));
   }
 
   /** The palette colour a child gets by position; with no id, the next child added. */
@@ -17061,6 +17239,40 @@ class TaskMatePanel extends HTMLElement {
         border-top: 1px solid var(--tm-border-soft);
       }
       .tm-setting-row:first-child { border-top: 0; }
+      /* Settings → Seasons & events */
+      .tm-spacks { display: flex; flex-direction: column; gap: 14px; }
+      .tm-spack { border: 1px solid var(--tm-border); border-radius: 12px; overflow: hidden; background: var(--tm-surface-0); }
+      .tm-spack-hd { display: flex; align-items: center; gap: 12px; padding: 12px 14px; color: #fff; flex-wrap: wrap; }
+      .tm-spack-em { font-size: 28px; line-height: 1; }
+      .tm-spack-title { flex: 1 1 160px; min-width: 0; }
+      .tm-spack-title b { display: block; font-size: 16px; font-weight: 600; }
+      .tm-spack-title small { display: block; font-size: 12px; opacity: .92; }
+      .tm-spack-tog { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+      .tm-spack-bd { padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+      .tm-spack-row { display: flex; gap: 8px; flex-wrap: wrap; }
+      .tm-spack-it { display: flex; align-items: center; gap: 8px; border: 1px solid var(--tm-border); border-radius: 10px; padding: 6px 10px; font-size: 13px; background: var(--tm-bg); color: var(--tm-text); }
+      .tm-spack-it .ic { font-size: 16px; }
+      .tm-spack-it .k { display: block; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--tm-text-faint); }
+      .tm-spack-have { background: var(--tm-positive-soft); border-color: var(--tm-positive-border); }
+      .tm-spack-date { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; font-weight: 500; }
+      .tm-spack-date small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; }
+      .tm-spack-date input { max-width: 180px; }
+      .tm-spack-assign { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .tm-spack-assign-lbl { font-size: 12px; font-weight: 600; color: var(--tm-text-muted); }
+      .tm-spack-assign .tm-chip-btn { display: inline-flex; align-items: center; gap: 5px; }
+      .tm-spack-assign small { flex-basis: 100%; color: var(--tm-text-faint); font-size: 11.5px; }
+      .tm-spack-st { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .tm-spack-gap { flex: 1; }
+      .tm-spack-chip { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; background: var(--tm-surface-2, rgba(127,127,127,.15)); color: var(--tm-text-muted); }
+      .tm-spack-ok { background: var(--tm-positive-soft); color: var(--tm-positive); }
+      .tm-spack-info { background: var(--tm-accent-soft); color: var(--tm-accent-text); }
+      .tm-spack-warn { background: var(--tm-warning-soft); color: var(--tm-warning); }
+      .tm-spack-pvs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+      .tm-spack-pv h4 { margin: 0 0 6px; font-size: 13px; }
+      .tm-spack-pv ul { list-style: none; margin: 0; padding: 0; }
+      .tm-spack-pv li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-top: 1px solid var(--tm-border-soft); font-size: 13px; }
+      .tm-spack-pv li small { color: var(--tm-text-faint); }
+      .tm-spack-pts { white-space: nowrap; color: var(--tm-text-muted); font-variant-numeric: tabular-nums; }
       .tm-setting-label { color: var(--tm-text); font-size: 13px; font-weight: 500; }
       .tm-setting-label small { display: block; color: var(--tm-text-faint); font-weight: 400; font-size: 12px; margin-top: 2px; }
       .tm-difficulty-mults { display: flex; gap: 12px; flex-wrap: wrap; }

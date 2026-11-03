@@ -31,7 +31,8 @@ The main overview sensor. Carries scalar stats and the compact per-child summary
 | `points_name` | string | Currency name (e.g. "Stars") |
 | `points_icon` | string | Currency MDI icon (e.g. "mdi:star") |
 | `card_design` | string | Global default [card design style](Card-Design-Styles.md) — `classic` / `playroom` / `console` / `cleanpro` / `accessible` (default `classic`). Cards apply this when they have no per-card override. See [Card Design Styles](Card-Design-Styles.md) |
-| `season` | string | The [seasonal theme](Card-Looks.md#seasonal-themes) the cards dress for today: `halloween`, `christmas` or `summer`. Present only while one is switched on and in its window |
+| `season` | string | The [seasonal theme](Card-Looks.md#seasonal-themes) the cards dress for today: `halloween`, `christmas`, `easter`, `back_to_school` or `summer`. Present only while one is switched on and in its window |
+| `advent` | object | The Christmas [season pack](Season-Event-Packs.md)'s advent calendar: `chore` (today's door chore id, `""` once the 24th has passed), `door` (today's door number, `0` after the 24th), and the badge's `goal` and `badge` name. Present only while the Christmas pack is installed and in its window. Each child in `children` then carries its own `advent` (see below) |
 | `today_day_of_week` | string | Current day in HA timezone (e.g. "monday") |
 | `weekend_multiplier` | float | Current weekend multiplier setting |
 | `streak_reset_mode` | string | "reset" or "pause" |
@@ -112,6 +113,7 @@ Each entry in the `children` array:
 | `praise` | list | Today's [praise notes](Praise-Notes.md), newest first, up to 3 (`chore_name`, `note`, `by`) |
 | `penalty_warnings` | list | [Penalty warnings](Penalty-Warnings.md) given this period and not yet spent (`penalty_id`, `name`, `points`) |
 | `sibling_checks` | list | Siblings' chores this child may [check](Sibling-Checks.md), up to 5 (`completion_id`, `child_id`, `child_name`, `chore_name`, `completed_at`, `photo`) |
+| `advent` | string | The child's [advent calendar](Season-Event-Packs.md#the-advent-calendar-on-the-cards) doors, 24 letters, one per door: `o` opened, `p` waiting for approval, `m` missed, `t` today, `l` still to come, `-` not this child's door. Present only while the Christmas pack is in its window and the child has doors |
 | `appealable` | list | (v7.1.0) What the child may [appeal](Appeals.md): `kind`, `target_id`, `name`, `points`. Present only while appeals are on and there is something |
 | `appeals` | list | (v7.1.0) The child's open appeals and those decided in the last day: `id`, `kind`, `item_name`, `points`, `status`, `note` |
 | `personal_bests` | object | (v7.1.0) The child's [personal bests](Personal-Bests.md), present once there is a record: for each of `longest_streak`, `best_day_points`, `best_day_chores`, `best_week_points`, `best_single_award` an object with `value` and `date` (ISO; empty for the seeded streak), plus `previous` when it was beaten today; and `new_today`, the list of record keys beaten today |

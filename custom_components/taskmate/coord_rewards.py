@@ -227,8 +227,11 @@ class RewardsMixin:
                 claim.approved_cost = old.cost
                 self.storage.update_reward_claim(claim)
 
-    async def async_remove_reward(self, reward_id: str) -> None:
-        """Remove a reward and clean up any pending claims and pool allocations referencing it."""
+    async def async_remove_reward(self, reward_id: str, *, refresh: bool = True) -> None:
+        """Remove a reward and clean up any pending claims and pool allocations referencing it.
+
+        ``refresh=False`` leaves the coordinator refresh to a caller removing several.
+        """
         # Kept for 7 days so it can be restored (claims and savings included).
         self._snapshot_reward(reward_id)
         self.storage.remove_reward_claims_for_reward(reward_id)
@@ -243,7 +246,8 @@ class RewardsMixin:
         await self.storage.async_save()
         if reward and reward.image_url:
             await self._async_release_reward_image(reward.image_url, reward_id)
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
 
     async def async_set_reward_order(self, order: list[str]) -> None:
         """Save the parent's reward order; the rewards card follows it."""

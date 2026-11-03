@@ -1478,6 +1478,29 @@ class TaskMateChildCard extends LitElement {
       .tm-help-btn { border: 0; cursor: pointer; font-family: inherit; line-height: inherit; }
       .tm-help-on { opacity: .85; }
       .tm-care-wrap { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
+      /* Season event packs: the advent calendar strip (Christmas pack). */
+      .tm-advent { margin: 8px 16px 12px; border-radius: 14px; overflow: hidden; background: var(--secondary-background-color, #f3f3f3); color: var(--primary-text-color, #33373d); }
+      .tm-advent.tmd { margin: 4px 0 12px; }
+      .tm-advent-hd { display: flex; align-items: center; gap: 6px; padding: 8px 12px 0; font-size: .85rem; font-weight: 700; }
+      .tm-advent-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 8px 12px 12px; }
+      .tm-door { position: relative; aspect-ratio: 1; border-radius: 8px; display: grid; place-items: center; font-weight: 800; font-size: .9rem;
+        color: #fff; background: #c62828; line-height: 1; }
+      .tm-door small { position: absolute; bottom: 3px; inset-inline: 0; text-align: center; font-size: .55rem; font-weight: 700; opacity: .92; }
+      .tm-door.o { background: #2e7d32; }
+      .tm-door.p { background: #f9a825; color: #3e2700; }
+      .tm-door.l { background: #b0bec5; color: #eceff1; }
+      .tm-door.m { background: transparent; color: #e53935; border: 2px dashed #e53935; }
+      .tm-door.x { background: transparent; color: var(--secondary-text-color, #888); border: 1px dashed var(--divider-color, #ccc); }
+      .tm-door.t { outline: 3px solid #ffd54f; outline-offset: 2px; }
+      .tm-door.d24 { grid-column: span 2; aspect-ratio: auto; }
+      .tm-advent-today { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #fff8e1; color: #4e342e; border-top: 1px solid #ffe082; }
+      .tm-advent-today .ic { font-size: 2rem; line-height: 1; }
+      .tm-advent-today .bd { flex: 1; min-width: 0; font-size: .9rem; line-height: 1.3; }
+      .tm-advent-today .bd small { display: block; opacity: .8; font-size: .8rem; }
+      .tm-advent-today button { border: 0; border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer;
+        background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); min-height: 40px; }
+      .tm-advent-today button:disabled { opacity: .5; cursor: default; }
+      .tm-advent-ft { padding: 6px 12px 10px; font-size: .8rem; color: var(--secondary-text-color, #727272); }
       .tm-care-wrap.tmd { margin: 4px 0 10px; }
       .tm-care { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; text-align: start;
         background: var(--secondary-background-color, #f3f3f3); color: var(--primary-text-color, #33373d); font: inherit; font-size: .9rem; line-height: 1.3; border: 0; }
@@ -2502,7 +2525,7 @@ class TaskMateChildCard extends LitElement {
       }))
     };
 
-    const childChores = this._filterAndSortChores(allChores, child);
+    const childChores = this._withoutAdventDoor(this._filterAndSortChores(allChores, child), child, attrs);
 
     // Log the filtering result
 
@@ -2639,6 +2662,7 @@ class TaskMateChildCard extends LitElement {
         ` : ''}
 
         ${this._renderCareBlocks(child, "classic")}
+        ${this._renderAdvent(child, attrs, allChores, "classic")}
         <div class="chores-container">
           ${this._renderDayTabs(child, allChores, "classic")}
           ${this._showingTomorrow(child, allChores)
@@ -3014,7 +3038,7 @@ class TaskMateChildCard extends LitElement {
     }
 
     const allChores = attrs.chores || [];
-    const childChores = this._filterAndSortChores(allChores, child);
+    const childChores = this._withoutAdventDoor(this._filterAndSortChores(allChores, child), child, attrs);
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const pointsIcon = attrs.points_icon || "mdi:star";
@@ -3159,6 +3183,7 @@ class TaskMateChildCard extends LitElement {
             </div>
           </div>` : ""}
         ${this._renderCareBlocks(child, "tmd")}
+        ${this._renderAdvent(child, attrs, allChores, "tmd")}
         ${this._renderDayTabs(child, allChores, "tmd")}
         ${this._showingTomorrow(child, allChores)
           ? this._renderTomorrow(child, allChores, "tmd")
@@ -5591,6 +5616,64 @@ class TaskMateChildCard extends LitElement {
       this._loading = { ...this._loading, [key]: false };
       this.requestUpdate();
     }
+  }
+
+  /**
+   * Season event packs: the Christmas pack's advent calendar. The overview
+   * sensor sends `advent` (today's door) and, per child, 24 letters (o opened,
+   * p waiting, m missed, t today, l locked, - not theirs). Called from the
+   * classic render() AND _renderDesigned (the two-render-paths rule).
+   */
+  _adventFor(child, attrs) {
+    const adv = attrs && attrs.advent;
+    const doors = child && child.advent;
+    if (!adv || typeof doors !== "string" || doors.length !== 24) return null;
+    return { adv, doors };
+  }
+
+  /** Today's door is the strip's own action, so it leaves the chore list. */
+  _withoutAdventDoor(chores, child, attrs) {
+    const info = this._adventFor(child, attrs);
+    const id = info && info.adv.chore;
+    return id ? chores.filter(c => c.id !== id) : chores;
+  }
+
+  _renderAdvent(child, attrs, allChores, mode) {
+    const info = this._adventFor(child, attrs);
+    if (!info) return "";
+    const { adv, doors } = info;
+    const today = Number(adv.door) || 0;
+    const chore = adv.chore ? (allChores || []).find(c => c.id === adv.chore) : null;
+    const todayLetter = today ? doors[today - 1] : "";
+    const counted = doors.split("").filter(l => l === "o" || l === "p" || l === "m" || l === "t");
+    const opened = doors.split("").filter(l => l === "o").length;
+    const stateLabel = l => this._t(`child.advent_state_${l === "-" ? "l" : l}`);
+    const door = (n) => {
+      const l = doors[n - 1];
+      const cls = `tm-door ${l === "-" ? "x" : l}${n === 24 ? " d24" : ""}`;
+      const mark = l === "o" ? "✓" : l === "m" ? this._t("child.advent_state_m") : l === "p" ? "⏳" : "";
+      return html`<div class="${cls}" role="listitem" aria-label="${this._t("child.advent_door_aria", { n, state: stateLabel(l) })}">${n}${n === 24 ? " 🎁" : ""}${mark ? html`<small>${mark}</small>` : ""}</div>`;
+    };
+    const loading = chore ? !!this._loading[chore.id] : false;
+    const points = chore ? `${chore.points} ${this._pointsNameFor()}` : "";
+    const badgeLine = adv.goal && adv.badge && opened < adv.goal
+      ? ` · ${this._t("child.advent_badge", { goal: adv.goal, badge: adv.badge })}` : "";
+    return html`
+      <div class="tm-advent ${mode === "tmd" ? "tmd" : ""}">
+        <div class="tm-advent-hd"><span aria-hidden="true">🎄</span>${this._t("child.advent_title")}</div>
+        <div class="tm-advent-grid" role="list">${Array.from({ length: 24 }, (_, i) => door(i + 1))}</div>
+        ${chore && todayLetter && todayLetter !== "-" ? html`
+          <div class="tm-advent-today">
+            <span class="ic" aria-hidden="true">🎁</span>
+            <div class="bd"><b>${chore.name}</b>
+              <small>${todayLetter === "o" ? this._t("child.advent_today_open")
+                : todayLetter === "p" ? this._t("child.advent_waiting")
+                : this._t("child.advent_worth_approval", { points })}</small></div>
+            ${todayLetter === "t" ? html`<button type="button" ?disabled=${loading}
+              @click=${() => { if (!loading) this._handleComplete(chore, child); }}>${this._t("child.done")} ✓</button>` : ""}
+          </div>` : ""}
+        <div class="tm-advent-ft">${_ltrNums(this._t("child.advent_opened", { done: opened, total: counted.length }))}${badgeLine}</div>
+      </div>`;
   }
 
   _renderCareBlocks(child, mode) {

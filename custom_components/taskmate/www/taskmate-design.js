@@ -652,6 +652,9 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
     halloween: { emoji: "🎃", grad: "linear-gradient(135deg,#e8590c,#6a1b9a)", effect: "bats" },
     christmas: { emoji: "🎄", grad: "linear-gradient(135deg,#c62828,#2e7d32)", effect: "snow" },
     summer: { emoji: "☀️", grad: "linear-gradient(135deg,#e65100,#0277bd)", effect: "sun" },
+    // Easter and Back to school keep the child's own celebration (confetti).
+    easter: { emoji: "🐣", grad: "linear-gradient(135deg,#8e24aa,#43a047)", effect: "" },
+    back_to_school: { emoji: "🎒", grad: "linear-gradient(135deg,#1565c0,#f9a825)", effect: "" },
   };
   window.__taskmate_season = window.__taskmate_season || function (attrs, config) {
     if (!attrs || (config && config.seasonal === false)) return null;

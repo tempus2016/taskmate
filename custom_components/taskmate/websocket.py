@@ -84,6 +84,11 @@ from .const import (
     ROTATION_EVERY_MAX,
     ROTATION_PERIODS,
     SCHEDULE_MODES,
+    SEASON_ORDER,
+    SEASON_PACK_CHILDREN_KEY,
+    SEASON_PACK_KEYS,
+    SEASON_SCHOOL_START_KEY,
+    SEASON_THEME_KEYS,
     TAG_ID_MAX_LENGTH,
     TEAM_POINTS_MODES,
     TEAM_SIZE_MAX,
@@ -579,6 +584,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "raffles": coordinator.all_raffles(),
         # Pet shop: the catalogue and purchases waiting for a parent.
         "pet_shop": {"items": coordinator.pet_shop_items(), "pending": coordinator.pet_shop_pending_state()},
+        # Settings → Seasons & events: each pack's state, window and contents.
+        "season_packs": coordinator.season_packs_state(),
     }
 
 
@@ -2235,10 +2242,13 @@ _SUBKEY_SETTINGS = {
     "streak_reset_mode",
     "card_design",
     "set_times_layout",
-    # Seasonal themes on the child and kiosk cards, each off by default.
-    "seasonal_halloween",
-    "seasonal_christmas",
-    "seasonal_summer",
+    # Seasons & events: each season's theme (the card look) and its event
+    # pack (the content), all off by default; the first school day for Back
+    # to school; and who each pack is for.
+    *SEASON_THEME_KEYS.values(),
+    *SEASON_PACK_KEYS.values(),
+    SEASON_SCHOOL_START_KEY,
+    SEASON_PACK_CHILDREN_KEY,
     "weekend_multiplier",
     "birthday_points_multiplier",
     "birthday_chores_off",
@@ -2536,6 +2546,32 @@ def _validate_screen_time_devices(value):
     return out
 
 
+def _validate_school_start(value):
+    """The first school day: "" (not set) or an ISO date."""
+    if value in ("", None):
+        return ""
+    if not isinstance(value, str) or len(value) != 10:
+        raise vol.Invalid("expected a date like 2026-08-19")
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError as err:
+        raise vol.Invalid("expected a date like 2026-08-19") from err
+
+
+def _validate_season_pack_children(value):
+    """``{season: [child_id, ...]}`` — who each season pack is for (empty = every child)."""
+    if not isinstance(value, dict):
+        raise vol.Invalid("expected a map of season to children")
+    out = {}
+    for season, kids in value.items():
+        if season not in SEASON_ORDER or not isinstance(kids, list) or len(kids) > 50:
+            raise vol.Invalid("expected a map of season to children")
+        if not all(isinstance(k, str) and 0 < len(k) <= 64 for k in kids):
+            raise vol.Invalid("expected a map of season to children")
+        out[season] = list(dict.fromkeys(kids))
+    return out
+
+
 def _validate_sibling_check_pairs(value):
     """``{checker_id: [child_id, ...]}`` — who may check whom; never themselves."""
     if not isinstance(value, dict) or len(value) > 50:
@@ -2561,9 +2597,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("points_icon"): str,
     vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("set_times_layout"): vol.In(["rows", "pills"]),
-    vol.Optional("seasonal_halloween"): bool,
-    vol.Optional("seasonal_christmas"): bool,
-    vol.Optional("seasonal_summer"): bool,
+    **{vol.Optional(key): bool for key in SEASON_THEME_KEYS.values()},
+    **{vol.Optional(key): bool for key in SEASON_PACK_KEYS.values()},
+    vol.Optional(SEASON_SCHOOL_START_KEY): _validate_school_start,
+    vol.Optional(SEASON_PACK_CHILDREN_KEY): _validate_season_pack_children,
     vol.Optional("history_days"): vol.All(int, vol.Range(min=30, max=365)),
     vol.Optional("streak_reset_mode"): vol.In(["reset", "pause"]),
     vol.Optional("weekend_multiplier"): vol.All(vol.Coerce(float), vol.Range(min=1.0, max=5.0)),
@@ -2745,6 +2782,7 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         # @_admin_only) so a parent can never grant/escalate the role.
         storage.set_parent_user_ids(list(msg["parent_user_ids"]))
         changed.append("parent_user_ids")
+    old_pack_children = dict(storage.get_setting(SEASON_PACK_CHILDREN_KEY, {}) or {})
     for k, v in msg.items():
         if k in {"id", "type", "time_periods", "vacation_periods", "parent_user_ids"}:
             continue
@@ -2773,6 +2811,15 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         # Surprise inspections (#981): move the daily pick to its new time.
         if "inspection_pick_time" in changed:
             await coordinator.async_inspection_settings_changed()
+        # Season event packs: a pack switched on mid-season installs now, one
+        # switched off is hidden now, and new assignees take over its items.
+        if SEASON_PACK_CHILDREN_KEY in changed:
+            new_pack_children = msg[SEASON_PACK_CHILDREN_KEY]
+            for season in set(old_pack_children) | set(new_pack_children):
+                if (old_pack_children.get(season) or []) != (new_pack_children.get(season) or []):
+                    await coordinator.async_set_season_pack_children(season)
+        if any(k.startswith("season") for k in changed):
+            await coordinator.async_sync_season_packs(refresh=False)
         await coordinator.async_refresh()
     connection.send_result(msg["id"], {"updated": changed})
 
