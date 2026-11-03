@@ -58,6 +58,7 @@ nav:
   - "Chores":
       - "Chores": "Chores.md"
       - "Chore Scheduling": "Chore-Scheduling.md"
+      - "Week Planner": "Week-Planner.md"
       - "Chores at Set Times": "Set-Times.md"
       - "Chore & Reward Library": "Chore-Library.md"
       - "Mandatory Chores": "Mandatory-Chores.md"

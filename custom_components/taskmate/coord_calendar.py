@@ -581,19 +581,31 @@ class CalendarMixin:
             raise self._calendar_error("calendar_rename_series")
         if time_changed:
             raise self._calendar_error("calendar_time_follows_chore")
+        if self._move_series_occurrence(chore, origin, new_day, today):
+            await self.async_update_chore(chore)
+        return chore
+
+    def _move_series_occurrence(self, chore: Chore, origin: date, new_day: date, today: date) -> bool:
+        """Record one repeating-chore occurrence moving to ``new_day``, in memory.
+
+        Shared by the calendar and the week planner, so both refuse the same
+        things. Returns False when the occurrence is already there; the
+        caller saves the chore.
+        """
+        current = self._occurrence_day(chore, origin)
+        if new_day < today or current < today:
+            raise self._calendar_error("calendar_past_date")
         if new_day == current:
-            return chore
+            return False
         if self._is_chore_scheduled_for_date(chore, new_day):
             raise self._calendar_error("calendar_already_scheduled", chore=chore.name, date=new_day.isoformat())
-
         moved = dict(getattr(chore, "moved_occurrences", None) or {})
         if new_day == origin:
             moved.pop(origin.isoformat(), None)
         else:
             moved[origin.isoformat()] = new_day.isoformat()
         chore.moved_occurrences = self._prune_moved_occurrences(moved, today)
-        await self.async_update_chore(chore)
-        return chore
+        return True
 
     async def async_remove_chore_occurrence(self, chore_id: str, origin: date) -> Chore:
         """Remove one occurrence of a chore — that day only.

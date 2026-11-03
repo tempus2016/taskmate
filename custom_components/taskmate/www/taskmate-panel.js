@@ -49,6 +49,7 @@ const MANUAL_HELP = {
   children:      ["Children"],
   groups:        ["Task-Groups"],
   chores:        ["Chores"],
+  planner:       ["Week-Planner"],
   bounties:      ["Bounty-Board"],
   auctions:      ["Chore-Auctions"],
   quests:        ["Quests"],
@@ -200,6 +201,19 @@ const ROTATION_PERIODS = [
   { v: "month", lk: "panel.chore_rotation_period_month" },
 ];
 const ROTATION_EVERY_MAX = 12;
+
+// The week planner's weekdays (Monday first, like the backend) and the edge
+// colour of a chore that belongs to more than one child.
+const PL_WEEKDAYS = DAYS.map(d => d.v);
+const PL_NEUTRAL = "#9575cd";
+// Touch and pen pick a card up only after a press-and-hold, so a swipe that
+// starts on a card still scrolls. A mouse drags as soon as it moves.
+const PL_HOLD_MS = 300;
+const PL_HOLD_SLOP = 8;
+const PL_MOUSE_SLOP = 6;
+// Dragging this close to an edge of the scroll area scrolls it.
+const PL_EDGE = 48;
+const PL_EDGE_SPEED = 18;
 
 const STREAK_MODES = [
   { v: "reset", lk: "panel.streak_reset" },
@@ -452,6 +466,13 @@ class TaskMatePanel extends HTMLElement {
     this._onDragOver = this._onDragOver.bind(this);
     this._onDrop = this._onDrop.bind(this);
     this._onDragEnd = this._onDragEnd.bind(this);
+    // Week planner drag and drop.
+    this._onPointerDown = this._onPointerDown.bind(this);
+    this._plOnMove = this._plOnMove.bind(this);
+    this._plOnUp = this._plOnUp.bind(this);
+    this._plOnCancel = this._plOnCancel.bind(this);
+    this._plOnKey = this._plOnKey.bind(this);
+    this._plOnTouchMove = this._plOnTouchMove.bind(this);
     this._onVisibilityChange = this._onVisibilityChange.bind(this);
     this._lastConnected = null;
     this._showIds = localStorage.getItem("taskmate-show-ids") === "true";
@@ -534,6 +555,7 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragover", this._onDragOver);
     this.addEventListener("drop", this._onDrop);
     this.addEventListener("dragend", this._onDragEnd);
+    this.addEventListener("pointerdown", this._onPointerDown);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
     document.addEventListener("keydown", this._onDocKeyDown);
     // A screenshot in the manual that cannot load (no internet) says so.
@@ -561,6 +583,8 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("dragover", this._onDragOver);
     this.removeEventListener("drop", this._onDrop);
     this.removeEventListener("dragend", this._onDragEnd);
+    this.removeEventListener("pointerdown", this._onPointerDown);
+    this._plEndDrag();
     document.removeEventListener("visibilitychange", this._onVisibilityChange);
     document.removeEventListener("keydown", this._onDocKeyDown);
     this.removeEventListener("error", this._onManualImgError, true);
@@ -844,6 +868,7 @@ class TaskMatePanel extends HTMLElement {
     const act = t.dataset.act;
     if (act.startsWith("fb-")) { this._fbClick(t, e); return; }
     if (act.startsWith("man-")) { this._manualClick(t, e); return; }
+    if (act.startsWith("pl-")) { this._plClick(t, e); return; }
     // Setup wizard (#980) actions all start "wz-".
     if (act.startsWith("wz-")) { this._wizardAct(t, e); return; }
     // 📚 Library actions all start "lib-".
@@ -4153,6 +4178,8 @@ class TaskMatePanel extends HTMLElement {
 
   // ---- rendering -------------------------------------------------------
   _render() {
+    // A planner drag holds on to the cards it moves: redraw once it's dropped.
+    if (this._plDrag && this._plDrag.started) { this._plRenderPending = true; return; }
     this._rendered = true;
     this._guardSettingsLeave();
     // A re-render rebuilds the rows the floating row menu is anchored to, so
@@ -4171,7 +4198,7 @@ class TaskMatePanel extends HTMLElement {
 
     if (!this._shellReady) {
       if (!this._cachedStyles) {
-        this._cachedStyles = this._styles() + this._wizardStyles() + this._dashStyles() + this._libStyles();
+        this._cachedStyles = this._styles() + this._wizardStyles() + this._dashStyles() + this._libStyles() + this._plStyles();
       }
       const existingToast = this.querySelector(".tm-toast");
       this.innerHTML = `
@@ -4369,6 +4396,7 @@ class TaskMatePanel extends HTMLElement {
       ]},
       { key: "earn", head: this._t("panel.nav_earn"), icon: "mdi:check-circle-outline", items: [
         { id: "chores",    label: this._t("panel.tab_chores"),    icon: "mdi:check-circle-outline" },
+        { id: "planner",   label: this._t("planner.tab"),         icon: "mdi:calendar-week" },
         { id: "bounties",  label: this._t("panel.tab_bounties"),  icon: "mdi:flag-outline" },
         { id: "auctions",  label: this._t("panel.tab_auctions"),  icon: "mdi:gavel" },
         { id: "quests",    label: this._t("panel.tab_quests"),    icon: "mdi:map-marker-path" },
@@ -4721,6 +4749,7 @@ class TaskMatePanel extends HTMLElement {
       case "activity":  return this._renderActivityTab();
       case "insights":  return this._renderInsightsTab();
       case "chores":    return this._renderChoresTab();
+      case "planner":   return this._renderPlannerTab();
       case "rewards":   return this._renderRewardsTab();
       case "wishlists": return this._renderWishlistsTab();
       case "penalties": return this._renderPenBonTab("penalty");
@@ -9435,6 +9464,1058 @@ class TaskMatePanel extends HTMLElement {
     `;
   }
 
+  // -- Week planner ------------------------------------------------------
+  // Seven day columns for a chosen week. Dragging a chore card plans a change
+  // to its schedule or its assignee; nothing is saved until "Save week",
+  // which sends every chore's net change to taskmate/planner/apply in one
+  // batch. Which chore falls on which day is worked out here with the same
+  // rules as the calendar projection (coord_calendar.py), so unsaved changes
+  // show as they are made; whose turn a rotation chore is comes from
+  // taskmate/planner/week.
+
+  _plS() {
+    if (!this._pl) this._pl = { week: "", day: "", ops: [], errors: {}, picks: {}, picksLoading: "", saving: false };
+    return this._pl;
+  }
+
+  _plTodayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  // Dates are ISO strings; arithmetic runs in UTC so DST never shifts a day.
+  _plAddDays(iso, n) {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  _plDiff(a, b) {
+    return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+  }
+
+  // Monday = 0 … Sunday = 6, like Python's date.weekday().
+  _plDow(iso) {
+    return (new Date(`${iso}T00:00:00Z`).getUTCDay() + 6) % 7;
+  }
+
+  _plDayName(iso) {
+    return PL_WEEKDAYS[this._plDow(iso)];
+  }
+
+  _plWeekStart(iso) {
+    return this._plAddDays(iso, -this._plDow(iso));
+  }
+
+  _plWeekDays(start) {
+    return [0, 1, 2, 3, 4, 5, 6].map(i => this._plAddDays(start, i));
+  }
+
+  _plValidIso(v) {
+    return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
+  }
+
+  // A calendar move/removal (#977): true = moved onto the day, false = moved
+  // away or removed, null = the regular schedule decides.
+  _plOverride(c, iso) {
+    const moved = c.moved_occurrences;
+    if (!moved || typeof moved !== "object") return null;
+    if (Object.values(moved).includes(iso)) return true;
+    if (Object.prototype.hasOwnProperty.call(moved, iso)) return false;
+    return null;
+  }
+
+  // The scheduled date the occurrence on ``iso`` belongs to (itself unless moved there).
+  _plOrigin(c, iso) {
+    const moved = c.moved_occurrences || {};
+    const src = Object.keys(moved).find(k => moved[k] === iso);
+    return src && this._plValidIso(src) ? src : iso;
+  }
+
+  // Mirrors _is_chore_base_scheduled_for_date in coord_calendar.py.
+  _plBaseOn(c, iso, today) {
+    if (c.enabled === false) return false;
+    const mode = c.schedule_mode || "specific_days";
+    const created = c.created_date || "";
+    if (mode === "one_shot") return !!created && created === iso;
+    if (this._plValidIso(created) && iso < created) return false;
+    const dow = this._plDayName(iso);
+    if (mode === "specific_days") {
+      const due = Array.isArray(c.due_days) ? c.due_days : [];
+      return !due.length || due.includes(dow);
+    }
+    if (mode !== "recurring") return false;
+    const rec = c.recurrence || "weekly";
+    const day = String(c.recurrence_day || "").toLowerCase();
+    const start = c.recurrence_start || "";
+    const anchor = start || created;
+    if (day && (rec === "weekly" || rec === "every_2_weeks")) {
+      if (day !== dow) return false;
+      if (rec === "every_2_weeks" && this._plValidIso(start)) {
+        const diff = this._plDiff(start, iso);
+        if (diff < 0 || Math.floor(diff / 7) % 2 !== 0) return false;
+      }
+      return true;
+    }
+    const n = recurrenceIntervalDays(rec);
+    if (n && this._plValidIso(anchor)) {
+      const diff = this._plDiff(anchor, iso);
+      return diff >= 0 && diff % n === 0;
+    }
+    if (n) return false;
+    const steps = { monthly: 1, every_3_months: 3, every_6_months: 6 }[rec];
+    if (steps && this._plValidIso(anchor)) {
+      if (iso < anchor) return false;
+      const [ay, am, ad] = anchor.split("-").map(Number);
+      const [y, m, d] = iso.split("-").map(Number);
+      if (((y - ay) * 12 + (m - am)) % steps !== 0) return false;
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      return d === Math.min(ad, last);
+    }
+    if (steps) return false;
+    // Weekly / every 2 weeks with no day: the backend projects today's weekday.
+    if (rec === "weekly" || rec === "every_2_weeks") return this._plDow(iso) === this._plDow(today);
+    return false;
+  }
+
+  _plOccurs(c, iso, today) {
+    if (c.enabled === false) return false;
+    const o = this._plOverride(c, iso);
+    return o === null ? this._plBaseOn(c, iso, today) : o;
+  }
+
+  // Striped cards: chores whose day isn't a plain weekday choice — daily
+  // ones and repeating series.
+  _plIsSeries(c) {
+    const mode = c.schedule_mode || "specific_days";
+    return mode === "recurring" || (mode === "specific_days" && !(c.due_days || []).length);
+  }
+
+  _plReassignable(c) {
+    return ["everyone", "first_come", ""].includes(c.assignment_mode == null ? "everyone" : c.assignment_mode);
+  }
+
+  // How a repeating series moves so that it lands on ``to``. From the rail
+  // (no ``from``) the series restarts on that day.
+  _plSeriesPatch(c, from, to) {
+    const rec = c.recurrence || "weekly";
+    const weekly = rec === "weekly" || rec === "every_2_weeks";
+    const p = {};
+    if (!from) {
+      if (weekly) {
+        p.recurrence_day = this._plDayName(to);
+        if (rec === "every_2_weeks") p.recurrence_start = to;
+      } else {
+        p.recurrence_start = to;
+      }
+      return p;
+    }
+    const delta = this._plDiff(from, to);
+    if (weekly) {
+      p.recurrence_day = this._plDayName(to);
+      if (this._plValidIso(c.recurrence_start)) p.recurrence_start = this._plAddDays(c.recurrence_start, delta);
+    } else {
+      const anchor = this._plValidIso(c.recurrence_start) ? c.recurrence_start : c.created_date;
+      p.recurrence_start = this._plValidIso(anchor) ? this._plAddDays(anchor, delta) : to;
+    }
+    return p;
+  }
+
+  // One planned change applied to a copy of the chore.
+  _plApplyOp(c, op) {
+    const n = { ...c, due_days: [...(c.due_days || [])], assigned_to: [...(c.assigned_to || [])], moved_occurrences: { ...(c.moved_occurrences || {}) } };
+    if (op.kind === "days") {
+      const due = new Set(n.due_days);
+      if (!op.copy && op.from) due.delete(op.from);
+      due.add(op.to);
+      n.due_days = PL_WEEKDAYS.filter(d => due.has(d));
+    } else if (op.kind === "date") {
+      n.created_date = op.to;
+    } else if (op.kind === "once") {
+      if (op.to === op.origin) delete n.moved_occurrences[op.origin];
+      else n.moved_occurrences[op.origin] = op.to;
+    } else if (op.kind === "series") {
+      Object.assign(n, this._plSeriesPatch(c, op.from, op.to));
+    } else if (op.kind === "assign") {
+      n.assigned_to = [op.to];
+    }
+    return n;
+  }
+
+  // The chores as they'll be once every planned change is saved.
+  _plWorking(chores, ops) {
+    const byId = new Map(chores.map(c => [c.id, c]));
+    for (const op of ops) {
+      const c = byId.get(op.id);
+      if (c) byId.set(op.id, this._plApplyOp(c, op));
+    }
+    return chores.map(c => byId.get(c.id));
+  }
+
+  // The net change for one chore, in taskmate/planner/apply's shape.
+  _plPatch(base, cur) {
+    const p = {};
+    const same = (a, b) => JSON.stringify(a || []) === JSON.stringify(b || []);
+    if (!same(base.due_days, cur.due_days)) p.due_days = [...cur.due_days];
+    if (!same(base.assigned_to, cur.assigned_to)) p.assigned_to = [...cur.assigned_to];
+    for (const f of ["created_date", "recurrence_day", "recurrence_start"]) {
+      if ((base[f] || "") !== (cur[f] || "")) p[f] = cur[f] || "";
+    }
+    const was = base.moved_occurrences || {};
+    const now = cur.moved_occurrences || {};
+    const moves = [];
+    for (const k of new Set([...Object.keys(was), ...Object.keys(now)])) {
+      if (was[k] === now[k]) continue;
+      // Moved back to where it belongs: the backend drops the entry.
+      moves.push({ origin: k, date: Object.prototype.hasOwnProperty.call(now, k) ? now[k] : k });
+    }
+    if (moves.length) p.moves = moves;
+    return p;
+  }
+
+  _plPatches(chores, ops) {
+    const ids = [...new Set(ops.map(op => op.id))];
+    const working = this._plWorking(chores, ops);
+    const out = [];
+    for (const id of ids) {
+      const i = chores.findIndex(c => c.id === id);
+      if (i < 0) continue;
+      const patch = this._plPatch(chores[i], working[i]);
+      if (Object.keys(patch).length) out.push({ chore_id: id, ...patch });
+    }
+    return out;
+  }
+
+  // Drop every change of a chore that has come back to where it started.
+  _plCompact(chores, ops) {
+    const live = new Set(this._plPatches(chores, ops).map(p => p.chore_id));
+    return ops.filter(op => live.has(op.id));
+  }
+
+  _plKids() {
+    return ((this._state && this._state.children) || []).filter(c => !c.is_adult);
+  }
+
+  _plScope() {
+    const id = this._scopeId();
+    return id && this._plKids().some(k => k.id === id) ? id : "";
+  }
+
+  // The children an occurrence counts for: the day's pick for a chore that
+  // takes turns (or was won at auction), else its pool.
+  _plDoers(c, iso, picks, kids) {
+    const pick = ((picks || {})[iso] || {})[c.id];
+    const mode = c.assignment_mode == null ? "everyone" : c.assignment_mode;
+    if (["alternating", "random", "balanced"].includes(mode)) return pick ? [pick] : [];
+    if (pick) return [pick];
+    if (mode === "unassigned") return [];
+    const ids = kids.map(k => k.id);
+    const who = c.assigned_to || [];
+    return who.length ? who.filter(id => ids.includes(id)) : ids;
+  }
+
+  // The colour edge: one child's colour, else the neutral "everyone" purple.
+  _plWho(c, iso, picks, kids) {
+    const doers = this._plDoers(c, iso, picks, kids);
+    return doers.length === 1 ? doers[0] : "";
+  }
+
+  _plWeekView(chores, start, today, picks, kids) {
+    const days = this._plWeekDays(start);
+    const active = chores.filter(c => c.enabled !== false);
+    const cols = days.map(iso => ({
+      iso,
+      items: active.filter(c => this._plOccurs(c, iso, today)).map(c => {
+        const doers = this._plDoers(c, iso, picks, kids);
+        return { c, iso, doers, who: doers.length === 1 ? doers[0] : "" };
+      }),
+    }));
+    const onWeek = new Set(cols.flatMap(col => col.items.map(it => it.c.id)));
+    const off = active.filter(c => !onWeek.has(c.id));
+    for (const col of cols) {
+      col.points = {};
+      col.minutes = 0;
+      for (const it of col.items) {
+        for (const id of it.doers) col.points[id] = (col.points[id] || 0) + (Number(it.c.points) || 0);
+        const mins = Number(it.c.estimated_minutes) || 0;
+        const workers = it.c.assignment_mode === "first_come" ? 1 : Math.max(1, it.doers.length);
+        col.minutes += mins * workers;
+      }
+    }
+    return {
+      days: cols,
+      railOff: off.filter(c => (c.schedule_mode || "specific_days") !== "one_shot"),
+      railOneOff: off.filter(c => c.schedule_mode === "one_shot"),
+    };
+  }
+
+  // What dropping chore ``c`` (as planned so far) onto ``to`` means.
+  // Returns {ops}, {ask: "series", …} for a repeating chore, or {error}.
+  _plDropOps({ c, from, to, copy, toChild, today }) {
+    const mode = c.schedule_mode || "specific_days";
+    let assign = null;
+    let note = "";
+    if (toChild) {
+      const mine = (c.assigned_to || []).length === 1 && c.assigned_to[0] === toChild;
+      if (!mine) {
+        if (this._plReassignable(c)) assign = { kind: "assign", id: c.id, from: [...(c.assigned_to || [])], to: toChild };
+        else note = "keep_assign";
+      }
+    }
+    const tail = assign ? [assign] : [];
+    if (from === to || this._plOccurs(c, to, today)) {
+      if (tail.length) return { ops: tail, note };
+      return from === to ? { ops: [], note } : { error: "already", note };
+    }
+    let ops;
+    if (mode === "one_shot") {
+      if (copy) return { error: "copy_one_off" };
+      if (to < today) return { error: "past" };
+      ops = [{ kind: "date", id: c.id, from: c.created_date || "", to }];
+    } else if (from && this._plOrigin(c, from) !== from) {
+      // An occurrence already moved on its own (calendar or planner) moves on its own again.
+      if (copy) return { error: "copy_series" };
+      if (to < today || from < today) return { error: "past" };
+      ops = [{ kind: "once", id: c.id, origin: this._plOrigin(c, from), to }];
+    } else if (mode === "specific_days" && (c.due_days || []).length) {
+      ops = [{ kind: "days", id: c.id, from: from ? this._plDayName(from) : null, to: this._plDayName(to), copy: !!copy || !from }];
+    } else if (mode === "specific_days") {
+      return { error: "daily" };
+    } else if (mode === "recurring") {
+      if (copy) return { error: "copy_series" };
+      return { ask: "series", id: c.id, from, to, tail, note, onceOk: !!from && to >= today && from >= today };
+    } else {
+      return { error: "no_land" };
+    }
+    // Never plan a change that wouldn't put the chore on the day it was dropped on.
+    const after = ops.reduce((x, op) => this._plApplyOp(x, op), c);
+    if (!this._plOccurs(after, to, today)) return { error: "no_land" };
+    return { ops: [...ops, ...tail], note };
+  }
+
+  _plSeriesOps(c, choice, from, to, today) {
+    const op = choice === "once"
+      ? { kind: "once", id: c.id, origin: this._plOrigin(c, from), to }
+      : { kind: "series", id: c.id, from: from || null, to };
+    const after = this._plApplyOp(c, op);
+    return this._plOccurs(after, to, today) ? [op] : null;
+  }
+
+  _plLang() {
+    return (this._hass && this._hass.locale && this._hass.locale.language) || undefined;
+  }
+
+  _plFmt(iso, opts) {
+    try {
+      return new Date(`${iso}T12:00:00Z`).toLocaleDateString(this._plLang(), { ...opts, timeZone: "UTC" });
+    } catch (_) {
+      return iso;
+    }
+  }
+
+  _plShort(iso) {
+    return this._plFmt(iso, { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  // A weekday name ("Tuesday"), from a week that has one of each.
+  _plWeekdayName(dow) {
+    return this._plFmt(this._plAddDays("2024-01-01", PL_WEEKDAYS.indexOf(dow)), { weekday: "long" });
+  }
+
+  _plKidName(id) {
+    const k = ((this._state && this._state.children) || []).find(x => x.id === id);
+    return k ? k.name : "?";
+  }
+
+  // One planned change, in words.
+  _plDescribe(op, base) {
+    const chore = base ? base.name : op.id;
+    if (op.kind === "days") {
+      const to = this._plWeekdayName(op.to);
+      if (!op.from) return this._t("planner.change_add", { chore, to });
+      if (op.copy) return this._t("planner.change_copy", { chore, to });
+      return this._t("planner.change_move_day", { chore, from: this._plWeekdayName(op.from), to });
+    }
+    if (op.kind === "date") return this._t("planner.change_date", { chore, date: this._plShort(op.to) });
+    if (op.kind === "once") return this._t("planner.change_once", { chore, from: this._plShort(op.origin), to: this._plShort(op.to) });
+    if (op.kind === "series") {
+      return op.from
+        ? this._t("planner.change_series", { chore, from: this._plShort(op.from), to: this._plShort(op.to) })
+        : this._t("planner.change_series_start", { chore, date: this._plShort(op.to) });
+    }
+    const from = op.from.length ? op.from.map(id => this._plKidName(id)).join(", ") : this._t("planner.everyone");
+    return this._t("planner.change_assign", { chore, from, to: this._plKidName(op.to) });
+  }
+
+  _plInitials(kids) {
+    const first = kids.map(k => String(k.name || "?").trim().charAt(0).toUpperCase() || "?");
+    return Object.fromEntries(kids.map((k, i) => [k.id,
+      first.filter(f => f === first[i]).length > 1 ? String(k.name || "?").trim().slice(0, 2) : first[i]]));
+  }
+
+  _plPhone() {
+    return !!(window.matchMedia && window.matchMedia("(max-width: 700px)").matches);
+  }
+
+  _plColor(who) {
+    return who ? this._childColor(who) : PL_NEUTRAL;
+  }
+
+  _renderPlannerTab() {
+    const S = this._plS();
+    const today = this._plTodayIso();
+    const week = S.week || this._plWeekStart(today);
+    if (!S.picks[week] && S.picksLoading !== week) this._plLoadPicks(week);
+    const picks = S.picks[week] || {};
+    const base = this._sortChoresByDisplayOrder(this._state.chores || []);
+    const working = this._plWorking(base, S.ops);
+    const kids = this._plKids();
+    const scope = this._plScope();
+    const view = this._plWeekView(working, week, today, picks, kids);
+    const changed = new Set(S.ops.map(op => op.id));
+    const initials = this._plInitials(kids);
+    const days = view.days.map(d => d.iso);
+    const sel = days.includes(S.day) ? S.day : (days.includes(today) ? today : days[0]);
+    const end = days[6];
+    const weekLabel = `${this._plFmt(week, { day: "numeric", month: "short" })} – ${this._plFmt(end, { day: "numeric", month: "short", year: "numeric" })}`;
+    const card = (c, iso, who, mine) => `
+      <div class="tm-pl-card ${this._plIsSeries(c) ? "tm-pl-series" : ""} ${mine ? "" : "tm-pl-dim"} ${changed.has(c.id) ? "tm-pl-changed" : ""}"
+           style="--kc:${this._plColor(who)}" data-pl-card data-id="${this._esc(c.id)}" data-from="${iso || ""}"
+           title="${this._esc(c.name)}">
+        <span class="tm-pl-ic">${this._mdi(c.icon || "mdi:checkbox-marked-circle-outline")}</span>
+        <span class="tm-pl-name">${this._esc(c.name)}</span>
+        <span class="tm-pl-pts tm-numeric">${this._fmtNum(Number(c.points) || 0)}</span>
+        <button type="button" class="tm-pl-more" data-act="pl-menu" data-id="${this._esc(c.id)}" data-from="${iso || ""}"
+                title="${this._esc(this._t(iso ? "planner.move_menu" : "planner.menu_add"))}" aria-label="${this._esc(this._t(iso ? "planner.move_menu" : "planner.menu_add"))}: ${this._esc(c.name)}"><ha-icon icon="mdi:dots-vertical"></ha-icon></button>
+      </div>`;
+    const railCard = c => card(c, "", this._plWho(c, "", {}, kids), !scope || this._plDoers(c, "", {}, kids).includes(scope));
+    const pointsName = this._pointsName();
+    return `
+      <div class="tm-toolbar tm-pl-bar-top">
+        <h2 class="tm-toolbar-title">${this._t("planner.title")}</h2>
+        <div class="tm-pl-weeknav">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="pl-week" data-step="-1" aria-label="${this._esc(this._t("planner.prev_week"))}" title="${this._esc(this._t("planner.prev_week"))}">‹</button>
+          <strong class="tm-pl-weeklabel">${this._esc(weekLabel)}</strong>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="pl-week" data-step="1" aria-label="${this._esc(this._t("planner.next_week"))}" title="${this._esc(this._t("planner.next_week"))}">›</button>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="pl-week" data-step="0" ${week === this._plWeekStart(today) ? "disabled" : ""}>${this._t("planner.this_week")}</button>
+        </div>
+        <span class="tm-pl-spacer"></span>
+        ${kids.length > 1 ? `
+          <div class="tm-pl-kids" role="group" aria-label="${this._esc(this._t("panel.scope_label"))}">
+            <button type="button" class="tm-pl-kid ${scope ? "" : "tm-pl-kid-on"}" data-act="scope" data-child="" aria-pressed="${scope ? "false" : "true"}">${this._t("planner.all")}</button>
+            ${kids.map(k => `<button type="button" class="tm-pl-kid ${scope === k.id ? "tm-pl-kid-on" : ""}" style="--kc:${this._childColor(k.id)}" data-act="scope" data-child="${this._esc(k.id)}" aria-pressed="${scope === k.id ? "true" : "false"}"><span class="tm-pl-dot"></span>${this._esc(k.name)}</button>`).join("")}
+          </div>` : ""}
+        <button type="button" class="tm-btn tm-btn-sm" data-act="pl-print" title="${this._esc(this._t("planner.print_hint"))}"><ha-icon icon="mdi:printer-outline"></ha-icon>${this._t("planner.print")}</button>
+      </div>
+      <div class="tm-pl-strip" role="tablist" aria-label="${this._esc(this._t("planner.day_picker"))}">
+        ${view.days.map(d => `
+          <button type="button" role="tab" class="tm-pl-strip-day ${d.iso === sel ? "tm-pl-strip-on" : ""} ${d.iso === today ? "tm-pl-strip-today" : ""}" data-act="pl-day" data-iso="${d.iso}" aria-selected="${d.iso === sel ? "true" : "false"}">
+            <span>${this._esc(this._plFmt(d.iso, { weekday: "short" }))}</span><strong>${this._esc(this._plFmt(d.iso, { day: "numeric" }))}</strong>
+            <em>${d.items.length || ""}</em>
+          </button>`).join("")}
+      </div>
+      <div class="tm-pl">
+        <aside class="tm-pl-rail" data-pl-drop="rail">
+          <div class="tm-pl-sec">
+            <h4>${this._t("planner.rail_off")}</h4>
+            <div class="tm-pl-list">${view.railOff.map(railCard).join("") || `<p class="tm-pl-none">${this._t("planner.rail_empty")}</p>`}</div>
+          </div>
+          <div class="tm-pl-sec">
+            <h4>${this._t("planner.rail_oneoff")}</h4>
+            <div class="tm-pl-list">${view.railOneOff.map(railCard).join("") || `<p class="tm-pl-none">${this._t("planner.rail_oneoff_empty")}</p>`}</div>
+          </div>
+          <p class="tm-pl-railhint">${this._t("planner.rail_hint")}</p>
+        </aside>
+        <div class="tm-pl-grid">
+          ${view.days.map(d => `
+            <section class="tm-pl-day ${d.iso === today ? "tm-pl-today" : ""} ${d.iso < today ? "tm-pl-past" : ""} ${d.iso === sel ? "tm-pl-sel" : ""}" data-pl-drop="day" data-iso="${d.iso}" aria-label="${this._esc(this._plFmt(d.iso, { weekday: "long", day: "numeric", month: "long" }))}">
+              <header class="tm-pl-dh"><b>${this._esc(this._plFmt(d.iso, { weekday: "short" }))}</b><span>${this._esc(this._plFmt(d.iso, { day: "numeric", month: "short" }))}${d.iso === today ? ` · ${this._t("planner.today")}` : ""}</span></header>
+              <div class="tm-pl-db">
+                ${d.items.map(it => card(it.c, d.iso, it.who, !scope || it.doers.includes(scope))).join("") || `<p class="tm-pl-none">${this._t("planner.empty_day")}</p>`}
+              </div>
+              <footer class="tm-pl-df">
+                <span class="tm-pl-pts-kids">${kids.map(k => `<span class="tm-pl-kidpts" style="--kc:${this._childColor(k.id)}" data-pl-drop="kid" data-iso="${d.iso}" data-child="${this._esc(k.id)}" title="${this._esc(this._t("planner.day_points", { name: k.name, points: this._fmtNum(d.points[k.id] || 0), points_name: pointsName }))}">${this._esc(initials[k.id])} <b class="tm-numeric">${this._fmtNum(d.points[k.id] || 0)}</b></span>`).join("")}</span>
+                <span class="tm-pl-mins tm-numeric">${this._t("panel.boost_minutes", { count: this._fmtNum(d.minutes) })}</span>
+              </footer>
+            </section>`).join("")}
+        </div>
+      </div>
+      <div class="tm-pl-foot">${this._plBar(base)}</div>
+    `;
+  }
+
+  _plBar(base) {
+    const S = this._plS();
+    const errs = Object.entries(S.errors || {});
+    if (!S.ops.length && !errs.length) return "";
+    const byId = Object.fromEntries(base.map(c => [c.id, c]));
+    const n = S.ops.length;
+    return `
+      <div class="tm-pl-savebar" role="region" aria-label="${this._esc(this._t("planner.changes_label"))}">
+        <div class="tm-pl-savehead">
+          <strong>${n ? this._t(n === 1 ? "planner.bar_one" : "planner.bar_many", { count: n }) : this._t("planner.bar_errors")}</strong>
+          <span class="tm-pl-spacer"></span>
+          <button type="button" class="tm-btn tm-pl-discard" data-act="pl-discard" ${S.saving ? "disabled" : ""}>${this._t("planner.discard")}</button>
+          ${n ? `<button type="button" class="tm-btn tm-btn-raised" data-act="pl-save" ${S.saving ? "disabled" : ""}>${S.saving ? this._t("planner.saving") : this._t("planner.save")}</button>` : ""}
+        </div>
+        <ul class="tm-pl-changes">
+          ${S.ops.map(op => `<li>${this._esc(this._plDescribe(op, byId[op.id]))}</li>`).join("")}
+          ${errs.map(([id, msg]) => `<li class="tm-pl-err"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._esc((byId[id] && byId[id].name) || id)}: ${this._esc(msg)}</li>`).join("")}
+        </ul>
+      </div>`;
+  }
+
+  async _plLoadPicks(week) {
+    const S = this._plS();
+    S.picksLoading = week;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/planner/week", week_start: week });
+    if (S.picksLoading === week) S.picksLoading = "";
+    const map = {};
+    if (ok && res && Array.isArray(res.days)) for (const d of res.days) map[d.date] = d.picks || {};
+    else this._showToast("err", this._t("planner.load_failed", { error: err || "" }));
+    S.picks[week] = map;
+    if (this._activeTab === "planner") this._render();
+  }
+
+  _plClick(t) {
+    const act = t.dataset.act;
+    const S = this._plS();
+    const today = this._plTodayIso();
+    if (act === "pl-week") {
+      const step = Number(t.dataset.step);
+      const cur = S.week || this._plWeekStart(today);
+      S.week = step === 0 ? this._plWeekStart(today) : this._plAddDays(cur, 7 * step);
+      S.day = "";
+      this._render();
+      return;
+    }
+    if (act === "pl-day") { S.day = t.dataset.iso || ""; this._render(); return; }
+    if (act === "pl-print") { this._plPrint(); return; }
+    if (act === "pl-discard") { S.ops = []; S.errors = {}; this._render(); return; }
+    if (act === "pl-save") { this._plSave(); return; }
+    if (act === "pl-menu") {
+      this._openDialog({ kind: "planner-move", data: { id: t.dataset.id, from: t.dataset.from || "" } });
+      return;
+    }
+    if (act === "pl-menu-move" || act === "pl-menu-copy" || act === "pl-menu-give") {
+      const d = this._dialog && this._dialog.data;
+      if (!d) return;
+      this._dialog = null;
+      this._dialogInitialHash = null;
+      if (act === "pl-menu-give") this._plDrop({ id: d.id, from: d.from, to: d.from, toChild: t.dataset.child });
+      else this._plDrop({ id: d.id, from: d.from, to: t.dataset.iso, copy: act === "pl-menu-copy" });
+      this._render();
+      return;
+    }
+    if (act === "pl-series") {
+      const d = this._dialog && this._dialog.data;
+      if (!d) return;
+      this._dialog = null;
+      this._dialogInitialHash = null;
+      const c = this._plCurrent(d.id);
+      const ops = c && this._plSeriesOps(c, t.dataset.choice, d.from, d.to, today);
+      if (!ops) this._showToast("err", this._t("planner.err_no_land", { chore: c ? c.name : d.id, day: this._plShort(d.to) }));
+      else this._plPush([...ops, ...(d.tail || [])], d.note, c);
+      this._render();
+    }
+  }
+
+  // The chore as planned so far (base + pending changes).
+  _plCurrent(id) {
+    const base = this._state.chores || [];
+    const c = base.find(x => x.id === id);
+    if (!c) return null;
+    return this._plS().ops.filter(op => op.id === id).reduce((x, op) => this._plApplyOp(x, op), c);
+  }
+
+  _plPush(ops, note, c) {
+    const S = this._plS();
+    if (ops.length) {
+      S.ops = this._plCompact(this._state.chores || [], [...S.ops, ...ops]);
+      delete S.errors[ops[0].id];
+    }
+    if (note && c) this._showToast("ok", this._t(`planner.note_${note}`, { chore: c.name }));
+  }
+
+  // Plan the result of dropping chore ``id`` (shown on ``from``, "" = rail) onto ``to``.
+  _plDrop({ id, from, to, copy = false, toChild = "" }) {
+    const c = this._plCurrent(id);
+    if (!c || !to) return;
+    const today = this._plTodayIso();
+    const r = this._plDropOps({ c, from: from || null, to, copy, toChild: toChild || this._plScope(), today });
+    if (r.error) {
+      this._showToast("err", this._t(`planner.err_${r.error}`, { chore: c.name, day: this._plShort(to) }));
+      return;
+    }
+    if (r.ask === "series") {
+      this._openDialog({ kind: "planner-series", data: { id, from: r.from, to: r.to, tail: r.tail, note: r.note, onceOk: r.onceOk } });
+      return;
+    }
+    this._plPush(r.ops, r.note, c);
+  }
+
+  _renderPlannerMoveDialog() {
+    const d = this._dialog.data;
+    const c = this._plCurrent(d.id);
+    if (!c) return "";
+    const S = this._plS();
+    const today = this._plTodayIso();
+    const days = this._plWeekDays(S.week || this._plWeekStart(today));
+    const kids = this._plKids();
+    const dayBtn = (act, iso) => {
+      const off = iso === d.from || this._plOccurs(c, iso, today);
+      return `<button type="button" class="tm-btn tm-btn-sm tm-pl-menu-day" data-act="${act}" data-iso="${iso}" ${off ? "disabled" : ""}>${this._esc(this._plFmt(iso, { weekday: "short", day: "numeric" }))}</button>`;
+    };
+    const canCopy = d.from && (c.schedule_mode || "specific_days") === "specific_days" && (c.due_days || []).length;
+    const canGive = d.from && this._plReassignable(c) && kids.length > 1;
+    const body = `
+      <p class="tm-meta">${this._esc(d.from ? this._plFmt(d.from, { weekday: "long", day: "numeric", month: "long" }) : this._t("planner.rail_off"))}</p>
+      <h4 class="tm-pl-menu-h">${this._t(d.from ? "planner.menu_move" : "planner.menu_add")}</h4>
+      <div class="tm-pl-menu-row">${days.map(iso => dayBtn("pl-menu-move", iso)).join("")}</div>
+      ${canCopy ? `<h4 class="tm-pl-menu-h">${this._t("planner.menu_copy")}</h4><div class="tm-pl-menu-row">${days.map(iso => dayBtn("pl-menu-copy", iso)).join("")}</div>` : ""}
+      ${canGive ? `<h4 class="tm-pl-menu-h">${this._t("planner.menu_give")}</h4><div class="tm-pl-menu-row">${kids.map(k => {
+        const mine = (c.assigned_to || []).length === 1 && c.assigned_to[0] === k.id;
+        return `<button type="button" class="tm-btn tm-btn-sm tm-pl-menu-kid" style="--kc:${this._childColor(k.id)}" data-act="pl-menu-give" data-child="${this._esc(k.id)}" ${mine ? "disabled" : ""}><span class="tm-pl-dot"></span>${this._esc(k.name)}</button>`;
+      }).join("")}</div>` : ""}`;
+    return this._dialogShell(c.name, body, `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>`);
+  }
+
+  _renderPlannerSeriesDialog() {
+    const d = this._dialog.data;
+    const c = this._plCurrent(d.id);
+    if (!c) return "";
+    const rhythm = this._recurrenceLabel(c.recurrence || "weekly");
+    const to = this._plShort(d.to);
+    const body = d.from ? `
+      <p>${this._esc(this._t("planner.series_body", { chore: c.name, rhythm }))}</p>
+      <div class="tm-pl-choice">
+        <button type="button" class="tm-pl-opt" data-act="pl-series" data-choice="once" ${d.onceOk ? "" : "disabled"}>
+          <strong>${this._t("planner.series_once")}</strong>
+          <span>${this._esc(d.onceOk ? this._t("planner.series_once_desc", { from: this._plShort(d.from), to }) : this._t("planner.series_once_past"))}</span>
+        </button>
+        <button type="button" class="tm-pl-opt" data-act="pl-series" data-choice="series">
+          <strong>${this._t("planner.series_all")}</strong>
+          <span>${this._esc(this._t("planner.series_all_desc", { to }))}</span>
+        </button>
+      </div>` : `
+      <p>${this._esc(this._t("planner.series_body_rail", { chore: c.name, rhythm }))}</p>
+      <div class="tm-pl-choice">
+        <button type="button" class="tm-pl-opt" data-act="pl-series" data-choice="series">
+          <strong>${this._t("planner.series_start")}</strong>
+          <span>${this._esc(this._t("planner.series_start_desc", { to }))}</span>
+        </button>
+      </div>`;
+    return this._dialogShell(this._t("planner.series_title"), body, `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>`);
+  }
+
+  async _plSave() {
+    const S = this._plS();
+    const base = this._state.chores || [];
+    const changes = this._plPatches(base, S.ops);
+    if (!changes.length) { S.ops = []; this._render(); return; }
+    S.saving = true;
+    this._render();
+    const { ok, res, err } = await this._callWS({ type: "taskmate/planner/apply", changes });
+    S.saving = false;
+    if (!ok || !res) {
+      this._showToast("err", this._t("planner.save_failed", { error: err || "" }));
+      this._render();
+      return;
+    }
+    const failed = (res.results || []).filter(r => !r.ok);
+    const bad = new Set(failed.map(r => r.chore_id));
+    S.errors = {};
+    for (const r of failed) {
+      S.errors[r.chore_id] = r.code && r.code !== "invalid"
+        ? this._t(`planner.save_err_${r.code}`)
+        : (r.error || this._t("planner.save_err_invalid"));
+    }
+    // Saved changes leave the list; refused ones stay so they can be fixed or discarded.
+    S.ops = S.ops.filter(op => bad.has(op.id));
+    S.picks = {};
+    await this._fetchState();
+    S.ops = this._plCompact(this._state.chores || [], S.ops);
+    if (failed.length) this._showToast("err", this._t("planner.saved_partly", { ok: res.applied || 0, failed: failed.length }));
+    else this._showToast("ok", this._t("planner.saved"));
+    this._render();
+  }
+
+  async _plPrint() {
+    const win = window.open("", "_blank");
+    if (!win) { this._showToast("err", this._t("panel.voucher_popup_blocked")); return; }
+    const S = this._plS();
+    const week = S.week || this._plWeekStart(this._plTodayIso());
+    const title = this._t("planner.print_title", { date: this._plFmt(week, { day: "numeric", month: "short" }) }).slice(0, 80);
+    const { ok, res, err } = await this._callWS({ type: "taskmate/print/weekly_chart", week_start: week, title });
+    if (!ok || !res || !res.html) {
+      win.close();
+      this._showToast("err", this._t("planner.print_failed", { error: err || "" }));
+      return;
+    }
+    win.document.open();
+    win.document.write(res.html);
+    win.document.close();
+  }
+
+  // ---- Planner drag and drop (pointer events: mouse, pen and touch) ----
+  _onPointerDown(e) {
+    if (this._activeTab !== "planner" || this._plDrag) return;
+    if (e.button != null && e.button !== 0) return;
+    const card = e.target.closest && e.target.closest(".tm-pl-card");
+    if (!card || e.target.closest("[data-act]") || this._plPhone()) return;
+    const touch = e.pointerType === "touch" || e.pointerType === "pen";
+    const d = {
+      id: card.dataset.id, from: card.dataset.from || "", card, pointerId: e.pointerId,
+      x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, started: false, alt: !!e.altKey,
+      over: null, overKid: "", touch, held: false, timer: null, raf: 0,
+    };
+    this._plDrag = d;
+    if (touch) {
+      // Hold still for a moment to lift the card; moving first lets the page scroll.
+      d.timer = setTimeout(() => {
+        if (this._plDrag !== d) return;
+        d.held = true;
+        card.classList.add("tm-pl-lifted");
+        if (typeof navigator !== "undefined" && navigator.vibrate) { try { navigator.vibrate(15); } catch (_) { /* not allowed */ } }
+      }, PL_HOLD_MS);
+      document.addEventListener("touchmove", this._plOnTouchMove, { passive: false });
+      document.addEventListener("contextmenu", this._plOnTouchMove, true);
+    }
+    document.addEventListener("pointermove", this._plOnMove);
+    document.addEventListener("pointerup", this._plOnUp);
+    document.addEventListener("pointercancel", this._plOnCancel);
+    document.addEventListener("keydown", this._plOnKey);
+    document.addEventListener("keyup", this._plOnKey);
+  }
+
+  _plStartDrag() {
+    const d = this._plDrag;
+    const box = d.card.getBoundingClientRect();
+    d.dx = d.x0 - box.left;
+    d.dy = d.y0 - box.top;
+    d.card.classList.remove("tm-pl-lifted");
+    const ghost = d.card.cloneNode(true);
+    ghost.classList.add("tm-pl-ghost");
+    ghost.style.width = `${box.width}px`;
+    ghost.removeAttribute("data-pl-card");
+    this.appendChild(ghost);
+    d.ghost = ghost;
+    d.slot = document.createElement("div");
+    d.slot.className = "tm-pl-slot";
+    // What the drop will do, following the pointer below the card.
+    d.tip = document.createElement("div");
+    d.tip.className = "tm-pl-tip";
+    d.tip.setAttribute("role", "status");
+    this.appendChild(d.tip);
+    d.card.classList.add("tm-pl-origin");
+    this.classList.add("tm-pl-dragging");
+    d.started = true;
+  }
+
+  // What a pointer that has moved ``dist`` px means before a drag starts:
+  // "wait", "drag", or "cancel" (a touch that moved before the hold: a scroll).
+  _plGesture({ touch, held, dist }) {
+    if (!touch) return dist >= PL_MOUSE_SLOP ? "drag" : "wait";
+    if (!held) return dist > PL_HOLD_SLOP ? "cancel" : "wait";
+    return dist >= 1 ? "drag" : "wait";
+  }
+
+  // Scroll speed for a pointer at ``pos`` in a scroll area from ``start`` to
+  // ``end``: negative near the start edge, positive near the end, else 0.
+  _plEdgeSpeed(pos, start, end, zone = PL_EDGE, max = PL_EDGE_SPEED) {
+    if (end - start < zone * 3) return 0;
+    if (pos < start + zone) return -Math.ceil(max * Math.min(1, (start + zone - pos) / zone));
+    if (pos > end - zone) return Math.ceil(max * Math.min(1, (pos - (end - zone)) / zone));
+    return 0;
+  }
+
+  // Once a card is lifted, the finger drags it instead of scrolling the page.
+  _plOnTouchMove(e) {
+    const d = this._plDrag;
+    if (d && (d.held || d.started) && e.cancelable) e.preventDefault();
+  }
+
+  _plOnMove(e) {
+    const d = this._plDrag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    if (!d.started) {
+      const g = this._plGesture({ touch: d.touch, held: d.held, dist: Math.hypot(e.clientX - d.x0, e.clientY - d.y0) });
+      if (g === "cancel") { this._plEndDrag(); return; }
+      if (g === "wait") return;
+      this._plStartDrag();
+      d.raf = requestAnimationFrame(() => this._plAutoScroll());
+    }
+    e.preventDefault();
+    d.alt = !!e.altKey;
+    d.x = e.clientX;
+    d.y = e.clientY;
+    this._plTrack();
+  }
+
+  _plAutoScroll() {
+    const d = this._plDrag;
+    if (!d || !d.started) return;
+    let moved = false;
+    const body = this.querySelector(".tm-body");
+    if (body && body.scrollHeight > body.clientHeight) {
+      const r = body.getBoundingClientRect();
+      const v = this._plEdgeSpeed(d.y, r.top, r.bottom);
+      if (v) { const was = body.scrollTop; body.scrollTop = was + v; moved = moved || body.scrollTop !== was; }
+    }
+    const grid = this.querySelector(".tm-pl-grid");
+    if (grid && grid.scrollWidth > grid.clientWidth) {
+      const r = grid.getBoundingClientRect();
+      const v = this._plEdgeSpeed(d.x, r.left, r.right);
+      if (v) { const was = grid.scrollLeft; grid.scrollLeft = was + v; moved = moved || grid.scrollLeft !== was; }
+    }
+    // The page moved under a still pointer: the drop target may have changed.
+    if (moved) this._plTrack();
+    d.raf = requestAnimationFrame(() => this._plAutoScroll());
+  }
+
+  _plTrack() {
+    const d = this._plDrag;
+    if (!d || !d.started) return;
+    const e = { clientX: d.x, clientY: d.y };
+    d.ghost.style.transform = `translate(${e.clientX - d.dx}px, ${e.clientY - d.dy}px) rotate(-2deg)`;
+    const tipX = Math.max(8, Math.min(e.clientX - d.dx, window.innerWidth - 360));
+    d.tip.style.transform = `translate(${tipX}px, ${e.clientY - d.dy + d.ghost.offsetHeight + 10}px)`;
+    const root = this.getRootNode && this.getRootNode();
+    const hit = (root && root.elementFromPoint ? root : document).elementFromPoint(e.clientX, e.clientY);
+    const zone = hit && hit.closest ? hit.closest("[data-pl-drop]") : null;
+    const kid = zone && zone.dataset.plDrop === "kid" ? zone : null;
+    const day = zone ? zone.closest('[data-pl-drop="day"]') : null;
+    if (d.over !== day) {
+      if (d.over) d.over.classList.remove("tm-pl-over");
+      d.over = day;
+      if (day) day.classList.add("tm-pl-over");
+    }
+    this.querySelectorAll(".tm-pl-kid-over").forEach(el => { if (el !== kid) el.classList.remove("tm-pl-kid-over"); });
+    if (kid) kid.classList.add("tm-pl-kid-over");
+    d.overKid = kid ? kid.dataset.child : "";
+    if (day) {
+      const list = day.querySelector(".tm-pl-db");
+      const cards = [...list.querySelectorAll(".tm-pl-card:not(.tm-pl-origin)")];
+      const before = cards.find(el => { const b = el.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
+      if (before) list.insertBefore(d.slot, before); else list.appendChild(d.slot);
+    } else if (d.slot.parentNode) {
+      d.slot.remove();
+    }
+    this._plHint();
+  }
+
+  _plOnKey(e) {
+    const d = this._plDrag;
+    if (!d) return;
+    if (e.type === "keydown" && e.key === "Escape") { this._plEndDrag(); return; }
+    if (e.key === "Alt") {
+      // Alt on its own would otherwise focus the browser's menu bar mid-drag.
+      e.preventDefault();
+      d.alt = e.type === "keydown";
+      if (d.started) this._plHint();
+    }
+  }
+
+  _plHint() {
+    const d = this._plDrag;
+    const el = d && d.tip;
+    if (!el) return;
+    const c = this._plCurrent(d.id);
+    if (!c) return;
+    const to = d.over ? d.over.dataset.iso : "";
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+    const child = d.overKid || this._plScope();
+    let text;
+    if (!to) text = this._t("planner.hint_idle");
+    else if (d.overKid) text = this._t("planner.hint_give", { chore: c.name, child: this._plKidName(d.overKid), to: this._plShort(to) });
+    else if (d.alt) text = this._t("planner.hint_copy", { chore: c.name, to: this._plShort(to) });
+    else if (!d.from) text = this._t("planner.hint_add", { chore: c.name, to: this._plShort(to) });
+    else text = this._t("planner.hint_move", { chore: c.name, from: this._plShort(d.from), to: this._plShort(to) });
+    if (to && child && !d.overKid) text += ` ${this._t("planner.hint_for", { child: this._plKidName(child) })}`;
+    // Alt can't be held on a touch screen: copying there is ⋮ → Also on.
+    text += d.touch ? ` ${this._t("planner.hint_touch")}` : ` ${this._t("planner.hint_alt", { key: mac ? "⌥ Option" : "Alt" })}`;
+    el.textContent = text;
+  }
+
+  _plOnUp(e) {
+    const d = this._plDrag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    const drop = d.started && d.over ? { id: d.id, from: d.from, to: d.over.dataset.iso, copy: d.alt || !!e.altKey, toChild: d.overKid } : null;
+    this._plEndDrag();
+    if (drop) {
+      this._plDrop(drop);
+      this._render();
+    }
+  }
+
+  _plOnCancel() {
+    this._plEndDrag();
+  }
+
+  _plEndDrag() {
+    const d = this._plDrag;
+    document.removeEventListener("pointermove", this._plOnMove);
+    document.removeEventListener("pointerup", this._plOnUp);
+    document.removeEventListener("pointercancel", this._plOnCancel);
+    document.removeEventListener("keydown", this._plOnKey);
+    document.removeEventListener("keyup", this._plOnKey);
+    document.removeEventListener("touchmove", this._plOnTouchMove, { passive: false });
+    document.removeEventListener("contextmenu", this._plOnTouchMove, true);
+    this._plDrag = null;
+    if (!d) return;
+    clearTimeout(d.timer);
+    if (d.raf) cancelAnimationFrame(d.raf);
+    if (d.card) d.card.classList.remove("tm-pl-lifted");
+    if (d.ghost) d.ghost.remove();
+    if (d.tip) d.tip.remove();
+    if (d.slot) d.slot.remove();
+    if (d.over) d.over.classList.remove("tm-pl-over");
+    if (d.card) d.card.classList.remove("tm-pl-origin");
+    this.classList.remove("tm-pl-dragging");
+    this.querySelectorAll(".tm-pl-kid-over").forEach(el => el.classList.remove("tm-pl-kid-over"));
+    if (this._plRenderPending) { this._plRenderPending = false; this._render(); }
+  }
+
+  _plStyles() {
+    return `<style>
+      /* Seven days want the room: the planner page may use more than the usual reading width. */
+      .tm-body-inner:has(.tm-pl) { max-width: 1680px; }
+      .tm-pl-bar-top { flex-wrap: wrap; row-gap: 8px; }
+      .tm-pl-weeknav { display: inline-flex; align-items: center; gap: 6px; }
+      .tm-pl-weeklabel { font-size: 14px; white-space: nowrap; padding: 0 2px; }
+      .tm-pl-spacer { flex: 1; }
+      .tm-pl-kids { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+      .tm-pl-kid { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--tm-border); background: var(--tm-surface-0); color: var(--tm-text); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+      .tm-pl-kid-on { background: color-mix(in srgb, var(--kc, var(--tm-accent)) 14%, var(--tm-surface-0)); border-color: var(--kc, var(--tm-accent)); color: var(--tm-text); }
+      .tm-pl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--kc); flex: none; }
+      .tm-pl { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+      .tm-pl-rail { border: 1px solid var(--tm-border); border-radius: 10px; background: var(--tm-surface-2); padding: 10px; min-width: 0; }
+      .tm-pl-rail h4 { margin: 4px 0 8px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--tm-text-muted); }
+      .tm-pl-sec + .tm-pl-sec { margin-top: 14px; }
+      .tm-pl-list { display: flex; flex-direction: column; gap: 6px; }
+      .tm-pl-none { margin: 0; font-size: 12px; color: var(--tm-text-muted); }
+      .tm-pl-railhint { font-size: 11.5px; color: var(--tm-text-muted); margin: 6px 0 0; line-height: 1.4; }
+      .tm-pl-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+      .tm-pl-day { border: 1px solid var(--tm-border); border-radius: 10px; background: var(--tm-surface-0); min-height: 420px; display: flex; flex-direction: column; min-width: 0; transition: background .12s var(--tm-easing); }
+      .tm-pl-today { border-color: var(--tm-accent); box-shadow: inset 0 0 0 1px var(--tm-accent); }
+      .tm-pl-past .tm-pl-dh { opacity: .6; }
+      .tm-pl-over { background: var(--tm-accent-soft); border-style: dashed; border-color: var(--tm-accent); }
+      .tm-pl-day { container-type: inline-size; }
+      /* One line in every column, so every day's cards start at the same height. */
+      .tm-pl-dh { padding: 8px 10px; border-bottom: 1px solid var(--tm-border-soft); display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+      .tm-pl-dh b { font-size: 13px; flex: none; }
+      .tm-pl-dh span { font-size: 11px; color: var(--tm-text-muted); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tm-pl-db { padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+      .tm-pl-df { padding: 6px 8px; border-top: 1px solid var(--tm-border-soft); font-size: 11px; color: var(--tm-text-muted); display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; }
+      .tm-pl-pts-kids { display: inline-flex; flex-wrap: wrap; gap: 2px 6px; }
+      .tm-pl-kidpts { border-radius: 6px; padding: 1px 4px; border: 1px dashed transparent; color: var(--kc); font-weight: 600; white-space: nowrap; }
+      .tm-pl-kidpts b { color: var(--tm-text-muted); font-weight: 600; }
+      .tm-pl-dragging .tm-pl-kidpts { border-color: color-mix(in srgb, var(--kc) 50%, transparent); }
+      .tm-pl-kid-over { background: color-mix(in srgb, var(--kc) 18%, transparent); border-style: solid; border-color: var(--kc); }
+      .tm-pl-mins { white-space: nowrap; }
+      .tm-pl-card { position: relative; border-radius: 8px; padding-block: 6px; padding-inline: 8px 6px; font-size: 12.5px; line-height: 1.25; background: var(--tm-surface-2); border-inline-start: 4px solid var(--kc); display: flex; align-items: center; gap: 6px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; min-width: 0; transition: transform .12s var(--tm-easing), box-shadow .12s var(--tm-easing); }
+      .tm-pl-lifted { transform: scale(1.04); box-shadow: 0 6px 16px rgba(0,0,0,.25); background: var(--tm-surface-0); z-index: 2; }
+      .tm-pl-series { background: repeating-linear-gradient(45deg, var(--tm-surface-2) 0 6px, color-mix(in srgb, var(--tm-text) 7%, var(--tm-surface-2)) 6px 12px); }
+      .tm-pl-dim { opacity: .45; }
+      .tm-pl-changed { box-shadow: 0 0 0 1.5px var(--tm-accent); }
+      .tm-pl-ic { --mdc-icon-size: 16px; color: var(--kc); flex: none; display: inline-flex; }
+      .tm-pl-name { flex: 1; min-width: 0; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
+      .tm-pl-pts { font-size: 11px; color: var(--tm-text-muted); white-space: nowrap; }
+      /* Over the points until hovered or tabbed to, so it costs the name no room. */
+      .tm-pl-more { position: absolute; inset-inline-end: 2px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; flex: none; opacity: 0; border: 0; background: var(--tm-surface-0); color: var(--tm-text-muted); padding: 1px; cursor: pointer; --mdc-icon-size: 18px; border-radius: 6px; }
+      .tm-pl-card:hover .tm-pl-more, .tm-pl-more:focus-visible { opacity: 1; }
+      .tm-pl-more:focus-visible { outline: 2px solid var(--tm-accent); }
+      .tm-pl-origin { opacity: .35; border: 1px dashed var(--tm-text-muted); border-inline-start: 4px solid var(--kc); }
+      .tm-pl-ghost { /* rtl-ok: follows the pointer in viewport coordinates */ position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; background: var(--tm-surface-0); box-shadow: 0 8px 20px rgba(0,0,0,.25); opacity: .95; cursor: grabbing; }
+      .tm-pl-ghost .tm-pl-more { display: none; }
+      .tm-pl-dragging, .tm-pl-dragging * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
+      .tm-pl-slot { height: 30px; border: 1px dashed var(--tm-accent); border-radius: 8px; background: var(--tm-accent-soft); flex: none; }
+      .tm-pl-foot { position: sticky; bottom: 0; z-index: 3; display: grid; gap: 8px; justify-items: start; margin-top: 12px; }
+      .tm-pl-foot:empty { display: none; }
+      .tm-pl-tip { /* rtl-ok: follows the pointer in viewport coordinates */ position: fixed; left: 0; top: 0; z-index: 1001; pointer-events: none; width: max-content; max-width: 320px; padding: 8px 12px; border: 1px solid var(--tm-border); border-radius: 8px; background: var(--tm-surface-0); color: var(--tm-text); font-size: 12.5px; line-height: 1.4; box-shadow: var(--tm-shadow-lg); }
+      .tm-pl-savebar { justify-self: stretch; background: #263238; color: #fff; border-radius: 10px; padding: 10px 14px; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+      .tm-pl-savehead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .tm-pl-savebar .tm-pl-discard { background: transparent; color: #fff; border-color: #607d8b; }
+      .tm-pl-changes { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 12.5px; color: #cfd8dc; max-height: 96px; overflow-y: auto; }
+      .tm-pl-err { color: #ffab91; display: inline-flex; align-items: center; gap: 4px; --mdc-icon-size: 15px; flex-basis: 100%; }
+      .tm-pl-strip { display: none; }
+      .tm-pl-menu-h { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--tm-text-muted); }
+      .tm-pl-menu-row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .tm-pl-menu-kid { gap: 6px; }
+      .tm-pl-choice { display: grid; gap: 8px; margin-top: 10px; }
+      .tm-pl-opt { display: grid; gap: 2px; text-align: start; border: 1.5px solid var(--tm-border); background: var(--tm-surface-0); color: var(--tm-text); border-radius: 10px; padding: 10px 12px; font: inherit; cursor: pointer; }
+      .tm-pl-opt:hover:not([disabled]) { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
+      .tm-pl-opt[disabled] { opacity: .55; cursor: default; }
+      .tm-pl-opt span { font-size: 12.5px; color: var(--tm-text-muted); }
+      /* A narrow day column (a tablet's seven days): the name gets the whole
+         first line, so words wrap whole, and the points (and the touch menu
+         button) go on a line below it. A column too narrow for the header on
+         one line stacks the date under the weekday, in every column alike. */
+      @container (max-width: 120px) {
+        .tm-pl-card { flex-wrap: wrap; row-gap: 2px; }
+        .tm-pl-name { flex-basis: 100%; }
+        .tm-pl-more { top: auto; bottom: 2px; transform: none; }
+      }
+      @container (max-width: 150px) {
+        .tm-pl-dh { flex-direction: column; align-items: stretch; gap: 0; }
+      }
+      /* Touch screens have no hover: the menu button (Move to, Also on, Give
+         to) is always shown, in the card's own row so it never covers the
+         name or points, with a hit area a finger can find. */
+      @media (hover: none), (pointer: coarse) {
+        .tm-pl-more { position: static; transform: none; opacity: 1; background: none; min-width: 36px; min-height: 36px; margin-block: -6px; margin-inline-start: auto; margin-inline-end: -4px; padding: 0; }
+        .tm-pl-weeknav .tm-btn { min-width: 40px; min-height: 40px; justify-content: center; }
+        .tm-pl-kid { min-height: 40px; padding: 6px 14px; }
+      }
+      /* On touch the menu button sits in the card's row, so a column that is
+         wide but not roomy (a landscape tablet) gives the name its own line
+         too, or long words would split. */
+      @media (hover: none), (pointer: coarse) {
+        @container (max-width: 200px) {
+          .tm-pl-card { flex-wrap: wrap; row-gap: 2px; }
+          .tm-pl-name { flex-basis: 100%; }
+        }
+      }
+      /* Too narrow for a side rail as well as seven days: the rail goes on
+         top, where cards are still in reach of every day. */
+      @media (max-width: 1700px) {
+        .tm-pl { grid-template-columns: minmax(0, 1fr); }
+        .tm-pl-rail { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: flex-start; }
+        .tm-pl-sec + .tm-pl-sec { margin-top: 0; }
+        .tm-pl-rail .tm-pl-list { flex-direction: row; flex-wrap: wrap; }
+        .tm-pl-rail .tm-pl-card { flex: 0 1 190px; }
+        .tm-pl-railhint { flex-basis: 100%; margin: 0; }
+        .tm-pl-day { min-height: 300px; }
+        .tm-pl-day .tm-pl-ic { display: none; }
+      }
+      @media (max-width: 700px) {
+        .tm-pl-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 10px; }
+        .tm-pl-strip-day { position: relative; display: grid; justify-items: center; gap: 0; padding: 6px 0; border: 1px solid var(--tm-border); border-radius: 10px; background: var(--tm-surface-0); color: var(--tm-text); font: inherit; font-size: 11px; cursor: pointer; }
+        .tm-pl-strip-day strong { font-size: 15px; }
+        .tm-pl-strip-day em { display: block; min-height: 12px; line-height: 12px; font-style: normal; font-size: 10px; font-weight: 600; color: var(--tm-text-muted); }
+        .tm-pl-strip-today { border-color: var(--tm-accent); }
+        .tm-pl-strip-on { background: var(--tm-accent); border-color: var(--tm-accent); color: #fff; }
+        .tm-pl-strip-on em { color: #fff; }
+        .tm-pl-grid { grid-template-columns: minmax(0, 1fr); }
+        .tm-pl-day:not(.tm-pl-sel) { display: none; }
+        .tm-pl-day { min-height: 0; }
+        .tm-pl-card { cursor: default; touch-action: auto; padding-block: 8px; font-size: 14px; }
+        .tm-pl-more { position: static; transform: none; opacity: 1; background: none; --mdc-icon-size: 22px; padding: 0; min-width: 40px; min-height: 40px; margin-block: -8px; margin-inline-end: -6px; }
+        .tm-pl-weeknav .tm-btn { min-width: 40px; min-height: 40px; justify-content: center; }
+        .tm-pl-kid { min-height: 40px; padding: 6px 14px; }
+        .tm-pl-rail .tm-pl-card { flex: 1 1 100%; }
+        .tm-pl-weeknav { flex-wrap: wrap; }
+        .tm-pl-foot { bottom: 8px; }
+        .tm-pl-rail { order: 2; }
+        .tm-pl-railhint { display: none; }
+        .tm-pl-day .tm-pl-ic { display: inline-flex; --mdc-icon-size: 18px; }
+        .tm-pl-savehead strong { flex-basis: 100%; }
+        .tm-pl-savehead .tm-pl-spacer { display: none; }
+        .tm-pl-savehead .tm-btn { flex: 1; justify-content: center; }
+      }
+    </style>`;
+  }
+
   // -- Rewards tab -------------------------------------------------------
   _renderRewardsTab() {
     const all = this._state.rewards || [];
@@ -14140,6 +15221,8 @@ class TaskMatePanel extends HTMLElement {
 
   _renderDialog() {
     if (this._dialog.kind === "swap")         return this._renderSwapDialog();
+    if (this._dialog.kind === "planner-move")   return this._renderPlannerMoveDialog();
+    if (this._dialog.kind === "planner-series") return this._renderPlannerSeriesDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
     if (this._dialog.kind === "adjust")       return this._renderAdjustDialog();
     if (this._dialog.kind === "backdate")     return this._renderBackdateDialog();

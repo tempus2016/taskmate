@@ -39,7 +39,7 @@ When there are no children yet, Today offers **Start setup** (the [Setup Wizard]
 |---------|-------|
 | **Today** | Today |
 | **Family** | Children, Groups |
-| **Earn** | Chores, Bounties, Auctions, Quests, Challenges, Templates |
+| **Earn** | Chores, [Planner](Week-Planner.md), Bounties, Auctions, Quests, Challenges, Templates |
 | **Spend** | Rewards, Wishlists, [Raffles](Raffles.md) |
 | **Points** | Bonuses, Penalties, Badges |
 | **Review** | Activity, Insights, Audit |
@@ -114,6 +114,10 @@ The admin panel provides full management for every aspect of TaskMate:
 - Configure timed task settings (rate, cap)
 - Delete chores
 - Reorder chores per child
+
+#### Week planner
+
+**Earn → Planner** lays the week out in seven day columns. Drag a chore to another day to move it, hold **Alt** to copy it, drop it on a child's initial to give it to them, and press **Save week** to save every change at once. A repeating chore asks whether to move just this week's one or the whole series. On a phone it shows one day at a time with a **Move to…** menu on each chore. See [Week Planner](Week-Planner.md).
 
 #### The chore editor (v6.0.0+)
 
@@ -343,6 +347,7 @@ All management — children, chores, rewards, penalties/bonuses, task groups, se
 - [Raffles](Raffles.md), [Help Requests](Help-Requests.md), [Sick Days](Sick-Days.md), [Make-It-Right Penalties](Make-It-Right-Penalties.md) — v7.0.0 features run from the panel
 - [Repairs & Diagnostics](Repairs-and-Diagnostics.md) — setup problems raised in Home Assistant's Settings → Repairs
 - [Printable Weekly Chart](Printable-Weekly-Chart.md) — a fridge-ready A4 chore chart
+- [Week Planner](Week-Planner.md) — drag chores between days and children for the week
 - [Chore & Reward Library](Chore-Library.md) — ready-made chores and rewards to add in one go
 - [Template Packs](Template-Packs.md) — export and import shareable chore-template packs
 - [Admin Audit Log](Admin-Audit-Log.md) — who changed what, and when
