@@ -10,7 +10,7 @@ Plan the whole week on one screen: seven day columns, every chore on the days it
 
 - **Seven days, Monday to Sunday.** **‹** and **›** step a week back or forward; **This week** comes home. Today's column is outlined.
 - **A card per chore per day**, with its icon, name and points. The coloured edge on the left is the child it belongs to that day; a purple edge means it's shared (everyone, or more than one child).
-- **Striped cards** repeat on their own rhythm: daily chores and [recurring](Chore-Scheduling.md#mode-b-recurring) ones (every few days, weekly on a day, monthly…). Plain cards are on set weekdays or are one-off.
+- **Striped cards** repeat on their own rhythm: daily chores and [recurring](Chore-Scheduling.md#mode-b--recurring) ones (every few days, weekly on a day, monthly…). Plain cards are on set weekdays or are one-off.
 - **Turn-taking chores** show whose turn it is that day, worked out the same way as the rest of TaskMate. A chore [won at auction](Chore-Auctions.md) shows the winner.
 - **A footer under each day** with the points each child can earn that day (their initial and a number) and the estimated minutes of work, so a lopsided day stands out. Minutes come from each chore's [estimated minutes](Estimated-Minutes.md), counted once per child doing it.
 - **Not on this week** lists active chores that don't fall anywhere in the week, and **One-off** lists one-off chores dated in another week.
