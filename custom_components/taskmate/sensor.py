@@ -206,6 +206,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
     # Season event packs: each child's advent doors as 24 letters, only while
     # the Christmas pack is in its window.
     advent_doors = (_season_advent(coordinator) or {}).get("children") or {}
+    # Kid onboarding tour: one boolean per child, only while the tour is on.
+    tour_on = coordinator.tour_enabled()
     summary = []
     for c in children:
         committed_amount = committed.get(c.id, 0)
@@ -235,6 +237,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 ),
                 # Grown-ups (#1061): cards leave these out unless show_adults is set.
                 **({"is_adult": True} if getattr(c, "is_adult", False) else {}),
+                # Kid onboarding tour: finished or skipped, while the tour is on.
+                **({"tour_done": coordinator.tour_done(c.id)} if tour_on and not getattr(c, "is_adult", False) else {}),
                 # The child's own colour (#1078) and tick-off animation, only when set.
                 **({"color": color} if (color := getattr(c, "color", "")) else {}),
                 **(
@@ -1385,6 +1389,8 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             **({"reward_gifting": True} if self.coordinator.reward_gifting_enabled() else {}),
             # Child-chosen reminders: the times a child may pick, while on.
             **({"chore_reminders": reminders} if reminders else {}),
+            # Kid onboarding tour: {speak, auto} switches, only while it's on.
+            **({"tour": tour} if (tour := self.coordinator.tour_card_settings()) is not None else {}),
             # Sibling checks: the bonus a "Looks done" pays, while on.
             **(
                 {"sibling_check_bonus": self.coordinator.sibling_check_bonus()}

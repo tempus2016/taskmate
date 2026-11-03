@@ -8,6 +8,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_NOTIFICATION_NAV_URL, DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY, DOMAIN
 from .models import (
@@ -212,8 +213,38 @@ class TaskMateStorage:
         await self._migrate_pool_allocations_v2()
         await self._migrate_career_score()
         await self._migrate_first_come_daily_limit()
+        self._migrate_kid_tour(is_fresh)
 
         return data
+
+    def _migrate_kid_tour(self, is_fresh: bool) -> None:
+        """Kid onboarding tour: don't greet children who already use TaskMate.
+
+        Runs once, on the first load of a version with the tour. A child who
+        has done a chore before is no newcomer, so their tour is recorded as
+        done (``migrated``); children added afterwards start with no record
+        and see it. Not saved here: the next save carries it, and if none
+        comes the rerun on the next load gives the same answer.
+        """
+        if self._data.get("_kid_tour_migrated"):
+            return
+        self._data["_kid_tour_migrated"] = True
+        section = self._data.get("kid_tour")
+        if not isinstance(section, dict):
+            section = {}
+            self._data["kid_tour"] = section
+        if is_fresh:
+            return
+        today = dt_util.as_local(dt_util.now()).date().isoformat()
+        for child in self._data.get("children", []) or []:
+            if not isinstance(child, dict) or child.get("is_adult") or not child.get("id"):
+                continue
+            used = (
+                int(child.get("total_chores_completed", 0) or 0) > 0
+                or int(child.get("total_points_earned", 0) or 0) > 0
+            )
+            if used:
+                section.setdefault(child["id"], {"done": today, "migrated": True})
 
     async def _migrate_pool_allocations_v2(self) -> None:
         """Migrate beta1 pool allocations to beta2 semantics.
@@ -2380,6 +2411,7 @@ class TaskMateStorage:
             "points_expiry",
             "penalty_warnings",
             "chore_reminders",
+            "kid_tour",
         ):
             section = self._data.get(key)
             if isinstance(section, dict):

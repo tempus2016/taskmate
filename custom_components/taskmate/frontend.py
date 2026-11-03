@@ -28,6 +28,7 @@ CARDS: Final = [
     "taskmate-localize.js",
     "taskmate-design.js",
     "taskmate-sounds.js",
+    "taskmate-tour.js",
     "taskmate-badges-card.js",
     "taskmate-child-card.js",
     "taskmate-routine-card.js",

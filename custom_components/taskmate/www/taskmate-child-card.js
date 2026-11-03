@@ -2712,6 +2712,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderQuantityCapture()}
         <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
                style="display:none" @change="${this._onPhotoSelected}">
+        ${this._renderTour(child, attrs, "classic")}
 
         ${this.config.debug === true ? html`
           <!-- DEBUG PANEL -->
@@ -3201,6 +3202,7 @@ class TaskMateChildCard extends LitElement {
       ${this._renderQuantityCapture()}
       <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
              style="display:none" @change="${this._onPhotoSelected}">
+      ${this._renderTour(child, attrs, design)}
     </ha-card>`;
   }
 
@@ -6779,6 +6781,105 @@ class TaskMateChildCard extends LitElement {
     return { hd: own || _safeColor(this.config?.header_color, fallback), tint: own, season };
   }
 
+  /* ── Kid onboarding tour ────────────────────────────────────────────────
+     Called from BOTH render paths (classic render() and _renderDesigned), so
+     every design gets it. The tour itself is the shared <taskmate-tour>
+     element (taskmate-tour.js); this card only says which of its own
+     elements each step points at, for every design's markup. */
+  _tourAnchor(key) {
+    const TICK_ROWS = '.chore-card:not(.bonus-subtask):not(.completed)[aria-disabled="false"], '
+      + ".timed-chore-card:not(.loading), "
+      + ".tmd-chore:not(.done):not(.dimmed), .tmd-quest:not(.done):not(.dimmed), .tmd-check:not(.done):not(.dimmed)";
+    const root = this.shadowRoot;
+    if (!root) return null;
+    // Only something actually on screen counts: a hidden element would
+    // spotlight an empty box.
+    const vis = (sel) => {
+      const el = root.querySelector(sel);
+      return el && el.getClientRects && el.getClientRects().length ? el : null;
+    };
+    const first = (sel, ok) => {
+      for (const el of root.querySelectorAll(sel)) {
+        if (el.getClientRects && el.getClientRects().length && ok(el)) return el;
+      }
+      return null;
+    };
+    const rewards = ".tm-care-forecast, .tm-care-goal";
+    switch (key) {
+      case "hello":
+        return vis(".card-header, .tmd-hd");
+      case "tick":
+        // The first chore the child can tick RIGHT NOW, read off the control
+        // the card rendered rather than re-deriving the rules: the classic
+        // row is itself the button (aria-disabled), a designed row must not
+        // be dimmed (preview, elapsed, not due today) and must carry an
+        // enabled Done button, a timed card an enabled start/resume. With no
+        // such chore the step is skipped, never pointed at a locked row.
+        return first(TICK_ROWS, (el) => el.classList.contains("chore-card")
+          || !!el.querySelector("button.btn:not([disabled]), .timer-btn.start:not([disabled]), .timer-btn.resume:not([disabled])"));
+      case "pre_tick":
+        return first(".pre-tile:not(.done):not([disabled])", () => true);
+      case "points":
+      case "pre_points":
+        // Classic shows the balance in the header; the designed headers
+        // don't, so there it's the first chore's "+N" instead.
+        return vis(".points-display")
+          || vis(".pre-tile-stars, .pre-tile-points, .tmd-chore .chip.soft, .q-xp, .c-pts");
+      case "streak":
+        return vis(".tm-streak-tag, .freeze-badge, .tmd-freeze");
+      case "rewards":
+      case "pre_rewards":
+        return vis(rewards);
+      default:
+        return null;
+    }
+  }
+
+  _renderTour(child, attrs, design) {
+    const T = window.__taskmate_tour;
+    if (!T || !child || !this.hass) return "";
+    if (this._tourClosed && this._tourClosed[child.id]) return "";
+    if (this._tourFor !== child.id) {
+      const flag = T.syncFlag(this.hass, child);
+      if (!T.shouldStart({ child, attrs, config: this.config, userId: this.hass.user && this.hass.user.id, localFlag: flag })) {
+        return "";
+      }
+      this._tourFor = child.id;
+    }
+    const tour = attrs.tour || {};
+    const d = window.__taskmate_design;
+    const childId = child.id;
+    return html`<taskmate-tour .opts=${{
+      preReader: this.config.pre_reader === true,
+      resolve: (k) => this._tourAnchor(k),
+      t: (k, p) => this._t(k, p),
+      params: { name: child.name, points_name: attrs.points_name || this._t("common.stars") },
+      pointsIcon: attrs.points_icon || "mdi:star",
+      speak: !!tour.speak,
+      autoRead: !!tour.auto,
+      design: (this.getAttribute && this.getAttribute("data-tm-design")) || design,
+      dark: !!(d && d.isDark && d.isDark(this.hass, this)),
+      // Step aside while the card celebrates, so the popup isn't drawn over
+      // a second dark layer; the tour comes back on the same step.
+      paused: !!(this._celebrating || this._inspCelebration || (this._confetti && this._confetti.length)),
+      onSpeak: (k) => T.speak(this.hass, childId, k),
+      onFinish: (status, step) => this._finishTour(childId, status, step),
+    }}></taskmate-tour>`;
+  }
+
+  _finishTour(childId, status, step) {
+    const T = window.__taskmate_tour;
+    this._tourClosed = { ...(this._tourClosed || {}), [childId]: true };
+    this._tourFor = null;
+    if (T) {
+      // This browser first, so a shared tablet won't replay it even if the
+      // write below is slow or the connection is down.
+      T.writeFlag(childId, status, step);
+      T.mark(this.hass, childId, status, step);
+    }
+    this.requestUpdate();
+  }
+
   /** `density: compact` slims the rows so more fit on a phone. */
   _compact() {
     return this.config?.density === "compact";
@@ -7088,6 +7189,7 @@ class TaskMateChildCardEditor extends LitElement {
       { name: 'pre_reader', selector: { boolean: {} } },
       { name: 'pre_reader_labels', selector: { boolean: {} } },
       { name: 'pre_reader_points', selector: { boolean: {} } },
+      { name: 'show_tour', selector: { boolean: {} } },
       { name: 'show_parent_actions', selector: { boolean: {} } },
       { name: 'debug', selector: { boolean: {} } },
     ];
@@ -7121,6 +7223,7 @@ class TaskMateChildCardEditor extends LitElement {
       pre_reader: this._t('child.editor.pre_reader'),
       pre_reader_labels: this._t('child.editor.pre_reader_labels'),
       pre_reader_points: this._t('child.editor.pre_reader_points'),
+      show_tour: this._t('child.editor.show_tour'),
       show_parent_actions: this._t('common.editor.show_parent_actions'),
       debug: this._t('child.editor.show_debug'),
     };
@@ -7134,6 +7237,7 @@ class TaskMateChildCardEditor extends LitElement {
       time_category: this._t('child.editor.time_category_helper'),
       density: this._t('child.editor.density_helper'),
       seasonal: this._t('child.editor.seasonal_helper'),
+      show_tour: this._t('child.editor.show_tour_helper'),
       due_days_mode: this._t('child.editor.due_days_helper'),
       recurrence_done_mode: this._t('child.editor.recurrence_helper'),
       first_come_claimed_mode: this._t('child.editor.first_come_helper'),
@@ -7176,6 +7280,7 @@ class TaskMateChildCardEditor extends LitElement {
       pre_reader: this.config.pre_reader === true,
       pre_reader_labels: this.config.pre_reader_labels === true,
       pre_reader_points: this.config.pre_reader_points === true,
+      show_tour: this.config.show_tour !== false,
       show_parent_actions: this.config.show_parent_actions !== false,
       debug: this.config.debug === true,
     };
@@ -7216,7 +7321,7 @@ class TaskMateChildCardEditor extends LitElement {
       const defaults = {
         show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
         show_personal_bests: true, show_boost_alert: true, show_appeals: true, show_screen_time: true,
-        show_description: false, debug: false, density: 'normal', seasonal: true,
+        show_tour: true, show_description: false, debug: false, density: 'normal', seasonal: true,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
         first_come_claimed_mode: 'hide', set_times_layout: 'family',

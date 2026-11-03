@@ -65,3 +65,4 @@ stars.
 - [Routine Mode](Routine-Mode.md) — a guided one-task-at-a-time flow, which pairs well with this
 - [Chores](Chores.md) — setting a chore's picture and icon
 - [Card Design Styles](Card-Design-Styles.md) — including the Accessible style
+- [Kid Onboarding Tour](Kid-Onboarding-Tour.md) — the three-step picture tour a pre-reader card shows the first time

@@ -145,6 +145,7 @@ show_roulette: false          # show the chore-roulette spin button (also needs 
 pre_reader: false             # picture-only mode for children who can't read yet
 pre_reader_labels: false      # in pre-reader mode, put the chore name back under each tile
 pre_reader_points: false      # in pre-reader mode, show the point value instead of stars
+show_tour: true               # the first-time tour for this child (needs the global setting)
 default_sound: coin           # default completion sound
 undo_sound: undo              # sound when undoing
 show_parent_actions: true     # (v6.2.0) false = act as the child even when a parent is signed in
@@ -164,6 +165,7 @@ header_color: "#9b59b6"       # leave unset to use the child's own colour
 - **Advent calendar** — while the Christmas [season pack](Season-Event-Packs.md) is in its window, a 24-door strip sits above today's chores (opened, missed, today, still to come) with today's door as a **Done** button. Every design style shows it
 - **Timed tasks** show Start/Pause/Stop buttons with a live elapsed timer instead of a checkbox — see [Timed Tasks](Timed-Tasks.md)
 - **Bonus subtasks** appear as completable items below the parent chore after it's ticked off — see [Bonus Subtasks](Bonus-Subtasks.md)
+- **First-time tour** — the first time a child opens their card, a short walkthrough spotlights the header, the first job, their points, a streak and the rewards forecast (steps with nothing to point at are skipped). Picture-only cards get a three-step version. Once per child, saved on the server. Turn it off for one card with `show_tour: false`, or for everyone in Settings. See [Kid Onboarding Tour](Kid-Onboarding-Tour.md)
 - **Badge strip** shows up to 5 most-recently-earned badges below the points readout — tap to open the admin panel's badges section. Disable with `show_badges: false`. See [Achievement Badges](Achievement-Badges.md)
 - **Next badge progress (v5.1.1+)** — a compact **Next up** line under the badge strip showing the closest unearned badge: tier-coloured icon, badge name, a thin bar and a `845 / 1000` count. Hidden when there is nothing left to earn or every remaining badge is still at 0%. Tap it to open the badges section. Disable with `show_next_badge: false`. See [Achievement Badges](Achievement-Badges.md)
 - **Level badge + XP bar** — when the child has a level, a `Lvl N` pill and a thin XP progress bar appear under the child's name in the header, filling toward the next level. The progress is driven by the child's `level`, `level_progress`, and `level_target` values. Nothing to configure — it appears automatically once levels are active. See [Levels and XP](Levels-and-XP.md)

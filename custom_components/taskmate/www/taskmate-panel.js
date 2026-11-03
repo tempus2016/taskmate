@@ -1324,6 +1324,7 @@ class TaskMatePanel extends HTMLElement {
     }
 
     // Vacation / pause-mode editor
+    if (act === "tour-reset") { this._doTourReset(t.dataset.id, t); return; }
     if (act === "vac-add") {
       this._syncVacationInputs();
       this._vacationDraft.push({ id: "", name: "", start: "", end: "" });
@@ -6192,6 +6193,72 @@ class TaskMatePanel extends HTMLElement {
             </div>
           </div>
         </div>`;
+  }
+
+  // Kid onboarding tour: the switches, the speaker the steps are read on,
+  // and each child's status with a "Show again" that clears it.
+  _renderTourSettings(s) {
+    const kids = (this._state.children || []).filter(c => c && !c.is_adult);
+    const tours = this._state.kid_tour || {};
+    const speaker = this._settingsEntityDraft?.read_aloud_media_player
+      ?? s.read_aloud_media_player ?? "";
+    const rows = kids.map(c => `
+            <div class="tm-tour-row" data-tour-row="${this._esc(c.id)}">
+              <span class="tm-tour-name">${this._esc(c.name)}</span>
+              <span class="tm-tour-status">${this._tourStatusPill(tours[c.id])}</span>
+              <span class="tm-tour-act">${tours[c.id] ? `<button type="button" class="tm-btn tm-btn-sm" data-act="tour-reset" data-id="${this._esc(c.id)}">${this._t("panel.tour_show_again")}</button>` : ""}</span>
+            </div>`).join("");
+    return `
+        <div class="tm-section">
+          <div class="tm-section-head"><div><h3>${this._t("panel.tour_title")}</h3><p class="tm-meta">${this._t("panel.tour_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.tour_enabled")}</div>
+              <ha-switch data-setting="tour_enabled" ${s.tour_enabled !== false ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.tour_auto_read")}<small>${this._t("panel.tour_auto_read_hint")}</small></div>
+              <ha-switch data-setting="tour_auto_read" ${s.tour_auto_read !== false ? "checked" : ""}></ha-switch>
+            </div>
+            <div class="tm-tour-speaker">
+              ${this._entityPickerField(this._t("panel.tour_speaker_label"), "read_aloud_media_player", speaker, ["media_player"], this._t("panel.tour_speaker_hint"))}
+            </div>
+            <div class="tm-tour-kids">
+              <h4>${this._t("panel.tour_children")}</h4>
+              ${rows || `<div class="tm-meta">${this._t("panel.tour_no_children")}</div>`}
+            </div>
+            <p class="tm-meta tm-tour-note">${this._t("panel.tour_note")}</p>
+          </div>
+        </div>`;
+  }
+
+  _tourStatusPill(rec) {
+    if (rec && rec.migrated) return `<span class="tm-pill tm-pill-muted">${this._t("panel.tour_status_migrated")}</span>`;
+    if (rec && rec.done) return `<span class="tm-pill tm-pill-success">${this._esc(this._t("panel.tour_status_done", { date: this._shortDateLabel(rec.done) }))}</span>`;
+    if (rec && rec.skipped) return `<span class="tm-pill tm-pill-warn">${this._esc(this._t("panel.tour_status_skipped", { step: rec.skipped }))}</span>`;
+    return `<span class="tm-pill tm-pill-muted">${this._t("panel.tour_status_none")}</span>`;
+  }
+
+  // Patched in place rather than re-rendered, so unsaved edits elsewhere on
+  // the Settings page survive the click.
+  async _doTourReset(childId, btn) {
+    if (btn) btn.disabled = true;
+    const { ok, err } = await this._callWS({ type: "taskmate/tour/reset", child_id: childId });
+    if (!ok) {
+      if (btn) btn.disabled = false;
+      this._showToast("err", this._t("panel.toast_save_failed", { error: err }));
+      return;
+    }
+    if (this._state.kid_tour) delete this._state.kid_tour[childId];
+    const row = this.querySelector(`[data-tour-row="${CSS.escape(childId)}"]`);
+    if (row) {
+      const pill = row.querySelector(".tm-tour-status");
+      if (pill) pill.innerHTML = this._tourStatusPill(null);
+      const act = row.querySelector(".tm-tour-act");
+      if (act) act.innerHTML = "";
+    }
+    const child = (this._state.children || []).find(c => c.id === childId);
+    this._showToast("ok", this._t("panel.tour_reset_done", { name: child ? child.name : "" }));
   }
 
   _shortDateLabel(iso) {
@@ -14049,7 +14116,9 @@ class TaskMatePanel extends HTMLElement {
       const card = this._viewAsCard;
       const key = `${d.child_id}|${d.design}`;
       if (this._viewAsKey !== key) {
-        const config = { entity, child_id: d.child_id };
+        // A grown-up previewing the card must not walk through (and so use
+        // up) the child's first-time tour.
+        const config = { entity, child_id: d.child_id, show_tour: false };
         if (d.design && d.design !== "global") config.card_design = d.design;
         card.setConfig(config);
         this._viewAsKey = key;
@@ -14529,6 +14598,7 @@ class TaskMatePanel extends HTMLElement {
         ${this._renderShoppingJobsSettings(s)}
         ${this._renderSiblingCheckSettings(s)}
         ${this._renderChoreReminderSettings(s)}
+        ${this._renderTourSettings(s)}
 
         <div class="tm-section">
           <div class="tm-section-head"><div><h3>${this._t("panel.appeals_settings_title")}</h3><p class="tm-meta">${this._t("panel.appeals_settings_hint")}</p></div></div>
@@ -18090,6 +18160,21 @@ class TaskMatePanel extends HTMLElement {
       .tm-pill-timelock ha-icon { --mdc-icon-size: 13px; vertical-align: -2px; }
       .tm-pill-jackpot { background: var(--tm-gold-soft);     color: var(--tm-gold);        border-color: color-mix(in srgb, var(--tm-gold), transparent 75%); }
       .tm-pill-muted   { background: var(--tm-surface-2);     color: var(--tm-text-muted);  border-color: var(--tm-border); }
+      .tm-tour-speaker { padding: 12px 20px 4px; }
+      .tm-tour-kids { padding: 8px 20px 0; }
+      .tm-tour-kids h4 { margin: 8px 0 4px; font-size: 13px; font-weight: 600; }
+      .tm-tour-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 120px; gap: 10px; align-items: center; min-height: 44px; padding: 6px 0; border-top: 1px solid var(--tm-border-soft); }
+      .tm-tour-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tm-tour-act { text-align: end; }
+      .tm-tour-note { padding: 8px 20px 14px; margin: 0; }
+      @media (max-width: 899.98px) {
+        .tm-tour-speaker, .tm-tour-kids, .tm-tour-note { padding-inline: 16px; }
+      }
+      @media (max-width: 600px) {
+        .tm-tour-row { grid-template-columns: minmax(0, 1fr) auto; }
+        .tm-tour-act { grid-column: 1 / -1; text-align: start; }
+        .tm-tour-act:empty { display: none; }
+      }
       .tm-quest-inactive { opacity: 0.6; }
       .tm-quest-steps { margin: 8px 0 4px; padding-inline-start: 20px; color: var(--tm-text); font-size: 13px; }
       .tm-quest-steps li { margin: 2px 0; }

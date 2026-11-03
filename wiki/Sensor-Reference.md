@@ -31,6 +31,7 @@ The main overview sensor. Carries scalar stats and the compact per-child summary
 | `points_name` | string | Currency name (e.g. "Stars") |
 | `points_icon` | string | Currency MDI icon (e.g. "mdi:star") |
 | `card_design` | string | Global default [card design style](Card-Design-Styles.md) — `classic` / `playroom` / `console` / `cleanpro` / `accessible` (default `classic`). Cards apply this when they have no per-card override. See [Card Design Styles](Card-Design-Styles.md) |
+| `tour` | object | The [first-time tour](Kid-Onboarding-Tour.md) is on: `speak: 1` when a read-aloud speaker is set, `auto: 1` when steps are also read out automatically. Present only while the tour is switched on |
 | `season` | string | The [seasonal theme](Card-Looks.md#seasonal-themes) the cards dress for today: `halloween`, `christmas`, `easter`, `back_to_school` or `summer`. Present only while one is switched on and in its window |
 | `advent` | object | The Christmas [season pack](Season-Event-Packs.md)'s advent calendar: `chore` (today's door chore id, `""` once the 24th has passed), `door` (today's door number, `0` after the 24th), and the badge's `goal` and `badge` name. Present only while the Christmas pack is installed and in its window. Each child in `children` then carries its own `advent` (see below) |
 | `today_day_of_week` | string | Current day in HA timezone (e.g. "monday") |
@@ -93,6 +94,7 @@ Each entry in the `children` array:
 | `is_guest` | bool | (v5.0.0) Present only for [guest profiles](Guest-Child-Profiles.md) |
 | `guest_expires_on` | string | (v5.0.0) ISO date the guest profile is archived; present only for guests |
 | `is_adult` | bool | (v6.4.0) `true` for an [adult profile](Adult-Profiles.md); present only for adults |
+| `tour_done` | bool | `true` once the child has finished or skipped the [first-time tour](Kid-Onboarding-Tour.md). Present only while the tour is on, and never for adults |
 | `color` | string | The child's colour (`#rrggbb`), used by their cards. Present only when one is set |
 | `celebration_style` | string | The child's [done animation](Card-Looks.md#done-animation-per-child): `stamp`, `fireworks` or `sticker`. Absent for the default, confetti |
 | `roulette` | object | (v5.0.0) Today's [roulette](Chore-Roulette.md) pick and `spins_left`; present only while roulette is enabled |
