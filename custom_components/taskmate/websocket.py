@@ -284,6 +284,8 @@ _AUDIT_EXCLUDE: Final = {
     WS_GET_STATE,
     # Chore auctions (#982): the start sheet's read-only occurrence lookup.
     "taskmate/auctions/occurrences",
+    # Week planner: the read-only rotation picks for a week.
+    "taskmate/planner/week",
     WS_NOTIF_GET_STATE,
     WS_NOTIF_LIST_NOTIFY,
     WS_TEMPLATES_LIST,
@@ -3783,6 +3785,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .websocket_inspections import INSPECTION_COMMANDS
     from .websocket_panel_tools import PANEL_TOOL_COMMANDS
     from .websocket_pet_shop import PET_SHOP_COMMANDS
+    from .websocket_planner import PLANNER_COMMANDS
     from .websocket_raffles import RAFFLE_COMMANDS
     from .websocket_recaps import RECAP_COMMANDS
     from .websocket_rewards_extra import REWARD_EXTRA_COMMANDS
@@ -3801,6 +3804,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *REWARD_EXTRA_COMMANDS,
         *CHORE_EXTRA_COMMANDS,
         *PET_SHOP_COMMANDS,
+        *PLANNER_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

@@ -534,8 +534,12 @@ class ChoresMixin:
             await self.async_refresh()
         return chores
 
-    async def async_update_chore(self, chore: Chore) -> None:
-        """Update a chore."""
+    async def async_update_chore(self, chore: Chore, *, refresh: bool = True) -> None:
+        """Update a chore.
+
+        ``refresh=False`` leaves the save and the coordinator rebuild to the
+        caller, so a batch (the week planner) pays for one of each (#794).
+        """
         # Checked before storage is touched so a refused edit changes nothing.
         team_error = teamwork_config_error(
             getattr(chore, "team_size", 0),
@@ -617,8 +621,9 @@ class ChoresMixin:
         for prev_image in prev_images - {chore.image_url or "", getattr(chore, "reference_image_url", "") or ""}:
             await self._async_release_image(prev_image, excluding_chore_id=chore.id)
         await self._publish_chore_to_calendars(chore, today)
-        await self.storage.async_save()
-        await self.async_refresh()
+        if refresh:
+            await self.storage.async_save()
+            await self.async_refresh()
 
     async def _async_release_image(self, image_url: str, *, excluding_chore_id: str = "") -> None:
         """Delete a chore image file, but only if nothing else still shows it.
