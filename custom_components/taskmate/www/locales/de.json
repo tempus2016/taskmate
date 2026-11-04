@@ -2405,7 +2405,7 @@
   "streak.freezes_tooltip": "Serienschutz — jeder rettet deine Serie an einem verpassten Tag",
   "streak.freezes_aria": "{count} Serienschutz",
   "streak.freezes_aria_one": "1 Serienschutz",
-  "streak.default_title": "Erfolge und Erfolge",
+  "streak.default_title": "Serien und Erfolge",
   "streak.editor.child_helper": "Serie nur für ein bestimmtes Kind anzeigen",
   "streak.editor.days_shown": "Tage werden in der Leiste angezeigt",
   "streak.editor.days_shown_helper": "Wie viele Tage der Punkte werden angezeigt (Standard: 14)",
@@ -4806,5 +4806,6 @@
   "leaderboard.ranked_by_streak": "Geordnet nach aktueller Serie",
   "leaderboard.ranked_by_weekly": "Geordnet nach Punkten dieser Woche",
   "leaderboard.ranked_by_career": "Geordnet nach Karrierepunktzahl",
-  "leaderboard.ranked_by_season": "Geordnet nach Punkten dieses Monats"
+  "leaderboard.ranked_by_season": "Geordnet nach Punkten dieses Monats",
+  "panel.ha_menu": "Home Assistant-Menü"
 }

@@ -4553,7 +4553,7 @@ class TaskMatePanel extends HTMLElement {
     const searchLabel = this._t("panel.palette_placeholder");
     return `
       <div class="tm-topbar">
-        <button type="button" class="tm-menu-btn" data-act="toggle-ha-menu" aria-label="Menu">
+        <button type="button" class="tm-menu-btn" data-act="toggle-ha-menu" aria-label="${this._esc(this._t("panel.ha_menu"))}">
           <ha-icon icon="mdi:menu"></ha-icon>
         </button>
         <div class="tm-crumbs">

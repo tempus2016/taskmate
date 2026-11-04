@@ -56,6 +56,12 @@ const _VERSION = (() => {
 const _cache = {};          // "lang/bundle" → { key: value }  (null = tried and failed)
 const _pending = {};        // "lang/bundle" → Promise
 let _lastLang = null;       // the language of the most recent lookup
+// While the page start-up is still working out which language Home Assistant
+// will settle on (see _startPreload), lookups queue their bundle here instead
+// of fetching it in a language that is about to change.
+let _deciding = false;
+let _decision = Promise.resolve();
+const _wanted = new Set();
 
 /** Which bundle a key lives in — the first matching rule wins. */
 function _bundleFor(key) {
@@ -110,6 +116,25 @@ async function _loadBundle(lang, bundle) {
   return _pending[id];
 }
 
+const _lastShown = {};      // bundle → the "lang/bundle" a lookup last read from
+
+/**
+ * A loaded bundle to read while `lang`'s own is still on its way, or null:
+ * the same language's family (en-GB for en), then the language the page was
+ * showing until now (switching en → de keeps the English words up until the
+ * German arrive, rather than flashing raw keys), then en-GB, then any copy.
+ */
+function _interim(lang, bundle) {
+  const base = String(lang).split('-')[0];
+  const loaded = Object.keys(_cache).filter((id) => _cache[id] && id.endsWith(`/${bundle}`));
+  const family = loaded.find((id) => id.split('/')[0].split('-')[0] === base);
+  const pick = family
+    || (_cache[_lastShown[bundle]] ? _lastShown[bundle] : null)
+    || (_cache[`${_FALLBACK}/${bundle}`] ? `${_FALLBACK}/${bundle}` : null)
+    || loaded[0];
+  return pick ? _cache[pick] : null;
+}
+
 /**
  * Synchronous lookup — returns the translated string or the fallback.
  * Triggers async load in the background if the bundle isn't cached yet.
@@ -126,13 +151,21 @@ function localize(hass, key, params) {
   const id = `${lang}/${bundle}`;
 
   let str = undefined;
+  let data;
   if (!(id in _cache)) {
-    _loadBundle(lang, bundle);
+    if (_deciding) _wanted.add(bundle);
+    else _loadBundle(lang, bundle);
+    // Until it lands, read a copy that is already here — the same language's
+    // family (en-GB for en) or en-GB — rather than flashing the raw key.
+    data = _interim(lang, bundle);
+  } else if (_cache[id]) {
+    data = _cache[id];
+    _lastShown[bundle] = id;
   } else {
     // A language whose bundle failed to load reads the en-GB copy instead.
-    const data = _cache[id] || _cache[`${_FALLBACK}/${bundle}`];
-    if (data && typeof data[key] === 'string') str = data[key];
+    data = _cache[`${_FALLBACK}/${bundle}`];
   }
+  if (data && typeof data[key] === 'string') str = data[key];
   if (str === undefined) {
     // Missing translation: only echo the key back when it's a plain identifier.
     // A key carrying HTML-significant characters is not a real key — it's caller
@@ -164,6 +197,7 @@ function localize(hass, key, params) {
  * @returns {Promise<void>}
  */
 async function loadTranslations(hass, bundles = [_BUNDLES.default]) {
+  if (_deciding) await _decision;
   if (hass && hass.language) _lastLang = hass.language;
   const lang = _langOf(hass);
   await Promise.all(bundles.map(b => _loadBundle(lang, b)));
@@ -275,19 +309,71 @@ window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;
 
-// Start fetching the cards bundle straight away, in the language Home
-// Assistant is most likely to report, so the first card render has its words
-// rather than flashing raw keys. If the guess is wrong, the first lookup loads
-// the right language. On the admin panel's own page, start its bundle too.
-function _guessLang() {
+// Start fetching the cards bundle (and, on the admin panel's own page, the
+// panel bundle) before the first card renders, so it has its words rather than
+// flashing raw keys — but only in the language Home Assistant will settle on,
+// so a page never downloads a bundle twice (#771: an en-GB server with an "en"
+// profile fetched both en-GB/ and en/ copies while HA switched over).
+//
+// - HA keeps the language it last used in localStorage (selectedLanguage) and
+//   starts with it again, so on any visit after the first that is the answer.
+// - Otherwise wait for HA's connection and ask what HA itself asks: the
+//   profile's language (frontend/get_user_data), else hass.language.
+// - Not a Home Assistant page, or nothing within 10 s: the browser's language.
+function _storedLang() {
   try {
     const picked = window.localStorage && window.localStorage.getItem('selectedLanguage');
     if (picked) return JSON.parse(picked);
   } catch (_e) { /* ignore */ }
-  return (document.documentElement && document.documentElement.lang) || navigator.language || _FALLBACK;
+  return null;
+}
+function _guessLang() {
+  // `navigator` may be absent (tests, a worker); never let the guess throw.
+  const nav = typeof navigator !== 'undefined' && navigator ? navigator.language : '';
+  const doc = typeof document !== 'undefined' && document && document.documentElement;
+  return (doc && doc.lang) || nav || _FALLBACK;
+}
+function _hassNow() {
+  try {
+    const ha = typeof document.querySelector === 'function' ? document.querySelector('home-assistant') : null;
+    return ha && ha.hass && ha.hass.connection && ha.hass.language ? ha.hass : null;
+  } catch (_e) {
+    return null;
+  }
+}
+async function _settledLang() {
+  if (typeof document.querySelector !== 'function' || !document.querySelector('home-assistant')) return _guessLang();
+  let hass = _hassNow();
+  for (let waited = 0; !hass && waited < 10000; waited += 50) {
+    await new Promise((r) => setTimeout(r, 50));
+    hass = _hassNow();
+  }
+  if (!hass) return _guessLang();
+  if (hass.selectedLanguage) return hass.selectedLanguage;
+  try {
+    const res = await hass.connection.sendMessagePromise({ type: 'frontend/get_user_data', key: 'language' });
+    if (res && res.value && res.value.language) return res.value.language;
+  } catch (_e) { /* ignore */ }
+  return (_hassNow() || hass).language;
+}
+function _startPreload() {
+  const bundles = [_BUNDLES.default];
+  if (window.location && window.location.pathname.startsWith('/taskmate-admin')) bundles.push('panel');
+  const go = (lang) => {
+    const resolved = _resolveLang(lang);
+    _lastLang = lang;
+    for (const b of new Set([...bundles, ..._wanted])) _loadBundle(resolved, b);
+    _wanted.clear();
+  };
+  const stored = _storedLang();
+  if (stored) { go(stored); return; }
+  _deciding = true;
+  _decision = _settledLang()
+    .catch(() => _guessLang())
+    .then((lang) => { _deciding = false; go(lang); });
 }
 try {
-  const guess = _resolveLang(_guessLang());
-  _loadBundle(guess, _BUNDLES.default);
-  if (window.location && window.location.pathname.startsWith('/taskmate-admin')) _loadBundle(guess, 'panel');
-} catch (_e) { /* ignore */ }
+  _startPreload();
+} catch (_e) {
+  _deciding = false;
+}

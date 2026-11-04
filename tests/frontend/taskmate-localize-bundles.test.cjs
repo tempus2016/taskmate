@@ -16,7 +16,7 @@ const source = (lang) => (sources[lang] ??= JSON.parse(readFileSync(path.join(LO
 const LANGS = readdirSync(LOCALES).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5));
 
 /** Evaluate the module with a fake fetch that serves the real bundle files. */
-function loadModule({ guess = "en-GB", missing = [], pathname = "/lovelace/0", version = "7.8.0" } = {}) {
+function loadModule({ guess = "en-GB", missing = [], pathname = "/lovelace/0", version = "7.8.0", stored = null, ha = null } = {}) {
   const fetched = [];
   const events = [];
   const fetch = async (url) => {
@@ -28,14 +28,16 @@ function loadModule({ guess = "en-GB", missing = [], pathname = "/lovelace/0", v
     return { ok: true, json: async () => JSON.parse(body) };
   };
   const window = {
-    localStorage: { getItem: () => null },
+    localStorage: { getItem: (k) => (k === "selectedLanguage" && stored ? JSON.stringify(stored) : null) },
     location: { pathname },
     dispatchEvent: (e) => events.push(e.type),
   };
   const sandbox = {
     window,
     fetch,
-    document: { documentElement: { lang: guess } },
+    document: ha
+      ? { documentElement: { lang: guess }, querySelector: (sel) => (sel === "home-assistant" ? ha : null) }
+      : { documentElement: { lang: guess } },
     navigator: { language: "en-GB" },
     CustomEvent: class {
       constructor(type) {
@@ -44,6 +46,7 @@ function loadModule({ guess = "en-GB", missing = [], pathname = "/lovelace/0", v
     },
     URL,
     encodeURIComponent,
+    setTimeout,
   };
   const url = version ? `http://localhost/taskmate/taskmate-localize.js?v=${version}` : "http://localhost/taskmate/taskmate-localize.js";
   const src = readFileSync(path.join(WWW, "taskmate-localize.js"), "utf8").replaceAll("import.meta.url", JSON.stringify(url));
@@ -144,4 +147,90 @@ test("without a ?v= the bundles are not cached, as before", async () => {
   const m = loadModule({ guess: "en", version: "" });
   await m.settle();
   assert.match(m.fetched[0], /^\/taskmate\/locales\/en\/cards\.json\?v=\d+$/);
+});
+
+// #771 gate: an en-GB server with an "en" profile. Home Assistant starts on
+// en-GB and switches to en once the profile loads; the page used to fetch both
+// en-GB/cards.json and en/cards.json.
+function haApp({ language = "en-GB", selectedLanguage = null, profile = "en", connectAfter = 0 } = {}) {
+  const asked = [];
+  const hass = {
+    language,
+    selectedLanguage,
+    connection: { sendMessagePromise: async (msg) => (asked.push(msg), { value: profile ? { language: profile } : {} }) },
+  };
+  const ha = { hass: connectAfter ? null : hass };
+  if (connectAfter) setTimeout(() => { ha.hass = hass; }, connectAfter);
+  return { ha, hass, asked };
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+test("a first visit waits for the profile language and fetches one cards bundle", async () => {
+  const app = haApp({ connectAfter: 120 });
+  const m = loadModule({ guess: "en-GB", ha: app.ha });
+  // A card renders while Home Assistant still reports the language it started on.
+  assert.equal(m.t({ language: "en-GB" }, "common.today"), "common.today");
+  await wait(250);
+  await m.settle();
+  assert.deepEqual(m.fetched, ["/taskmate/locales/en/cards.json?v=7.8.0"]);
+  assert.deepEqual(JSON.parse(JSON.stringify(app.asked)), [{ type: "frontend/get_user_data", key: "language" }]);
+  assert.equal(m.t({ language: "en" }, "notify.tour_hello_body"), source("en")["notify.tour_hello_body"]);
+});
+
+test("without a profile language the start-up language is the one fetched", async () => {
+  const app = haApp({ language: "de", profile: null });
+  const m = loadModule({ guess: "en-GB", ha: app.ha, pathname: "/taskmate-admin" });
+  await wait(20);
+  await m.settle();
+  assert.deepEqual(m.fetched.sort(), ["/taskmate/locales/de/cards.json?v=7.8.0", "/taskmate/locales/de/panel.json?v=7.8.0"]);
+});
+
+test("a language Home Assistant already chose is used straight away", async () => {
+  const app = haApp({ language: "nl", selectedLanguage: "nl" });
+  const m = loadModule({ guess: "en-GB", ha: app.ha });
+  await wait(20);
+  await m.settle();
+  assert.deepEqual(m.fetched, ["/taskmate/locales/nl/cards.json?v=7.8.0"]);
+  assert.deepEqual(app.asked, [], "no need to ask for the profile");
+});
+
+test("on a later visit the stored language is preloaded at once, without waiting", async () => {
+  const app = haApp({ connectAfter: 5000 });
+  const m = loadModule({ guess: "en-GB", stored: "en", ha: app.ha });
+  await m.settle();
+  assert.deepEqual(m.fetched, ["/taskmate/locales/en/cards.json?v=7.8.0"]);
+});
+
+test("an editor asking for its bundle during start-up gets it in the settled language", async () => {
+  const app = haApp({ connectAfter: 60 });
+  const m = loadModule({ guess: "en-GB", ha: app.ha });
+  const loaded = m.load(null, ["editor"]);
+  await wait(150);
+  await loaded;
+  await m.settle();
+  assert.deepEqual(m.fetched.sort(), ["/taskmate/locales/en/cards.json?v=7.8.0", "/taskmate/locales/en/editor.json?v=7.8.0"]);
+});
+
+test("while a bundle loads, a copy already here is read instead of the raw key", async () => {
+  const m = loadModule({ guess: "en-GB" });
+  await m.settle();
+  assert.deepEqual(m.fetched, ["/taskmate/locales/en-GB/cards.json?v=7.8.0"]);
+  // en is not cached yet: the en-GB copy stands in until it lands.
+  assert.equal(m.t({ language: "en" }, "common.today"), source("en-GB")["common.today"]);
+  await m.settle();
+  assert.equal(m.t({ language: "en" }, "notify.tour_hello_body"), source("en")["notify.tour_hello_body"]);
+});
+
+test("switching language keeps the old words up until the new ones land", async () => {
+  // An "en" profile only ever downloaded en/cards.json; switching to German
+  // used to show raw keys until de/cards.json arrived (#771 gate).
+  const m = loadModule({ guess: "en" });
+  await m.settle();
+  assert.equal(m.t({ language: "en" }, "common.today"), source("en")["common.today"]);
+  assert.deepEqual(m.fetched, ["/taskmate/locales/en/cards.json?v=7.8.0"]);
+  assert.equal(m.t({ language: "de" }, "common.today"), source("en")["common.today"], "no raw key while de loads");
+  await m.settle();
+  assert.equal(m.t({ language: "de" }, "common.today"), source("de")["common.today"]);
+  // On to French: the German words stay up until the French land.
+  assert.equal(m.t({ language: "fr" }, "common.today"), source("de")["common.today"]);
 });
