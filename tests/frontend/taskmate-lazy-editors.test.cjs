@@ -21,7 +21,7 @@ const read = (rel) => readFileSync(path.join(WWW, rel), "utf8");
 const SHARED = { "taskmate-incentive-card-editor.js": ["taskmate-bonuses-card.js", "taskmate-penalties-card.js"] };
 
 test("there is one editor module per card editor", () => {
-  assert.equal(editorFiles.length, 30);
+  assert.equal(editorFiles.length, 32);
   for (const f of editorFiles) assert.ok(readdirSync(WWW).includes(cardOf(f)), `${f} has no card ${cardOf(f)}`);
 });
 

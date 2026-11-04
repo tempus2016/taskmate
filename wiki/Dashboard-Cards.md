@@ -724,17 +724,20 @@ See [Achievement Badges](Achievement-Badges.md) for full details on tiers, crite
 
 **Default header colour:** Teal `#16a085`
 
+Set it up in the visual editor (the overview entity, an optional title, the [design style](Card-Design-Styles.md) and the header colour) or in YAML:
+
 ```yaml
 type: custom:taskmate-family-goal-card
 entity: sensor.taskmate_overview
 title: Family Goal             # optional — custom card title
+card_design: global            # optional — classic, playroom, console, cleanpro, accessible, graphite
 header_color: "#16a085"
 ```
 
 **Behaviour:**
 - Displays a progress bar from the combined family balance toward the goal target, with a percentage
 - Shows the goal's reward, and a celebration state once the target is reached
-- If no family goal is enabled, the card shows a friendly "no goal set" placeholder
+- If no family goal is enabled, the card keeps its title and shows a friendly "no goal set" placeholder
 
 The goal itself is enabled and configured in [Settings](Settings.md). See [Family Goals](Family-Goals.md) for the full feature.
 
@@ -748,11 +751,14 @@ The goal itself is enabled and configured in [Settings](Settings.md). See [Famil
 
 **Default header colour:** Slate `#5d6d7e`
 
+Set it up in the visual editor (the activity entity, an optional title, **Photos to show**, the [design style](Card-Design-Styles.md) and the header colour) or in YAML:
+
 ```yaml
 type: custom:taskmate-photo-gallery-card
 entity: sensor.taskmate_activity
 title: Proof Photos            # optional — custom card title
 max: 40                        # optional — limit the number of photos shown
+card_design: global            # optional — classic, playroom, console, cleanpro, accessible, graphite
 header_color: "#5d6d7e"
 ```
 

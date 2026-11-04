@@ -46,6 +46,15 @@ class TaskMatePhotoGalleryCard extends LitElement {
     return 4;
   }
 
+  static async getConfigElement() {
+    // The editor ships as its own module so dashboards never parse it.
+    await Promise.all([
+      import(`./editors/taskmate-photo-gallery-card-editor.js${new URL(import.meta.url).search}`),
+      window.__taskmate_loadTranslations?.(null, ["editor"]),
+    ]);
+    return document.createElement("taskmate-photo-gallery-card-editor");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -114,16 +123,20 @@ class TaskMatePhotoGalleryCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     this._applyDesign();
     const entity = this.hass.states[this.config.entity];
+    // The header shows in every state, so the editor's title, colour and
+    // design show in its preview even before the entity is right.
+    const head = html`
+        <div class="pg-head">
+          <ha-icon icon="mdi:image-multiple"></ha-icon>
+          <span>${this.config.title || this._t("gallery.default_title")}</span>
+        </div>`;
     if (!entity) {
-      return html`<ha-card><div class="pg-empty"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div></ha-card>`;
+      return html`<ha-card>${head}<div class="pg-empty"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div></ha-card>`;
     }
     const items = this._gallery();
     return html`
       <ha-card>
-        <div class="pg-head">
-          <ha-icon icon="mdi:image-multiple"></ha-icon>
-          <span>${this.config.title || this._t("gallery.default_title")}</span>
-        </div>
+        ${head}
         ${items.length === 0
           ? html`<div class="pg-empty"><ha-icon icon="mdi:camera-off"></ha-icon><div>${this._t("gallery.empty")}</div></div>`
           : html`
