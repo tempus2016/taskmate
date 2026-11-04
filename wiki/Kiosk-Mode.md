@@ -146,6 +146,8 @@ A morning, afternoon, evening or night chore that wasn't done once that part of 
 
 A dimmed or hidden missed chore leaves the day's total, so a child can still reach "all done".
 
+**Chores for a later part of the day** aren't open yet. As on the child card, an evening chore seen in the morning shows **Available at 17:00** (the start of that part of the day) instead of a **Done** button, and gets its button once the period starts. It stays in the day's total, because it's still owed today.
+
 ```yaml
 type: custom:taskmate-kiosk-card
 entity: sensor.taskmate_overview

@@ -36,7 +36,9 @@
  * dims or hides chores whose part of the day has passed, as on the child
  * card. Both default to "show". A dimmed missed chore can't be ticked off
  * here (the child card refuses the tap too), so dimmed or hidden it leaves
- * the count — or a child could never reach all done.
+ * the count — or a child could never reach all done. A chore for a later
+ * part of the day isn't open yet (#771): like the child card's locked
+ * preview it shows "Available at HH:MM" instead of a Done button.
  *
  * PINs are set by a parent in the admin panel and checked on the server
  * (taskmate/kiosk/verify_pin, rate-limited); the card never sees a PIN or its
@@ -420,12 +422,17 @@ class TaskMateKioskCard extends LitElement {
       const joined = team && Array.isArray(team.joined) ? team.joined.map(String) : [];
       if (!due && !comp) continue;
       const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit);
+      // A chore for a later part of the day isn't open yet (#771): the child
+      // card shows it as a locked "Available at …" preview, so the tablet
+      // does too, instead of a live Done button at any hour.
+      const opensAt = !comp && due ? this._opensAt(chore) : null;
       let state;
       if (due && team && joined.includes(id)) state = "team";
+      else if (opensAt) state = "later";
       else if (due) state = phone ? "elsewhere" : "todo";
       else state = comp.approved ? "done" : "wait";
       const missed = !comp && this._isMissed(chore);
-      rows.push({ chore, state, phone, missed, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
+      rows.push({ chore, state, phone, missed, opensAt, completion: comp || null, team: team ? { size: Number(team.size) || 0, joined: joined.length } : null });
     }
     return rows;
   }
@@ -543,6 +550,26 @@ class TaskMateKioskCard extends LitElement {
     const allowance = Math.max(0, parseInt(chore.claim_allowance_minutes, 10) || 0);
     const { start, end } = periods[own];
     return !(now >= start && now < Math.min(1440, end + allowance));
+  }
+
+  /**
+   * "HH:MM" when the chore's part of the day starts later today, else null —
+   * the child card's locked-preview rule (_isChorePreviewLocked): the chore's
+   * period comes after the current one. "anytime" chores are always open.
+   */
+  _opensAt(chore) {
+    const cat = chore.time_category;
+    if (!cat || cat === "anytime") return null;
+    const periods = this._timePeriods();
+    const own = periods.findIndex(p => p.id === cat);
+    if (own < 0) return null;
+    const now = this._nowMinutes();
+    // Before the first period starts, it's still the first one (as on the child card).
+    let current = 0;
+    periods.forEach((p, i) => { if (now >= p.start) current = i; });
+    if (own <= current) return null;
+    const start = periods[own].start;
+    return `${String(Math.floor(start / 60)).padStart(2, "0")}:${String(start % 60).padStart(2, "0")}`;
   }
 
   _pointsFor(chore, childId) {
@@ -1813,6 +1840,8 @@ class TaskMateKioskCard extends LitElement {
     } else if (state === "todo") {
       action = html`<button class="km-done" ?disabled=${!!this._busy} @click=${() => this._complete(child, chore)}>
         <ha-icon icon="mdi:check-bold"></ha-icon> ${this._t("child.done")}</button>`;
+    } else if (state === "later" && row.opensAt) {
+      action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:lock-clock"></ha-icon><span>${this._t("child.chore_locked_until", { time: window.__taskmate_dates && window.__taskmate_dates.clock ? window.__taskmate_dates.clock(this.hass, row.opensAt) : row.opensAt })}</span></div>`;
     } else if (state === "later") {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:lock-clock"></ha-icon><span>${this._t("child.set_time_opens", { time: row.setTime.entry.opens })}</span></div>`;
     } else if (state === "done") {
