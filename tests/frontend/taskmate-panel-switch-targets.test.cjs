@@ -13,7 +13,7 @@ const { WWW } = require("./harness.cjs");
 const SRC = readFileSync(path.join(WWW, "taskmate-panel.js"), "utf8");
 
 function rule(selector) {
-  const esc = selector.replace(/[.[\]():]/g, "\\$&");
+  const esc = selector.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
   const m = SRC.match(new RegExp(`\\n\\s*${esc}\\s*\\{([^}]*)\\}`));
   assert.ok(m, `no ${selector} rule`);
   return m[1];
