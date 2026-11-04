@@ -976,8 +976,9 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
       imgEl.src = src;
       if (caption) { capEl.textContent = caption; capEl.style.display = ""; }
       else { capEl.textContent = ""; capEl.style.display = "none"; }
-      closeBtn.setAttribute("aria-label", closeLabel || "Close");
-      closeBtn.title = closeLabel || "Close";
+      const label = closeLabel || (window.__taskmate_localize ? window.__taskmate_localize(null, "common.close") : "") || "Close";
+      closeBtn.setAttribute("aria-label", label);
+      closeBtn.title = label;
       overlay.style.display = "flex";
       void overlay.offsetWidth; // force reflow so the opacity transition runs from 0
       overlay.classList.add("open");
