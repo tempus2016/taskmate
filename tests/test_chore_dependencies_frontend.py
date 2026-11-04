@@ -98,7 +98,8 @@ class TestCardGatesOnDependencies:
     def test_timed_chores_are_gated_too(self):
         start = CARD.index("  _renderTimedChoreCard(chore, child, pointsIcon")
         timed = CARD[start : CARD.index("\n  _renderBonusSubtasks(", start)]
-        assert "_isDependencyBlocked" in timed
+        # Through the same lock set the classic row uses (#771).
+        assert "this._choreLocks(" in timed
 
     def test_picture_mode_is_gated_too(self):
         start = CARD.index("  _renderPreReaderTile(chore, child, pointsIcon")

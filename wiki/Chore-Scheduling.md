@@ -258,7 +258,7 @@ Set it in the card editor under **First-Come Chores — When Claimed**, or in YA
 
 Pre-reader tiles honour it too: a claimed chore is a locked tile that does nothing when tapped.
 
-> **Not covered:** timed-task cards don't check this lock, so a claimed first-come chore stays live and startable there. A tap is still rejected by the backend as a race loser.
+Timed-task cards honour it too: **Start** and **Resume** are disabled while the chore is claimed, and a session already running can still be paused or finished.
 
 > The badge/short label shown in the panel is "First come"; the full mode description reads *"First come — first child to finish wins; it hides for the rest."*
 
