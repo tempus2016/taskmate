@@ -202,7 +202,10 @@ def test_both_child_card_render_paths_show_the_time():
 def test_both_child_card_render_paths_refuse_a_closed_time():
     src = _read("taskmate-child-card.js")
     assert "if (setTimeLocked) return;" in src
-    assert "|| weeklyDone || stLocked) return;" in src
+    # Designed rows refuse the tap through the shared lock set (#771).
+    start = src.index("  _choreLocks(chore, done) {")
+    assert "_setTimeLocked" in src[start : src.index("\n  }\n", start)]
+    assert "if (loading || (locked && !done)) return;" in src
 
 
 @pytest.mark.parametrize("card", ["taskmate-child-card.js", "taskmate-kiosk-card.js"])

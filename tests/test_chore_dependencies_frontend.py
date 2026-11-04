@@ -87,7 +87,12 @@ class TestCardGatesOnDependencies:
         would refuse the completion anyway."""
         start = CARD.index("  _renderChoreCard(chore, child, pointsIcon")
         row = CARD[start : CARD.index("\n  _renderTimedChoreCard(", start)]
-        assert "_isDependencyBlocked" in row
+        # The lock itself lives in _choreLocks, shared by every render path (#771).
+        start = CARD.index("  _choreLocks(chore, done) {")
+        locks = CARD[start : CARD.index("\n  }\n", start)]
+        assert "_isDependencyBlocked" in locks
+        assert "this._choreLocks(" in row
+        assert "depBlocked" in row
         assert "isInteractive" in row
 
     def test_timed_chores_are_gated_too(self):
