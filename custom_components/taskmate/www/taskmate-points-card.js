@@ -1230,11 +1230,15 @@ class TaskMatePointsCard extends LitElement {
 customElements.define("taskmate-points-card", TaskMatePointsCard);
 
 // Register with Home Assistant
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-points-card",
-  name: "TaskMate Points Card",
-  description: "A parent-friendly card to add or remove points from children",
+  get name() { return _tmPick("points_card.card_name", "TaskMate Points Card"); },
+  get description() { return _tmPick("points_card.card_description", "A parent-friendly card to add or remove points from children"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-points-card", "overview"),

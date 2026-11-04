@@ -685,11 +685,15 @@ class TaskMateStreakCard extends LitElement {
 
 customElements.define("taskmate-streak-card", TaskMateStreakCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-streak-card",
-  name: "TaskMate Streaks & Achievements",
-  description: "Consecutive day streaks and milestone badges for each child",
+  get name() { return _tmPick("streak.card_name", "TaskMate Streaks & Achievements"); },
+  get description() { return _tmPick("streak.card_description", "Consecutive day streaks and milestone badges for each child"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-streak-card", "overview"),

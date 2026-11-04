@@ -1068,7 +1068,11 @@ export function createIncentiveCard(P) {
   customElements.define(P.tag, IncentiveCard);
   window.customCards = window.customCards || [];
   window.customCards.push({
-    type: P.tag, name: P.cardName, description: P.cardDesc, preview: true,
+    type: P.tag,
+    // Read by the card picker each time it opens: in the user's language.
+    get name() { return window.__taskmate_picker_text ? window.__taskmate_picker_text(`${P.i18n}.card_name`, P.cardName) : P.cardName; },
+    get description() { return window.__taskmate_picker_text ? window.__taskmate_picker_text(`${P.i18n}.card_description`, P.cardDesc) : P.cardDesc; },
+    preview: true,
     getEntitySuggestion: (hass, entityId) =>
       window.__taskmate_suggest(hass, entityId, P.tag, "overview"),
   });

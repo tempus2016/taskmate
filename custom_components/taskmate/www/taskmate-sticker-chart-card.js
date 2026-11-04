@@ -1135,11 +1135,15 @@ if (!customElements.get("taskmate-sticker-chart-card")) {
   customElements.define("taskmate-sticker-chart-card", TaskMateStickerChartCard);
 }
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 if (!window.customCards.some(c => c.type === "taskmate-sticker-chart-card")) window.customCards.push({
   type: "taskmate-sticker-chart-card",
-  name: "TaskMate Sticker Chart",
-  description: "The kids' sticker chart: today's chores as stickers to tap, stars filling towards a reward",
+  get name() { return _tmPick("sticker_chart.card_name", "TaskMate Sticker Chart"); },
+  get description() { return _tmPick("sticker_chart.card_description", "The kids' sticker chart: today's chores as stickers to tap, stars filling towards a reward"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-sticker-chart-card", "overview"),

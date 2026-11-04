@@ -1666,11 +1666,15 @@ class TaskMateParentDashboardCard extends LitElement {
 
 customElements.define("taskmate-parent-dashboard-card", TaskMateParentDashboardCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-parent-dashboard-card",
-  name: "TaskMate Parent Dashboard",
-  description: "Unified parent view with approvals, child progress, and quick point controls",
+  get name() { return _tmPick("dashboard.card_name", "TaskMate Parent Dashboard"); },
+  get description() { return _tmPick("dashboard.card_description", "Unified parent view with approvals, child progress, and quick point controls"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-parent-dashboard-card", "overview"),

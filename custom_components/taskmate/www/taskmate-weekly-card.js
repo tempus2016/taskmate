@@ -787,11 +787,15 @@ class TaskMateWeeklyCard extends LitElement {
 
 customElements.define("taskmate-weekly-card", TaskMateWeeklyCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-weekly-card",
-  name: "TaskMate Weekly Summary",
-  description: "Week at a glance — chores, points, and daily bar chart",
+  get name() { return _tmPick("weekly.card_name", "TaskMate Weekly Summary"); },
+  get description() { return _tmPick("weekly.card_description", "Week at a glance — chores, points, and daily bar chart"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-weekly-card", "overview"),

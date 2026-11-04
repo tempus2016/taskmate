@@ -231,11 +231,15 @@ class TaskMatePhotoGalleryCard extends LitElement {
 
 customElements.define("taskmate-photo-gallery-card", TaskMatePhotoGalleryCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-photo-gallery-card",
-  name: "TaskMate Photo Gallery",
-  description: "History grid of chore-evidence photos",
+  get name() { return _tmPick("gallery.card_name", "TaskMate Photo Gallery"); },
+  get description() { return _tmPick("gallery.card_description", "History grid of chore-evidence photos"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-photo-gallery-card", "activity"),

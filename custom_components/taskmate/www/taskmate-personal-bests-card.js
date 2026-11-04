@@ -341,11 +341,15 @@ class TaskMatePersonalBestsCard extends LitElement {
 
 customElements.define("taskmate-personal-bests-card", TaskMatePersonalBestsCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-personal-bests-card",
-  name: "TaskMate Personal Bests",
-  description: "Each child's own records: longest streak, best day, best week and biggest award",
+  get name() { return _tmPick("bests.card_name", "TaskMate Personal Bests"); },
+  get description() { return _tmPick("bests.card_description", "Each child's own records: longest streak, best day, best week and biggest award"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest ? window.__taskmate_suggest(hass, entityId, "taskmate-personal-bests-card", "overview") : undefined,

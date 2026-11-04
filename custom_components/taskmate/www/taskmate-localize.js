@@ -451,11 +451,34 @@ function hourNow(hass, now = new Date()) {
   }
 }
 
+/**
+ * A card's name or description for the Lovelace card picker
+ * (window.customCards). Home Assistant reads those each time the picker
+ * opens, so each card defines them as getters calling this: the picker then
+ * shows them in the signed-in user's language. Falls back to the card's
+ * English text when there is no hass yet or no translation for the key.
+ *
+ * @param {string} key - e.g. 'activity.card_name'
+ * @param {string} fallback - the English text
+ */
+function pickerText(key, fallback) {
+  try {
+    const ha = document.querySelector('home-assistant');
+    const hass = ha && ha.hass;
+    if (!hass || !hass.language) return fallback;
+    const str = localize(hass, key);
+    return str && str !== key ? str : fallback;
+  } catch (_e) {
+    return fallback;
+  }
+}
+
 // Expose globally so cards can access without ES module imports
 window.__taskmate_badge_name = badgeName;
 window.__taskmate_badge_count = badgeCount;
 window.__taskmate_dates = { args: dateArgs, clock, hourNow };
 window.__taskmate_numbers = { args: numberArgs, format: formatNumber };
+window.__taskmate_picker_text = pickerText;
 window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;
