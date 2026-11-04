@@ -1940,7 +1940,7 @@ class TaskMateApprovalsCard extends LitElement {
   async _handleApproveAll(completions) {
     const ids = (completions || []).map(c => c.completion_id).filter(Boolean);
     if (ids.length === 0) return;
-    if (!window.confirm(this._t('approvals.approve_all_confirm', { count: ids.length }))) return;
+    if (!window.confirm(this._t(ids.length === 1 ? 'approvals.approve_all_confirm_one' : 'approvals.approve_all_confirm', { count: ids.length }))) return;
     if (this._loading['__all__']) return;
     this._loading = { ...this._loading, '__all__': true };
     this.requestUpdate();

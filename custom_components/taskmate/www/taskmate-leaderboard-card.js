@@ -512,7 +512,7 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="mdi:fire" style="color:#e67e22;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.best_streak')}</span>
-            <span class="pb-value">${this._t('leaderboard.best_streak_value', { count: bestStreak })}</span>
+            <span class="pb-value">${this._t(bestStreak === 1 ? 'leaderboard.best_streak_value_one' : 'leaderboard.best_streak_value', { count: bestStreak })}</span>
           </div>
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="mdi:checkbox-multiple-marked" style="color:#3498db;"></ha-icon>

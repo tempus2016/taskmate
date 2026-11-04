@@ -455,7 +455,7 @@ class TaskMateRoutineCard extends LitElement {
             <div class="earned pending-total">${this._t("routine.awaiting_points", { points: pending })}</div>
           ` : ""}
           ${skipped > 0 ? html`
-            <p class="skipped">${this._t("routine.skipped_note", { count: skipped })}</p>
+            <p class="skipped">${this._t(skipped === 1 ? "routine.skipped_note_one" : "routine.skipped_note", { count: skipped })}</p>
           ` : ""}
         </div>
         <div class="foot">

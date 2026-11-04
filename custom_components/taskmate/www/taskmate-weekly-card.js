@@ -512,7 +512,7 @@ class TaskMateWeeklyCard extends LitElement {
                     <div class="child-info">
                       <div class="child-name">${child.name}</div>
                       <div class="child-week-stats">
-                        <span><ha-icon icon="mdi:checkbox-marked-circle" style="color:var(--wk-green)"></ha-icon>${this._t('weekly.child_chores', { count: childChoreCount })}</span>
+                        <span><ha-icon icon="mdi:checkbox-marked-circle" style="color:var(--wk-green)"></ha-icon>${this._t(childChoreCount === 1 ? 'weekly.child_chores_one' : 'weekly.child_chores', { count: childChoreCount })}</span>
                         <span><ha-icon icon="${pointsIcon}" style="color:var(--wk-gold)"></ha-icon>${childPoints} ${pointsName}</span>
                         <span><ha-icon icon="mdi:calendar-check" style="color:var(--wk-blue)"></ha-icon>${this._t('weekly.child_days', { count: childDaysActive })}</span>
                       </div>

@@ -819,7 +819,7 @@ class TaskMatePointsDisplayCard extends LitElement {
           <div class="secondary-info">
             ${this._secondaryLabel()}: <span class="secondary-value">${secTotal.toLocaleString()}</span>
           </div>
-          <div class="family-label">${this._t("points_display.family_subtitle", { count: ranked.length })}</div>
+          <div class="family-label">${this._t(ranked.length === 1 ? "points_display.family_subtitle_one" : "points_display.family_subtitle", { count: ranked.length })}</div>
         </div>
 
         <div class="divider-label">${this._t("points_display.individual_scores")}</div>

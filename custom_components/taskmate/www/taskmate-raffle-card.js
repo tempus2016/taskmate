@@ -323,9 +323,9 @@ class TaskMateRaffleCard extends LitElement {
             ${r.max ? html`<span class="rf-chip">${this._t("raffle.max_each", { max: r.max })}</span>` : ""}
           </div>
           ${holders.length ? html`
-            <div class="rf-holders" aria-label="${this._t("raffle.tickets_total", { count: total })}">
+            <div class="rf-holders" aria-label="${this._t(total === 1 ? "raffle.tickets_total_one" : "raffle.tickets_total", { count: total })}">
               ${holders.map(([cid, n]) => html`<span class="rf-holder">${this._avatar(cid, 22)}<b>${n}</b></span>`)}
-              <span class="rf-total">${this._t("raffle.tickets_total", { count: total })}</span>
+              <span class="rf-total">${this._t(total === 1 ? "raffle.tickets_total_one" : "raffle.tickets_total", { count: total })}</span>
             </div>` : html`<div class="rf-none">${isOpen ? this._t("raffle.no_tickets_yet") : this._t("raffle.nobody_entered")}</div>`}
           ${!isOpen && r.status === "drawn" && r.winner_id ? html`
             <div class="rf-winner">${this._avatar(r.winner_id, 22)} ${this._t("raffle.winner_is", { name: this._childName(r.winner_id) })}</div>` : ""}
@@ -341,7 +341,7 @@ class TaskMateRaffleCard extends LitElement {
     const closing = Date.parse(r.draw_at || "") <= Date.now();
     return html`
       <div class="rf-mine">
-        ${mine ? _ltrNums(this._t("raffle.your_tickets", { count: mine, chance })) : this._t("raffle.no_tickets_mine")}
+        ${mine ? _ltrNums(this._t(mine === 1 ? "raffle.your_tickets_one" : "raffle.your_tickets", { count: mine, chance })) : this._t("raffle.no_tickets_mine")}
       </div>
       <div class="rf-buy">
         <button class="rf-step" aria-label="−" ?disabled=${n <= 1 || this._busy} @click=${() => this._setQty(r, n - 1, child)}>−</button>

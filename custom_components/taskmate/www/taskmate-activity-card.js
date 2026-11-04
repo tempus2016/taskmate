@@ -734,7 +734,7 @@ class TaskMateActivityCard extends LitElement {
         <div class="header-content">
           <span class="header-icon-chip"><ha-icon icon="mdi:timeline-clock"></ha-icon></span>
           <span class="header-title">${title}</span>
-          <span class="header-meta">· ${this._t('activity.events_count', { count })}</span>
+          <span class="header-meta">· ${this._t(count === 1 ? 'activity.events_count_one' : 'activity.events_count', { count })}</span>
         </div>
       </div>
     `;
@@ -983,7 +983,7 @@ class TaskMateActivityCard extends LitElement {
   _ratingStars(item) {
     const n = Number(item && item.rating) || 0;
     if (n < 1 || n > 3) return '';
-    const label = this._t('activity.rated', { count: n });
+    const label = this._t(n === 1 ? 'activity.rated_one' : 'activity.rated', { count: n });
     return html`<span class="act-rating" title="${label}" aria-label="${label}" role="img">${'★'.repeat(n)}<span class="off">${'☆'.repeat(3 - n)}</span></span>`;
   }
 
@@ -1251,7 +1251,7 @@ class TaskMateActivityCard extends LitElement {
     const rows = filteredEvents.map(e => this._describeEvent(e, childNames, pointsIcon, chorePointsMap));
 
     const sub = design === 'console' ? 'LIVE · STREAM' : this._t('activity.recent_events');
-    const pill = design === 'console' ? this._t('activity.events_count', { count: filteredEvents.length }) : '';
+    const pill = design === 'console' ? this._t(filteredEvents.length === 1 ? 'activity.events_count_one' : 'activity.events_count', { count: filteredEvents.length }) : '';
     const body = html`
       ${this.config.show_filter_chips !== false ? this._designFilterChips() : ''}
       ${filteredEvents.length === 0

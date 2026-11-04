@@ -1117,7 +1117,7 @@ class TaskMateKioskCard extends LitElement {
         </div>
         ${raffles.length ? html`
           <div class="km-amb-raffles">
-            ${raffles.map(r => html`<div class="km-amb-raffle">🎟️ <b>${r.name}</b> · ${r.prize || ""} · ${this._t("kiosk.raffle_tickets", { count: r.total || 0 })}</div>`)}
+            ${raffles.map(r => html`<div class="km-amb-raffle">🎟️ <b>${r.name}</b> · ${r.prize || ""} · ${this._t((r.total || 0) === 1 ? "kiosk.raffle_tickets_one" : "kiosk.raffle_tickets", { count: r.total || 0 })}</div>`)}
           </div>` : ""}
         <div class="km-amb-hint">${this._t("kiosk.ambient_wake")}</div>
       </div>`;
