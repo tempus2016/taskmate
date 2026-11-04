@@ -47,6 +47,8 @@ A `taskmate_family_goal_reached` event is also fired with the goal name, reward,
 
 Add the **Family Goal card** to a dashboard to show live progress toward the target — a progress bar, the combined total against the target, the percentage, and the reward. When the goal is reached the card switches to a trophy and a celebration message.
 
+Pick **TaskMate Family Goal** in the dashboard's card picker and set it up in the visual editor, or write the YAML:
+
 ```yaml
 type: custom:taskmate-family-goal-card
 entity: sensor.taskmate_overview
@@ -58,9 +60,10 @@ header_color: "#16a085"
 |--------|----------|-------------|
 | `entity` | ✅ | The TaskMate overview sensor (`sensor.taskmate_overview`) |
 | `title` | — | Overrides the heading; defaults to the goal name |
+| `card_design` | — | The [design style](Card-Design-Styles.md); defaults to the global one |
 | `header_color` | — | Accent colour for the icon and progress bar (default `#16a085`) |
 
-If no family goal is enabled, the card shows a quiet "No family goal set" placeholder. The card reads the overview sensor's `family_goal` attribute, which exposes `enabled`, `name`, `target`, `reward`, `progress`, and `achieved`.
+If no family goal is enabled, the card keeps its title and shows a quiet "No family goal set" placeholder beneath it. The card reads the overview sensor's `family_goal` attribute, which exposes `enabled`, `name`, `target`, `reward`, `progress`, and `achieved`.
 
 See [Dashboard Cards](Dashboard-Cards.md) for the full set of cards.
 

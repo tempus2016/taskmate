@@ -64,7 +64,7 @@ A completion that carries a `photo_url` shows a small thumbnail next to the entr
 
 ## Browsing Past Photos — the Photo Gallery Card
 
-To look back over evidence photos after they've been approved, add the **Photo Gallery Card** (`custom:taskmate-photo-gallery-card`). It shows a grid of thumbnails for every chore completion that carried a proof photo, each captioned with the child, the chore, and the date.
+To look back over evidence photos after they've been approved, add the **Photo Gallery Card** (`custom:taskmate-photo-gallery-card`). It shows a grid of thumbnails for every chore completion that carried a proof photo, each captioned with the child, the chore, and the date. Pick **TaskMate Photo Gallery** in the card picker and set the title, how many photos to show, the design style and the header colour in its visual editor, or write the YAML:
 
 ```yaml
 type: custom:taskmate-photo-gallery-card

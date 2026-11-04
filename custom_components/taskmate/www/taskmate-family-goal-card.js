@@ -50,6 +50,15 @@ class TaskMateFamilyGoalCard extends LitElement {
     return 2;
   }
 
+  static async getConfigElement() {
+    // The editor ships as its own module so dashboards never parse it.
+    await Promise.all([
+      import(`./editors/taskmate-family-goal-card-editor.js${new URL(import.meta.url).search}`),
+      window.__taskmate_loadTranslations?.(null, ["editor"]),
+    ]);
+    return document.createElement("taskmate-family-goal-card-editor");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -78,15 +87,18 @@ class TaskMateFamilyGoalCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     this._applyDesign();
     const entity = this.hass.states[this.config.entity];
+    // Every state draws the card's header, so the title, header colour and
+    // design picked in the editor show in its preview even with no goal set.
+    const defaultTitle = this.config.title || this._t("family_goal.default_title");
     if (!entity) {
-      return html`<ha-card><div class="fg-empty"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div></ha-card>`;
+      return html`<ha-card>${this._head("mdi:flag-checkered", defaultTitle)}<div class="fg-empty"><ha-icon icon="mdi:alert-circle"></ha-icon><div>${this._t("common.entity_not_found", { entity: this.config.entity })}</div></div></ha-card>`;
     }
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity.attributes || {};
     const goal = attrs.family_goal || {};
     const pointsName = attrs.points_name || this._t("common.points");
 
     if (!goal.enabled || !goal.target) {
-      return html`<ha-card><div class="fg-empty"><ha-icon icon="mdi:flag-checkered"></ha-icon><div>${this._t("family_goal.disabled")}</div></div></ha-card>`;
+      return html`<ha-card>${this._head("mdi:flag-checkered", defaultTitle)}<div class="fg-empty"><ha-icon icon="mdi:flag-outline"></ha-icon><div>${this._t("family_goal.disabled")}</div></div></ha-card>`;
     }
 
     const progress = Number(goal.progress) || 0;
@@ -96,10 +108,7 @@ class TaskMateFamilyGoalCard extends LitElement {
 
     return html`
       <ha-card>
-        <div class="fg-head">
-          <ha-icon icon="${achieved ? "mdi:trophy" : "mdi:flag-checkered"}"></ha-icon>
-          <span class="fg-title">${this.config.title || goal.name || this._t("family_goal.default_title")}</span>
-        </div>
+        ${this._head(achieved ? "mdi:trophy" : "mdi:flag-checkered", this.config.title || goal.name || this._t("family_goal.default_title"))}
         <div class="fg-body">
           <div class="fg-bar"><div class="fg-fill ${achieved ? "done" : ""}" style="width:${pct}%"></div></div>
           <div class="fg-stats">
@@ -114,6 +123,14 @@ class TaskMateFamilyGoalCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  _head(icon, title) {
+    return html`
+      <div class="fg-head">
+        <ha-icon icon="${icon}"></ha-icon>
+        <span class="fg-title">${title}</span>
+      </div>`;
   }
 
   static get styles() {
@@ -153,7 +170,7 @@ class TaskMateFamilyGoalCard extends LitElement {
       .fg-reward.done { font-weight: 600; color: var(--tmd-gold, #d4ac0d); }
       .fg-empty {
         display: flex; flex-direction: column; align-items: center; gap: 8px;
-        padding: 28px 16px; color: var(--tmd-dim, var(--secondary-text-color));
+        padding: 16px 16px 24px; color: var(--tmd-dim, var(--secondary-text-color));
       }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
