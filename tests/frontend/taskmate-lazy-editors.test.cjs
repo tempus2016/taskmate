@@ -3,7 +3,8 @@ const { readdirSync, readFileSync } = require("node:fs");
 const path = require("node:path");
 const { test } = require("node:test");
 
-const { loadCard, WWW } = require("./harness.cjs");
+const { loadCard, render, template, WWW } = require("./harness.cjs");
+const vm = require("node:vm");
 
 // Every card's visual editor lives in www/editors/ and is imported only when
 // someone opens the card editor, so a dashboard never downloads or parses the
@@ -120,14 +121,76 @@ test("constants an editor shares with its card are identical copies", () => {
   assert.ok(compared >= 18, `expected to compare the shared constants, compared ${compared}`);
 });
 
-test("every editor that draws the shared header-colour picker also styles it", () => {
-  // The picker's markup comes from taskmate-design.js but its CSS lives in
-  // each editor's shadow root; without it the swatches render as bare buttons.
+test("the header-colour picker carries its own styles, and no editor restyles it", () => {
+  // The picker's markup and CSS both come from taskmate-design.js, so every
+  // editor gets the same finger-sized targets. An editor's static styles are
+  // adopted sheets, which beat the picker's own <style>: a stale copy of the
+  // old 22px swatch rule in any editor would shrink the targets again.
+  let users = 0;
   for (const f of editorFiles) {
     const src = read(`editors/${f}`);
-    if (!src.includes("colourPicker(")) continue;
-    for (const cls of [".colour-field {", ".colour-swatch-wrapper {", ".preset-swatch {", ".colour-reset {"]) {
-      assert.ok(src.includes(cls), `${f} draws the colour picker but has no ${cls} rule`);
-    }
+    if (src.includes("colourPicker(")) users++;
+    assert.doesNotMatch(src, /\.(colour-[a-z-]+|preset-swatch)[^{\n]*\{/, `${f} restyles the shared colour picker`);
   }
+  assert.ok(users >= 27, `expected the shared picker in at least 27 editors, found ${users}`);
+});
+
+function renderPicker(current = "#7c3aed") {
+  class Lit {}
+  Lit.prototype.html = template;
+  class View extends Lit {}
+  const window = { matchMedia: () => ({ matches: false }) };
+  vm.runInNewContext(read("taskmate-design.js"), {
+    window,
+    document: { documentElement: { getAttribute: () => "" }, getElementById: () => ({}), createElement: () => ({}), head: { appendChild() {} } },
+    customElements: { get: (tag) => (tag === "hui-masonry-view" ? View : undefined) },
+  });
+  const calls = [];
+  const out = render(window.__taskmate_design.colourPicker({
+    defaultValue: "#7c3aed",
+    current,
+    label: "Header Colour",
+    helper: "Card header background colour",
+    resetLabel: "Reset",
+    onInput: (v) => calls.push(["input", v]),
+    onPreset: (v) => calls.push(["preset", v]),
+    onReset: () => calls.push(["reset"]),
+  }));
+  return { out, calls };
+}
+
+test("every header-colour picker control is a 36px touch target", () => {
+  const { out } = renderPicker();
+  const css = out.markup.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const rule = (sel) => {
+    const m = css.match(new RegExp(`(?:^|\\n)\\s*${sel.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")}\\s*\\{([^}]*)\\}`));
+    assert.ok(m, `no ${sel} rule in the picker's styles`);
+    return m[1];
+  };
+  const px = (body, prop) => {
+    const m = body.match(new RegExp(`(?:^|;|\\s)${prop}:\\s*(\\d+)px`));
+    return m ? Number(m[1]) : 0;
+  };
+  const swatch = rule(".preset-swatch");
+  assert.ok(px(swatch, "width") >= 36 && px(swatch, "height") >= 36, "preset swatch button under 36px");
+  const reset = rule(".colour-reset");
+  assert.ok(px(reset, "min-height") >= 36, "Reset under 36px tall");
+  const wrap = rule(".colour-swatch-wrapper");
+  assert.ok(px(wrap, "width") >= 36 && px(wrap, "height") >= 36, "colour swatch under 36px");
+  // A colour input keeps its own 50x27 box unless it is told to fill the swatch.
+  const input = rule('.colour-swatch-wrapper input[type="color"]');
+  assert.match(input, /width:\s*100%/);
+  assert.match(input, /height:\s*100%/);
+});
+
+test("the header-colour picker still sets, presets and resets the colour", async () => {
+  const { out, calls } = renderPicker("#E67E22");
+  const swatches = out.controls.filter((c) => /preset-swatch/.test(c.attrs));
+  assert.equal(swatches.length, 7);
+  const active = swatches.filter((c) => /preset-swatch active/.test(c.attrs));
+  assert.equal(active.length, 1, "exactly one swatch is marked as the current colour");
+  assert.match(active[0].attrs, /title=#e67e22/);
+  await swatches[2].click();
+  await out.controls.find((c) => /colour-reset/.test(c.attrs)).click();
+  assert.deepEqual(calls, [["preset", "#27ae60"], ["reset"]]);
 });
