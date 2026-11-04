@@ -688,7 +688,9 @@ const counts = (card) => { const { done, total } = card._progress(card._entry("v
 
 test("by default a missed morning chore still shows with its Done button and counts", async () => {
   const card = await timedView();
-  assert.equal(doneButtons(card), 3);
+  // Bed (missed, shown) and bins (anytime); the evening chore isn't open
+  // until 17:00 (#771).
+  assert.equal(doneButtons(card), 2);
   assert.deepEqual(counts(card), [0, 3]);
   assert.doesNotMatch(view(card).markup, /km-row missed/);
 });
@@ -698,7 +700,7 @@ test("elapsed_time_mode: dim greys a missed chore out, refuses the tap and leave
   const { markup } = view(card);
   assert.equal((markup.match(/km-row missed/g) || []).length, 1);
   assert.match(markup, new RegExp(localize("kiosk.missed")));
-  assert.equal(doneButtons(card), 2, "only the evening and anytime chores can be ticked off");
+  assert.equal(doneButtons(card), 1, "only the anytime chore can be ticked off: evening opens at 17:00 (#771)");
   assert.deepEqual(counts(card), [0, 2]);
 });
 
@@ -737,6 +739,74 @@ test("missed follows the family's own time periods when the sensor has them", as
   assert.equal(card._isMissed(chore("bed", { time_category: "morning" })), true, "school started at 09:00");
   assert.equal(card._isMissed(chore("homework", { time_category: "school" })), false);
 });
+
+// ── a later part of the day isn't open yet (#771) ─────────────────────────
+// The child card shows a chore for a later period as a locked "Available at"
+// preview; the tablet used to offer a live Done button for it at any hour.
+
+test("a chore for a later part of the day shows when it opens, with no Done button", async () => {
+  const card = await timedView({ now: 8 * 60, due: ["dishes"] });
+  const { markup, controls } = view(card);
+  assert.match(markup, /km-row later/);
+  assert.match(markup, new RegExp(localize("child.chore_locked_until", { time: "17:00" })));
+  assert.equal(controls.filter((c) => c.attrs.includes('class="km-done"')).length, 0, "nothing to tap");
+  assert.deepEqual(counts(card), [0, 1], "still owed today, so it stays in the count");
+});
+
+test("the same chore gets its Done button once its part of the day starts", async () => {
+  const card = await timedView({ now: 17 * 60 + 5, due: ["dishes"] });
+  const done = view(card).controls.find((c) => c.attrs.includes('class="km-done"'));
+  assert.ok(done, "Done is offered from 17:00");
+  await done.click();
+  assert.equal(card.calls.at(-1).service, "complete_chore");
+});
+
+test("a later-period chore's opening time goes through HA's clock helper", async () => {
+  const card = await timedView({ now: 8 * 60, due: ["dishes"] });
+  cardWindow.__taskmate_dates = { clock: (_h, t) => `${t} (HA)` };
+  try {
+    assert.match(view(card).markup, new RegExp(localize("child.chore_locked_until", { time: "17:00 \\(HA\\)" })));
+  } finally {
+    delete cardWindow.__taskmate_dates;
+  }
+});
+
+test("opensAt follows the child card's preview rule", async () => {
+  const card = await timedView({ now: 8 * 60 });
+  assert.equal(card._opensAt(chore("x", { time_category: "evening" })), "17:00");
+  assert.equal(card._opensAt(chore("x", { time_category: "morning" })), null, "its own period is open");
+  assert.equal(card._opensAt(chore("x", { time_category: "anytime" })), null);
+  assert.equal(card._opensAt(chore("x")), null, "no time of day");
+  card._nowMinutes = () => 3 * 60;
+  assert.equal(card._opensAt(chore("x", { time_category: "morning" })), null, "before 06:00 is still the first period");
+  assert.equal(card._opensAt(chore("x", { time_category: "afternoon" })), "12:00");
+  card.hass.states[ENTITY].attributes.time_periods = [
+    { id: "morning", start: "05:00", end: "09:00" },
+    { id: "school", start: "09:30", end: "15:00" },
+  ];
+  card._nowMinutes = () => 7 * 60;
+  assert.equal(card._opensAt(chore("x", { time_category: "school" })), "09:30", "the family's own periods");
+});
+
+test("a later chore already done keeps its done state", async () => {
+  const card = await timedView({
+    now: 8 * 60,
+    due: [],
+    completions: [{ completion_id: "c1", chore_id: "dishes", child_id: "vaiha", approved: true, completed_at: new Date().toISOString() }],
+  });
+  const { markup } = view(card);
+  assert.match(markup, /km-row done/);
+  assert.doesNotMatch(markup, /km-row later/);
+});
+
+for (const design of DESIGNS) {
+  test(`${design}: a later-period chore has no Done button on the kiosk`, async () => {
+    const card = await timedView({ now: 8 * 60, due: ["dishes"], config: { card_design: design } });
+    const { markup, controls } = view(card);
+    assert.match(markup, new RegExp(localize("child.chore_locked_until", { time: "17:00" })));
+    assert.equal(controls.filter((c) => c.attrs.includes('class="km-done"')).length, 0);
+  });
+}
 
 test("a completed chore is never missed: it keeps its done state", async () => {
   const card = await timedView({
