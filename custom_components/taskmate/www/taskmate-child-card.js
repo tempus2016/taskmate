@@ -1914,6 +1914,20 @@ class TaskMateChildCard extends LitElement {
         box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
         transform: scale(1.02);
       }
+      /* A locked timed chore (#771): start/resume can't be pressed, so they
+         must not look pressable. After the colour rules so it wins. */
+      .timer-btn:disabled, .timer-btn:disabled:hover, .timer-btn:disabled:active {
+        opacity: 0.45; cursor: default; box-shadow: none; transform: none;
+      }
+      /* The whole card dims like a locked standard row (#771); opacity and
+         filter only, so every design's own colours still show through. */
+      .timed-chore-card.tm-timed-locked { opacity: 0.55; filter: grayscale(0.5); }
+      .tm-timed-lock-reason {
+        display: flex; align-items: center; gap: 4px; margin-top: 3px;
+        font-size: 0.78rem; font-weight: 600;
+        color: var(--tmd-dim, var(--secondary-text-color));
+      }
+      .tm-timed-lock-reason ha-icon { --mdc-icon-size: 14px; }
       .btn-icon { font-size: 1.2rem; }
       .daily-cap-bar {
         display: flex;
@@ -4707,6 +4721,55 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
+  /**
+   * Whether a locked row is drawn dimmed: the same mode split the standard
+   * rows use — recurrence, first-come and dependency locks only dim under
+   * their "dim" mode (under "show" they look normal but still refuse the tap);
+   * every other lock always dims.
+   */
+  _lockDimmed(locks) {
+    return locks.notDueToday || locks.weeklyDone || locks.timeElapsed || locks.isLockedPreview || locks.setTimeLocked
+      || (locks.recurrenceLocked && (this.config.recurrence_done_mode || 'dim') === 'dim')
+      || (locks.firstComeLocked && (this.config.first_come_claimed_mode || 'hide') === 'dim')
+      || (locks.depBlocked && (this.config.dependency_mode || 'hide') === 'dim');
+  }
+
+  /** Why a locked chore can't be started now, in the words the standard rows use. */
+  _lockReason(chore, locks) {
+    // Stored "17:00" times in HA's time format ("05:00 PM" on a 12-hour
+    // profile) once the shared clock helper is loaded (#771).
+    const clk = (t) => (window.__taskmate_dates && window.__taskmate_dates.clock ? window.__taskmate_dates.clock(this.hass, t) : t);
+    if (locks.isLockedPreview) {
+      if (chore._setTime) return this._t('child.chore_locked_until', { time: clk(chore._setTime.start) });
+      const start = this._getPeriodHours(chore.time_category)?.[0];
+      return start === undefined || start === null
+        ? this._t('child.chore_locked_until_generic')
+        : this._t('child.chore_locked_until', { time: clk(`${String(Math.floor(start)).padStart(2, '0')}:${String(Math.round((start % 1) * 60)).padStart(2, '0')}`) });
+    }
+    if (locks.depBlocked) return this._t('child.blocked_by_dependency', { chores: (chore._dependencyNames || []).join(', ') });
+    if (locks.notDueToday) return this._t('child.not_scheduled_for_today');
+    if (locks.setTimeLocked) {
+      return chore._setTimeState === 'missed'
+        ? this._t('child.set_time_missed')
+        : chore._setTimeEntry && chore._setTimeEntry.opens
+          ? this._t('child.set_time_opens', { time: clk(chore._setTimeEntry.opens) })
+          : '';
+    }
+    if (locks.timeElapsed) return this._t('child.time_has_passed');
+    if (locks.firstComeLocked) {
+      return chore._firstComeCompletedByName
+        ? this._t('child.claimed_by_another', { name: chore._firstComeCompletedByName })
+        : this._t('child.claimed_by_another_generic');
+    }
+    if (locks.weeklyDone) return this._t('child.weekly_target_done');
+    // The translated cadence once fix/recurrence-label-i18n is in (#771).
+    if (locks.recurrenceLocked) {
+      if (this._recurrenceLabel) return this._recurrenceLabel(chore);
+      return chore.recurrence ? chore.recurrence.replace(/_/g, ' ') : this._t('child.recurring');
+    }
+    return '';
+  }
+
   _renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, choreIndex) {
     const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
       || this.hass?.states?.[this.config.entity]?.attributes || {};
@@ -4719,7 +4782,17 @@ class TaskMateChildCard extends LitElement {
     const choreNumber = choreIndex + 1;
     // A blocked timed chore must not be startable under dim/show (#793).
     // Pause/stop stay live so a session already running can still be ended.
-    const depBlocked = !!chore._isDependencyBlocked;
+    // Start/resume obey every lock the classic row does (#771): cooldown,
+    // first-come claim, a later period, a passed window, not due today, a
+    // filled weekly target, a prerequisite, a set time that isn't open.
+    const timedLocks = this._choreLocks(chore, this._isChoreDone(chore, child, todaysCompletions || []).done);
+    const startLocked = timedLocks.locked;
+    // A locked chore with no session running is dimmed and says why, as the
+    // standard rows do (#771). A running or paused session stays at full
+    // strength: Pause / Done are still live on it.
+    const lockedIdle = startLocked && state === 'idle';
+    const timedDimmed = lockedIdle && this._lockDimmed(timedLocks);
+    const lockReason = startLocked ? this._lockReason(chore, timedLocks) : '';
 
     // Calculate elapsed seconds
     let elapsed = session ? (session.total_seconds_today || 0) : 0;
@@ -4752,7 +4825,7 @@ class TaskMateChildCard extends LitElement {
     const nearCap = maxMin > 0 && capPct >= 85;
 
     const handleStart = (e) => {
-      if (depBlocked) { e.stopPropagation(); return; }
+      if (startLocked) { e.stopPropagation(); return; }
       e.stopPropagation();
       if (isLoading) return;
       this._loading = { ...this._loading, [`timed_${chore.id}`]: true };
@@ -4798,7 +4871,8 @@ class TaskMateChildCard extends LitElement {
     };
 
     return html`
-      <div class="timed-chore-card ${state} ${isLoading ? 'loading' : ''}">
+      <div class="timed-chore-card ${state} ${isLoading ? 'loading' : ''} ${timedDimmed ? 'tm-timed-locked' : ''}"
+        title="${lockReason}">
         <div class="timed-top-row">
           <div class="chore-number-wrapper">
             ${this._choreNumberBadge(chore, colorClass, choreNumber)}
@@ -4806,6 +4880,9 @@ class TaskMateChildCard extends LitElement {
           <div class="chore-details">
             <div class="chore-name">${chore.name}</div>
             ${state === 'idle' ? this._renderRejectNote(chore, child, 'tm-reject-note') : ''}
+            ${lockReason ? html`<div class="tm-timed-lock-reason">
+              <ha-icon icon="${timedLocks.isLockedPreview || timedLocks.setTimeLocked ? 'mdi:lock-clock' : 'mdi:lock-outline'}"></ha-icon>
+              ${lockReason}</div>` : ''}
           </div>
           <div class="timed-rate">${rateLabel}</div>
         </div>
@@ -4824,7 +4901,7 @@ class TaskMateChildCard extends LitElement {
 
         <div class="timer-actions">
           ${state === 'idle' ? html`
-            <button class="timer-btn start" @click="${handleStart}" ?disabled="${isLoading || depBlocked}">
+            <button class="timer-btn start" @click="${handleStart}" ?disabled="${isLoading || startLocked}">
               <span class="btn-icon">&#9654;</span>
               ${this._t('child.start') || 'START'}
             </button>
@@ -4840,7 +4917,7 @@ class TaskMateChildCard extends LitElement {
             </button>
           ` : ''}
           ${state === 'paused' ? html`
-            <button class="timer-btn resume" @click="${handleStart}" ?disabled="${isLoading || depBlocked}">
+            <button class="timer-btn resume" @click="${handleStart}" ?disabled="${isLoading || startLocked}">
               <span class="btn-icon">&#9654;</span>
               ${this._t('child.resume') || 'RESUME'}
             </button>
