@@ -267,3 +267,20 @@ test("the editor stores only options changed from their defaults", () => {
     entity: ENTITY, type: "custom:taskmate-chore-board-card", tap_to_complete: false, hide_done_periods: true,
   });
 });
+
+// v7.7.1 phone sweep: on a 360px phone a long name ("... open 4/5") pushed the
+// count out of sight, because it sat inside the name that gives way to an
+// ellipsis. The count is now its own piece beside the name and never shrinks.
+for (const design of DESIGNS) {
+  test(`chore board — ${design} keeps a daily-limit count outside the truncated name`, () => {
+    const { card, Card } = setup({ config: { card_design: design } });
+    const markup = chip(render(card.render()), "Brush teeth").content;
+    const name = markup.match(/<span class="cb-n">([^<]*)<\/span>/);
+    assert.ok(name, markup);
+    assert.equal(name[1], "Brush teeth", "the name span holds only the name");
+    assert.match(markup, /<\/span><small class="cb-c">1\/2<\/small>/, "the count follows the name");
+    const styles = render(Card.styles).markup;
+    assert.match(styles, /\.cb-c \{[^}]*flex: none[^}]*white-space: nowrap/);
+    assert.match(styles, /\.cb-n \{[^}]*text-overflow: ellipsis/);
+  });
+}

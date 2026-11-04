@@ -361,11 +361,14 @@ class TaskMateChoreBoardCard extends LitElement {
   _chip(item, chore, kid, board) {
     const statusLabel = this._t(`chore_board.status_${item.status}`);
     const limit = Math.max(1, Number(item.limit) || 1);
-    const count = limit > 1 ? html` <small>${_ltrNums(`${item.count || 0}/${limit}`)}</small>` : "";
+    // The count sits beside the name, not inside it: the name is the part
+    // that gives way to an ellipsis, so the count stays readable however
+    // long the chore's name is or however narrow the column.
+    const count = limit > 1 ? html`<small class="cb-c">${_ltrNums(`${item.count || 0}/${limit}`)}</small>` : "";
     const extra = this._needsChildCard(chore)
       ? html`<ha-icon class="cb-x" icon="${chore.require_photo ? "mdi:camera-outline" : chore.task_type === "timed" ? "mdi:timer-sand" : chore.team ? "mdi:account-group-outline" : "mdi:pencil-outline"}"></ha-icon>`
       : "";
-    const inner = html`<i class="cb-dot" aria-hidden="true"></i><span class="cb-n">${chore.name}${count}</span>${extra}<span class="cb-sr">${statusLabel}</span>`;
+    const inner = html`<i class="cb-dot" aria-hidden="true"></i><span class="cb-n">${chore.name}</span>${count}${extra}<span class="cb-sr">${statusLabel}</span>`;
     const tappable = this.config.tap_to_complete !== false && (item.status === "todo" || item.status === "missed");
     const key = `${chore.id}|${kid.id}`;
     return tappable
@@ -552,7 +555,10 @@ class TaskMateChoreBoardCard extends LitElement {
       button.cb-chip:hover { background: var(--tmd-surface-2, rgba(127, 127, 127, .12)); }
       button.cb-chip[disabled] { opacity: .6; cursor: default; }
       .cb-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .cb-n small { color: var(--tmd-dim, var(--secondary-text-color)); }
+      .cb-c {
+        flex: none; margin-inline-start: -3px; white-space: nowrap;
+        color: var(--tmd-dim, var(--secondary-text-color));
+      }
       .cb-x { --mdc-icon-size: 14px; flex: none; color: var(--tmd-dim, var(--secondary-text-color)); }
       .cb-dot {
         width: 14px; height: 14px; flex: none; border-radius: 50%; box-sizing: border-box;
