@@ -91,7 +91,9 @@ TaskMate doesn't ship Arabic, Hebrew, Persian or Urdu translations yet, so those
 Translation files are located in the repository:
 
 - **Config flow**: `custom_components/taskmate/translations/{locale}.json`
-- **Frontend cards**: `custom_components/taskmate/www/locales/{locale}.json`
+- **Frontend cards and admin panel**: `custom_components/taskmate/www/locales/{locale}.json`
+
+Edit only those files. Your browser loads smaller per-screen bundles generated from them (`www/locales/{locale}/cards.json`, `editor.json` and `panel.json`), so a dashboard only downloads the wording its cards use. After changing a locale, run `python3 scripts/split_locales.py` and commit the regenerated bundles — the project's pre-commit hook does it for you, and the checks on your pull request say so if they are out of date.
 
 To add a new language or improve an existing translation, submit a pull request to the [TaskMate repository](https://github.com/tempus2016/taskmate).
 

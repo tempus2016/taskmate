@@ -81,6 +81,7 @@ python3 scripts/check_translations.py
 
 # Blueprints, sentences and packaging metadata parse (matches "Data files")
 python3 scripts/check_data_files.py
+python3 scripts/split_locales.py --check   # drop --check to regenerate the bundles
 ```
 
 Or install the hooks once and let them run on commit:
@@ -102,7 +103,15 @@ to every locale in the same PR** — `da`, `de`, `fr`, `nb`, `nl`, `nn`, `pl`, `
 be asked to include the translations.
 
 Backend strings live in `custom_components/taskmate/translations/` and
-`strings.json`; card strings live under `www/locales/`.
+`strings.json`; card and panel strings live in `www/locales/<lang>.json`.
+Edit only those files. The browser loads smaller per-screen bundles,
+`www/locales/<lang>/{cards,editor,panel}.json`, which
+`scripts/split_locales.py` generates from them. Run it after changing a locale
+and commit the result (the pre-commit hook and pre-commit.ci do this for you);
+CI fails if the bundles are stale. Which bundle a key goes in follows from its
+name (`*.editor.*` keys go to the editors, `panel.`/`wizard.`/`library.`/
+`planner.`/`notify.` keys to the admin panel, everything else to the cards),
+set by the rules at the top of `www/taskmate-localize.js`.
 
 This is enforced in CI: `scripts/check_translations.py` fails the build if any
 locale's key set differs from `en.json` in either catalogue. Run it locally to

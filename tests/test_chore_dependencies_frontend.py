@@ -27,6 +27,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "t
 WWW = ROOT / "www"
 PANEL = (WWW / "taskmate-panel.js").read_text(encoding="utf-8")
 CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
+# The visual editor is its own module, loaded when the card editor opens.
+CARD_EDITOR = (WWW / "editors" / "taskmate-child-card-editor.js").read_text(encoding="utf-8")
 
 
 def _save_chore_payload() -> str:
@@ -114,12 +116,12 @@ class TestDependencyMode:
         assert "this.config.dependency_mode || 'hide'" in CARD
 
     def test_all_three_modes_are_offered(self):
-        assert "name: 'dependency_mode'" in CARD
+        assert "name: 'dependency_mode'" in CARD_EDITOR
         for mode in ("dependency_hide", "dependency_dim", "dependency_show"):
-            assert f"child.editor.{mode}" in CARD, f"missing option {mode}"
+            assert f"child.editor.{mode}" in CARD_EDITOR, f"missing option {mode}"
 
     def test_editor_exposes_the_default(self):
-        assert "dependency_mode: this.config.dependency_mode || 'hide'" in CARD
+        assert "dependency_mode: this.config.dependency_mode || 'hide'" in CARD_EDITOR
 
     def test_strings_exist_in_every_locale(self):
         keys = {

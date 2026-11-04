@@ -15,6 +15,8 @@ import re
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate"
 WWW = ROOT / "www"
 SOURCE = (WWW / "taskmate-kiosk-card.js").read_text(encoding="utf-8")
+# The visual editor is its own module, loaded when the card editor opens.
+SOURCE_EDITOR = (WWW / "editors" / "taskmate-kiosk-card-editor.js").read_text(encoding="utf-8")
 PANEL = (WWW / "taskmate-panel.js").read_text(encoding="utf-8")
 
 
@@ -34,7 +36,7 @@ def test_kiosk_card_is_registered_after_its_helpers():
 
 def test_kiosk_card_defines_card_and_editor():
     assert 'customElements.define("taskmate-kiosk-card"' in SOURCE
-    assert 'customElements.define("taskmate-kiosk-card-editor"' in SOURCE
+    assert 'customElements.define("taskmate-kiosk-card-editor"' in SOURCE_EDITOR
     assert 'type: "taskmate-kiosk-card"' in SOURCE
     assert "getConfigElement" in SOURCE
 
@@ -42,8 +44,8 @@ def test_kiosk_card_defines_card_and_editor():
 def test_kiosk_card_wires_the_design_system():
     assert "__taskmate_design.apply(" in SOURCE
     assert ".styles()" in SOURCE
-    assert "editorOptions" in SOURCE
-    assert "colourPicker" in SOURCE  # header_color
+    assert "editorOptions" in SOURCE_EDITOR
+    assert "colourPicker" in SOURCE_EDITOR  # header_color
     assert SOURCE.count("var(--tmd-") >= 30
 
 
@@ -52,7 +54,11 @@ def _used_keys(source: str, prefix: str) -> set[str]:
 
 
 def test_every_string_the_card_uses_is_translated_everywhere():
-    used = _used_keys(SOURCE, "") | _used_keys(PANEL, "panel.child_kiosk") | _used_keys(PANEL, "panel.toast_kiosk")
+    used = (
+        _used_keys(SOURCE + SOURCE_EDITOR, "")
+        | _used_keys(PANEL, "panel.child_kiosk")
+        | _used_keys(PANEL, "panel.toast_kiosk")
+    )
     assert any(k.startswith("kiosk.") for k in used)
     assert {"panel.child_kiosk_pin_label", "panel.toast_kiosk_pin_invalid"} <= used
     for path in sorted((WWW / "locales").glob("*.json")):
@@ -85,12 +91,12 @@ def test_no_parent_action_in_the_kiosk():
         "adjust_points",
         "show_parent_actions",
     ):
-        assert forbidden not in SOURCE
+        assert forbidden not in SOURCE + SOURCE_EDITOR
 
 
 def test_pin_is_checked_on_the_server_and_never_kept():
     assert '"taskmate/kiosk/verify_pin"' in SOURCE
-    assert "localStorage" not in SOURCE
-    assert "sessionStorage" not in SOURCE
+    assert "localStorage" not in SOURCE + SOURCE_EDITOR
+    assert "sessionStorage" not in SOURCE + SOURCE_EDITOR
     # The card only learns whether a PIN exists.
-    assert "pin_hash" not in SOURCE and "pbkdf2" not in SOURCE
+    assert "pin_hash" not in SOURCE + SOURCE_EDITOR and "pbkdf2" not in SOURCE + SOURCE_EDITOR

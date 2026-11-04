@@ -214,6 +214,8 @@ function incentive(tag) {
       + ` accent: "#2e7d32", designHd: "#2e7d32", designIcons: {}, cardName: "x", cardDesc: "x", bannerName: "X", bannerColor: "#000" });`,
     sandbox: { console: { info() {}, log() {}, warn() {}, error() {} } },
   });
+  // The editor is its own module, defined on demand with the card's P object.
+  loaded.importEditor("editors/taskmate-incentive-card-editor.js").defineIncentiveEditor({ tag, i18n: "bonuses", accent: "#2e7d32" });
   return { Card: loaded.get(tag), Editor: loaded.get(`${tag}-editor`) };
 }
 

@@ -4,6 +4,8 @@
 import { createIncentiveCard } from "./taskmate-incentive-card.js";
 
 createIncentiveCard({
+  // Carries this module's ?v= version onto the lazily loaded editor.
+  moduleUrl: import.meta.url,
   tag: "taskmate-bonuses-card",
   kind: "bonus",
   idKey: "bonus_id",

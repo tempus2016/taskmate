@@ -71,7 +71,17 @@ export function createIncentiveCard(P) {
       this.config = config;
     }
 
-    static getConfigElement() {
+    static async getConfigElement() {
+      // The editor ships as its own module so dashboards never parse it.
+      // P.moduleUrl is the wrapper card's URL, which carries the ?v= version;
+      // this shared base is imported without one.
+      const base = P.moduleUrl || import.meta.url;
+      const url = new URL(`./editors/taskmate-incentive-card-editor.js${new URL(base).search}`, base).href;
+      const [mod] = await Promise.all([
+        import(url),
+        window.__taskmate_loadTranslations?.(null, ["editor"]),
+      ]);
+      mod.defineIncentiveEditor(P);
       return document.createElement(P.tag + "-editor");
     }
 
@@ -1048,147 +1058,7 @@ export function createIncentiveCard(P) {
     }
   }
 
-  class IncentiveCardEditor extends LitElement {
-    static get properties() {
-      return { hass: { type: Object }, config: { type: Object } };
-    }
-
-    _t(key, params) {
-      const fn = window.__taskmate_localize;
-      return fn ? fn(this.hass, key, params) : key;
-    }
-
-    _tp(key, params) {
-      return this._t(P.i18n + "." + key, params);
-    }
-
-    static get styles() {
-      return css`
-        :host { display: block; }
-        ha-form { display: block; margin-bottom: 16px; }
-        .info-note { font-size: 0.85rem; color: var(--secondary-text-color); background: var(--secondary-background-color, #f5f5f5); border-radius: 8px; padding: 10px 14px; line-height: 1.4; margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start; }
-        .info-note ha-icon { flex-shrink: 0; color: var(--primary-color); --mdc-icon-size: 20px; margin-top: 1px; }
-        .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
-        .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
-        .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
-        .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
-        .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
-        .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
-        .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
-        .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
-        .preset-swatch:hover { transform: scale(1.15); }
-        .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
-        .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
-        .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
-      `;
-    }
-
-    setConfig(config) { this.config = config; }
-
-    _buildSchema() {
-      return [
-        { name: 'entity', selector: { entity: { domain: 'sensor' } } },
-        { name: 'title', selector: { text: {} } },
-        { name: 'show_parent_actions', selector: { boolean: {} } },
-        {
-          name: 'card_design',
-          selector: {
-            select: {
-              options: window.__taskmate_design
-                ? window.__taskmate_design.editorOptions(this._t.bind(this))
-                : [{ value: 'global', label: 'Use global default' }],
-              mode: 'dropdown',
-            },
-          },
-        },
-      ];
-    }
-
-    _computeLabel = (entry) => {
-      const labels = {
-        entity: this._t('common.editor.overview_entity'),
-        title: this._t('common.editor.card_title'),
-        show_parent_actions: this._t('common.editor.show_parent_actions'),
-        card_design: this._t('common.design.field_label'),
-        show_adults: this._t('common.editor.show_adults'),
-      };
-      return labels[entry.name] ?? entry.name;
-    };
-
-    _computeHelper = (entry) => {
-      const helpers = {
-        entity: this._t('common.editor.overview_entity_helper'),
-        show_parent_actions: this._t('common.editor.show_parent_actions_helper'),
-        show_adults: this._t('common.editor.show_adults_helper'),
-      };
-      return helpers[entry.name] ?? '';
-    };
-
-    render() {
-      if (!this.hass || !this.config) return html``;
-      const data = {
-        entity: this.config.entity || '',
-        title: this.config.title || '',
-        show_parent_actions: this.config.show_parent_actions !== false,
-        card_design: this.config.card_design || 'global',
-        show_adults: this.config.show_adults === true,
-      };
-      return html`
-        <div class="info-note">
-          <ha-icon icon="mdi:information-outline"></ha-icon>
-          <span>${this._tp('editor.manage_note')}</span>
-        </div>
-        <ha-form
-          .hass=${this.hass}
-          .data=${data}
-          .schema=${this._buildSchema().concat(window.__taskmate_adults_field ? window.__taskmate_adults_field(this.hass, this.config) : [])}
-          .computeLabel=${this._computeLabel}
-          .computeHelper=${this._computeHelper}
-          @value-changed=${this._formChanged}
-        ></ha-form>
-        ${this._renderColourPicker('header_color', P.accent)}
-      `;
-    }
-
-    _renderColourPicker(key, defaultValue) {
-      const d = window.__taskmate_design;
-      const current = this.config[key] || defaultValue;
-      if (!d || !d.colourPicker) return html``;
-      return d.colourPicker({
-        defaultValue, current,
-        label: this._t('common.editor.header_colour'),
-        helper: this._t('common.editor.header_colour_helper'),
-        resetLabel: this._t('common.reset'),
-        onInput: (v) => this._update(key, v),
-        onPreset: (v) => this._update(key, v),
-        onReset: () => this._update(key, defaultValue),
-      });
-    }
-
-    _formChanged(e) {
-      const newValues = e.detail.value || {};
-      const newConfig = { ...this.config };
-      for (const [key, value] of Object.entries(newValues)) {
-        if (value === '' || value === null || value === undefined) delete newConfig[key];
-        else if (key === 'card_design' && value === 'global') delete newConfig[key];
-        else if (key === 'show_adults' && value === false) delete newConfig[key];
-        else newConfig[key] = value;
-      }
-      this._fire(newConfig);
-    }
-
-    _update(key, value) {
-      this._fire({ ...this.config, [key]: value });
-    }
-
-    _fire(config) {
-      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config }, bubbles: true, composed: true }));
-    }
-  }
-
   customElements.define(P.tag, IncentiveCard);
-  customElements.define(P.tag + "-editor", IncentiveCardEditor);
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: P.tag, name: P.cardName, description: P.cardDesc, preview: true,

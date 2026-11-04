@@ -19,6 +19,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 WWW = ROOT / "custom_components" / "taskmate" / "www"
 LOCALES = WWW / "locales"
 CARD = (WWW / "taskmate-sticker-chart-card.js").read_text(encoding="utf-8")
+# The visual editor is its own module, loaded when the card editor opens.
+CARD_EDITOR = (WWW / "editors" / "taskmate-sticker-chart-card-editor.js").read_text(encoding="utf-8")
 FRONTEND = (ROOT / "custom_components" / "taskmate" / "frontend.py").read_text(encoding="utf-8")
 
 
@@ -31,7 +33,7 @@ def test_card_is_offered_in_the_lovelace_picker():
     assert 'type: "taskmate-sticker-chart-card"' in CARD
     assert "window.customCards" in CARD
     assert 'customElements.define("taskmate-sticker-chart-card"' in CARD
-    assert 'customElements.define("taskmate-sticker-chart-card-editor"' in CARD
+    assert 'customElements.define("taskmate-sticker-chart-card-editor"' in CARD_EDITOR
 
 
 def test_reads_through_the_companion_sensor_resolver():
@@ -147,8 +149,8 @@ def test_weekly_goal_counts_this_weeks_jobs():
 
 
 def test_weekly_goal_is_offered_in_the_editor_and_reward_stays_default():
-    assert 'name: "goal"' in CARD
-    assert 'if (key === "goal" && value === "reward") continue;' in CARD
+    assert 'name: "goal"' in CARD_EDITOR
+    assert 'if (key === "goal" && value === "reward") continue;' in CARD_EDITOR
 
 
 def test_big_goals_keep_the_block_look():

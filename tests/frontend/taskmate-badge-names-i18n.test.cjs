@@ -25,7 +25,11 @@ async function realLocalize(langs) {
     const body = readFileSync(file, "utf8");
     return { ok: true, json: async () => JSON.parse(body) };
   };
-  vm.runInNewContext(readFileSync(path.join(WWW, "taskmate-localize.js"), "utf8"), {
+  // The module reads its cache-busting version from import.meta.url (module
+  // syntax a plain script can't parse), so give it a stand-in, as the harness does.
+  const source = readFileSync(path.join(WWW, "taskmate-localize.js"), "utf8")
+    .replaceAll("import.meta.url", JSON.stringify("http://localhost/taskmate-localize.js?v=test"));
+  vm.runInNewContext(source, {
     window, fetch, document: {}, CustomEvent: class {}, console,
   });
   for (const language of langs) await window.__taskmate_loadTranslations({ language });

@@ -205,7 +205,7 @@ test("child card: finishing marks this child and remembers it in the browser", (
 });
 
 test("child card editor offers show_tour, on by default", () => {
-  const src = readFileSync(path.join(WWW, "taskmate-child-card.js"), "utf8");
+  const src = readFileSync(path.join(WWW, "editors/taskmate-child-card-editor.js"), "utf8");
   assert.match(src, /name: 'show_tour', selector: \{ boolean: \{\} \}/);
   assert.match(src, /show_tour: this\.config\.show_tour !== false/);
 });
