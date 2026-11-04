@@ -261,6 +261,9 @@
     // renders translated strings and stamps dir from the language.
     if (oldHass.language !== newHass.language) return true;
     if (isRTL(oldHass) !== isRTL(newHass)) return true;
+    // So does a light/dark switch: the designed styles stamp data-tm-dark
+    // while rendering, so skipping it left them in the old mode's colours.
+    if (!!(oldHass.themes && oldHass.themes.darkMode) !== !!(newHass.themes && newHass.themes.darkMode)) return true;
     if (oldHass.states === newHass.states) return false;
 
     if (primaryEntityId) {
