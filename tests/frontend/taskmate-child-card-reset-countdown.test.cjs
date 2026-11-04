@@ -46,3 +46,34 @@ test("a 25-hour DST day in HA's zone is counted in full", () => {
 test("same zone in browser and HA is unchanged", () => {
   assert.equal(countdownAt("2026-09-28T12:00:00Z", "UTC").label, resetIn(12, 0));
 });
+
+// v7.7.1 recheck: on a ~340px classic card in German the countdown chip ran
+// off the card's edge ("Aufgaben wurden in 23h 26Min. zurü…"). The title row
+// now wraps the chip onto its own line, and its text wraps inside it.
+const { render } = require("./harness.cjs");
+const rule = (css, selector) => {
+  const at = css.indexOf(`\n      ${selector} {`);
+  assert.ok(at >= 0, `${selector} rule exists`);
+  return css.slice(at, css.indexOf("}", at));
+};
+
+test("the countdown chip wraps under the title instead of running off the card", () => {
+  const css = render(ChildCard.styles).markup;
+  assert.match(rule(css, ".section-title"), /flex-wrap: wrap/);
+  assert.match(rule(css, ".reset-countdown"), /max-width: 100%/);
+  assert.match(css, /\.reset-countdown > span \{ white-space: normal;/);
+  assert.match(rule(css, ".tmd-section"), /flex-wrap: wrap/);
+  assert.match(rule(css, ".tmd-countdown"), /max-width: 100%; min-width: 0/);
+});
+
+// The German string was past tense ("wurden ... zurückgesetzt") for a reset
+// still to come, and kept its number and unit together with a no-break space.
+test("German says the reset is still to come, units kept with their numbers", () => {
+  const de = JSON.parse(require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/locales/de.json"), "utf8"));
+  for (const key of ["child.chores_reset_hours_mins", "child.chores_reset_mins"]) {
+    assert.doesNotMatch(de[key], /wurden/, key);
+    assert.match(de[key], /\{mins\} Min\./, key);
+  }
+  assert.match(de["child.chores_reset_hours_mins"], /\{hours\} Std\./);
+});
