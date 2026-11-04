@@ -3349,7 +3349,7 @@ class TaskMateChildCard extends LitElement {
       ? `${(child.name || "").toUpperCase()} · ${this._t("child.todays_chores").toUpperCase()}`
       : this._t("points_display.single_title", { name: child.name });
     const sub = design === "console"
-      ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${remaining} ACTIVE` : `${remaining} ACTIVE`)
+      ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${this._t("child.console_active", { count: remaining })}` : this._t("child.console_active", { count: remaining }))
       : design === "cleanpro" ? _ltrNums(`${remaining} / ${total}`)
       : `${remaining} · ${this._t("child.todays_chores")}`;
     // Avatar picker: classic makes the avatar tappable; the designed header
@@ -3517,7 +3517,7 @@ class TaskMateChildCard extends LitElement {
           <div class="q-mid">
             <div class="q-name">${r.chore.name}</div>
             ${r.done
-              ? html`<div class="num q-cleared">CLEARED</div>`
+              ? html`<div class="num q-cleared">${this._t("child.console_cleared")}</div>`
               : html`<div class="num q-xp">+${r.points} XP</div>`}
             ${this._designChoreMeta(r)}
           </div>
