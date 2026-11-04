@@ -292,6 +292,10 @@ class TaskMateStreakCard extends LitElement {
             header_color: '#e74c3c',
     ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "Streaks & Achievements" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "Streaks & Achievements") this.config.title = "";
   }
 
   getCardSize() { return 4; }
@@ -304,7 +308,7 @@ class TaskMateStreakCard extends LitElement {
     return document.createElement("taskmate-streak-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Streaks & Achievements" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   render() {

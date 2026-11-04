@@ -393,12 +393,17 @@ class TaskMateOverviewCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) throw new Error("Please define an entity");
+    // No title by default: the header falls back to the translated
+    // overview.default_title. An explicit empty title still means none.
     this.config = {
-      title: "TaskMate",
       approvals_entity: null,
             header_color: '#8e44ad',
     ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "TaskMate" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "TaskMate") delete this.config.title;
   }
 
   getCardSize() { return 3; }
@@ -411,7 +416,7 @@ class TaskMateOverviewCard extends LitElement {
     return document.createElement("taskmate-overview-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "TaskMate" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   render() {
@@ -466,7 +471,7 @@ class TaskMateOverviewCard extends LitElement {
         <div class="card-header">
           <div class="header-content">
             <ha-icon class="header-icon" icon="mdi:home-heart"></ha-icon>
-            <span class="header-title">${this.config.title}</span>
+            <span class="header-title">${this.config.title ?? this._t('overview.default_title')}</span>
           </div>
           ${pendingApprovals > 0 ? html`
             <div class="pending-badge">
@@ -646,7 +651,7 @@ class TaskMateOverviewCard extends LitElement {
     return html`
       <div class="tmd-hd">
         <span class="ic">${icon}</span>
-        <span class="tt">${this.config.title}<small>${sub}</small></span>
+        <span class="tt">${this.config.title ?? this._t('overview.default_title')}<small>${sub}</small></span>
         ${design === "console" && pending > 0
           ? html`<span class="cnt">${pending}</span>` : ""}
       </div>`;
