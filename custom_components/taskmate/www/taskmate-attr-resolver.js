@@ -255,6 +255,16 @@
     return entry ? !!entry.isRTL : undefined;
   }
 
+  const LOCALE_FIELDS = ["language", "number_format", "time_format", "date_format", "time_zone", "first_weekday"];
+
+  function localeChanged(oldHass, newHass) {
+    const a = oldHass.locale || {};
+    const b = newHass.locale || {};
+    if (a !== b && LOCALE_FIELDS.some((k) => a[k] !== b[k])) return true;
+    // The server zone is what "server" time means.
+    return ((oldHass.config || {}).time_zone || "") !== ((newHass.config || {}).time_zone || "");
+  }
+
   function hasRelevantChange(oldHass, newHass, primaryEntityId) {
     if (!oldHass || !oldHass.states || !newHass || !newHass.states) return true;
     // A language change (#994) keeps the same states object, but every card
@@ -283,7 +293,12 @@
     return false;
   }
 
-  window.__taskmate_hasChanged = hasRelevantChange;
+  // HA's profile formats (#771) — number, date and time format, the 12/24-hour
+  // clock and which time zone to show — keep the states object too when they
+  // change, but every date, time and number on the card follows them.
+  window.__taskmate_hasChanged = (oldHass, newHass, primaryEntityId) =>
+    hasRelevantChange(oldHass, newHass, primaryEntityId)
+    || (!!oldHass && !!newHass && localeChanged(oldHass, newHass));
 
   /**
    * Find the entity id of a TaskMate button by (child_id, action, target_id).
