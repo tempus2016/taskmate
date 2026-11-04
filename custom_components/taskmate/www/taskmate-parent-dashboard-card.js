@@ -6,6 +6,13 @@
  * Version: 1.0.0
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -71,7 +78,7 @@ class TaskMateParentDashboardCard extends LitElement {
     let when = "";
     if (iso) {
       const d = new Date(iso);
-      if (!isNaN(d)) when = d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      if (!isNaN(d)) when = d.toLocaleString(...__tmDateArgs(this.hass, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }, "datetime"));
     }
     return [chore, child, when].filter(Boolean).join(" · ");
   }
@@ -1038,7 +1045,7 @@ class TaskMateParentDashboardCard extends LitElement {
       const child = childMap[comp.child_id];
       const isLoading = !!this._loading[comp.completion_id];
       const time = comp.completed_at
-        ? new Date(comp.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+        ? new Date(comp.completed_at).toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time")) : "";
       const pts = comp.points || choreMap[comp.chore_id]?.points || 0;
       const photoUrl = this._photoHref(comp.photo_url);
       const photoCap = this._photoCaption(comp.chore_name, child && child.name, comp.completed_at);
@@ -1082,7 +1089,7 @@ class TaskMateParentDashboardCard extends LitElement {
       const tone = this._designTone(i);
       const isLoading = !!this._loading[claim.claim_id];
       const time = claim.claimed_at
-        ? new Date(claim.claimed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+        ? new Date(claim.claimed_at).toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time")) : "";
       return html`
         <div class="row pd-item ${isLoading ? 'loading' : ''}" style="--ac:${tone}">
           <div class="pd-photo"><ha-icon icon="${claim.reward_icon || 'mdi:gift'}"></ha-icon></div>
@@ -1372,7 +1379,7 @@ class TaskMateParentDashboardCard extends LitElement {
         const child = childMap[comp.child_id];
         const chore = choreMap[comp.chore_id];
         const isLoading = this._loading[comp.completion_id];
-        const time = new Date(comp.completed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const time = new Date(comp.completed_at).toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
 
         return html`
           <div class="approval-item ${isLoading ? 'loading' : ''}">
@@ -1424,7 +1431,7 @@ class TaskMateParentDashboardCard extends LitElement {
     return html`
       ${claims.map(claim => {
         const isLoading = this._loading[claim.claim_id];
-        const time = new Date(claim.claimed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const time = new Date(claim.claimed_at).toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
         return html`
           <div class="claim-item ${isLoading ? 'loading' : ''}">
             <div class="claim-icon-wrap">

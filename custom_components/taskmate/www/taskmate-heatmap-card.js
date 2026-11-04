@@ -9,6 +9,13 @@
  * With a `child_id` it is that child's grid; without one, every child's.
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -117,7 +124,6 @@ class TaskMateHeatmapCard extends LitElement {
     const days = counts.length || 42;
     const end = new Date(`${heat.end || new Date().toISOString().slice(0, 10)}T12:00:00`);
     const start = new Date(end.getTime() - (days - 1) * DAY_MS);
-    const lang = this.hass?.locale?.language || undefined;
     const best = Math.max(1, ...counts);
     const cells = [];
     for (let i = 0; i < days; i++) {
@@ -126,12 +132,12 @@ class TaskMateHeatmapCard extends LitElement {
       cells.push({
         level: n ? Math.min(4, Math.max(1, Math.ceil((n / best) * 4))) : 0,
         today: i === days - 1,
-        title: `${d.toLocaleDateString(lang, { weekday: "short", day: "numeric", month: "short" })}: ${this._t(n === 1 ? "heatmap.cell_one" : "heatmap.cell", { count: n })}`,
+        title: `${d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "short", day: "numeric", month: "short" }))}: ${this._t(n === 1 ? "heatmap.cell_one" : "heatmap.cell", { count: n })}`,
       });
     }
     return {
       lead: (start.getDay() + 6) % 7,
-      weekdays: Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(lang, { weekday: "narrow" })),
+      weekdays: Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "narrow" }))),
       cells,
       total: counts.reduce((a, b) => a + b, 0),
       active: counts.filter(Boolean).length,

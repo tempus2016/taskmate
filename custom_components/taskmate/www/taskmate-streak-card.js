@@ -7,6 +7,13 @@
  * Last Updated: 2026-03-18
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -461,7 +468,7 @@ class TaskMateStreakCard extends LitElement {
       const isToday = key === todayKey;
       dots.push({
         cssClass: active ? (isToday ? "today-active" : "active") : "inactive",
-        label: d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
+        label: d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "short", month: "short", day: "numeric" })),
       });
     }
     return dots;

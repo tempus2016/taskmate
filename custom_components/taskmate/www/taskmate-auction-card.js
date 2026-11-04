@@ -19,6 +19,13 @@
  * an ac- prefix: the shared design kit defines its own .btn / .bar / .chip.
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -148,23 +155,19 @@ class TaskMateAuctionCard extends LitElement {
     return c ? c.name : "?";
   }
 
-  _lang() {
-    return this.hass?.locale?.language || this.hass?.language || undefined;
-  }
-
   /** "Saturday 4 October" (long) or "Sat 4 Oct" for an ISO date. */
   _date(iso, long = true) {
     const d = new Date(`${iso}T00:00:00`);
     if (Number.isNaN(d.getTime())) return iso || "";
-    return d.toLocaleDateString(this._lang(), long
+    return d.toLocaleDateString(...__tmDateArgs(this.hass, long
       ? { weekday: "long", day: "numeric", month: "long" }
-      : { weekday: "short", day: "numeric", month: "short" });
+      : { weekday: "short", day: "numeric", month: "short" }));
   }
 
   _when(isoInstant) {
     const d = new Date(isoInstant || "");
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleString(this._lang(), { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString(...__tmDateArgs(this.hass, { weekday: "short", hour: "2-digit", minute: "2-digit" }, "datetime"));
   }
 
   _fmtDur(ms) {

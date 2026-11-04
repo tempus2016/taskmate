@@ -763,7 +763,9 @@ test("the same chore gets its Done button once its part of the day starts", asyn
 
 test("a later-period chore's opening time goes through HA's clock helper", async () => {
   const card = await timedView({ now: 8 * 60, due: ["dishes"] });
-  cardWindow.__taskmate_dates = { clock: (_h, t) => `${t} (HA)` };
+  // The whole helper, as taskmate-localize.js exposes it: the card's date
+  // calls use args() too (fix/dates-follow-ha-language).
+  cardWindow.__taskmate_dates = { args: (_h, opts) => [undefined, opts], clock: (_h, t) => `${t} (HA)` };
   try {
     assert.match(view(card).markup, new RegExp(localize("child.chore_locked_until", { time: "17:00 \\(HA\\)" })));
   } finally {
