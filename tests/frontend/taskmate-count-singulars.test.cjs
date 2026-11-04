@@ -47,7 +47,7 @@ test("every count that can be 1 has a singular string in every language", () => 
 test("each card picks the singular string when the count is 1", () => {
   for (const [key, file] of Object.entries(KEYS)) {
     const src = readFileSync(path.join(WWW, file), "utf8");
-    const esc = key.replace(/\./g, "\\.");
+    const esc = key.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
     const calls = src.match(new RegExp(`_t\\([^;]*?["']${esc}["']`, "g")) || [];
     assert.ok(calls.length, `${file} never uses ${key}`);
     for (const c of calls) assert.match(c, new RegExp(`=== 1 \\? ["']${esc}_one["']`), `${file}: ${c}`);
