@@ -9392,10 +9392,13 @@ class TaskMatePanel extends HTMLElement {
       /* Let a wide control (None / Big jobs / All) drop below its label on a
          phone instead of squeezing the label into a narrow column. */
       .tm-wz-tog > .tm-wz-grow { flex: 1 1 180px; }
-      .tm-wz-sw { width: 36px; height: 20px; border-radius: 999px; background: var(--tm-border-strong); position: relative; cursor: pointer; flex: none; border: 0; padding: 0; }
-      .tm-wz-sw::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start 0.15s; }
-      .tm-wz-sw.tm-wz-on { background: var(--tm-accent); }
-      .tm-wz-sw.tm-wz-on::after { inset-inline-start: 18px; }
+      /* The switch is a 44x36 button so a finger can hit it; the 36x20 track
+         is drawn by ::before and negative margins keep the row's spacing. */
+      .tm-wz-sw { width: 44px; height: 36px; margin: -8px -4px; border-radius: 999px; background: none; position: relative; cursor: pointer; flex: none; border: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      .tm-wz-sw::before { content: ""; position: absolute; top: 8px; inset-inline-start: 4px; width: 36px; height: 20px; border-radius: 999px; background: var(--tm-border-strong); transition: background 0.15s; }
+      .tm-wz-sw::after { content: ""; position: absolute; top: 10px; inset-inline-start: 6px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: inset-inline-start 0.15s; }
+      .tm-wz-sw.tm-wz-on::before { background: var(--tm-accent); }
+      .tm-wz-sw.tm-wz-on::after { inset-inline-start: 22px; }
       /* Done */
       .tm-wz-finish { text-align: center; padding: 26px 10px 10px; position: relative; }
       .tm-wz-done-ic { width: 92px; height: 92px; border-radius: 50%; margin: 0 auto 16px; display: grid; place-items: center; background: linear-gradient(135deg, #2ecc71, #16a085); color: #fff; box-shadow: 0 10px 30px rgba(46, 204, 113, 0.35); --mdc-icon-size: 48px; position: relative; }
@@ -19417,17 +19420,24 @@ class TaskMatePanel extends HTMLElement {
         font-family: ui-monospace, monospace; font-size: 11.5px;
         color: var(--tm-text-muted); white-space: nowrap;
       }
+      /* A 44x36 button for the finger; ::before draws the 36x20 track and the
+         negative margins keep the row laid out as before. */
       .tm-badge-toggle {
+        width: 44px; height: 36px; margin: -8px -4px; padding: 0; border-radius: 999px;
+        background: none; border: 0; cursor: pointer;
+        position: relative; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+      }
+      .tm-badge-toggle::before {
+        content: ""; position: absolute; top: 8px; inset-inline-start: 4px;
         width: 36px; height: 20px; border-radius: 999px;
-        background: var(--tm-border-strong); border: 0; cursor: pointer;
-        position: relative; transition: background 0.15s; flex-shrink: 0;
+        background: var(--tm-border-strong); transition: background 0.15s;
       }
       .tm-badge-toggle::after {
-        content: ""; position: absolute; top: 2px; inset-inline-start: 2px;
+        content: ""; position: absolute; top: 10px; inset-inline-start: 6px;
         width: 16px; height: 16px; border-radius: 50%;
         background: #fff; transition: transform 0.15s;
       }
-      .tm-badge-toggle-on { background: var(--tm-accent); }
+      .tm-badge-toggle-on::before { background: var(--tm-accent); }
       .tm-badge-toggle-on::after { transform: translateX(16px); }
       [dir="rtl"] .tm-badge-toggle-on::after { transform: translateX(-16px); }
 
@@ -19508,24 +19518,32 @@ class TaskMatePanel extends HTMLElement {
       }
 
       /* Notification toggle switches (CSS-only on native checkbox) */
+      /* A 46x36 checkbox for the finger; ::before draws the 38x22 track and
+         the negative margins keep the row laid out as before. */
       .tm-notif-switch {
         -webkit-appearance: none;
         appearance: none;
-        width: 38px; height: 22px;
-        background: var(--tm-border-strong);
+        width: 46px; height: 36px;
+        background: none;
         border: none; border-radius: 999px;
         cursor: pointer; position: relative;
-        transition: background 0.15s;
         flex-shrink: 0; vertical-align: middle;
-        margin: 0;
+        margin: -7px -4px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .tm-notif-switch::before {
+        content: ""; position: absolute;
+        top: 7px; inset-inline-start: 4px;
+        width: 38px; height: 22px; border-radius: 999px;
+        background: var(--tm-border-strong); transition: background 0.15s;
       }
       .tm-notif-switch::after {
         content: ""; position: absolute;
-        top: 3px; inset-inline-start: 3px;
+        top: 10px; inset-inline-start: 7px;
         width: 16px; height: 16px; border-radius: 50%;
         background: #fff; transition: transform 0.15s;
       }
-      .tm-notif-switch:checked { background: var(--tm-accent); }
+      .tm-notif-switch:checked::before { background: var(--tm-accent); }
       .tm-notif-switch:checked::after { transform: translateX(16px); }
       [dir="rtl"] .tm-notif-switch:checked::after { transform: translateX(-16px); }
       .tm-notif-switch:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -20329,7 +20347,6 @@ class TaskMatePanel extends HTMLElement {
         .tm-shell .tm-notif-toggle { min-height: 36px; }
         .tm-shell .tm-recap-mode button { min-height: 36px; }
         .tm-shell .tm-entity-clear { width: 32px; height: 32px; font-size: 13px; }
-        .tm-badge-toggle::before { content: ""; position: absolute; inset: -8px -4px; }
         .tm-notif-parent-name { min-height: 36px; }
         /* Parents: the name gets its own line, the notify service and remove below. */
         .tm-notif-parent-row { flex-wrap: wrap; row-gap: 4px; }
@@ -20343,8 +20360,6 @@ class TaskMatePanel extends HTMLElement {
         .tm-shell .tm-wz-swatches button { width: 36px; height: 36px; }
         .tm-shell .tm-wz-mstep button { width: 36px; height: 36px; flex: none; }
         .tm-wz-lnk { min-height: 36px; padding-inline: 8px; }
-        /* The switch keeps its size; an invisible margin takes the tap. */
-        .tm-wz-sw::before { content: ""; position: absolute; inset: -8px -4px; }
 
         /* iOS zooms the page into any field under 16px when it's tapped. */
         .tm-shell input:not([type=checkbox]):not([type=radio]):not([type=range]), .tm-shell select, .tm-shell textarea { font-size: 16px; }
