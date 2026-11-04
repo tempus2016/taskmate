@@ -6,9 +6,11 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
 from .chore_undo import undo_window_seconds
+from .const import DOMAIN
 from .models import ChoreCompletion, TimedSession
 
 if TYPE_CHECKING:
@@ -57,6 +59,17 @@ class TimedMixin:
             # not-yours timed chore can't be farmed via a crafted start call.
             if not self._timed_start_allowed(chore, child_id):
                 raise ValueError(f"'{chore.name}' is not available for {child.name} right now")
+            # A prerequisite not done yet (#771): completing the chore is refused
+            # until then, so starting its timer is too — otherwise the session
+            # runs on a row the card hides under dependency_mode: hide.
+            unmet = self.unmet_dependencies(chore, child_id)
+            if unmet:
+                names = ", ".join((self.get_chore(d).name if self.get_chore(d) else d) for d in unmet)
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="timed_start_dependency",
+                    translation_placeholders={"chore": chore.name, "chores": names},
+                )
             if cap_seconds and credited_today >= cap_seconds:
                 raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
             session = TimedSession(

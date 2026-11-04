@@ -1973,6 +1973,9 @@
     }
   },
   "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} ainda não pode ser iniciada — faça primeiro {chores}."
+    },
     "calendar_unknown_event": {
       "message": "Este evento não é uma tarefa do TaskMate no calendário desta criança."
     },

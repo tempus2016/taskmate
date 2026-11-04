@@ -1973,6 +1973,9 @@
     }
   },
   "exceptions": {
+    "timed_start_dependency": {
+      "message": "Nie można jeszcze rozpocząć obowiązku „{chore}” — najpierw zrób: {chores}."
+    },
     "calendar_unknown_event": {
       "message": "To wydarzenie nie jest obowiązkiem TaskMate w kalendarzu tego dziecka."
     },
