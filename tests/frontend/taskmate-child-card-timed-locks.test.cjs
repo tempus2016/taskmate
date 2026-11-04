@@ -185,8 +185,9 @@ const REASON_TEXT = {
   "before its time period (locked preview)": [localize("child.chore_locked_until", { time: "17:00" }), true],
   "past its time window (elapsed, dim)": [localize("child.time_has_passed"), true],
   "not due today (due_days_mode dim)": [localize("child.not_scheduled_for_today"), true],
-  "in its recurrence cooldown": ["every 3 days", true],
-  "in its recurrence cooldown (recurrence_done_mode show)": ["every 3 days", false],
+  // The translated cadence (fix/recurrence-label-i18n), not the raw key.
+  "in its recurrence cooldown": [localize("child.recurrence_every_n_days", { count: 3 }), true],
+  "in its recurrence cooldown (recurrence_done_mode show)": [localize("child.recurrence_every_n_days", { count: 3 }), false],
   "waiting on a prerequisite (dependency_mode dim)": [localize("child.blocked_by_dependency", { chores: "Teeth" }), true],
   "claimed first by a sibling (first-come)": [localize("child.claimed_by_another", { name: "Leo" }), true],
   "already at its weekly target": [localize("child.weekly_target_done"), true],
