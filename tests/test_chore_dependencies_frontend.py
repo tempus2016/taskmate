@@ -102,8 +102,9 @@ class TestCardGatesOnDependencies:
 
     def test_picture_mode_is_gated_too(self):
         start = CARD.index("  _renderPreReaderTile(chore, child, pointsIcon")
-        tile = CARD[start : CARD.index("_renderChoreCard(chore, child, pointsIcon", start)]
-        assert "_isDependencyBlocked" in tile
+        tile = CARD[start : CARD.index("\n  _choreNumberBadge(", start)]
+        # Through the same lock set the classic row uses (#771).
+        assert "this._choreLocks(chore, isDone)" in tile
 
 
 class TestDependencyMode:

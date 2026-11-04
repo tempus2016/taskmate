@@ -256,7 +256,9 @@ While a shared limit still has slots left, every child in the pool sees the chor
 
 Set it in the card editor under **First-Come Chores — When Claimed**, or in YAML — see [Dashboard Cards](Dashboard-Cards.md#child-card).
 
-> **Not covered:** timed-task cards and pre-reader tiles don't check this lock, so a claimed first-come chore stays live and tappable in those two views. A tap there is still rejected by the backend as a race loser.
+Pre-reader tiles honour it too: a claimed chore is a locked tile that does nothing when tapped.
+
+> **Not covered:** timed-task cards don't check this lock, so a claimed first-come chore stays live and startable there. A tap is still rejected by the backend as a race loser.
 
 > The badge/short label shown in the panel is "First come"; the full mode description reads *"First come — first child to finish wins; it hides for the rest."*
 

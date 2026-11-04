@@ -48,13 +48,14 @@ class TestFieldsAreActuallyAssigned:
         assert "_isRecurring =" in _filter_source(), "the card reads chore._isRecurring but never assigns it"
 
     def test_lock_uses_a_dedicated_field(self):
-        """Deliberately NOT chore._isAvailableForChild. That field is also read
-        by the picture-mode tile, where a matrix-unavailable chore would become
-        an undisablable tile — including losing undo. Reviving it globally is a
-        separate question from this fix."""
+        """Deliberately NOT a raw availability flag: _isRecurrenceLocked lifts
+        once the chore is ticked today, so the picture-mode tile keeps its
+        undo. The tile used to read chore._isAvailableForChild, which nothing
+        ever set, so a chore in its cooldown stayed tappable there (#771). It
+        now takes the same locks as the classic row, and the dead flag is gone."""
         src = _filter_source()
         assert "_isRecurrenceLocked =" in src
-        assert "_isAvailableForChild =" not in src
+        assert "_isAvailableForChild" not in CARD
 
     def test_availability_comes_from_the_backend_matrix(self):
         """Not recomputed client-side: last_completed isn't exposed and the

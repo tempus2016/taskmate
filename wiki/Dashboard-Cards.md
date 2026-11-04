@@ -229,7 +229,7 @@ header_color: "#9b59b6"       # leave unset to use the child's own colour
 | `dim` | The row stays, greyed out and not tappable, labelled with who claimed it |
 | `show` | The row stays at full opacity, still not tappable, labelled with who claimed it |
 
-A pool-wide dismissal from the admin panel has no specific winner, so every child sees *"Already claimed today"* instead of a name. Honoured by the standard chore row and all six [design styles](Card-Design-Styles.md) — but **not** by timed-task cards or pre-reader tiles, which stay live and tappable regardless (the same gap applies to `recurrence_done_mode`).
+A pool-wide dismissal from the admin panel has no specific winner, so every child sees *"Already claimed today"* instead of a name. Honoured by the standard chore row, all six [design styles](Card-Design-Styles.md) and [pre-reader tiles](Pre-Reader-Mode.md) — but **not** by timed-task cards, which stay live and tappable regardless (the same gap applies to `recurrence_done_mode`).
 
 ---
 
