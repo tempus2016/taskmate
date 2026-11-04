@@ -1973,6 +1973,9 @@
     }
   },
   "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} kan nog niet gestart worden — doe eerst {chores}."
+    },
     "calendar_unknown_event": {
       "message": "Dit is geen TaskMate-taak op de kalender van dit kind."
     },

@@ -2284,6 +2284,31 @@ class ChoresMixin:
         if target_children and target_children.issubset(set(chore.disabled_for)):
             chore.enabled = False
 
+    def unmet_dependencies(self, chore, child_id: str) -> list[str]:
+        """Ids of the chores ``chore`` depends on that this child hasn't done today.
+
+        A prerequisite counts once this same child has an approved, non-bonus
+        completion of it today (FEAT-1). Shared by availability and the timed
+        start, so a timed chore can't be started past an unmet prerequisite.
+        """
+        depends_on = getattr(chore, "depends_on", []) or []
+        if not depends_on:
+            return []
+        dep_today = dt_util.as_local(dt_util.now()).date()
+        completions = self._cached_completions()
+        return [
+            dep_id
+            for dep_id in depends_on
+            if not any(
+                c.chore_id == dep_id
+                and c.child_id == child_id
+                and c.approved
+                and not getattr(c, "bonus_subtask_id", "")
+                and dt_util.as_local(c.completed_at).date() == dep_today
+                for c in completions
+            )
+        ]
+
     def is_chore_available_for_child(self, chore, child_id: str) -> bool:
         """Check if a recurring chore is available for a child to complete.
 
@@ -2358,21 +2383,8 @@ class ChoresMixin:
 
         # Chore dependencies (FEAT-1): this chore unlocks only once every chore
         # it depends on has an approved completion today by this same child.
-        depends_on = getattr(chore, "depends_on", []) or []
-        if depends_on:
-            dep_today = dt_util.as_local(dt_util.now()).date()
-            completions = self._cached_completions()
-            for dep_id in depends_on:
-                satisfied = any(
-                    c.chore_id == dep_id
-                    and c.child_id == child_id
-                    and c.approved
-                    and not getattr(c, "bonus_subtask_id", "")
-                    and dt_util.as_local(c.completed_at).date() == dep_today
-                    for c in completions
-                )
-                if not satisfied:
-                    return False
+        if self.unmet_dependencies(chore, child_id):
+            return False
 
         # Calendar moves/removals (#977): an occurrence removed from today, or
         # moved away from it, takes the chore off today's list; one moved onto
