@@ -1868,7 +1868,7 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-row-meta">
             <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${this._pointsFor(chore, child.id)}</span>
             ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
-            ${needsCheck ? html`<span class="km-tag">${this._t("kiosk.needs_check")}</span>` : ""}
+            ${needsCheck ? html`<span class="km-tag"><ha-icon icon="mdi:account-check-outline"></ha-icon>${this._t("kiosk.needs_check")}</span>` : ""}
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
                                       aria-label="${this._t("child.undo_named", { name: chore.name })}"
                                       @click=${() => this._undo(undoable)}>
@@ -2282,8 +2282,9 @@ class TaskMateKioskCard extends LitElement {
       .km-grow { flex: 1; min-width: 0; }
       .km-head-name { font-size: 1.8rem; font-weight: 800; line-height: 1.1; font-family: var(--tmd-font-display, inherit); }
       .km-level { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-      .km-level-badge { font-size: 0.8rem; font-weight: 800; background: rgba(255, 255, 255, 0.25); padding: 2px 10px; border-radius: 99px; }
-      .km-level-track { width: 120px; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
+      /* The badge never wraps ("Lvl" over "29"); the track gives way instead. */
+      .km-level-badge { font-size: 0.8rem; font-weight: 800; background: rgba(255, 255, 255, 0.25); padding: 2px 10px; border-radius: 99px; white-space: nowrap; }
+      .km-level-track { flex: 0 1 120px; min-width: 24px; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
       .km-level-track i { display: block; height: 100%; background: #fff; }
       .km-pts-pill {
         display: flex; align-items: center; gap: 6px;
@@ -2313,6 +2314,10 @@ class TaskMateKioskCard extends LitElement {
       }
       /* Scrolls inside the card once its height is fixed (full screen). */
       .km-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; overflow-y: auto; }
+      /* overflow-y: auto clips sideways too, which cut the accessible style's
+         2px outer ring off the rows' edges. The padding keeps the ring inside
+         the clip; the negative margin keeps the rows where they were. */
+      .km-list { padding: 2px 4px; margin: -2px -4px; }
       .km-list h3, .km-side h3 {
         margin: 0 0 2px; font-size: 1.2rem; font-weight: 700; color: var(--kc);
         display: flex; align-items: center; gap: 8px; font-family: var(--tmd-font-display, inherit);
@@ -2345,10 +2350,15 @@ class TaskMateKioskCard extends LitElement {
       }
       .km-row-icon ha-icon { --mdc-icon-size: 28px; }
       .km-row-icon img { width: 100%; height: 100%; object-fit: cover; }
-      .km-row-body { flex: 1; min-width: 0; }
+      /* The name column never drops below 120px beside the Done button or a
+         note; the note gives way first (see .km-done.is-wait below). */
+      .km-row-body { flex: 1 0 120px; min-width: 0; }
+      /* A long name wraps onto up to three lines rather than being cut to a
+         few letters ("Pack school …") beside the button. */
       .km-row-name {
         font-size: 1.3rem; font-weight: 700; line-height: 1.2;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; white-space: normal; overflow-wrap: break-word;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
         font-family: var(--tmd-font-display, inherit);
       }
       .km-row-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
@@ -2401,9 +2411,15 @@ class TaskMateKioskCard extends LitElement {
         background: transparent; color: var(--tmd-good, #27ae60);
         border: 3px solid var(--tmd-good, #27ae60); cursor: default;
       }
+      /* A note ("Do this one on your phone", "Waiting for a grown-up") is
+         as wide as its text, up to 300px, so it stays on one line in every
+         style when the row has room; on a narrow row it narrows to 132px, its
+         text wrapping, so the chore name beside it keeps room, and it grows
+         taller rather than spill. */
       .km-done.is-wait, .km-done.is-elsewhere {
         background: transparent; cursor: default;
-        font-size: 0.9rem; line-height: 1.15; text-align: start; padding: 0 12px; min-width: 180px; max-width: 220px;
+        font-size: 0.9rem; line-height: 1.15; text-align: start; padding: 4px 12px;
+        flex: 0 1 auto; min-width: 132px; max-width: 300px; height: auto; min-height: 56px;
         color: var(--tmd-text, var(--primary-text-color));
       }
       .km-done.is-wait { border: 3px dashed var(--tmd-warn, #f39c12); }
@@ -2420,7 +2436,8 @@ class TaskMateKioskCard extends LitElement {
       }
       .km-row.km-bounty.locked { opacity: 0.62; }
       .km-row.km-bounty .km-done.is-done {
-        font-size: 0.9rem; line-height: 1.15; text-align: start; padding: 0 12px; min-width: 180px; max-width: 220px;
+        font-size: 0.9rem; line-height: 1.15; text-align: start; padding: 4px 12px;
+        flex: 0 1 auto; min-width: 132px; max-width: 300px; height: auto; min-height: 56px;
       }
       .km-row.km-bounty .km-row-icon {
         background: color-mix(in srgb, var(--tmd-warn, #e67e22) 18%, transparent); color: var(--tmd-warn, #e67e22);
@@ -2563,8 +2580,15 @@ class TaskMateKioskCard extends LitElement {
       .km-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--tmd-dim, var(--secondary-text-color)); }
       .km-empty ha-icon { --mdc-icon-size: 56px; opacity: 0.5; }
 
-      @container km (max-width: 760px) {
+      /* Two columns only once the chore list itself gets ~460px beside the
+         320px side panel (460 + 20 gap + 320 + 44 padding = 844px). On a
+         full-width 768-820px kiosk the list was ~380px, which left chore
+         names a few letters wide and wrapped "A grown-up will check" onto
+         three lines; one column gives every row the whole card instead. */
+      @container km (max-width: 860px) {
         .km-body { grid-template-columns: 1fr; }
+      }
+      @container km (max-width: 760px) {
         .km-pin { grid-template-columns: 1fr; gap: 20px; }
         .km-pad { grid-template-columns: repeat(3, 76px); gap: 12px; }
         .km-key { width: 76px; height: 76px; font-size: 1.8rem; }
@@ -2574,6 +2598,42 @@ class TaskMateKioskCard extends LitElement {
         .km-clock { display: none; }
         .km-head { flex-wrap: wrap; }
         .km-switch span:first-child { display: none; }
+      }
+
+      /* Phones (#771 sweep). Side by side, the 150px Done button left a chore
+         name a few letters wide and squeezed the approval note onto four
+         lines. Below the name, the button gets the whole row and the name
+         gets room to wrap. */
+      @container km (max-width: 460px) {
+        .km-row {
+          display: grid; grid-template-columns: auto minmax(0, 1fr);
+          column-gap: 12px; row-gap: 10px; padding-inline: 12px;
+        }
+        .km-row-icon { width: 44px; height: 44px; min-width: 44px; }
+        .km-row-icon ha-icon { --mdc-icon-size: 24px; }
+        .km-row-name {
+          font-size: 1.15rem; white-space: normal; overflow-wrap: break-word;
+          display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+        }
+        .km-row-desc { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .km-row > .km-done,
+        .km-row.km-bounty > .km-done.is-done {
+          grid-column: 1 / -1; width: 100%; min-width: 0; max-width: none; height: 52px;
+        }
+        .km-row > .km-done.is-wait,
+        .km-row > .km-done.is-elsewhere,
+        .km-row.km-bounty > .km-done.is-done { height: auto; min-height: 48px; padding-block: 6px; justify-content: center; }
+        /* Name, level and points stacked beside the face; the timer stays put. */
+        .km-head {
+          display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+          column-gap: 12px; row-gap: 6px; padding: 14px 16px;
+        }
+        .km-head > :first-child { grid-row: 1 / span 2; }
+        .km-head > .km-grow { grid-column: 2; }
+        .km-head > .km-pts-pill { grid-column: 2; grid-row: 2; justify-self: start; padding: 4px 12px; font-size: 1.15rem; }
+        .km-head > .km-switch { grid-column: 3; grid-row: 1 / span 2; }
+        .km-head-name { font-size: 1.5rem; overflow-wrap: break-word; }
+        .km-body { padding: 12px 12px 16px; }
       }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles

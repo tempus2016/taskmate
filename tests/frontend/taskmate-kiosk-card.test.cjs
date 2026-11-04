@@ -893,3 +893,71 @@ for (const layout of ["rows", "pills"]) {
     assert.deepEqual([done, total], [1, 2]);
   }));
 }
+
+// Found by the v7.7.0 phone sweep: at 360px the Done button sat beside the
+// name, leaving it "ZZ Q…" and the approval note four lines tall.
+test("on a phone, Done moves under the chore name and the name wraps", async () => {
+  const styles = render(KioskCard.styles).markup;
+  const at = styles.indexOf("@container km (max-width: 460px)");
+  assert.ok(at >= 0, "a phone-width block exists");
+  const phone = styles.slice(at);
+  const block = phone.slice(0, phone.indexOf("\n      }\n"));
+  assert.match(block, /\.km-row-name \{[^}]*white-space: normal/);
+  assert.match(block, /-webkit-line-clamp: 3/);
+  assert.match(block, /\.km-row > \.km-done,[^{]*\{[^}]*grid-column: 1 \/ -1/);
+  assert.match(block, /\.km-head > \.km-pts-pill \{[^}]*grid-row: 2/);
+
+  const card = await childView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });
+  assert.match(view(card).markup, /<span class="km-tag"><ha-icon icon="mdi:account-check-outline">/);
+});
+
+// The list scrolls (overflow-y: auto), which clips sideways too: the
+// accessible style's 2px outer ring was cut off every row's left and right.
+test("the chore list leaves room for a row's outer ring", () => {
+  const styles = render(KioskCard.styles).markup;
+  assert.match(styles, /\.km-list \{ padding: 2px 4px; margin: -2px -4px; \}/);
+  const design = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-design.js"), "utf8");
+  assert.match(design, /--tmd-shadow:0 0 0 2px/, "the accessible ring this protects still exists");
+});
+
+// At 768 the card is ~490px wide and "Lvl 29" broke onto two lines in the
+// header: the badge must never wrap, at any width; the track gives way.
+test("the header level badge stays on one line and the track shrinks instead", () => {
+  const styles = render(KioskCard.styles).markup;
+  const base = styles.slice(0, styles.indexOf("@container km (max-width: 760px)"));
+  assert.match(base, /\.km-level-badge \{[^}]*white-space: nowrap/);
+  assert.match(base, /\.km-level-track \{[^}]*flex: 0 1 120px; min-width: 24px/);
+});
+
+// At 768 the kiosk keeps the side-by-side row, and long names were cut to a
+// few letters ("Pack school …") beside Done or a "Do this one on your phone"
+// note. They wrap onto up to three lines now, and the note narrows first.
+test("beside the Done button a chore name wraps instead of being cut short", () => {
+  const styles = render(KioskCard.styles).markup;
+  const base = styles.slice(0, styles.indexOf("@container km (max-width: 760px)"));
+  assert.match(base, /\.km-row-name \{[^}]*white-space: normal;[^}]*-webkit-line-clamp: 3/);
+  assert.doesNotMatch(base.match(/\.km-row-name \{[^}]*\}/)[0], /nowrap/);
+  assert.match(base, /\.km-row-body \{ flex: 1 0 120px; min-width: 0; \}/);
+  assert.match(base, /\.km-done\.is-wait, \.km-done\.is-elsewhere \{[^}]*flex: 0 1 auto; min-width: 132px; max-width: 300px;[^}]*height: auto/);
+  // The phone layout still puts the button under the name.
+  const phone = styles.slice(styles.indexOf("@container km (max-width: 460px)"));
+  assert.match(phone, /\.km-row \{[^}]*display: grid/);
+  assert.match(phone, /min-width: 0; max-width: none; height: 52px/);
+});
+
+// A full-width kiosk at 768-820px kept two columns (the card was just over
+// 760px), so the chore list was ~380px and names were cut to "ZZ 77…".
+// The list only sits beside the side panel once it can be ~460px wide.
+test("the kiosk stays one column until the chore list can be ~460px wide", () => {
+  const styles = render(KioskCard.styles).markup;
+  assert.match(styles, /\.km-body \{\s*flex: 1; display: grid; grid-template-columns: 1fr 320px; gap: 20px;\s*padding: 16px 22px 22px;/);
+  const at = styles.indexOf("@container km (max-width: 860px)");
+  assert.ok(at >= 0, "a one-column block at 860px exists");
+  assert.match(styles.slice(at, styles.indexOf("}", at) + 1), /\.km-body \{ grid-template-columns: 1fr; \}/);
+  // 460px list + 20px gap + 320px side panel + 44px padding fits only above it.
+  assert.ok(460 + 20 + 320 + 22 * 2 <= 860);
+  // The rest of the tablet tweaks still start at 760px.
+  const tablet = styles.slice(styles.indexOf("@container km (max-width: 760px)"));
+  assert.match(tablet.slice(0, tablet.indexOf("\n      }\n")), /\.km-clock \{ display: none; \}/);
+});
