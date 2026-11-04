@@ -142,6 +142,74 @@ class TaskMateParentDashboardCard extends LitElement {
   updated() {
     const urls = this._collectPhotoUrls();
     if (urls.length) this._ensureSignedPhotos(urls);
+    this._balanceTabs();
+    this._syncTabFade();
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    // The card's width decides whether the designed tab bar has to scroll.
+    if (typeof ResizeObserver === "function" && !this._tabResize) {
+      this._tabResize = new ResizeObserver(() => { this._balanceTabs(); this._syncTabFade(); });
+    }
+    if (this._tabResize) this._tabResize.observe(this);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._tabResize) this._tabResize.disconnect();
+  }
+
+  /**
+   * The classic tab row and the pill rows (playroom, accessible) wrap when
+   * the tabs don't fit on one line. Left to flow, that leaves one tab alone
+   * on the second row (German "Punkte", English "Points" at 360px). Once a
+   * bar wraps, lay its tabs out as an even grid instead: two rows, half the
+   * tabs in each (2 × 2 for the usual four).
+   */
+  _balanceTabs() {
+    const bar = this.shadowRoot && this.shadowRoot.querySelector(".tab-nav, .pd-tabs");
+    if (!bar) return;
+    const tabs = Array.from(bar.children);
+    // Measure the natural flow first: drop the grid, see whether it wraps.
+    bar.classList.remove("pd-even");
+    if (tabs.length < 3) return;
+    const rows = new Set(tabs.map(t => Math.round(t.getBoundingClientRect().top))).size;
+    if (rows < 2) return;
+    bar.style.setProperty("--pd-cols", String(Math.ceil(tabs.length / 2)));
+    bar.classList.add("pd-even");
+  }
+
+  /**
+   * The underlined (graphite / clean pro) and segmented (console) tab bars
+   * keep one row, so on a narrow card or with long labels (de, pl) they
+   * scroll sideways. Fade whichever edge has more tabs past it, so the bar
+   * reads as scrollable rather than as a tab cut off at the card's edge.
+   * The fade classes are physical (left/right), so RTL is handled too.
+   * With `reveal`, the active tab is first scrolled fully into view.
+   */
+  _syncTabFade(reveal = false) {
+    const bar = this.shadowRoot && this.shadowRoot.querySelector(".pd-tabs-cp, .pd-tabs-cn");
+    if (!bar) return;
+    if (reveal) {
+      const box = bar.getBoundingClientRect();
+      const active = bar.querySelector(".active");
+      if (active) {
+        const r = active.getBoundingClientRect();
+        if (r.left < box.left) bar.scrollLeft -= box.left - r.left + 28;
+        else if (r.right > box.right) bar.scrollLeft += r.right - box.right + 28;
+      }
+    }
+    // scrollLeft runs 0 → max in LTR and 0 → -max in RTL (older WebKit:
+    // max → 0); the distance from the start edge is the same either way.
+    const max = bar.scrollWidth - bar.clientWidth;
+    const rtl = typeof getComputedStyle === "function" && getComputedStyle(bar).direction === "rtl";
+    let fromStart = Math.abs(bar.scrollLeft);
+    if (rtl && bar.scrollLeft > 0) fromStart = max - bar.scrollLeft;
+    const startHidden = max > 1 && fromStart > 1;
+    const endHidden = max > 1 && fromStart < max - 1;
+    bar.classList.toggle("fade-l", rtl ? endHidden : startHidden);
+    bar.classList.toggle("fade-r", rtl ? startHidden : endHidden);
   }
 
   static get styles() {
@@ -516,18 +584,61 @@ class TaskMateParentDashboardCard extends LitElement {
       /* Console tab bar segmented */
       .pd-tabs-cn { display: flex; gap: 0; background: #0b1424; border: 1px solid var(--tmd-border);
         border-radius: 8px; padding: 3px; margin-bottom: 13px; }
-      .pd-tab-cn { flex: 1; text-align: center; padding: 7px 4px; border-radius: 6px; border: 0;
+      .pd-tab-cn { flex: 1 0 auto; white-space: nowrap; text-align: center; padding: 7px 4px; border-radius: 6px; border: 0;
         cursor: pointer; background: transparent; color: var(--tmd-dim);
         font-family: var(--tmd-font-mono); font-size: 11px; font-weight: 700; letter-spacing: .04em; }
       .pd-tab-cn.active { background: var(--tmd-surface-2); color: var(--tmd-accent); font-weight: 800; }
       /* Clean Pro tab bar underline */
-      .pd-tabs-cp { display: flex; gap: 0; border-bottom: 1px solid var(--tmd-border); margin: -2px 0 14px; }
-      .pd-tab-cp { padding: 8px 12px; border: 0; background: transparent; cursor: pointer;
+      /* The rule under the tabs is an inset shadow, not a border, so the
+         active tab's underline can sit on it inside a scrolling bar. */
+      .pd-tabs-cp { display: flex; gap: 0; box-shadow: inset 0 -1px 0 var(--tmd-border); margin: -2px 0 14px; }
+      .pd-tab-cp { flex: none; white-space: nowrap; padding: 8px 12px; border: 0; background: transparent; cursor: pointer;
         font-family: var(--tmd-font-body); font-weight: 700; font-size: 13.5px; color: var(--tmd-dim);
-        border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 6px; }
+        border-bottom: 2px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
       .pd-tab-cp.active { color: var(--tmd-accent); border-bottom-color: var(--tmd-accent); }
       .pd-tab-cp .tab-cnt { padding: 1px 7px; border-radius: 999px; background: var(--tmd-bad);
         color: #fff; font-size: 11px; font-weight: 800; }
+      /* Both one-row bars scroll sideways when the tabs don't fit (narrow
+         card, long labels); _syncTabFade() fades the edge with more past it. */
+      .pd-tabs-cp, .pd-tabs-cn {
+        overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+        scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      }
+      .pd-tabs-cp::-webkit-scrollbar, .pd-tabs-cn::-webkit-scrollbar { display: none; }
+      .pd-tabs-cp.fade-r, .pd-tabs-cn.fade-r {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+      }
+      .pd-tabs-cp.fade-l, .pd-tabs-cn.fade-l {
+        -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+        mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+      }
+      .pd-tabs-cp.fade-l.fade-r, .pd-tabs-cn.fade-l.fade-r {
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+        mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+      }
+      /* Set by _balanceTabs() once a wrapping bar would leave a tab alone on
+         its own row: an even grid, two rows. A long label wraps inside its
+         cell rather than overflow it. */
+      .tab-nav.pd-even, .pd-tabs.pd-even {
+        display: grid; grid-template-columns: repeat(var(--pd-cols, 2), minmax(0, 1fr));
+      }
+      .tab-nav.pd-even .tab-btn, .pd-tabs.pd-even .pd-tab {
+        min-width: 0; white-space: normal; text-align: center; justify-content: center;
+        /* A long single word (German "Genehmigungen") must still fit its
+           cell: the count badge drops under the label, padding tightens, and
+           as a last resort the word hyphenates (or breaks) inside the cell. */
+        flex-wrap: wrap; row-gap: 3px; padding-inline: 8px;
+        -webkit-hyphens: auto; hyphens: auto; overflow-wrap: anywhere;
+      }
+      @media (max-width: 400px) {
+        .pd-tabs.pd-even .pd-tab { font-size: 12px; }
+      }
+      /* On a phone, tighter underlined tabs let the usual four fit without
+         scrolling; longer labels or a fifth tab still scroll. */
+      @media (max-width: 480px) {
+        .pd-tab-cp { padding-inline: 8px; }
+      }
 
       /* Overview rows */
       .pd-ov-pl { background: var(--tmd-surface-2); border-radius: 18px; padding: 12px; }
@@ -660,7 +771,7 @@ class TaskMateParentDashboardCard extends LitElement {
           ` : ''}
         </div>
 
-        <div class="tab-nav">
+        <div class="tab-nav" lang="${(this.hass && this.hass.language) || ""}">
           ${tabs.map(tab => html`
             <button
               class="tab-btn ${this._activeSection === tab.id ? 'active' : ''}"
@@ -820,11 +931,15 @@ class TaskMateParentDashboardCard extends LitElement {
       </div>`;
   }
 
-  _switchTab(id) { this._activeSection = id; this.requestUpdate(); }
+  _switchTab(id) {
+    this._activeSection = id;
+    this.requestUpdate();
+    if (this.updateComplete) this.updateComplete.then(() => this._syncTabFade(true));
+  }
 
   _dTabsPlayroom(tabs) {
     return html`
-      <div class="pd-tabs">
+      <div class="pd-tabs" lang="${(this.hass && this.hass.language) || ""}">
         ${tabs.map(t => html`
           <button class="pd-tab ${this._activeSection === t.id ? 'active' : ''}"
             @click="${() => this._switchTab(t.id)}">
@@ -835,7 +950,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
   _dTabsConsole(tabs) {
     return html`
-      <div class="pd-tabs-cn">
+      <div class="pd-tabs-cn" @scroll="${() => this._syncTabFade()}">
         ${tabs.map(t => html`
           <button class="pd-tab-cn ${this._activeSection === t.id ? 'active' : ''}"
             @click="${() => this._switchTab(t.id)}">
@@ -846,7 +961,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
   _dTabsCleanpro(tabs) {
     return html`
-      <div class="pd-tabs-cp">
+      <div class="pd-tabs-cp" @scroll="${() => this._syncTabFade()}">
         ${tabs.map(t => html`
           <button class="pd-tab-cp ${this._activeSection === t.id ? 'active' : ''}"
             @click="${() => this._switchTab(t.id)}">
