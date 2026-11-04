@@ -101,8 +101,14 @@ class TimedMixin:
         await self.storage.async_save()
         await self.async_refresh()
 
-    async def async_stop_timed_task(self, chore_id: str, child_id: str) -> None:
-        """Stop a timed task session and create a completion."""
+    async def async_stop_timed_task(self, chore_id: str, child_id: str, *, refresh: bool = True) -> None:
+        """Stop a timed task session and create a completion.
+
+        ``refresh=False`` is for callers already inside the coordinator's
+        refresh (the cap auto-stop in _async_update_data): refreshing from
+        there re-enters the refresh debouncer, which raises (#771), and the
+        running update picks the change up anyway.
+        """
         session = self.storage.get_active_timed_session(chore_id, child_id)
         if not session:
             raise ValueError("No active timer to stop")
@@ -138,6 +144,12 @@ class TimedMixin:
 
         # A grown-up's own session never waits for approval (#1061).
         needs_approval = chore.requires_approval and not child.is_adult
+        # A chore the child can't do right now (a prerequisite added after the
+        # timer started, a cooldown, a rota or vacation change…) isn't paid out
+        # automatically: completing it would be refused, so the time goes to a
+        # parent to approve instead of being lost or paid unchecked (#771).
+        if not self._is_chore_completable_by_child(chore, child_id):
+            needs_approval = True
         completion = ChoreCompletion(
             chore_id=chore_id,
             child_id=child_id,
@@ -176,7 +188,8 @@ class TimedMixin:
                 completion_id=completion.id,
             )
 
-        await self.async_refresh()
+        if refresh:
+            await self.async_refresh()
 
     def _timed_start_allowed(self, chore, child_id: str) -> bool:
         """Assignment/enabled/schedule eligibility for starting a timed task.
@@ -247,7 +260,7 @@ class TimedMixin:
                 continue
         return total
 
-    async def _async_stop_stale_timed_sessions(self) -> None:
+    async def _async_stop_stale_timed_sessions(self, refresh: bool = True) -> None:
         """Auto-stop any timed sessions from a previous day (midnight cleanup)."""
         today = dt_util.as_local(dt_util.now()).date().isoformat()
         sessions = self.storage.get_timed_sessions()
@@ -295,7 +308,8 @@ class TimedMixin:
 
         if stale:
             await self.storage.async_save()
-            await self.async_refresh()
+            if refresh:
+                await self.async_refresh()
 
     async def _async_auto_stop_capped_sessions(self) -> None:
         """Check running sessions against daily cap and auto-stop if exceeded."""
@@ -308,4 +322,5 @@ class TimedMixin:
                 continue
             elapsed = self._calc_session_seconds(session)
             if elapsed >= chore.timed_max_daily_minutes * 60:
-                await self.async_stop_timed_task(session.chore_id, session.child_id)
+                # Called from _async_update_data: no nested refresh (#771).
+                await self.async_stop_timed_task(session.chore_id, session.child_id, refresh=False)

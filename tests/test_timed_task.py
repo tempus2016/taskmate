@@ -41,6 +41,9 @@ def _coord(chore=None, child=None, active=None, dated=None):
     storage.async_save = AsyncMock()
     coord.storage = storage
     coord.async_refresh = AsyncMock()
+    # The stop asks whether the child can do the chore now (#771); these
+    # stand-ins have no availability data, and the chore is theirs to do.
+    coord._is_chore_completable_by_child = lambda _chore, _child_id: True
     return coord
 
 

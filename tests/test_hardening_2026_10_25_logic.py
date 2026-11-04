@@ -325,6 +325,7 @@ class TestTimedStopPaysOnce:
         storage.async_save = AsyncMock()
         coord.storage = storage
         coord.async_refresh = AsyncMock()
+        coord._is_chore_completable_by_child = lambda _chore, _child_id: True  # #771 availability gate
         coord._async_notify_pending_approval = AsyncMock()
 
         async def slow_award(child, pts, **_kw):
