@@ -32,6 +32,12 @@ def _filter_source() -> str:
     return CARD[start : CARD.index("\n  _getTimeCategoryIcon(", start)]
 
 
+def _locks_source() -> str:
+    """The lock rules every render path shares (#771)."""
+    start = CARD.index("  _choreLocks(chore, done) {")
+    return CARD[start : CARD.index("\n  }\n", start)]
+
+
 def _row_source() -> str:
     start = CARD.index("  _renderChoreCard(chore, child, pointsIcon")
     return CARD[start : CARD.index("\n  _renderTimedChoreCard(", start)]
@@ -83,10 +89,11 @@ class TestDimMode:
     def test_dim_still_allows_undo(self):
         """recurrenceLocked short-circuits the click handler before the undo
         branch, so it must not fire for a chore completed today."""
-        row = _row_source()
-        idx = row.index("const recurrenceLocked =")
-        stmt = row[idx : row.index(";", idx)]
-        assert "isCompletedForToday" in stmt, f"a chore completed today must stay undoable, got: {stmt!r}"
+        locks = _locks_source()
+        idx = locks.index("const recurrenceLocked =")
+        stmt = locks[idx : locks.index(";", idx)]
+        assert "!done" in stmt, f"a chore completed today must stay undoable, got: {stmt!r}"
+        assert "this._choreLocks(chore, isCompletedForToday)" in _row_source()
 
     def test_designed_styles_dim_too(self):
         """The designed row builder computes its own `dimmed` flag."""
@@ -95,7 +102,10 @@ class TestDimMode:
         assert "_isRecurrenceLocked" in rows, "designed styles never dim an unavailable recurring chore"
 
     def test_designed_done_button_is_disabled_when_locked(self):
-        assert "r.loading || r.blocked || r.recLocked" in CARD
+        """The designed button reads the shared lock set, which includes the
+        recurrence window (#771)."""
+        assert "?disabled=${r.loading || r.locked}" in CARD
+        assert "const { locked } = this._choreLocks(chore, done);" in CARD
 
 
 class TestLabelComesAlive:
@@ -125,7 +135,12 @@ class TestShowModeIsNotTappable:
         # The dim-styling flag stays mode-gated...
         assert "'dim'" in stmt
         # ...but a separate flag must gate the click, without the mode.
-        assert "const recurrenceLocked" in row, "show still shares the dim flag, so the row stays clickable"
+        assert "recurrenceLocked" in row and "this._choreLocks(" in row, (
+            "show still shares the dim flag, so the row stays clickable"
+        )
+        locks = _locks_source()
+        idx = locks.index("const recurrenceLocked =")
+        assert "recurrence_done_mode" not in locks[idx : locks.index(";", idx)]
 
     def test_click_handler_refuses_under_show_too(self):
         row = _row_source()
@@ -139,7 +154,8 @@ class TestShowModeIsNotTappable:
 
     def test_designed_styles_already_agreed(self):
         """They gate the button on the lock itself, not on the mode."""
-        assert "r.loading || r.blocked || r.recLocked" in CARD
+        assert "?disabled=${r.loading || r.locked}" in CARD
+        assert "_isRecurrenceLocked" in _locks_source()
 
     def test_label_no_longer_promises_normal_behaviour(self):
         import json

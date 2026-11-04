@@ -3070,8 +3070,13 @@ class TaskMateChildCard extends LitElement {
       const weeklyDone = !!chore._weeklyTargetMet && !done;
       // Set times: not open yet, or closed undone — the tap is refused.
       const stLocked = !!chore._setTimeLocked && !done;
+      // Every reason the classic row refuses a tap — including a chore before
+      // its period, past its window or not due today, which used to be only
+      // greyed out here while Done still completed it (#771). A done row
+      // keeps its undo chip live, as it always has on the designed styles.
+      const { locked } = this._choreLocks(chore, done);
       const onAct = () => {
-        if (loading || blocked || recLocked || firstComeLocked || weeklyDone || stLocked) return;
+        if (loading || (locked && !done)) return;
         if (done) this._handleUndo(chore, child, completions);
         else this._handleComplete(chore, child);
       };
@@ -3089,7 +3094,7 @@ class TaskMateChildCard extends LitElement {
         stLocked
       );
       return {
-        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked, shared,
+        chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked, locked, shared,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: this._boostPoints(chore, child),
@@ -3336,7 +3341,7 @@ class TaskMateChildCard extends LitElement {
       cls = `${cls || ""} ${r.team.mine ? "tm-team-leave" : ""}`;
     }
     return html`<button class="btn ${cls || ""}"
-      ?disabled=${r.loading || r.blocked || r.recLocked || r.firstComeLocked || r.weeklyDone || r.stLocked}
+      ?disabled=${r.loading || r.locked}
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
   }
 
@@ -4428,6 +4433,51 @@ class TaskMateChildCard extends LitElement {
       </div>`;
   }
 
+  /**
+   * Every reason a chore row refuses a tap right now, as the classic row has
+   * always applied them. The single source for the classic row, the designed
+   * rows (playroom/console/cleanpro/accessible/graphite) and the pre-reader
+   * tiles, so a chore that is locked on one is locked on all of them —
+   * re-deriving the rules per path is how the designed Done button stayed
+   * live before a chore's period, after its window and on a day it isn't due
+   * (#771). `done` is whether the chore is already finished for today: most
+   * locks lift then, so the undo stays reachable. `locked` is the OR of all.
+   */
+  _choreLocks(chore, done) {
+    // Not due today, under due_days_mode "dim" (hide filters it upstream;
+    // "show" leaves the row live on purpose).
+    const notDueToday = !!(chore._hasDueDays && !chore._isDueToday) && this.config.due_days_mode === 'dim';
+    // The tap is refused whenever the chore is locked: async_complete_chore
+    // no-ops a recurring chore inside its window, so a clickable row under
+    // `show` would just swallow the tap (#805). Only the dim STYLING is
+    // mode-gated. Same split dependency_mode uses.
+    const recurrenceLocked = !!chore._isRecurrenceLocked && !done;
+    // First-come chore claimed by a sibling today (first_come_claimed_mode
+    // dim/show — hide is filtered upstream). Never true on the winner's own
+    // row: _isFirstComeLocked is only set for the other pool members.
+    const firstComeLocked = !!chore._isFirstComeLocked && !done;
+    // Weekly quota filled (#883). Dimmed and non-interactive: the backend
+    // would refuse the completion, so a live row would just swallow the tap.
+    const weeklyDone = !!chore._weeklyTargetMet && !done;
+    // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
+    const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
+    const timeElapsed = !!chore._isTimeElapsed && !done && elapsedTimeMode === 'dim';
+    // A later period's chore shown as a preview: not claimable until it opens.
+    const isLockedPreview = !!chore._isLockedPreview && !done;
+    // Under dim/show the blocked chore is still on screen, so the tap has to be
+    // refused here — the backend would reject the completion anyway (#793).
+    const depBlocked = !!chore._isDependencyBlocked && !done;
+    // Set times: a time that hasn't opened or has closed can't be ticked,
+    // whatever the elapsed/preview modes say (the backend refuses it).
+    const setTimeLocked = !!chore._setTimeLocked && !done;
+    const locked = notDueToday || recurrenceLocked || firstComeLocked || weeklyDone
+      || timeElapsed || isLockedPreview || depBlocked || setTimeLocked;
+    return {
+      notDueToday, recurrenceLocked, firstComeLocked, weeklyDone,
+      timeElapsed, isLockedPreview, depBlocked, setTimeLocked, locked,
+    };
+  }
+
   _renderChoreCard(chore, child, pointsIcon, todaysCompletions = [], choreIndex = 0) {
     const isLoading = this._loading[chore.id];
     const isCelebrating = this._celebrating === chore.id;
@@ -4490,31 +4540,17 @@ class TaskMateChildCard extends LitElement {
     const colorClass = `color-${choreIndex % 8}`;
 
     // Click handler for the entire row
-    const notDueToday = chore._hasDueDays && !chore._isDueToday && this.config.due_days_mode === 'dim';
+    // Why the row can't be ticked now — shared with every other render path
+    // (designed rows, pre-reader tiles) so they all refuse the same taps.
+    const {
+      notDueToday, recurrenceLocked, firstComeLocked, weeklyDone,
+      timeElapsed, isLockedPreview, depBlocked, setTimeLocked,
+    } = this._choreLocks(chore, isCompletedForToday);
     const recurrenceDoneMode = this.config.recurrence_done_mode || 'dim';
-    // The tap is refused whenever the chore is locked: async_complete_chore
-    // no-ops a recurring chore inside its window, so a clickable row under
-    // `show` would just swallow the tap (#805). Only the dim STYLING is
-    // mode-gated. Same split dependency_mode uses.
-    const recurrenceLocked = !!chore._isRecurrenceLocked && !isCompletedForToday;
     const notAvailableRecurrence = recurrenceLocked && recurrenceDoneMode === 'dim';
-    // First-come chore claimed by a sibling today (first_come_claimed_mode
-    // dim/show — hide is filtered upstream). Never true on the winner's own
-    // row: _isFirstComeLocked is only set for the other pool members.
     const firstComeClaimedMode = this.config.first_come_claimed_mode || 'hide';
-    const firstComeLocked = !!chore._isFirstComeLocked && !isCompletedForToday;
     const notAvailableFirstCome = firstComeLocked && firstComeClaimedMode === 'dim';
-    // Weekly quota filled (#883). Dimmed and non-interactive: the backend
-    // would refuse the completion, so a live row would just swallow the tap.
-    const weeklyDone = !!chore._weeklyTargetMet && !isCompletedForToday;
-    // Elapsed: only dim incomplete chores — completed ones keep their green "done" style
-    const elapsedTimeMode = this.config.elapsed_time_mode || 'dim';
-    const timeElapsed = chore._isTimeElapsed && !isCompletedForToday && elapsedTimeMode === 'dim';
-    const isLockedPreview = !!chore._isLockedPreview && !isCompletedForToday;
-    // Under dim/show the blocked chore is still on screen, so the tap has to be
-    // refused here — the backend would reject the completion anyway (#793).
-    // Only `dim` greys it out; `show` is meant to look untouched.
-    const depBlocked = !!chore._isDependencyBlocked && !isCompletedForToday;
+    // Only `dim` greys a blocked chore out; `show` is meant to look untouched.
     const depDimmed = depBlocked && (this.config.dependency_mode || 'hide') === 'dim';
     const periodStartHour = isLockedPreview
       ? (this._getPeriodHours(chore.time_category)?.[0] ?? null)
@@ -4524,9 +4560,6 @@ class TaskMateChildCard extends LitElement {
       : isLockedPreview && periodStartHour !== null
       ? this._t('child.chore_locked_until', { time: `${String(Math.floor(periodStartHour)).padStart(2, '0')}:${String(Math.round((periodStartHour % 1) * 60)).padStart(2, '0')}` })
       : '';
-    // Set times: a time that hasn't opened or has closed can't be ticked,
-    // whatever the elapsed/preview modes say (the backend refuses it).
-    const setTimeLocked = !!chore._setTimeLocked && !isCompletedForToday;
     const handleRowClick = () => {
       if (isLoading) return;
       if (setTimeLocked) return;

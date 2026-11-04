@@ -155,6 +155,8 @@ function renderRow({ card, child }, { design = "playroom" } = {}) {
     recLocked: false,
     firstComeLocked: false,
     weeklyDone: !!chore._weeklyTargetMet && !done,
+    // The Done button reads the shared lock set, as _renderDesigned builds it (#771).
+    locked: card._choreLocks(chore, done).locked,
     mandatory: false,
     photo: false,
     openEnded: false,
