@@ -30,6 +30,19 @@ class TaskMateWishlistCardEditor extends LitElement {
     return css`
       :host { display: block; }
       ha-form { display: block; margin-bottom: 16px; }
+      .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+      .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+      .colour-field-body { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .colour-swatch-wrapper { position: relative; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; }
+      .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+      .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+      .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+      .colour-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+      .preset-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; padding: 0; }
+      .preset-swatch:hover { transform: scale(1.15); }
+      .preset-swatch.active { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+      .colour-reset { font-size: 0.78rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-inline-start: auto; }
+      .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
     `;
   }
 

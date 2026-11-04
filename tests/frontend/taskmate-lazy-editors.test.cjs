@@ -16,10 +16,6 @@ const editorFiles = readdirSync(EDITORS).filter((f) => f.endsWith("-editor.js"))
 const cardOf = (editorFile) => editorFile.replace(/-editor\.js$/, ".js");
 const read = (rel) => readFileSync(path.join(WWW, rel), "utf8");
 
-// The Routine card's editor has never been wired to the card (no
-// getConfigElement), so nothing imports it yet.
-const UNWIRED = ["taskmate-routine-card-editor.js"];
-
 // Wrappers whose editor comes from a shared base.
 const SHARED = { "taskmate-incentive-card-editor.js": ["taskmate-bonuses-card.js", "taskmate-penalties-card.js"] };
 
@@ -50,7 +46,7 @@ test("each editor module defines its element once, guarded against a second copy
   }
 });
 
-for (const f of editorFiles.filter((e) => !SHARED[e] && !UNWIRED.includes(e))) {
+for (const f of editorFiles.filter((e) => !SHARED[e])) {
   const card = cardOf(f);
   const tag = f.replace(/\.js$/, "");
   test(`${card}: getConfigElement() loads ${f} with the card's version and the editor strings`, async () => {
@@ -122,4 +118,16 @@ test("constants an editor shares with its card are identical copies", () => {
     }
   }
   assert.ok(compared >= 18, `expected to compare the shared constants, compared ${compared}`);
+});
+
+test("every editor that draws the shared header-colour picker also styles it", () => {
+  // The picker's markup comes from taskmate-design.js but its CSS lives in
+  // each editor's shadow root; without it the swatches render as bare buttons.
+  for (const f of editorFiles) {
+    const src = read(`editors/${f}`);
+    if (!src.includes("colourPicker(")) continue;
+    for (const cls of [".colour-field {", ".colour-swatch-wrapper {", ".preset-swatch {", ".colour-reset {"]) {
+      assert.ok(src.includes(cls), `${f} draws the colour picker but has no ${cls} rule`);
+    }
+  }
 });

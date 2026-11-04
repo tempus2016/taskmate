@@ -65,6 +65,15 @@ class TaskMateRoutineCard extends LitElement {
 
   getCardSize() { return 8; }
 
+  static async getConfigElement() {
+    // The editor ships as its own module so dashboards never parse it.
+    await Promise.all([
+      import(`./editors/taskmate-routine-card-editor.js${new URL(import.meta.url).search}`),
+      window.__taskmate_loadTranslations?.(null, ["editor"]),
+    ]);
+    return document.createElement("taskmate-routine-card-editor");
+  }
+
   static getStubConfig() {
     return { entity: "sensor.taskmate_overview", child_id: "", time_category: "morning" };
   }
