@@ -315,7 +315,7 @@ test("an old cached panel is called out before anyone reports a card bug", () =>
 test("health check findings are pointed out on the bug page", () => {
   const { p } = panel(undefined, { ...INFO, health_codes: ["chore_orphan_assignee"] });
   const html = p._renderHelpTab();
-  assert.ok(html.includes(localize("panel.fb_health_found", { count: 1 })));
+  assert.ok(html.includes(localize("panel.fb_health_found_one", { count: 1 })));
   assert.ok(html.includes('data-act="fb-health"'));
 });
 

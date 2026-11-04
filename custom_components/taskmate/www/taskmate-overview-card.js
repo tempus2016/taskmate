@@ -653,7 +653,7 @@ class TaskMateOverviewCard extends LitElement {
       return html`
         <div class="ov-alert cp">
           <span class="dot"></span>
-          <div class="mid"><span class="ttl">${this._t("overview.designed.approvals_waiting", { count: pending })}</span></div>
+          <div class="mid"><span class="ttl">${this._t(pending === 1 ? "overview.designed.approvals_waiting_one" : "overview.designed.approvals_waiting", { count: pending })}</span></div>
           <button class="btn sm" style="background:var(--tmd-bad)">${this._t("overview.designed.review")}</button>
         </div>`;
     }
@@ -661,7 +661,7 @@ class TaskMateOverviewCard extends LitElement {
       <div class="ov-alert">
         <span class="emoji">🔔</span>
         <div class="mid">
-          <div class="ttl">${this._t("overview.designed.waiting_for_you", { count: pending })}</div>
+          <div class="ttl">${this._t(pending === 1 ? "overview.designed.waiting_for_you_one" : "overview.designed.waiting_for_you", { count: pending })}</div>
           <div class="sub muted">${this._t("overview.designed.tap_to_check")}</div>
         </div>
         <span class="cnt">${pending}</span>

@@ -402,7 +402,7 @@ class TaskMateStreakCard extends LitElement {
     const n = child.streak_freezes;
     if (typeof n !== "number") return "";
     return html`<span class="${cls}" title="${this._t('streak.freezes_tooltip')}"
-      aria-label="${this._t('streak.freezes_aria', { count: n })}">❄️ ${n}</span>`;
+      aria-label="${this._t(n === 1 ? 'streak.freezes_aria_one' : 'streak.freezes_aria', { count: n })}">❄️ ${n}</span>`;
   }
 
   _calculateStreak(completions) {

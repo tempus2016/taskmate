@@ -636,6 +636,15 @@ class TaskMatePanel extends HTMLElement {
     return fn ? fn(this._hass, key, params) : key;
   }
 
+  /**
+   * A count string: `<key>_one` when n is 1, else `<key>`, with {count} = n
+   * unless params gives its own (e.g. wrapped in <strong>). Replaces the old
+   * "chore(s)" convention (#771).
+   */
+  _tn(key, n, params = {}) {
+    return this._t(Number(n) === 1 ? `${key}_one` : key, { count: n, ...params });
+  }
+
   // Reason prefixes for *derived* (automatic) transactions, which can't be
   // undone in isolation — mirrors the backend deny-list in coord_points.py and
   // the copy in taskmate-activity-card.js. Everything else (penalty, bonus,
@@ -2673,7 +2682,7 @@ class TaskMatePanel extends HTMLElement {
     if (!ok) { this._showToast("err", this._t("panel.toast_bulk_add_failed", {error: err})); return; }
     this._closeDialog(true);
     await this._fetchState();
-    this._showToast("ok", this._t("panel.toast_bulk_added", {count: (res && res.count) || names.length}));
+    this._showToast("ok", this._tn("panel.toast_bulk_added", (res && res.count) || names.length));
   }
 
   // ---- Inline rename ---------------------------------------------------
@@ -2707,7 +2716,7 @@ class TaskMatePanel extends HTMLElement {
   async _doBulk(action, assigned_to) {
     const ids = [...this._bulkSel];
     if (!ids.length) return;
-    if (action === "delete" && !confirm(this._t("panel.bulk_delete_confirm_restorable", { count: ids.length }))) return;
+    if (action === "delete" && !confirm(this._tn("panel.bulk_delete_confirm_restorable", ids.length))) return;
     const payload = { type: "taskmate/bulk_chore_action", action, chore_ids: ids };
     if (action === "reassign") payload.assigned_to = assigned_to || [];
     const { ok, err, res } = await this._callWS(payload);
@@ -2715,7 +2724,7 @@ class TaskMatePanel extends HTMLElement {
     this._bulkSel.clear();
     this._bulkMode = false;
     await this._fetchState();
-    this._showToast("ok", this._t("panel.bulk_done_toast", { count: (res && res.count) || ids.length }));
+    this._showToast("ok", this._tn("panel.bulk_done_toast", (res && res.count) || ids.length));
   }
 
   async _doCloneChore(id) {
@@ -2892,7 +2901,7 @@ class TaskMatePanel extends HTMLElement {
     // rather than letting the change be discovered later.
     const reset = (res && res.chores_reset) || 0;
     this._showToast("ok", reset
-      ? this._t("panel.sound_deleted_reset", { count: reset })
+      ? this._tn("panel.sound_deleted_reset", reset)
       : this._t("panel.sound_deleted"));
     await this._fetchState();
   }
@@ -3519,9 +3528,9 @@ class TaskMatePanel extends HTMLElement {
                 <input type="time" class="tm-input" data-tp-field="end" data-tp-idx="${i}" value="${this._esc(p.end || "")}">
               </div>
               ${used
-                ? `<button type="button" class="tm-icon-btn tm-period-del" disabled title="${this._esc(this._t("panel.tp_in_use_title", { count: used }))}"><ha-icon icon="mdi:lock-outline"></ha-icon></button>`
+                ? `<button type="button" class="tm-icon-btn tm-period-del" disabled title="${this._esc(this._tn("panel.tp_in_use_title", used))}"><ha-icon icon="mdi:lock-outline"></ha-icon></button>`
                 : `<button type="button" class="tm-icon-btn tm-period-del" data-act="tp-remove" data-idx="${i}" title="${this._esc(this._t("panel.tp_delete_title"))}"><ha-icon icon="mdi:trash-can-outline"></ha-icon></button>`}
-              ${used ? `<div class="tm-period-inuse">${this._esc(this._t("panel.tp_in_use_hint", { count: used }))}</div>` : ""}
+              ${used ? `<div class="tm-period-inuse">${this._esc(this._tn("panel.tp_in_use_hint", used))}</div>` : ""}
             </div>`;
     }).join("");
     return `
@@ -4005,7 +4014,7 @@ class TaskMatePanel extends HTMLElement {
     this._settingsEntityDraft = null;
     await this._fetchState();
     this._captureSettingsBaseline();
-    this._showToast("ok", this._t("panel.toast_settings_saved", {count: (res && res.updated || []).length}));
+    this._showToast("ok", this._tn("panel.toast_settings_saved", (res && res.updated || []).length));
   }
 
   // ---- Notifications WS helpers ----------------------------------------
@@ -4018,7 +4027,7 @@ class TaskMatePanel extends HTMLElement {
     const { ok, err, res } = await this._callWS({ type: "taskmate/notifications/send_test", type_id: typeId });
     if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
     const count = (res && res.sent || []).length;
-    this._showToast("ok", this._t("panel.notif_test_sent", { count }));
+    this._showToast("ok", this._tn("panel.notif_test_sent", count));
   }
 
   async _notifSetRoute(typeId, recipientId, enabled, time) {
@@ -4542,9 +4551,9 @@ class TaskMatePanel extends HTMLElement {
           ${this._scopeChips()}
         ` : ""}
         ${pendingCount > 0 && this._activeTab !== "activity" && this._activeTab !== "today" ? `
-          <button type="button" class="tm-approval-pill" data-act="switch-to-activity" title="${this._t("panel.pending_tooltip", {count: pendingCount})}">
+          <button type="button" class="tm-approval-pill" data-act="switch-to-activity" title="${this._tn("panel.pending_tooltip", pendingCount)}">
             <span class="tm-approval-dot"></span>
-            ${this._t("panel.topbar_pending", {count: pendingCount})}
+            ${this._tn("panel.topbar_pending", pendingCount)}
           </button>
         ` : ""}
         ${this._manualTopbarBtn()}
@@ -4747,9 +4756,9 @@ class TaskMatePanel extends HTMLElement {
     const parts = [];
     // The count strings already include {count}; pass it bolded so the number
     // renders once (not duplicated by a separate <strong> prefix — issue #573).
-    if (completionsP) parts.push(this._t("panel.topbar_chore_count", {count: `<strong>${completionsP}</strong>`}));
-    if (rewardsP)     parts.push(this._t("panel.topbar_reward_count", {count: `<strong>${rewardsP}</strong>`}));
-    if (swapsP)       parts.push(this._t("panel.topbar_swap_count", {count: `<strong>${swapsP}</strong>`}));
+    if (completionsP) parts.push(this._tn("panel.topbar_chore_count", completionsP, { count: `<strong>${completionsP}</strong>` }));
+    if (rewardsP)     parts.push(this._tn("panel.topbar_reward_count", rewardsP, { count: `<strong>${rewardsP}</strong>` }));
+    if (swapsP)       parts.push(this._tn("panel.topbar_swap_count", swapsP, { count: `<strong>${swapsP}</strong>` }));
     return `
       <div class="tm-approval-banner">
         <ha-icon icon="mdi:bell-ring-outline"></ha-icon>
@@ -4970,7 +4979,7 @@ class TaskMatePanel extends HTMLElement {
         ` : `
           <div class="tm-verdict tm-verdict-${report.problem_count ? "warn" : "ok"}">
             ${report.problem_count
-              ? this._t("panel.insights_friction_problems", { count: report.problem_count })
+              ? this._tn("panel.insights_friction_problems", report.problem_count)
               : this._t("panel.insights_friction_healthy")}
           </div>
           <table class="tm-table tm-friction">
@@ -5100,7 +5109,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-verdict tm-verdict-${report.healthy ? "ok" : "warn"}">
           ${report.healthy
             ? this._t("panel.health_all_good")
-            : this._t("panel.health_issues", { count: report.issues.filter(i => i.severity !== "info").length })}
+            : this._tn("panel.health_issues", report.issues.filter(i => i.severity !== "info").length)}
         </div>
 
         ${report.issues.length ? `
@@ -6528,7 +6537,7 @@ class TaskMatePanel extends HTMLElement {
   async _boostTestWake() {
     const { ok, err, res } = await this._callWS({ type: "taskmate/boosts/test_wake" });
     if (!ok) { this._showToast("err", err); return; }
-    this._showToast("ok", this._t("panel.boost_test_wake_sent", { count: (res && res.sent) || 0 }));
+    this._showToast("ok", this._tn("panel.boost_test_wake_sent", (res && res.sent) || 0));
   }
 
   /** Appeals waiting for a parent: Overturn (pay / approve / undo) or Uphold. */
@@ -6747,7 +6756,7 @@ class TaskMatePanel extends HTMLElement {
     if (entry) {
       if (due === 0) dayPill = `<span class="tm-pill">${this._t("panel.today_nothing_due")}</span>`;
       else if (done >= due) dayPill = `<span class="tm-pill tm-pill-success">${this._t("panel.today_all_done")}</span>`;
-      else dayPill = `<span class="tm-pill">${this._t("panel.today_left", { count: due - done })}</span>`;
+      else dayPill = `<span class="tm-pill">${this._tn("panel.today_left", due - done)}</span>`;
     }
     const scopeLabel = this._t("panel.scope_only", { name: child.name });
     const sick = (this._state.sick_today || []).includes(child.id);
@@ -9481,7 +9490,7 @@ class TaskMatePanel extends HTMLElement {
       </div>
       ${this._bulkMode && all.length > 0 ? `
         <div class="tm-bulk-bar">
-          <span class="tm-bulk-count">${this._t("panel.bulk_selected", { count: this._bulkSel.size })}</span>
+          <span class="tm-bulk-count">${this._tn("panel.bulk_selected", this._bulkSel.size)}</span>
           <button type="button" class="tm-btn" data-act="bulk-enable" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_enable")}</button>
           <button type="button" class="tm-btn" data-act="bulk-disable" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_disable")}</button>
           <button type="button" class="tm-btn" data-act="bulk-delete" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_delete")}</button>
@@ -12363,7 +12372,7 @@ class TaskMatePanel extends HTMLElement {
                 <div class="tm-child-name">
                   <h3>${this._esc(g.name)}</h3>
                   ${this._idBadge(g.id)}
-                  <div class="tm-meta"><span class="tm-pill tm-pill-${this._esc(g.policy)}">${this._t(`panel.group_policy_${g.policy}_short`)}</span> · ${this._t("panel.group_chore_count", {count: (g.chore_ids || []).length})}</div>
+                  <div class="tm-meta"><span class="tm-pill tm-pill-${this._esc(g.policy)}">${this._t(`panel.group_policy_${g.policy}_short`)}</span> · ${this._tn("panel.group_chore_count", (g.chore_ids || []).length)}</div>
                 </div>
               </div>
               <ul class="tm-group-list">
@@ -12415,7 +12424,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
         <div class="tm-manage-tpl-info">
           <div class="tm-manage-tpl-name">${this._esc(tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
-          <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts, points_name: this._esc(this._pointsName())})}</div>
+          <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: pts, points_name: this._esc(this._pointsName()) })}</div>
         </div>
         <div class="tm-row-actions">
           ${locked ? "" : `<button type="button" class="tm-btn tm-btn-sm" data-act="tpl-edit" data-id="${this._esc(tpl.id)}">${this._t("panel.btn_edit")}</button>`}
@@ -12457,7 +12466,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
           <div style="flex:1">
             <div class="tm-tpl-picker-name">${this._esc(tpl.name)}</div>
-            <div class="tm-meta">${this._t("panel.template_pts_total", {count, points: pts, points_name: this._esc(this._pointsName())})}</div>
+            <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: pts, points_name: this._esc(this._pointsName()) })}</div>
           </div>
           <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         </div>
@@ -12498,8 +12507,8 @@ class TaskMatePanel extends HTMLElement {
       ${chores.map((c, i) => this._renderTemplateChoreCard(c, i)).join("")}
       ${chores.length > 0 ? `
         <div class="tm-tpl-confirm-bar">
-          <div>${this._t("panel.template_confirm_bar", {count: chores.length, points: totalPts, points_name: this._esc(this._pointsName())})}</div>
-          <button type="button" class="tm-btn tm-btn-raised" data-act="tpl-apply">${this._t("panel.template_create_btn", {count: chores.length})}</button>
+          <div>${this._tn("panel.template_confirm_bar", chores.length, { points: totalPts, points_name: this._esc(this._pointsName()) })}</div>
+          <button type="button" class="tm-btn tm-btn-raised" data-act="tpl-apply">${this._tn("panel.template_create_btn", chores.length)}</button>
         </div>
       ` : `<div class="tm-card tm-empty"><p>${this._t("panel.empty_template_all_removed")}</p></div>`}
     `;
@@ -12627,7 +12636,7 @@ class TaskMatePanel extends HTMLElement {
     if (chores.length === 0) return;
     const { ok, err } = await this._callWS({ type: "taskmate/templates/apply", chores });
     if (ok) {
-      this._showToast("success", this._t("panel.toast_created_chores", {count: chores.length}));
+      this._showToast("success", this._tn("panel.toast_created_chores", chores.length));
       this._templateView = null;
       this._templateSelected = null;
       this._templateChores = [];
@@ -13312,7 +13321,7 @@ class TaskMatePanel extends HTMLElement {
               <div>
                 <strong>${this._t("panel.fb_logs_heading")}</strong>
                 <span class="tm-field-hint">${logs == null ? this._t("panel.fb_logs_unavailable")
-                  : logs.length ? this._t("panel.fb_logs_found", { count: logs.length }) : this._t("panel.fb_logs_none")}</span>
+                  : logs.length ? this._tn("panel.fb_logs_found", logs.length) : this._t("panel.fb_logs_none")}</span>
               </div>
             </div>
             ${logs && logs.length ? `
@@ -13711,7 +13720,7 @@ class TaskMatePanel extends HTMLElement {
         ${d.type === "bug" && (info.health_codes || []).length ? `
           <div class="tm-fb-banner" role="status">
             <ha-icon icon="mdi:stethoscope"></ha-icon>
-            <span>${this._t("panel.fb_health_found", { count: info.health_codes.length })}</span>
+            <span>${this._tn("panel.fb_health_found", info.health_codes.length)}</span>
             <button type="button" class="tm-btn tm-btn-sm" data-act="fb-health">${this._t("panel.fb_health_open")}</button>
           </div>` : ""}
         ${this._fbOpened ? `
