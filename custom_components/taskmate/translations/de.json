@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Willkommen bei TaskMate!",
-        "description": "Richten Sie Ihr Familien Aufgabenverwaltungssystem ein. Sie können die Punktewährung anpassen, die Kinder verdienen können.",
+        "description": "Richte deine Familien-Aufgabenverwaltung ein. Du kannst die Punktewährung anpassen, die deine Kinder verdienen.",
         "data": {
           "points_name": "Name der Punktewährung (z. B. Sterne, Münzen, Dollar)",
           "points_icon": "Punkte-Symbol"
@@ -17,7 +17,7 @@
       "already_configured": "TaskMate ist bereits konfiguriert"
     },
     "create_entry": {
-      "default": "TaskMate ist bereit. [Öffnen Sie das TaskMate-Panel](/taskmate-admin), um Ihre Kinder mit dem Einrichtungsassistenten hinzuzufügen, der altersgerechte Aufgaben vorschlägt."
+      "default": "TaskMate ist bereit. [Öffne das TaskMate-Panel](/taskmate-admin), um deine Kinder mit dem Einrichtungsassistenten hinzuzufügen, der altersgerechte Aufgaben vorschlägt."
     }
   },
   "selector": {
@@ -87,7 +87,7 @@
     "first_occurrence_mode": {
       "options": {
         "available_immediately": "Sofort verfügbar",
-        "wait_for_first_occurrence": "Warten Sie auf das erste geplante Ereignis"
+        "wait_for_first_occurrence": "Auf den ersten geplanten Termin warten"
       }
     },
     "streak_reset_mode": {
@@ -110,9 +110,9 @@
     "assignment_mode": {
       "options": {
         "everyone": "Jeder – jedes zugewiesene Kind sieht die Aufgabe",
-        "alternating": "Abwechselnd – wechseln Sie durch die zugewiesenen Kinder, eines pro Tag",
-        "random": "Zufällig – Wählen Sie jeden Tag zufällig ein zugewiesenes Kind aus",
-        "balanced": "Ausgewogen – Verteilen Sie die heutigen ausgeglichenen Aufgaben gleichmäßig auf die zugewiesenen Kinder",
+        "alternating": "Abwechselnd – reihum durch die zugewiesenen Kinder, eines pro Tag",
+        "random": "Zufällig – jeden Tag ein zufällig gewähltes zugewiesenes Kind",
+        "balanced": "Ausgewogen – die heutigen Aufgaben gleichmäßig auf die zugewiesenen Kinder verteilen",
         "first_come": "Wer zuerst kommt, mahlt zuerst — das erste Kind, das sie erledigt, gewinnt; bei den anderen ausgeblendet",
         "unassigned": "Nicht zugewiesen — kein Kind sieht diese Aufgabe"
       }
@@ -132,8 +132,8 @@
   },
   "services": {
     "complete_chore": {
-      "name": "Erledige Aufgabe",
-      "description": "Markieren Sie eine Aufgabe als von einem Kind erledigt",
+      "name": "Aufgabe erledigen",
+      "description": "Eine Aufgabe als von einem Kind erledigt markieren",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -163,7 +163,7 @@
     },
     "complete_bonus_subtask": {
       "name": "Bonus-Unteraufgabe erledigen",
-      "description": "Erledigen Sie eine Bonus-Unteraufgabe, nachdem die übergeordnete Aufgabe abgeschlossen wurde",
+      "description": "Eine Bonus-Unteraufgabe erledigen, nachdem die zugehörige Aufgabe erledigt wurde",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -180,8 +180,8 @@
       }
     },
     "approve_chore": {
-      "name": "Genehmigen Sie die Aufgabe",
-      "description": "Genehmigen Sie eine erledigte Aufgabe und vergeben Sie Punkte",
+      "name": "Aufgabe genehmigen",
+      "description": "Eine erledigte Aufgabe genehmigen und Punkte vergeben",
       "fields": {
         "completion_id": {
           "name": "Abschluss-ID",
@@ -260,7 +260,7 @@
       }
     },
     "claim_reward": {
-      "name": "Fordern Sie eine Belohnung an",
+      "name": "Belohnung einlösen",
       "description": "Das Kind erhält mit seinen Punkten eine Belohnung",
       "fields": {
         "reward_id": {
@@ -279,7 +279,7 @@
     },
     "approve_reward": {
       "name": "Belohnung genehmigen",
-      "description": "Genehmigen Sie einen Prämienanspruch",
+      "description": "Eine Belohnungseinlösung genehmigen",
       "fields": {
         "claim_id": {
           "name": "Anspruchs-ID",
@@ -289,7 +289,7 @@
     },
     "allocate_points_to_pool": {
       "name": "Punkte dem Pool zuweisen",
-      "description": "Verschieben Sie Punkte vom ausgebbaren Guthaben eines Kindes in den Sparpool einer Belohnung (gesperrt).",
+      "description": "Punkte vom verfügbaren Guthaben eines Kindes in den Sparpool einer Belohnung verschieben (gesperrt).",
       "fields": {
         "child_id": {
           "name": "Kinder-ID",
@@ -307,7 +307,7 @@
     },
     "add_points": {
       "name": "Punkte hinzufügen",
-      "description": "Fügen Sie einem Kind Bonuspunkte hinzu",
+      "description": "Einem Kind Bonuspunkte geben",
       "fields": {
         "child_id": {
           "name": "Kinder-ID",
@@ -356,7 +356,7 @@
       }
     },
     "preview_sound": {
-      "name": "Vorschau des Tons",
+      "name": "Ton anhören",
       "description": "Vorschau eines Abschlusssoundeffekts im Browser",
       "fields": {
         "sound": {
@@ -366,8 +366,8 @@
       }
     },
     "set_chore_order": {
-      "name": "Legen Sie die Aufgabenreihenfolge fest",
-      "description": "Legen Sie die Anzeigereihenfolge der Aufgaben für ein Kind fest",
+      "name": "Aufgabenreihenfolge festlegen",
+      "description": "Die Anzeigereihenfolge der Aufgaben für ein Kind festlegen",
       "fields": {
         "child_id": {
           "name": "Kinder-ID",
@@ -381,7 +381,7 @@
     },
     "add_penalty": {
       "name": "Strafe hinzufügen",
-      "description": "Erstellen Sie eine neue Strafdefinition",
+      "description": "Eine neue Strafe anlegen",
       "fields": {
         "name": {
           "name": "Name",
@@ -407,7 +407,7 @@
     },
     "update_penalty": {
       "name": "Strafe aktualisieren",
-      "description": "Aktualisieren Sie eine vorhandene Strafdefinition",
+      "description": "Eine vorhandene Strafe ändern",
       "fields": {
         "penalty_id": {
           "name": "Straf-ID",
@@ -437,7 +437,7 @@
     },
     "remove_penalty": {
       "name": "Strafe entfernen",
-      "description": "Entfernen Sie eine Strafdefinition",
+      "description": "Eine Strafe entfernen",
       "fields": {
         "penalty_id": {
           "name": "Straf-ID",
@@ -447,7 +447,7 @@
     },
     "apply_penalty": {
       "name": "Strafe anwenden",
-      "description": "Verhängen Sie eine Strafe gegen ein Kind und ziehen Sie Punkte ab",
+      "description": "Einem Kind eine Strafe geben und Punkte abziehen",
       "fields": {
         "penalty_id": {
           "name": "Straf-ID",
@@ -461,7 +461,7 @@
     },
     "add_bonus": {
       "name": "Bonus hinzufügen",
-      "description": "Erstellen Sie eine neue Bonusdefinition",
+      "description": "Einen neuen Bonus anlegen",
       "fields": {
         "name": {
           "name": "Name",
@@ -486,8 +486,8 @@
       }
     },
     "update_bonus": {
-      "name": "Update-Bonus",
-      "description": "Aktualisieren Sie eine vorhandene Bonusdefinition",
+      "name": "Bonus aktualisieren",
+      "description": "Einen vorhandenen Bonus ändern",
       "fields": {
         "bonus_id": {
           "name": "Bonus-ID",
@@ -517,7 +517,7 @@
     },
     "remove_bonus": {
       "name": "Bonus entfernen",
-      "description": "Entfernen Sie eine Bonusdefinition",
+      "description": "Einen Bonus entfernen",
       "fields": {
         "bonus_id": {
           "name": "Bonus-ID",
@@ -527,7 +527,7 @@
     },
     "apply_bonus": {
       "name": "Bonus anwenden",
-      "description": "Geben Sie einem Kind einen Bonus und vergeben Sie Punkte",
+      "description": "Einem Kind einen Bonus geben und Punkte vergeben",
       "fields": {
         "bonus_id": {
           "name": "Bonus-ID",
@@ -540,8 +540,8 @@
       }
     },
     "add_chore": {
-      "name": "Aufgaben hinzufügen",
-      "description": "Erstellen Sie dynamisch eine neue Aufgabe, normalerweise aus einer Automatisierung oder einem Skript",
+      "name": "Aufgabe hinzufügen",
+      "description": "Eine neue Aufgabe anlegen, meist aus einer Automatisierung oder einem Skript",
       "fields": {
         "name": {
           "name": "Name",
@@ -770,8 +770,8 @@
       }
     },
     "skip_chore": {
-      "name": "Überspringen Sie lästige Aufgaben",
-      "description": "Führen Sie die heutige Rotation über den aktuellen Beauftragten hinaus weiter. Ephemeral – die morgige Rotation wird wie gewohnt fortgesetzt.",
+      "name": "Aufgabe überspringen",
+      "description": "Die heutige Rotation am aktuell zuständigen Kind vorbei weiterschalten. Gilt nur für heute – morgen läuft die Rotation wie gewohnt weiter.",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -781,7 +781,7 @@
     },
     "set_chore_manual_start": {
       "name": "Manuelles Start-Kind festlegen",
-      "description": "Legen Sie fest, welches Kind eine rotierende Aufgabe beginnt. Im Wechselmodus ordnet dies den Pool neu; Bei „Zufällig/Ausgeglichen“ überschreibt es nur den heutigen Beauftragten.",
+      "description": "Festlegen, welches Kind eine rotierende Aufgabe beginnt. Im Modus „Abwechselnd“ ordnet das die Reihenfolge neu; bei „Zufällig/Ausgewogen“ ändert es nur das heute zuständige Kind.",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -795,7 +795,7 @@
     },
     "add_task_group": {
       "name": "Aufgabengruppe hinzufügen",
-      "description": "Erstellen Sie eine Aufgabengruppe (festgelegt = dasselbe untergeordnete Element, verteilt = verschiedene untergeordnete Elemente).",
+      "description": "Eine Aufgabengruppe anlegen (festgelegt = dasselbe Kind, verteilt = verschiedene Kinder).",
       "fields": {
         "name": {
           "name": "Name",
@@ -813,7 +813,7 @@
     },
     "update_task_group": {
       "name": "Aufgabengruppe aktualisieren",
-      "description": "Aktualisieren Sie den Namen, die Richtlinie oder die Mitgliedschaft einer Aufgabengruppe.",
+      "description": "Namen, Regel oder Mitglieder einer Aufgabengruppe ändern.",
       "fields": {
         "group_id": {
           "name": "Gruppen-ID",
@@ -835,7 +835,7 @@
     },
     "remove_task_group": {
       "name": "Aufgabengruppe entfernen",
-      "description": "Löschen Sie eine Aufgabengruppe. Die Aufgaben der Mitglieder sind nicht betroffen.",
+      "description": "Eine Aufgabengruppe löschen. Die Aufgaben darin bleiben erhalten.",
       "fields": {
         "group_id": {
           "name": "Gruppen-ID",
@@ -845,7 +845,7 @@
     },
     "start_timed_task": {
       "name": "Zeitbasierte Aufgabe starten",
-      "description": "Starten Sie den Timer einer zeitbasierten Aufgabe oder setzen Sie ihn fort",
+      "description": "Den Timer einer zeitbasierten Aufgabe starten oder fortsetzen",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -1027,7 +1027,7 @@
     },
     "pause_timed_task": {
       "name": "Zeitbasierte Aufgabe pausieren",
-      "description": "Pausieren Sie den laufenden Timer einer zeitbasierten Aufgabe",
+      "description": "Den laufenden Timer einer zeitbasierten Aufgabe pausieren",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -1041,7 +1041,7 @@
     },
     "stop_timed_task": {
       "name": "Zeitbasierte Aufgabe stoppen",
-      "description": "Stoppen Sie den Timer einer zeitbasierten Aufgabe und reichen Sie sie zur Genehmigung ein",
+      "description": "Den Timer einer zeitbasierten Aufgabe stoppen und sie zur Genehmigung einreichen",
       "fields": {
         "chore_id": {
           "name": "Aufgaben-ID",
@@ -1055,7 +1055,7 @@
     },
     "add_badge": {
       "name": "Abzeichen hinzufügen",
-      "description": "Erstellen Sie ein eigenes Abzeichen.",
+      "description": "Ein eigenes Abzeichen anlegen.",
       "fields": {
         "name": {
           "name": "Name",
@@ -1087,13 +1087,13 @@
         },
         "notify_on_earn": {
           "name": "Benachrichtigung beim Verdienen",
-          "description": "Senden Sie eine Benachrichtigung, wenn das Abzeichen verdient wird"
+          "description": "Eine Benachrichtigung senden, wenn das Abzeichen verdient wird"
         }
       }
     },
     "update_badge": {
       "name": "Abzeichen aktualisieren",
-      "description": "Aktualisieren Sie ein vorhandenes Abzeichen. Bei integrierten Abzeichen sind nur point_bonus, tier, assigned_to, enabled und notify_on_earn bearbeitbar.",
+      "description": "Ein vorhandenes Abzeichen ändern. Bei eingebauten Abzeichen sind nur point_bonus, tier, assigned_to, enabled und notify_on_earn änderbar.",
       "fields": {
         "badge_id": {
           "name": "Abzeichen-ID",
@@ -1133,13 +1133,13 @@
         },
         "notify_on_earn": {
           "name": "Benachrichtigung beim Verdienen",
-          "description": "Senden Sie eine Benachrichtigung, wenn das Abzeichen verdient wird"
+          "description": "Eine Benachrichtigung senden, wenn das Abzeichen verdient wird"
         }
       }
     },
     "remove_badge": {
       "name": "Abzeichen entfernen",
-      "description": "Entfernen Sie ein eigenes Abzeichen. Integrierte Abzeichen können nicht entfernt werden.",
+      "description": "Ein eigenes Abzeichen entfernen. Eingebaute Abzeichen lassen sich nicht entfernen.",
       "fields": {
         "badge_id": {
           "name": "Abzeichen-ID",
@@ -1149,7 +1149,7 @@
     },
     "award_badge_manually": {
       "name": "Abzeichen manuell vergeben",
-      "description": "Vergeben Sie ein Abzeichen manuell an ein Kind.",
+      "description": "Einem Kind ein Abzeichen von Hand verleihen.",
       "fields": {
         "badge_id": {
           "name": "Abzeichen-ID",
@@ -1163,7 +1163,7 @@
     },
     "revoke_badge": {
       "name": "Abzeichen widerrufen",
-      "description": "Widerrufen Sie ein vergebenes Abzeichen. Wenn ein Punktebonus gutgeschrieben wurde, wird er rückgängig gemacht.",
+      "description": "Ein verliehenes Abzeichen zurücknehmen. Ein dafür gutgeschriebener Punktebonus wird rückgängig gemacht.",
       "fields": {
         "awarded_badge_id": {
           "name": "ID des vergebenen Abzeichens",
@@ -1173,7 +1173,7 @@
     },
     "rebuild_badges": {
       "name": "Abzeichen neu berechnen",
-      "description": "Bewerten Sie alle Abzeichen für alle Kinder im Hintergrund neu (keine Benachrichtigungen, keine Punkteboni)."
+      "description": "Alle Abzeichen für alle Kinder im Hintergrund neu bewerten (keine Benachrichtigungen, keine Punkteboni)."
     },
     "apply_mandatory_penalty": {
       "name": "Pflichtstrafe anwenden",

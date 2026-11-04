@@ -990,9 +990,14 @@ class TaskMatePointsDisplayCard extends LitElement {
       </div>`;
 
     if (!ranked.length) {
+      // Single mode with no (or an unknown) child_id says so, as the classic
+      // layout does, rather than claiming the family has no children.
+      const empty = mode === "single"
+        ? html`${this._t("points_display.empty_no_child")}<br>${this._t("points_display.empty_set_child_id")}`
+        : this._t("points_display.empty_no_children");
       return html`<ha-card class="tmd" style="--hd:${hd}">
         ${header}
-        <div class="tmd-bd"><div class="tmd-empty">${this._t("points_display.empty_no_children")}</div></div>
+        <div class="tmd-bd"><div class="tmd-empty">${empty}</div></div>
       </ha-card>`;
     }
 
