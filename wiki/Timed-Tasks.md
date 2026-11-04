@@ -60,7 +60,10 @@ When `timed_max_daily_minutes` is set (non-zero):
 
 - The timer cannot be started once the cap is reached
 - If the session would exceed the cap, the duration is clamped to the remaining allowance
+- A running timer that reaches the cap stops by itself and is submitted
 - The daily cap resets at midnight
+
+If the chore can't be done right now when its timer stops — a prerequisite was added after the timer started, it's in a recurrence cooldown, the child is away — the time is not paid out automatically. It goes to a parent to approve instead, even for a chore that normally needs no approval, so the child's time isn't lost.
 
 ---
 
