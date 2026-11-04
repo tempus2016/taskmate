@@ -474,6 +474,7 @@ class TaskMatePanel extends HTMLElement {
     this._plOnKey = this._plOnKey.bind(this);
     this._plOnTouchMove = this._plOnTouchMove.bind(this);
     this._onVisibilityChange = this._onVisibilityChange.bind(this);
+    this._onLocaleLoaded = this._onLocaleLoaded.bind(this);
     this._lastConnected = null;
     this._showIds = localStorage.getItem("taskmate-show-ids") === "true";
     // Admin panel layout (#966). The child filter and the page last open in
@@ -523,6 +524,15 @@ class TaskMatePanel extends HTMLElement {
     const connNow = !!(value && value.connection && value.connection.connected !== false);
     this._lastConnected = connNow;
 
+    if (first || (value && value.language !== this._localeLang)) {
+      // The panel's strings live in their own bundle (plus the cards' one):
+      // fetch both for this language up front.
+      // A switch back to a language already loaded fires no load event, so
+      // redraw once its bundles are ready.
+      this._localeLang = value && value.language;
+      const ready = window.__taskmate_loadTranslations && window.__taskmate_loadTranslations(value, ["cards", "panel"]);
+      if (!first && ready) ready.then(() => { if (this._rendered) this._render(); });
+    }
     if (first) {
       this._fetchState();
     } else if (connNow && prevConnected === false) {
@@ -559,6 +569,8 @@ class TaskMatePanel extends HTMLElement {
     this.addEventListener("dragend", this._onDragEnd);
     this.addEventListener("pointerdown", this._onPointerDown);
     document.addEventListener("visibilitychange", this._onVisibilityChange);
+    // A translation bundle landed: redraw with the words instead of the keys.
+    window.addEventListener("taskmate-locale-loaded", this._onLocaleLoaded);
     document.addEventListener("keydown", this._onDocKeyDown);
     // A screenshot in the manual that cannot load (no internet) says so.
     // Image errors do not bubble, so listen in the capture phase.
@@ -592,11 +604,16 @@ class TaskMatePanel extends HTMLElement {
     this.removeEventListener("pointerdown", this._onPointerDown);
     this._plEndDrag();
     document.removeEventListener("visibilitychange", this._onVisibilityChange);
+    window.removeEventListener("taskmate-locale-loaded", this._onLocaleLoaded);
     document.removeEventListener("keydown", this._onDocKeyDown);
     this.removeEventListener("error", this._onManualImgError, true);
     this.removeEventListener("scroll", this._onScopeScroll, true);
     window.removeEventListener("resize", this._syncScopeFade);
     this._closeRowMenu();
+  }
+
+  _onLocaleLoaded() {
+    if (this._rendered) this._render();
   }
 
   _onVisibilityChange() {

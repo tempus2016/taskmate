@@ -194,7 +194,7 @@ test("recap card — the singular follows the language's plural rules (#950)", (
 });
 
 test("recap card — every _singular key has its plural twin in every locale (#950)", () => {
-  for (const f of require("node:fs").readdirSync(LOCALES)) {
+  for (const f of require("node:fs").readdirSync(LOCALES).filter((name) => name.endsWith(".json"))) {
     const m = JSON.parse(readFileSync(path.join(LOCALES, f), "utf8"));
     for (const k of Object.keys(m).filter((k) => k.startsWith("recap.") && k.endsWith("_singular"))) {
       assert.ok(m[k.slice(0, -"_singular".length)], `${f}: ${k} has no plural twin`);

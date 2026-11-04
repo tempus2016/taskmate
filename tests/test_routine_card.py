@@ -62,8 +62,10 @@ def test_routine_card_loads_after_its_shared_helpers():
 
 def test_routine_card_registers_its_custom_element():
     source = (WWW / "taskmate-routine-card.js").read_text(encoding="utf-8")
+    editor = (WWW / "editors" / "taskmate-routine-card-editor.js").read_text(encoding="utf-8")
     assert 'customElements.define("taskmate-routine-card"' in source
-    assert 'customElements.define("taskmate-routine-card-editor"' in source
+    # The editor element lives in its own module (not yet wired to the card).
+    assert 'customElements.define("taskmate-routine-card-editor"' in editor
 
 
 def test_routine_card_declares_itself_to_the_card_picker():
@@ -124,8 +126,9 @@ class TestDesignSystem:
     def test_editor_offers_the_design_picker(self):
         """Every other designed card exposes it; without this the style can
         only be set by hand-editing YAML."""
-        assert "card_design" in self.SOURCE
-        assert "editorOptions" in self.SOURCE
+        editor = (WWW / "editors" / "taskmate-routine-card-editor.js").read_text(encoding="utf-8")
+        assert "card_design" in editor
+        assert "editorOptions" in editor
 
     def test_accessible_style_reaches_the_action_buttons(self):
         """Done/Back/Skip are the whole interface — if they keep hard-coded

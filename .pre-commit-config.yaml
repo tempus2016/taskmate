@@ -59,6 +59,16 @@ repos:
         pass_filenames: false
         files: ^custom_components/taskmate/(translations|www/locales)/.*\.json$
 
+      # Rewrites locales/<lang>/{cards,editor,panel}.json from locales/<lang>.json.
+      # Stdlib-only, so pre-commit.ci runs it too and pushes the regenerated
+      # bundles onto a translator's PR.
+      - id: split-locales
+        name: Regenerate the split locale bundles
+        entry: python3 scripts/split_locales.py
+        language: python
+        pass_filenames: false
+        files: ^(custom_components/taskmate/www/(locales/.*\.json|taskmate-localize\.js)|scripts/split_locales\.py)$
+
       - id: data-files
         name: Blueprints, sentences and metadata parse
         entry: python3 scripts/check_data_files.py

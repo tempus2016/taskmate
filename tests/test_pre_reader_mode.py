@@ -15,6 +15,8 @@ from custom_components.taskmate.models import Chore
 
 WWW = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate" / "www"
 CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
+# The visual editor is its own module, loaded when the card editor opens.
+CARD_EDITOR = (WWW / "editors" / "taskmate-child-card-editor.js").read_text(encoding="utf-8")
 
 
 def _tile_source() -> str:
@@ -88,8 +90,8 @@ class TestPreReaderCard:
         assert "mdi:star" in tile
 
     def test_editor_exposes_both_options(self):
-        assert "name: 'pre_reader'" in CARD
-        assert "name: 'pre_reader_labels'" in CARD
+        assert "name: 'pre_reader'" in CARD_EDITOR
+        assert "name: 'pre_reader_labels'" in CARD_EDITOR
 
     def test_strings_exist_in_every_locale(self):
         keys = {"panel.chore_icon_label", "child.editor.pre_reader", "child.editor.pre_reader_labels"}
@@ -182,8 +184,8 @@ class TestPreReaderPointValues:
         assert ".pre-tile.done .pre-tile-points" in CARD
 
     def test_editor_exposes_the_option(self):
-        assert "name: 'pre_reader_points'" in CARD
-        assert "pre_reader_points: this.config.pre_reader_points === true" in CARD
+        assert "name: 'pre_reader_points'" in CARD_EDITOR
+        assert "pre_reader_points: this.config.pre_reader_points === true" in CARD_EDITOR
 
     def test_string_exists_in_every_locale(self):
         for path in sorted((WWW / "locales").glob("*.json")):

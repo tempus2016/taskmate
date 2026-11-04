@@ -28,7 +28,10 @@ LOCALES = WWW / "locales"
 
 
 def _read(name: str) -> str:
-    return (WWW / name).read_text(encoding="utf-8")
+    """A card's source, plus its visual editor module when it has one."""
+    text = (WWW / name).read_text(encoding="utf-8")
+    editor = WWW / "editors" / name.replace(".js", "-editor.js")
+    return text + editor.read_text(encoding="utf-8") if editor.is_file() else text
 
 
 # ── WebSocket surface ────────────────────────────────────────────────────────

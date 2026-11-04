@@ -21,11 +21,13 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate"
 WWW = ROOT / "www"
 CARD = (WWW / "taskmate-child-card.js").read_text(encoding="utf-8")
+# The visual editor is its own module, loaded when the card editor opens.
+EDITOR = (WWW / "editors" / "taskmate-child-card-editor.js").read_text(encoding="utf-8")
 
 
-def _section(start_marker: str, end_marker: str) -> str:
-    start = CARD.index(start_marker)
-    return CARD[start : CARD.index(end_marker, start)]
+def _section(start_marker: str, end_marker: str, source: str = CARD) -> str:
+    start = source.index(start_marker)
+    return source[start : source.index(end_marker, start)]
 
 
 def _filter_source() -> str:
@@ -33,7 +35,7 @@ def _filter_source() -> str:
 
 
 def _editor_options_source() -> str:
-    return _section("  _timeCategoryEditorOptions(overviewEntity) {", "\n  _buildSchema(")
+    return _section("  _timeCategoryEditorOptions(overviewEntity) {", "\n  _buildSchema(", EDITOR)
 
 
 class TestEffectiveCategoryHelper:
@@ -137,11 +139,11 @@ class TestEditor:
         assert "child.editor.time_category_current" in src
 
     def test_include_anytime_chores_has_a_schema_entry(self):
-        schema = _section("  _buildSchema() {", "\n  _computeLabel")
+        schema = _section("  _buildSchema() {", "\n  _computeLabel", EDITOR)
         assert "include_anytime_chores" in schema
 
     def test_editor_renders_the_toggle_state(self):
-        src = _section("  render() {\n    if (!this.hass || !this.config) return html``;", "\n    return html`")
+        src = _section("  render() {\n    if (!this.hass || !this.config) return html``;", "\n    return html`", EDITOR)
         assert "include_anytime_chores" in src
 
 

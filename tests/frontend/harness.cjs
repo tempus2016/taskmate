@@ -13,7 +13,7 @@
  * bound to it.
  */
 
-const { readFileSync } = require("node:fs");
+const { existsSync, readFileSync } = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
@@ -231,10 +231,41 @@ function loadCard(filename, overrides = {}) {
   // `import.meta.url` is how the panel reads its cache-busting version. It is
   // module syntax, which a plain script context cannot parse, so it is given a
   // stand-in URL of the same shape.
-  let source = readFileSync(path.join(WWW, filename), "utf8").replaceAll(
-    "import.meta.url",
-    JSON.stringify(`http://localhost/${filename}?v=test`),
-  );
+  // Card editors live in www/editors/ and a card's getConfigElement() pulls
+  // its editor in with a dynamic `import()`, which a script context cannot run.
+  // The call is rerouted to __tmImport, which evaluates the editor file in this
+  // same sandbox and hands back its exports.
+  const loadedEditors = new Map();
+  const evalEditor = (relPath) => {
+    if (loadedEditors.has(relPath)) return loadedEditors.get(relPath);
+    const exported = [];
+    const editorSource = readFileSync(path.join(WWW, relPath), "utf8").replace(
+      /^export function (\w+)/gm,
+      (_, name) => (exported.push(name), `function ${name}`),
+    );
+    // Wrapped like a module scope, so its consts cannot clash with the card's.
+    const namespace = vm.runInContext(
+      `(() => {\n${editorSource}\nreturn { ${exported.join(", ")} };\n})()`,
+      sandbox,
+      { filename: relPath },
+    );
+    loadedEditors.set(relPath, namespace);
+    return namespace;
+  };
+  const imports = [];
+  sandbox.__tmImport = (specifier) => {
+    imports.push(String(specifier));
+    const rel = String(specifier).replace(/^https?:\/\/[^/]+\//, "").replace(/^\.\//, "").split("?")[0];
+    try {
+      return Promise.resolve(evalEditor(rel));
+    } catch (err) {
+      return Promise.reject(err);
+    }
+  };
+
+  let source = readFileSync(path.join(WWW, filename), "utf8")
+    .replaceAll("import.meta.url", JSON.stringify(`http://localhost/${filename}?v=test`))
+    .replace(/\bimport\(/g, "__tmImport(");
   // A test can rewrite module-only syntax (e.g. an `export` on a base class
   // factory) into something a plain script context can run.
   if (overrides.transform) source = overrides.transform(source);
@@ -242,7 +273,12 @@ function loadCard(filename, overrides = {}) {
   // an async function. When nothing is actually awaited (the Lit base is found
   // straight away) the whole body still runs synchronously.
   vm.runInNewContext(overrides.topLevelAwait ? `(async () => {\n${source}\n})()` : source, sandbox);
-  return { elements, window: sandboxWindow, get: (name) => elements.get(name) };
+
+  // Load the card's editor module straight away too, so a test can reach the
+  // editor element by name exactly as it could when it lived in the card file.
+  const editorFile = `editors/${filename.replace(/\.js$/, "-editor.js")}`;
+  if (overrides.editor !== false && existsSync(path.join(WWW, editorFile))) evalEditor(editorFile);
+  return { elements, window: sandboxWindow, get: (name) => elements.get(name), importEditor: evalEditor, imports };
 }
 
 module.exports = { loadCard, render, template, localize, WWW };

@@ -60,6 +60,9 @@ jobs:
       - name: Parse blueprints, sentences, locales and metadata
         run: python3 scripts/check_data_files.py
 
+      - name: Check the split locale bundles match the sources
+        run: python3 scripts/split_locales.py --check
+
       - name: Install the docs toolchain
         run: python -m pip install --require-hashes -r requirements-docs.txt
 
