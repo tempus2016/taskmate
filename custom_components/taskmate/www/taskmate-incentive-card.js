@@ -103,14 +103,28 @@ export function createIncentiveCard(P) {
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-icon { --mdc-icon-size: 32px; opacity: 0.95; }
         .header-title { font-size: 1.3rem; font-weight: 600; }
+        /* The count sits beside the 36px manage button: a centred pill of
+           its own height, not stretched to the button's with the number at
+           the top. */
         .bonus-count {
           background: rgba(255,255,255,0.2);
-          padding: 4px 12px;
-          border-radius: 16px;
+          display: inline-flex; align-items: center; justify-content: center;
+          box-sizing: border-box; min-width: 28px; height: 28px; padding: 0 10px;
+          border-radius: 999px;
           font-size: 0.9rem;
-          font-weight: 500;
+          font-weight: 600;
+          line-height: 1;
+          font-variant-numeric: tabular-nums;
         }
-        .header-actions { display: flex; gap: 8px; }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        /* Designed styles: the same count as a pill in the coloured header. */
+        .tmd-hd .inc-cnt {
+          margin-inline-start: auto; flex: none;
+          display: inline-flex; align-items: center; justify-content: center;
+          box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 9px;
+          border-radius: 999px; background: rgba(255,255,255,.25); color: var(--tmd-hd-text, #fff);
+          font-size: 12px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+        }
         .icon-btn {
           background: rgba(255,255,255,0.18);
           border: none;
@@ -988,10 +1002,10 @@ export function createIncentiveCard(P) {
       const header = html`
         <div class="tmd-hd" style="--ac:${tone}">
           <span class="ic">${icon}</span>
-          <span class="tt">${this.config.title || this._tp('default_title')}${
-            bonuses.length ? html`<small>${bonuses.length}</small>` : ""}</span>
+          <span class="tt">${this.config.title || this._tp('default_title')}</span>
+          ${bonuses.length ? html`<span class="inc-cnt">${bonuses.length}</span>` : ""}
           ${this._canManage() ? html`
-            <button class="btn ghost sm" style="margin-inline-start:auto"
+            <button class="btn ghost sm" style="margin-inline-start:${bonuses.length ? "0" : "auto"}"
                     title="${this._tp('manage_title')}"
                     @click=${this._toggleEditMode}>
               <ha-icon icon="mdi:pencil"></ha-icon>
