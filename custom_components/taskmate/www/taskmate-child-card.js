@@ -4365,8 +4365,12 @@ class TaskMateChildCard extends LitElement {
       ? this._isChoreDone(chore, child, todaysCompletions).done
       : childCompletionsToday.length >= dailyLimit;
     const isLoading = this._loading[chore.id];
-    const available = chore._isAvailableForChild !== false && !chore._isLockedPreview
-      && !chore._isDependencyBlocked;
+    // The same locks the classic row refuses a tap for — a recurring chore in
+    // its cooldown, a later period, a missed window, a sibling's first-come
+    // claim, a filled weekly quota, a prerequisite, a set time that isn't
+    // open. The tile used to read a flag nothing ever set, so a chore in its
+    // cooldown stayed tappable here (#771).
+    const available = !this._choreLocks(chore, isDone).locked;
 
     // Stars, not digits: a 4-year-old can count pictures, not read "+3".
     // The count is deliberately lossy — it rounds and clamps to 1..5 — which
@@ -4386,9 +4390,11 @@ class TaskMateChildCard extends LitElement {
         ?disabled=${isLoading || !available}
         aria-label="${chore.name}"
         title="${chore.name}"
-        @click=${() => (isDone
-          ? this._handleUndo(chore, child, childCompletionsToday)
-          : this._handleComplete(chore, child))}
+        @click=${() => {
+          if (isLoading || !available) return;
+          if (isDone) this._handleUndo(chore, child, childCompletionsToday);
+          else this._handleComplete(chore, child);
+        }}
       >
         <div class="pre-tile-icon">
           ${v.kind === "image"

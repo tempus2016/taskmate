@@ -27,6 +27,7 @@ It is a mode of the standard child card, not a separate card, so everything else
 - **Points are shown as stars, not digits** — one to five, scaled from the chore's value. A four-year-old can count pictures long before they can read "15 points". Set `pre_reader_points: true` to show the number instead — see below.
 - Tiles are at least **128 px** with a large tap target.
 - **A done tile stays tappable**, so a mis-tap can be undone, exactly as on the standard card.
+- **A chore that can't be done yet is a locked tile.** It is greyed out and does nothing when tapped, for the same reasons the standard row refuses a tap: a recurring chore waiting to reset, a chore for a later part of the day or one whose window has passed, a chore not due today (`due_days_mode: dim`), one waiting on a prerequisite, a first-come chore a sibling already claimed, a filled weekly target, or a set time that isn't open.
 - **Opt-in.** An existing dashboard never turns itself into pictures, and names stay off unless you ask for them with `pre_reader_labels`.
 - Works under **all six** [card design styles](Card-Design-Styles.md) — the tiles sit inside whichever design the card is using. Pairing it with **Accessible** is a sensible combination for a child who needs both.
 
