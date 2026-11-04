@@ -2369,6 +2369,12 @@ class TaskMateStorage:
         """Remove a timed session."""
         self._data["timed_sessions"] = [s for s in self._data.get("timed_sessions", []) if s.get("id") != session_id]
 
+    def remove_timed_sessions_for_chore(self, chore_id: str) -> None:
+        """Drop a deleted chore's timed sessions, running or paused (#771)."""
+        self._data["timed_sessions"] = [
+            s for s in self._data.get("timed_sessions", []) if s.get("chore_id") != chore_id
+        ]
+
     def remove_timed_sessions_for_child(self, child_id: str) -> None:
         """Drop a deleted child's timed sessions (#946)."""
         self._data["timed_sessions"] = [

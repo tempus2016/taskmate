@@ -164,6 +164,10 @@ class RecentlyDeletedMixin:
         # Its calendar events were taken down with it; publish them afresh.
         chore.publish_calendar_published_dates = []
         self.storage.add_chore(chore)
+        # A timer left behind by a delete made before sessions were cleared
+        # with the chore would reattach to it here, still "running" since the
+        # delete. A restored chore starts with no timer (#771).
+        self.storage.remove_timed_sessions_for_chore(chore.id)
         for comp in extra.get("completions", []):
             if comp.get("child_id") in children or comp.get("child_id") == "__parent__":
                 data.setdefault("completions", []).append(comp)
