@@ -45,6 +45,17 @@ def reward_is_time_locked(reward: Reward, now: datetime | None = None) -> bool:
     return has_window(start, end) and not is_within_window(start, end, moment)
 
 
+# The activity feed's translation key for each pool-refund reason (#771).
+_POOL_REFUND_KEYS = {
+    "Pool refund (reward expired)": "pool_refund_expired",
+    "Pool refund (reward sold out)": "pool_refund_sold_out",
+    "Pool refund (reward cost reduced)": "pool_refund_cost_reduced",
+    "Pool refund (reward deleted)": "pool_refund_deleted",
+    "Pool refund (reward funding changed)": "pool_refund_funding_changed",
+    "Pool refund (reward assignment changed)": "pool_refund_assignment_changed",
+}
+
+
 class RewardsMixin:
     """Mixin providing reward CRUD, claiming, and pool allocation logic."""
 
@@ -386,6 +397,8 @@ class RewardsMixin:
                 points=refund,
                 reason=f"{reason}: {reward.name}",
                 created_at=dt_util.now(),
+                reason_key=_POOL_REFUND_KEYS.get(reason, ""),
+                reason_params={"name": reward.name},
             )
         )
 
@@ -888,6 +901,8 @@ class RewardsMixin:
             child_id=child_id,
             points=-capped_points,
             reason=f"Allocated to pool: {reward.name}",
+            reason_key="allocated_to_pool",
+            reason_params={"name": reward.name},
             created_at=dt_util.now(),
         )
         self.storage.add_points_transaction(transaction)

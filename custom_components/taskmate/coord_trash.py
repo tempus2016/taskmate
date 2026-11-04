@@ -228,6 +228,8 @@ class RecentlyDeletedMixin:
                     child_id=child.id,
                     points=-amount,
                     reason=f"Allocated to pool: {reward.name}",
+                    reason_key="allocated_to_pool",
+                    reason_params={"name": reward.name},
                     created_at=dt_util.now(),
                 )
             )

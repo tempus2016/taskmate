@@ -278,7 +278,13 @@ class InspectionsMixin:
         child = self.get_child(record["child_id"])
         if child is not None and record["bonus"] > 0:
             reason = f"{PASS_REASON_PREFIX} {record['chore_name']}".strip()
-            await self.async_add_points(child.id, record["bonus"], reason=reason)
+            await self.async_add_points(
+                child.id,
+                record["bonus"],
+                reason=reason,
+                reason_key="inspection_passed",
+                reason_params={"name": record["chore_name"]},
+            )
             txn = next(
                 (
                     t

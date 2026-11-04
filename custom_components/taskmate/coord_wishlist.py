@@ -119,9 +119,25 @@ class WishlistMixin:
                 committed += reward.cost
         return max(0, child.points - committed)
 
-    def _wish_log(self, child_id: str, points: int, reason: str, *, count_for_season: bool = True) -> None:
+    def _wish_log(
+        self,
+        child_id: str,
+        points: int,
+        reason: str,
+        *,
+        count_for_season: bool = True,
+        key: str = "",
+        params: dict | None = None,
+    ) -> None:
         self.storage.add_points_transaction(
-            PointsTransaction(child_id=child_id, points=points, reason=reason, created_at=dt_util.now()),
+            PointsTransaction(
+                child_id=child_id,
+                points=points,
+                reason=reason,
+                created_at=dt_util.now(),
+                reason_key=key,
+                reason_params=dict(params or {}),
+            ),
             count_for_season=count_for_season,
         )
 
@@ -235,7 +251,7 @@ class WishlistMixin:
         self.storage.update_child(child)
         wish.saved += moved
         self.storage.upsert_wish(wish)
-        self._wish_log(child.id, -moved, f"Wish savings: {wish.name}")
+        self._wish_log(child.id, -moved, f"Wish savings: {wish.name}", key="wish_savings", params={"name": wish.name})
         await self.storage.async_save()
         await self.async_refresh()
         self._fire_wish_event("taskmate_wish_saved", wish, child, points=moved)
@@ -261,7 +277,14 @@ class WishlistMixin:
         self.storage.upsert_wish(wish)
         # The child's own points coming home, not new ones: keep it off the
         # leaderboard, or moving points in and out would farm season points.
-        self._wish_log(child.id, taken, f"Wish savings taken back: {wish.name}", count_for_season=False)
+        self._wish_log(
+            child.id,
+            taken,
+            f"Wish savings taken back: {wish.name}",
+            count_for_season=False,
+            key="wish_taken_back",
+            params={"name": wish.name},
+        )
         await self.storage.async_save()
         await self.async_refresh()
         return taken
@@ -371,7 +394,13 @@ class WishlistMixin:
         )
         wish.pledges.append(pledge)
         self.storage.upsert_wish(wish)
-        self._wish_log(wish.child_id, 0, f"Wish pledge from {who} (+{pledge.points}): {wish.name}")
+        self._wish_log(
+            wish.child_id,
+            0,
+            f"Wish pledge from {who} (+{pledge.points}): {wish.name}",
+            key="wish_pledge",
+            params={"who": who, "points": pledge.points, "name": wish.name},
+        )
         await self.storage.async_save()
         await self.async_refresh()
 
@@ -411,7 +440,13 @@ class WishlistMixin:
             cancelled = self._cancel_wish_claim(wish)
             wish.status = "active"
         self.storage.upsert_wish(wish)
-        self._wish_log(wish.child_id, 0, f"Wish pledge removed ({pledge.name}, {pledge.points}): {wish.name}")
+        self._wish_log(
+            wish.child_id,
+            0,
+            f"Wish pledge removed ({pledge.name}, {pledge.points}): {wish.name}",
+            key="wish_pledge_removed",
+            params={"who": pledge.name, "points": pledge.points, "name": wish.name},
+        )
         await self.storage.async_save()
         await self.async_refresh()
         await self._async_after_release(cancelled, [])
@@ -442,7 +477,7 @@ class WishlistMixin:
         claim.approved_at = now
         claim.approved_cost = wish.saved
         self.storage.update_reward_claim(claim)
-        self._wish_log(child.id, 0, f"Wish redeemed: {wish.name}")
+        self._wish_log(child.id, 0, f"Wish redeemed: {wish.name}", key="wish_redeemed", params={"name": wish.name})
         pruned = self._prune_finished_wishes(child.id, "redeemed", WISH_KEEP_REDEEMED_PER_CHILD)
         await self.storage.async_save()
         await self.async_refresh()
@@ -518,13 +553,26 @@ class WishlistMixin:
         if wish.saved > 0 and child is not None:
             child.points += wish.saved
             self.storage.update_child(child)
-            self._wish_log(child.id, wish.saved, f"Wish refund ({why}): {wish.name}", count_for_season=False)
+            self._wish_log(
+                child.id,
+                wish.saved,
+                f"Wish refund ({why}): {wish.name}",
+                count_for_season=False,
+                key=f"wish_refund_{why}" if why in ("declined", "removed") else "",
+                params={"name": wish.name},
+            )
         # A refund starts the expiry clock again, like every other refund.
         wish.saved = 0
         wish.saved_lots = []
         if child is not None:
             for pledge in wish.pledges:
-                self._wish_log(child.id, 0, f"Wish pledge voided ({pledge.name}, {pledge.points}): {wish.name}")
+                self._wish_log(
+                    child.id,
+                    0,
+                    f"Wish pledge voided ({pledge.name}, {pledge.points}): {wish.name}",
+                    key="wish_pledge_voided",
+                    params={"who": pledge.name, "points": pledge.points, "name": wish.name},
+                )
         wish.pledges = []
         return cancelled
 

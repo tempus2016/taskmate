@@ -1817,6 +1817,12 @@ class PointsTransaction:
     # Groups transactions that must be reversed together (e.g. both legs of a
     # gift). Empty for standalone transactions. Pre-upgrade rows load as "".
     link_id: str = ""
+    # A translation key (activity.reason_<key>) and its parameters, so the
+    # activity feed can show the reason in the reader's language (#771).
+    # `reason` keeps the English text for older readers, prefix checks and
+    # automations; rows from before this load with no key and show `reason`.
+    reason_key: str = ""
+    reason_params: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PointsTransaction:
@@ -1829,11 +1835,13 @@ class PointsTransaction:
             created_at=created_at or datetime.now(timezone.utc),
             id=data.get("id") or generate_id(),
             link_id=data.get("link_id", ""),
+            reason_key=data.get("reason_key", "") or "",
+            reason_params=dict(data.get("reason_params") or {}),
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        return {
+        out = {
             "child_id": self.child_id,
             "points": self.points,
             "reason": self.reason,
@@ -1841,6 +1849,11 @@ class PointsTransaction:
             "id": self.id,
             "link_id": self.link_id,
         }
+        if self.reason_key:
+            out["reason_key"] = self.reason_key
+            if self.reason_params:
+                out["reason_params"] = dict(self.reason_params)
+        return out
 
 
 @dataclass

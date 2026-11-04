@@ -1982,6 +1982,7 @@ class ChoresMixin:
                                         child_id=child.id,
                                         points=-refund,
                                         reason="Streak milestone reversed",
+                                        reason_key="streak_milestone_reversed",
                                         created_at=dt_util.now(),
                                     ),
                                     reverses_season=True,
@@ -2620,6 +2621,8 @@ class ChoresMixin:
                 child_id=child.id,
                 points=bonus,
                 reason=f"Weekly target bonus: {chore.name}",
+                reason_key="weekly_target_bonus",
+                reason_params={"name": chore.name},
                 created_at=dt_util.now(),
             )
         )
@@ -2676,6 +2679,8 @@ class ChoresMixin:
                 child_id=child.id,
                 points=-refund,
                 reason=f"Weekly target bonus reversed: {getattr(chore, 'name', '')}".rstrip(": "),
+                reason_key="weekly_target_bonus_reversed",
+                reason_params={"name": getattr(chore, "name", "")},
                 created_at=dt_util.now(),
             ),
             reverses_season=True,

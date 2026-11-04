@@ -138,6 +138,8 @@ class RafflesMixin:
                         child_id=child_id,
                         points=refund,
                         reason=f"Raffle called off: {raffle.get('name', '')}",
+                        reason_key="raffle_called_off",
+                        reason_params={"name": raffle.get("name", "")},
                         created_at=dt_util.now(),
                     )
                 )
@@ -199,6 +201,8 @@ class RafflesMixin:
                 child_id=child_id,
                 points=-cost,
                 reason=f"Raffle tickets ×{tickets}: {raffle.get('name', '')}",
+                reason_key="raffle_tickets",
+                reason_params={"tickets": tickets, "name": raffle.get("name", "")},
                 created_at=dt_util.now(),
             )
         )

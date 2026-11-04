@@ -105,6 +105,8 @@ class RedemptionsMixin:
                 child_id=child.id,
                 points=refund,
                 reason=f"Made it right: {offer.get('penalty_name', '')}",
+                reason_key="made_it_right",
+                reason_params={"name": offer.get("penalty_name", "")},
                 created_at=dt_util.now(),
             )
         )
@@ -167,6 +169,8 @@ class RedemptionsMixin:
                         child_id=child.id,
                         points=-refund,
                         reason=f"Made it right undone: {offer.get('penalty_name', '')}",
+                        reason_key="made_it_right_undone",
+                        reason_params={"name": offer.get("penalty_name", "")},
                         created_at=dt_util.now(),
                     )
                 )

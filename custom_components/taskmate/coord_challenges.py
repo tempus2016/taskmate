@@ -193,6 +193,8 @@ class ChallengesMixin:
                         child_id=child.id,
                         points=-bonus,
                         reason=f"Challenge reversed: {ch.name}",
+                        reason_key="challenge_reversed",
+                        reason_params={"name": ch.name},
                         created_at=dt_util.now(),
                     ),
                     reverses_season=True,
@@ -218,6 +220,8 @@ class ChallengesMixin:
                     child_id=child.id,
                     points=bonus,
                     reason=f"Challenge complete: {challenge.name}",
+                    reason_key="challenge_complete",
+                    reason_params={"name": challenge.name},
                     created_at=dt_util.now(),
                 )
             )
