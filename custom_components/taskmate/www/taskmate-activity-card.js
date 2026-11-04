@@ -583,7 +583,8 @@ class TaskMateActivityCard extends LitElement {
       /* ── Designed styles (playroom / console / cleanpro) ── */
       .tmd-filters { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 13px; }
       .tmd-filters .chip { cursor: pointer; }
-      .tmd-undo { padding: 4px 11px; }
+      /* Never break "↩ Undo" over two lines: the row text beside it wraps instead. */
+      .tmd-undo { padding: 4px 11px; white-space: nowrap; flex-shrink: 0; }
       .act-line { font-weight: 700; font-size: 13.5px; line-height: 1.35; }
       .act-line .reason { font-weight: 400; color: var(--tmd-dim); }
       .act-insp-note { font-size: 12px; font-style: italic; font-weight: 400; color: var(--tmd-dim); margin-top: 2px; overflow-wrap: anywhere; }

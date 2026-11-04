@@ -676,7 +676,10 @@ class TaskMateApprovalsCard extends LitElement {
       /* Clean Pro — divided list */
       .ap-cp-item { padding: 10px 0; flex-wrap: wrap; row-gap: 8px; }
       .ap-cp-mid { flex: 1 1 130px; min-width: 130px; }
-      .ap-cp-actions { display: flex; gap: 8px; flex: 0 0 auto; margin-inline-start: auto; }
+      /* Buttons keep their labels on one line, so on a narrow card the row of
+         actions wraps (onto its own line under the item, then button by
+         button) rather than running past the card's edge. */
+      .ap-cp-actions { display: flex; gap: 8px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; margin-inline-start: auto; }
       .ap-cp-title { font-weight: 600; }
       .ap-cp-sub { font-size: 12px; }
       .ap-cp-photo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden;
@@ -1213,7 +1216,7 @@ class TaskMateApprovalsCard extends LitElement {
           ${this._apPhotoDesigned(it, "ap-pl-photo")}
           <div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
         </div>
-        <div class="row" style="margin-top:11px;gap:8px">
+        <div class="row" style="margin-top:11px;gap:8px;flex-wrap:wrap">
           ${this._designActions(it, "full")}
         </div>
       </div>`;
