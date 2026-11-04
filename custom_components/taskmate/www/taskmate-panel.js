@@ -18120,6 +18120,13 @@ class TaskMatePanel extends HTMLElement {
          Pinned with the name outside bulk mode; scroll with it in bulk mode. */
       .tm-name-cell { display: flex; align-items: center; gap: 12px; }
       .tm-name-cell .tm-name-main { min-width: 0; }
+      /* A long name used to keep its whole width on one line, so the pinned
+         name column alone could be wider than the table's window: with the
+         side panel open at 1280 px nothing else could be scrolled into
+         view. Long names wrap instead. */
+      @media (min-width: 901px) {
+        .tm-table td.tm-col-sticky .tm-name-main { min-width: 140px; max-width: 280px; white-space: normal; overflow-wrap: break-word; }
+      }
       .tm-name-cell .tm-name-actions {
         margin-inline-start: auto; display: inline-flex; gap: 4px;
         align-items: center; flex-shrink: 0;
@@ -18649,6 +18656,12 @@ class TaskMatePanel extends HTMLElement {
         .tm-shell-drawer .tm-search-btn-text, .tm-shell-drawer .tm-search-btn kbd,
         .tm-shell-drawer .tm-new-text { display: none; }
         .tm-shell-drawer .tm-crumbs { flex-shrink: 0; }
+        /* The page is only ~350-470 px wide beside the panel. A pinned name
+           column would fill it, so the table scrolls as a whole and the
+           names wrap sooner. */
+        .tm-shell-drawer .tm-table th.tm-col-sticky,
+        .tm-shell-drawer .tm-table td.tm-col-sticky { position: static; }
+        .tm-shell-drawer .tm-table td.tm-col-sticky .tm-name-main { min-width: 120px; max-width: 160px; }
         .tm-shell-drawer .tm-search-btn { flex: 0 0 auto; width: 38px; padding: 0; justify-content: center; margin-inline: auto 0; }
         .tm-shell-drawer .tm-new-btn { width: 38px; height: 38px; padding: 0; justify-content: center; border-radius: 10px; }
       }
