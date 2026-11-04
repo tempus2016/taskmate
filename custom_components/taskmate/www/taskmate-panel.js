@@ -11982,14 +11982,20 @@ class TaskMatePanel extends HTMLElement {
   _badgeName(b) {
     if (!b.builtin) return b.name;
     const key = "badge.name_" + b.id.replace("builtin.", "");
-    const t = this._t(key);
+    const t = this._t(key, { points_name: this._pointsName(), count: this._badgeCount(b) });
     return t !== key ? t : b.name;
+  }
+
+  /** The number in a built-in badge's id, grouped the HA way, for its {count} (#771). */
+  _badgeCount(b) {
+    const m = /^builtin\.(\d+)_/.exec(String((b && b.id) || ""));
+    return m ? this._fmtNum(Number(m[1])) : "";
   }
 
   _badgeDesc(b) {
     if (!b.builtin) return b.description || "";
     const key = "badge.desc_" + b.id.replace("builtin.", "");
-    const t = this._t(key);
+    const t = this._t(key, { points_name: this._pointsName(), count: this._badgeCount(b) });
     return t !== key ? t : (b.description || "");
   }
 

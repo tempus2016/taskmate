@@ -175,7 +175,7 @@
 .tmd-hd .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:17px;flex:none}
 .tmd-hd .tt{font-family:var(--tmd-font-display);font-weight:800;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tmd-hd .tt small{display:block;font-family:var(--tmd-font-body);font-weight:600;font-size:11px;opacity:.85;margin-top:1px}
-.tmd-hd .pill{margin-inline-start:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.25);text-transform:capitalize}
+.tmd-hd .pill{margin-inline-start:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.25)}
 .tmd-hd .cnt{margin-inline-start:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--tmd-bad);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
 .tmd-bd{padding:15px}
 .tmd-empty{text-align:center;padding:26px 12px;color:var(--tmd-dim);font-size:.9rem}

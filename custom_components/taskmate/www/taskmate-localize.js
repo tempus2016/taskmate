@@ -169,7 +169,60 @@ function timeLockLabel(lock, t) {
   return parts.join(' \u00b7 ');
 }
 
+/**
+ * A badge's name in the user's language. Built-in badges reach the cards from
+ * the sensors with their English names ("First Reward", "1000 Points"); the
+ * translations live under badge.name_<suffix>. A parent's own badges keep the
+ * name they were given. Takes either id spelling (badge_id on a child's badges
+ * sensor, id elsewhere).
+ */
+function badgeName(hass, badge, pointsName) {
+  if (!badge) return '';
+  const raw = badge.badge_id != null ? badge.badge_id : badge.id;
+  const id = raw != null ? String(raw) : '';
+  const name = badge.name || '';
+  if (!id.startsWith('builtin.')) return name;
+  const key = 'badge.name_' + id.slice('builtin.'.length);
+  // The points badges say the family's own name for points ("1,000 Stars").
+  const t = localize(hass, key, { points_name: pointsName || familyPointsName(hass), count: badgeCount(hass, id) });
+  return t && t !== key ? t : name;
+}
+
+/**
+ * The number in a built-in badge's id ("builtin.1000_points" → 1000), written
+ * the way HA writes numbers (its number format setting, once the shared
+ * number helper is loaded), for the {count} in the badge's name (#771).
+ */
+function badgeCount(hass, id) {
+  const m = /^builtin\.(\d+)_/.exec(String(id || ''));
+  if (!m) return '';
+  const n = Number(m[1]);
+  return window.__taskmate_numbers && window.__taskmate_numbers.format
+    ? window.__taskmate_numbers.format(hass, n) : String(n);
+}
+
+/**
+ * The family's name for points, from the overview sensor (found under its
+ * default id or, if renamed, as the state carrying the companion map), else
+ * the translated "Points". Cached per hass.states object.
+ */
+let _pnCache = { states: null, value: '' };
+function familyPointsName(hass) {
+  const states = hass && hass.states;
+  if (!states) return localize(hass, 'common.points');
+  if (_pnCache.states !== states) {
+    let ov = states['sensor.taskmate_overview'];
+    if (!(ov && ov.attributes && ov.attributes.points_name)) {
+      ov = Object.values(states).find((s) => s && s.attributes && s.attributes.companion_entities && s.attributes.points_name);
+    }
+    _pnCache = { states, value: (ov && ov.attributes && ov.attributes.points_name) || '' };
+  }
+  return _pnCache.value || localize(hass, 'common.points');
+}
+
 // Expose globally so cards can access without ES module imports
+window.__taskmate_badge_name = badgeName;
+window.__taskmate_badge_count = badgeCount;
 window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;
