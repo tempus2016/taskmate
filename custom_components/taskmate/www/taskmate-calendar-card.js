@@ -273,6 +273,9 @@ class TaskMateCalendarCard extends LitElement {
       .cal-nav-btn { width: 32px; height: 32px; font-size: 16px; }
       .cal-nav-cur { cursor: pointer; font-size: 13px; padding: 6px 16px; }
       .cal-nav-cn { justify-content: space-between; margin-bottom: 12px; }
+      /* Console's labelled day buttons may wrap their words on a narrow card
+         (the shared .btn doesn't), with the arrow held to its word. */
+      .cal-nav-cn .btn { white-space: normal; text-align: center; min-width: 0; flex: 0 1 auto; }
       .cal-nav-cn .cal-nav-cur { font-size: 13px; color: var(--tmd-accent); padding: 0; }
       .cal-grid { gap: 11px; }
       .cal-head { margin-bottom: 8px; }
@@ -741,9 +744,9 @@ class TaskMateCalendarCard extends LitElement {
     if (design === "console") {
       return html`
         <div class="row cal-nav-cn">
-          <button class="btn ghost sm" @click=${() => this._shiftDay(-1)}>‹ ${this._t("calendar.prev_day")}</button>
+          <button class="btn ghost sm" @click=${() => this._shiftDay(-1)}>‹\u00a0${this._t("calendar.prev_day")}</button>
           <span class="num cal-nav-cur" @click=${() => this._resetDay()}>${isToday ? this._t("common.today") : dayLabel}</span>
-          <button class="btn ghost sm" @click=${() => this._shiftDay(1)}>${this._t("calendar.next_day")} ›</button>
+          <button class="btn ghost sm" @click=${() => this._shiftDay(1)}>${this._t("calendar.next_day")}\u00a0›</button>
         </div>`;
     }
     return html`
