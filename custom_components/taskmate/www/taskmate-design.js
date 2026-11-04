@@ -584,6 +584,12 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
   // The same ~30-line colour-picker editor block was copy-pasted into 17 card
   // editors. They render it via a thin `_renderColourPicker` wrapper that calls
   // this helper, passing their own update method as onInput/onPreset/onReset.
+  //
+  // The picker carries its own <style>, so every editor gets the same look and
+  // the same finger-sized targets from this one place; editors must not restyle
+  // these classes (an editor's static styles would win over this sheet).
+  // Every control is at least 36px square on touch screens: the preset
+  // swatches draw a 28px dot inside a 36px button, so the row stays tidy.
   const _DEFAULT_COLOUR_PRESETS = ["#e67e22", "#27ae60", "#9b59b6", "#f1c40f", "#e74c3c", "#34495e"];
 
   function colourPicker(opts) {
@@ -594,23 +600,42 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
     const presets = [defaultValue, ...(opts.presets || _DEFAULT_COLOUR_PRESETS)];
     const isActive = (c) => String(c).toLowerCase() === String(current).toLowerCase();
     return html`
+      <style>
+        .colour-field { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border: 1px solid var(--outline-color, var(--divider-color, #e0e0e0)); border-radius: 4px; background: var(--mdc-text-field-fill-color, var(--card-background-color)); }
+        .colour-field-label { font-size: 0.82rem; color: var(--primary-color); font-weight: 500; }
+        .colour-field-body { display: flex; align-items: center; gap: 12px; }
+        .colour-swatch-wrapper { position: relative; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 2px solid var(--divider-color, #e0e0e0); flex-shrink: 0; box-sizing: border-box; }
+        .colour-swatch-wrapper input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; border: 0; padding: 0; }
+        .colour-swatch-preview { position: absolute; inset: 0; pointer-events: none; }
+        .colour-hex { font-family: var(--code-font-family, monospace); font-size: 0.85rem; color: var(--secondary-text-color); min-width: 70px; }
+        .colour-presets { display: flex; gap: 2px; flex-wrap: wrap; margin-inline-start: -4px; }
+        .preset-swatch { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; margin: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .preset-swatch::before { content: ""; box-sizing: border-box; width: 28px; height: 28px; border-radius: 50%; background: var(--tm-swatch); border: 2px solid var(--divider-color, #e0e0e0); transition: transform 0.1s; }
+        .preset-swatch:hover::before { transform: scale(1.12); }
+        .preset-swatch:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+        .preset-swatch.active::before { border-color: var(--primary-text-color); box-shadow: 0 0 0 2px var(--primary-color); }
+        .colour-reset { min-height: 36px; min-width: 64px; font: inherit; font-size: 0.82rem; color: var(--secondary-text-color); background: none; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 18px; padding: 0 14px; cursor: pointer; margin-inline-start: auto; flex-shrink: 0; }
+        .colour-reset:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+        .colour-helper { color: var(--secondary-text-color); font-size: 0.82rem; line-height: 1.3; }
+      </style>
       <div class="colour-field">
         <span class="colour-field-label">${label}</span>
         <div class="colour-field-body">
           <label class="colour-swatch-wrapper">
-            <input type="color" .value=${current} @input=${(e) => onInput(e.target.value)} />
+            <input type="color" aria-label=${label} .value=${current} @input=${(e) => onInput(e.target.value)} />
             <span class="colour-swatch-preview" style="background:${current}"></span>
           </label>
           <span class="colour-hex">${current}</span>
-          <div class="colour-presets">
-            ${presets.map((p) => html`
-              <button class="preset-swatch ${isActive(p) ? "active" : ""}"
-                style="background:${p}" title=${p}
-                @click=${(e) => { e.preventDefault(); onPreset(p); }}></button>
-            `)}
-          </div>
           <button class="colour-reset"
             @click=${(e) => { e.preventDefault(); onReset(); }}>${resetLabel}</button>
+        </div>
+        <div class="colour-presets">
+          ${presets.map((p) => html`
+            <button class="preset-swatch ${isActive(p) ? "active" : ""}"
+              style="--tm-swatch:${p}" title=${p} aria-label=${p}
+              aria-pressed=${isActive(p) ? "true" : "false"}
+              @click=${(e) => { e.preventDefault(); onPreset(p); }}></button>
+          `)}
         </div>
         <div class="colour-helper">${helper}</div>
       </div>
