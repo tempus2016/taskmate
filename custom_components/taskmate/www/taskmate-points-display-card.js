@@ -1131,11 +1131,15 @@ customElements.define("taskmate-points-display-card", TaskMatePointsDisplayCard)
 
 /* ── Registration ─────────────────────────────────────────────────────── */
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type:        "taskmate-points-display-card",
-  name:        "TaskMate \u2014 Points Display",
-  description: "Kid-friendly display of points. Supports single child, all children, or combined family total.",
+  get name() { return _tmPick("points_display.card_name", "TaskMate \u2014 Points Display"); },
+  get description() { return _tmPick("points_display.card_description", "Kid-friendly display of points. Supports single child, all children, or combined family total."); },
   preview:     true,
   configElement: "taskmate-points-display-card-editor",
   getEntitySuggestion: (hass, entityId) =>

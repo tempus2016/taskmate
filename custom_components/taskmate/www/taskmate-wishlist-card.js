@@ -845,11 +845,15 @@ class TaskMateWishlistCard extends LitElement {
 
 customElements.define("taskmate-wishlist-card", TaskMateWishlistCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-wishlist-card",
-  name: "TaskMate Wishlist",
-  description: "A child's wishlist: save towards things they want, with family pledges",
+  get name() { return _tmPick("wishlist.card_name", "TaskMate Wishlist"); },
+  get description() { return _tmPick("wishlist.card_description", "A child's wishlist: save towards things they want, with family pledges"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-wishlist-card", "overview"),

@@ -657,11 +657,15 @@ class TaskMateChoreBoardCard extends LitElement {
 
 customElements.define("taskmate-chore-board-card", TaskMateChoreBoardCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-chore-board-card",
-  name: "TaskMate Chore Board",
-  description: "Every child's chores for today by time of day — tap one to complete it",
+  get name() { return _tmPick("chore_board.card_name", "TaskMate Chore Board"); },
+  get description() { return _tmPick("chore_board.card_description", "Every child's chores for today by time of day — tap one to complete it"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-chore-board-card", "overview"),

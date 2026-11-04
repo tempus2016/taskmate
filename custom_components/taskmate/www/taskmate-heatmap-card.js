@@ -217,11 +217,15 @@ class TaskMateHeatmapCard extends LitElement {
 
 customElements.define("taskmate-heatmap-card", TaskMateHeatmapCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-heatmap-card",
-  name: "TaskMate Heatmap",
-  description: "A calendar of the last six weeks for each child — darker green for busier days",
+  get name() { return _tmPick("heatmap.card_name", "TaskMate Heatmap"); },
+  get description() { return _tmPick("heatmap.card_description", "A calendar of the last six weeks for each child — darker green for busier days"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest ? window.__taskmate_suggest(hass, entityId, "taskmate-heatmap-card", "overview") : undefined,

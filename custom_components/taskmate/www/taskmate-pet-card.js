@@ -1282,11 +1282,15 @@ class TaskMatePetCard extends LitElement {
 
 customElements.define("taskmate-pet-card", TaskMatePetCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-pet-card",
-  name: "TaskMate Pet",
-  description: "A virtual pet that grows as the child does chores",
+  get name() { return _tmPick("pet.card_name", "TaskMate Pet"); },
+  get description() { return _tmPick("pet.card_description", "A virtual pet that grows as the child does chores"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest ? window.__taskmate_suggest(hass, entityId, "taskmate-pet-card", "overview") : undefined,

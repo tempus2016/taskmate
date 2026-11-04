@@ -725,11 +725,15 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
 
 customElements.define("taskmate-badges-card", TaskMateBadgesCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-badges-card",
-  name: "TaskMate Badges",
-  description: "Achievement badge grid for a single child",
+  get name() { return _tmPick("badges.card_name", "TaskMate Badges"); },
+  get description() { return _tmPick("badges.card_description", "Achievement badge grid for a single child"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-badges-card", "overview"),

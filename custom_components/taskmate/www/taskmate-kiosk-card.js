@@ -2661,11 +2661,15 @@ class TaskMateKioskCard extends LitElement {
 
 customElements.define("taskmate-kiosk-card", TaskMateKioskCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-kiosk-card",
-  name: "TaskMate Kiosk",
-  description: "Shared wall-tablet view: each child taps their face (optional PIN) to see and tick off their own chores",
+  get name() { return _tmPick("kiosk.card_name", "TaskMate Kiosk"); },
+  get description() { return _tmPick("kiosk.card_description", "Shared wall-tablet view: each child taps their face (optional PIN) to see and tick off their own chores"); },
   preview: false,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-kiosk-card", "overview"),

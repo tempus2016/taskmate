@@ -731,11 +731,15 @@ class TaskMateAuctionCard extends LitElement {
 
 customElements.define("taskmate-auction-card", TaskMateAuctionCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-auction-card",
-  name: "TaskMate Chore Auction",
-  description: "Children bid the fewest points they'd do an unpopular chore for — lowest bid wins",
+  get name() { return _tmPick("auction.card_name", "TaskMate Chore Auction"); },
+  get description() { return _tmPick("auction.card_description", "Children bid the fewest points they'd do an unpopular chore for — lowest bid wins"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-auction-card", "overview"),

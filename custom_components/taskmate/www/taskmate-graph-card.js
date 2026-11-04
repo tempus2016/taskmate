@@ -979,11 +979,15 @@ class TaskMateGraphCard extends LitElement {
 
 customElements.define("taskmate-graph-card", TaskMateGraphCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-graph-card",
-  name: "TaskMate Points Graph",
-  description: "Line graph tracking daily or cumulative points over time",
+  get name() { return _tmPick("graph.card_name", "TaskMate Points Graph"); },
+  get description() { return _tmPick("graph.card_description", "Line graph tracking daily or cumulative points over time"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-graph-card", "overview"),

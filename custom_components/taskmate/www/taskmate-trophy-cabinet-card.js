@@ -761,11 +761,15 @@ class TaskMateTrophyCabinetCard extends LitElement {
 
 customElements.define("taskmate-trophy-cabinet-card", TaskMateTrophyCabinetCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-trophy-cabinet-card",
-  name: "TaskMate Trophy Cabinet",
-  description: "The whole family's season wins, personal bests, badges, quests and perfect weeks on shelves",
+  get name() { return _tmPick("trophy.card_name", "TaskMate Trophy Cabinet"); },
+  get description() { return _tmPick("trophy.card_description", "The whole family's season wins, personal bests, badges, quests and perfect weeks on shelves"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest ? window.__taskmate_suggest(hass, entityId, "taskmate-trophy-cabinet-card", "overview") : undefined,

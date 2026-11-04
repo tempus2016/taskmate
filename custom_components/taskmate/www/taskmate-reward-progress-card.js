@@ -875,11 +875,15 @@ class TaskMateRewardProgressCard extends LitElement {
 
 customElements.define("taskmate-reward-progress-card", TaskMateRewardProgressCard);
 
+// The card picker reads name and description each time it opens, so they
+// are getters: the picker shows them in the user's language (English if
+// the translations have not loaded).
+const _tmPick = (key, en) => (window.__taskmate_picker_text ? window.__taskmate_picker_text(key, en) : en);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "taskmate-reward-progress-card",
-  name: "TaskMate Reward Progress",
-  description: "Full-screen motivational reward progress display",
+  get name() { return _tmPick("reward_progress.card_name", "TaskMate Reward Progress"); },
+  get description() { return _tmPick("reward_progress.card_description", "Full-screen motivational reward progress display"); },
   preview: true,
   getEntitySuggestion: (hass, entityId) =>
     window.__taskmate_suggest(hass, entityId, "taskmate-reward-progress-card", "overview"),
