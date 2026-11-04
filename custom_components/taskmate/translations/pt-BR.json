@@ -23,16 +23,16 @@
   "selector": {
     "chore_action": {
       "options": {
-        "save": "Guardar alterações",
+        "save": "Salvar alterações",
         "re_enable": "Reativar tarefa",
         "disable": "Desativar tarefa",
-        "delete": "Eliminar esta tarefa"
+        "delete": "Excluir esta tarefa"
       }
     },
     "reward_action": {
       "options": {
-        "save": "Guardar alterações",
-        "delete": "Eliminar recompensa"
+        "save": "Salvar alterações",
+        "delete": "Excluir recompensa"
       }
     },
     "time_category": {
@@ -307,7 +307,7 @@
     },
     "add_points": {
       "name": "Adicionar pontos",
-      "description": "Adicionar pontos de bónus a uma criança",
+      "description": "Adicionar pontos de bônus a uma criança",
       "fields": {
         "child_id": {
           "name": "ID da criança",
@@ -319,13 +319,13 @@
         },
         "reason": {
           "name": "Motivo",
-          "description": "Motivo opcional para o bónus"
+          "description": "Motivo opcional para o bônus"
         }
       }
     },
     "remove_points": {
       "name": "Remover pontos",
-      "description": "Remover pontos de uma criança (penalização)",
+      "description": "Remover pontos de uma criança (penalidade)",
       "fields": {
         "child_id": {
           "name": "ID da criança",
@@ -337,7 +337,7 @@
         },
         "reason": {
           "name": "Motivo",
-          "description": "Motivo opcional para a penalização"
+          "description": "Motivo opcional para a penalidade"
         }
       }
     },
@@ -380,12 +380,12 @@
       }
     },
     "add_penalty": {
-      "name": "Adicionar penalização",
-      "description": "Criar uma nova definição de penalização",
+      "name": "Adicionar penalidade",
+      "description": "Criar uma nova definição de penalidade",
       "fields": {
         "name": {
           "name": "Nome",
-          "description": "O nome da penalização"
+          "description": "O nome da penalidade"
         },
         "points": {
           "name": "Pontos",
@@ -393,29 +393,29 @@
         },
         "description": {
           "name": "Descrição",
-          "description": "Descrição opcional da penalização"
+          "description": "Descrição opcional da penalidade"
         },
         "icon": {
           "name": "Ícone",
-          "description": "Ícone MDI para a penalização"
+          "description": "Ícone MDI para a penalidade"
         },
         "assigned_to": {
           "name": "Atribuída a",
-          "description": "Lista de IDs de crianças a quem esta penalização se aplica"
+          "description": "Lista de IDs de crianças a quem esta penalidade se aplica"
         }
       }
     },
     "update_penalty": {
-      "name": "Atualizar penalização",
-      "description": "Atualizar uma definição de penalização existente",
+      "name": "Atualizar penalidade",
+      "description": "Atualizar uma definição de penalidade existente",
       "fields": {
         "penalty_id": {
-          "name": "ID da penalização",
-          "description": "O ID da penalização a atualizar"
+          "name": "ID da penalidade",
+          "description": "O ID da penalidade a atualizar"
         },
         "name": {
           "name": "Nome",
-          "description": "Novo nome para a penalização"
+          "description": "Novo nome para a penalidade"
         },
         "points": {
           "name": "Pontos",
@@ -436,26 +436,26 @@
       }
     },
     "remove_penalty": {
-      "name": "Remover penalização",
-      "description": "Remover uma definição de penalização",
+      "name": "Remover penalidade",
+      "description": "Remover uma definição de penalidade",
       "fields": {
         "penalty_id": {
-          "name": "ID da penalização",
-          "description": "O ID da penalização a remover"
+          "name": "ID da penalidade",
+          "description": "O ID da penalidade a remover"
         }
       }
     },
     "apply_penalty": {
-      "name": "Aplicar penalização",
-      "description": "Aplicar uma penalização a uma criança, deduzindo pontos",
+      "name": "Aplicar penalidade",
+      "description": "Aplicar uma penalidade a uma criança, deduzindo pontos",
       "fields": {
         "penalty_id": {
-          "name": "ID da penalização",
-          "description": "O ID da penalização a aplicar"
+          "name": "ID da penalidade",
+          "description": "O ID da penalidade a aplicar"
         },
         "child_id": {
           "name": "ID da criança",
-          "description": "O ID da criança a quem aplicar a penalização"
+          "description": "O ID da criança a quem aplicar a penalidade"
         }
       }
     },
@@ -834,7 +834,7 @@
       }
     },
     "remove_task_group": {
-      "name": "Remove Task Group",
+      "name": "Remover grupo de tarefas",
       "description": "Delete a task group. Member chores are not affected.",
       "fields": {
         "group_id": {
@@ -1737,7 +1737,7 @@
     },
     "appeal": {
       "name": "Recorrer",
-      "description": "Uma criança pede que se reveja uma tarefa recusada, um pedido de recompensa recusado ou uma penalização das últimas 48 horas. Os recursos têm de estar ligados.",
+      "description": "Uma criança pede a revisão de uma tarefa recusada, de um pedido de recompensa recusado ou de uma penalidade das últimas 48 horas. Os recursos precisam estar ativados.",
       "fields": {
         "child_id": {
           "name": "ID da criança",
@@ -1759,7 +1759,7 @@
     },
     "decide_appeal": {
       "name": "Decidir um recurso",
-      "description": "Dar razão ao recurso (pagar a tarefa, aprovar a recompensa ou anular a penalização) ou manter a decisão.",
+      "description": "Dar razão ao recurso (pagar a tarefa, aprovar a recompensa ou anular a penalidade) ou manter a decisão.",
       "fields": {
         "appeal_id": {
           "name": "ID do recurso",
