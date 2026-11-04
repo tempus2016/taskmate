@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LOCALES_DIR = ROOT / "custom_components" / "taskmate" / "www" / "locales"
@@ -50,8 +51,9 @@ def _locale_files() -> list[str]:
 def _english_copies() -> dict[str, list[str]]:
     """Every locale entry whose value is byte-identical to English.
 
-    Values with no letters at all (bare placeholders, numbers, symbols) cannot
-    meaningfully differ between languages and are ignored.
+    Values with no letters outside their {placeholders} (bare placeholders,
+    numbers, symbols, "100 {points_name}") cannot meaningfully differ between
+    languages and are ignored.
     """
     en = _load(LOCALES_DIR / REFERENCE)
     found: dict[str, list[str]] = {}
@@ -60,7 +62,10 @@ def _english_copies() -> dict[str, list[str]]:
         hits = sorted(
             key
             for key, value in data.items()
-            if key in en and isinstance(value, str) and any(ch.isalpha() for ch in value) and value == en[key]
+            if key in en
+            and isinstance(value, str)
+            and any(ch.isalpha() for ch in re.sub(r"\{\w+\}", "", value))
+            and value == en[key]
         )
         if hits:
             found[name] = hits

@@ -153,6 +153,12 @@ class TaskMateTrophyCabinetCard extends LitElement {
     return true;
   }
 
+  // Built-in badge names arrive from the sensor in English; the shared helper
+  // (taskmate-localize.js) reads their translation from badge.name_<suffix>.
+  _badgeName(b) {
+    return window.__taskmate_badge_name ? window.__taskmate_badge_name(this.hass, b) : (b && b.name) || "";
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -315,7 +321,7 @@ class TaskMateTrophyCabinetCard extends LitElement {
             const bid = window.__taskmate_badge_id ? window.__taskmate_badge_id(b) : String(b.badge_id ?? b.id ?? b.name);
             const day = toDay(b.earned_at);
             const g = group.get(bid) || {
-              id: `badge:${bid}`, icon: b.icon || "mdi:medal", name: b.name || "", who: [], date: "",
+              id: `badge:${bid}`, icon: b.icon || "mdi:medal", name: this._badgeName(b), who: [], date: "",
               tier: b.tier || "",
             };
             if (!g.who.includes(String(kid.id))) g.who.push(String(kid.id));

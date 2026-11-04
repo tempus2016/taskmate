@@ -641,13 +641,10 @@ class TaskMateKioskCard extends LitElement {
     return (slug && this.hass.states?.[`sensor.taskmate_${slug}_badges`]) || null;
   }
 
-  // Built-in badge names arrive in English; the localised one is badge.name_<suffix>.
+  // Built-in badge names arrive from the sensor in English; the shared helper
+  // (taskmate-localize.js) reads their translation from badge.name_<suffix>.
   _badgeName(b) {
-    const id = b.badge_id || "";
-    if (!id.startsWith("builtin.")) return b.name;
-    const key = "badge.name_" + id.slice("builtin.".length);
-    const t = this._t(key);
-    return t !== key ? t : b.name;
+    return window.__taskmate_badge_name ? window.__taskmate_badge_name(this.hass, b) : (b && b.name) || "";
   }
 
   // The closest unearned badge that has been started, as on the child card (#780).
