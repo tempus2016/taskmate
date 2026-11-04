@@ -20036,9 +20036,13 @@ class TaskMatePanel extends HTMLElement {
       /* A long queue scrolls inside its card so the chore board stays in reach. */
       .tm-today-col .tm-approval-list { max-height: 440px; overflow-y: auto; overscroll-behavior: contain; }
       .tm-today-clear ha-icon { color: var(--tm-positive); --mdc-icon-size: 18px; }
-      .tm-today-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .tm-today-quick .tm-btn { justify-content: flex-start; gap: 8px; }
-      .tm-today-quick ha-icon { --mdc-icon-size: 18px; }
+      /* Two columns while both fit a 150px button, else one (the max() keeps
+         it to two at any width); a label that is still too long wraps inside
+         its button instead of spilling out (#771: German, French and Polish
+         labels overflowed with the sidebar open). */
+      .tm-today-quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(max(min(100%, 150px), calc((100% - 8px) / 2)), 1fr)); gap: 8px; }
+      .tm-today-quick .tm-btn { justify-content: flex-start; gap: 8px; min-width: 0; white-space: normal; text-align: start; overflow-wrap: anywhere; }
+      .tm-today-quick ha-icon, .tm-today-quick .tm-btn > span { --mdc-icon-size: 18px; flex: none; }
       .tm-seg {
         margin-inline-start: auto; display: inline-flex; padding: 2px; gap: 2px;
         border-radius: 8px; background: var(--tm-surface-2);
@@ -20313,7 +20317,7 @@ class TaskMatePanel extends HTMLElement {
           -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
           mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
         }
-        .tm-today-quick { grid-template-columns: 1fr; }
+        .tm-shell .tm-today-quick { grid-template-columns: 1fr; }
       }
       @media (max-width: 400px) {
         /* 360 px phones: tighter gaps so All and two children sit beside
