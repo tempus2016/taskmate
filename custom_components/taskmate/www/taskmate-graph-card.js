@@ -454,7 +454,7 @@ class TaskMateGraphCard extends LitElement {
       <div class="tmd-hd">
         <span class="ic">${design === "console" ? "⌁" : design === "cleanpro" ? "◔" : "📈"}</span>
         <span class="tt">${this.config.title || this._t('graph.default_title')}${sub ? html`<small>${sub}</small>` : ""}</span>
-        ${design === "console" ? html`<span class="pill">LIVE</span>` : ""}
+        ${design === "console" ? html`<span class="pill">${this._t('graph.console_live')}</span>` : ""}
       </div>`;
 
     if (!entity) {
