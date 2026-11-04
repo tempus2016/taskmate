@@ -15732,14 +15732,30 @@ class TaskMatePanel extends HTMLElement {
     return "";
   }
 
+  /** The day at a glance: one lane per set time, its window drawn to scale.
+   *  The name sits beside its window rather than inside it — a one- or
+   *  two-hour window is far narrower than "Afternoon" (let alone
+   *  "Nachmittag" or "Popołudnie"), so the name used to be cut to
+   *  "After…". It starts at the window and runs on past it, or ends at the
+   *  window when that is late in the day, so it stays inside the strip. */
   _choreTimesStrip(times) {
-    const blocks = (times || []).map(t => {
+    const lanes = (times || []).map(t => {
       const s = this._choreTimesMinutes(t.start);
       const e = this._choreTimesMinutes(t.end);
       if (s == null || e == null || e <= s) return "";
-      return `<div class="tm-st-blk" style="inset-inline-start:${(s / 14.4).toFixed(2)}%;width:${Math.max(1, (e - s) / 14.4).toFixed(2)}%" title="${this._esc(t.name || t.start)} ${this._esc(t.start)}–${this._esc(t.end)}">${this._esc(t.name || t.start)}</div>`;
+      const from = s / 14.4;
+      const to = Math.max(e / 14.4, from + 1);
+      const name = this._esc(t.name || t.start);
+      const late = from > 55;
+      const place = late
+        ? `inset-inline-end:${(100 - to).toFixed(2)}%;max-width:${to.toFixed(2)}%`
+        : `inset-inline-start:${from.toFixed(2)}%;max-width:${(100 - from).toFixed(2)}%`;
+      return `<div class="tm-st-lane" title="${name} ${this._esc(t.start)}–${this._esc(t.end)}">
+          <div class="tm-st-blk" style="inset-inline-start:${from.toFixed(2)}%;width:${(to - from).toFixed(2)}%"></div>
+          <span class="tm-st-lbl" style="${place}">${name}</span>
+        </div>`;
     }).join("");
-    return `<div class="tm-st-strip">${blocks}</div>
+    return `<div class="tm-st-strip">${lanes}</div>
       <div class="tm-st-axis"><span>00</span><span>04</span><span>08</span><span>12</span><span>16</span><span>20</span><span>24</span></div>`;
   }
 
@@ -19073,10 +19089,23 @@ class TaskMatePanel extends HTMLElement {
       .tm-st-add { border: 1px dashed var(--tm-border-strong); background: transparent; border-radius: var(--tm-radius-sm); padding: 8px; font: inherit; font-size: 13px; color: var(--tm-accent-text); cursor: pointer; }
       .tm-st-add[disabled] { color: var(--tm-text-muted); cursor: default; }
       .tm-st-strip {
-        position: relative; height: 30px; border-radius: 6px; margin-top: 4px;
+        display: grid; gap: 2px; min-height: 30px; padding: 4px 0; box-sizing: border-box;
+        border-radius: 6px; margin-top: 4px;
         background: repeating-linear-gradient(90deg, var(--tm-surface-0) 0 calc(100% / 24 - 1px), var(--tm-border-soft, var(--tm-border)) calc(100% / 24 - 1px) calc(100% / 24));
       }
-      .tm-st-blk { position: absolute; top: 4px; bottom: 4px; border-radius: 5px; background: var(--tm-accent); color: var(--text-primary-color, #fff); font-size: 11px; font-weight: 700; line-height: 22px; text-align: center; padding: 0 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .tm-st-lane { position: relative; height: 20px; }
+      .tm-st-blk {
+        position: absolute; top: 0; bottom: 0; border-radius: 5px;
+        background: var(--tm-accent-soft); border: 1px solid var(--tm-accent-border, var(--tm-accent));
+        box-sizing: border-box;
+      }
+      .tm-st-lbl {
+        position: absolute; top: 0; line-height: 20px; padding-inline: 6px; box-sizing: border-box;
+        font-size: 11px; font-weight: 700; color: var(--tm-accent-text, var(--tm-accent));
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        /* A halo, so the hour lines behind a name don't run through it. */
+        text-shadow: 0 0 3px var(--tm-surface-0), 0 0 3px var(--tm-surface-0);
+      }
       .tm-st-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--tm-text-muted); }
       .tm-st-err { color: var(--tm-danger, #c4282e); }
       .tm-st-dots { display: inline-flex; gap: 3px; margin-inline-start: 4px; vertical-align: middle; }
