@@ -928,18 +928,37 @@ class TaskMateGraphCard extends LitElement {
     return dailyNets.map(v => { running += v; return running; });
   }
 
-  _niceMax(val) {
-    if (val <= 10) return 10;
-    if (val <= 20) return 20;
-    if (val <= 50) return 50;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(val)));
-    return Math.ceil(val / magnitude) * magnitude;
+  /**
+   * A "nice" whole-number tick step for an axis up to ``val``: 1, 2 or 5 times
+   * a power of ten, aiming at about five intervals. Rounding max/4 gave uneven
+   * ticks (0 / 3 / 5 / 8 / 10, #771).
+   */
+  _niceStep(val) {
+    const rough = Math.max(1, val) / 5;
+    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm = rough / mag;
+    const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+    return Math.max(1, Math.round(step));
   }
 
+  _niceMax(val) {
+    // Small charts keep their 0–10 scale, as before.
+    const v = Math.max(10, val);
+    const step = this._niceStep(v);
+    return Math.ceil(v / step) * step;
+  }
+
+  /** Evenly spaced ticks from 0 to ``max`` (a value from _niceMax). */
   _yTicks(max) {
-    const count = 4;
-    const step = max / count;
-    return Array.from({ length: count + 1 }, (_, i) => Math.round(i * step));
+    let step = this._niceStep(max);
+    // _niceMax already lands on a multiple of its step; if a different step
+    // comes out for the rounded-up max, fall back to one that divides it.
+    for (const f of [5, 2, 1]) {
+      if (max % step === 0) break;
+      step = Math.max(1, Math.pow(10, Math.floor(Math.log10(step))) * f);
+    }
+    if (max % step !== 0) step = 1;
+    return Array.from({ length: Math.round(max / step) + 1 }, (_, i) => i * step);
   }
 
   _shortDate(dateStr) {
