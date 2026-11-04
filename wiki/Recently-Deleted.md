@@ -18,7 +18,7 @@ Restore puts the item back under its **old id**, so its Home Assistant entities 
 
 **Savings on a reward.** Deleting a reward refunds what the children had saved towards it. Restoring moves those points back into the jar, but only as far as each child still has them: a child who spent part of the refund gets back what they can cover.
 
-**Not brought back:** a chore's open swap requests and teamwork joins, and its auctions (live auctions were called off and the bidders told when the chore went). Records for a child who has been deleted since are left out.
+**Not brought back:** a chore's open swap requests and teamwork joins, its auctions (live auctions were called off and the bidders told when the chore went), and any timer a child had running or paused on a timed chore (it stops when the chore is deleted; seconds not yet stopped aren't credited). Records for a child who has been deleted since are left out.
 
 Restore refuses if something already uses the same id.
 
@@ -26,7 +26,7 @@ Restore refuses if something already uses the same id.
 
 Once a minute TaskMate forgets anything deleted more than 7 days ago. That is when a deleted chore's or reward's picture is removed from disk too (unless another chore or reward still shows it).
 
-Chores removed with the Chores page's **bulk delete** are kept here too.
+Chores removed with the Chores page's **bulk delete** are kept here too, and are cleared exactly as a single delete clears them.
 
 ## Related
 

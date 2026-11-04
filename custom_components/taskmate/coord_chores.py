@@ -423,16 +423,17 @@ class ChoresMixin:
         if action not in ("delete", "enable", "disable", "reassign"):
             raise ValueError(f"Unknown bulk action {action}")
         count = 0
-        called_off = []
         for cid in ids:
             chore = self.storage.get_chore(cid)
             if not chore:
                 continue
             if action == "delete":
-                self._snapshot_chore(cid)
-                self.storage.remove_chore(cid)
-                # Its auctions go with it, live ones called off (#999).
-                called_off += self.remove_chore_from_auctions(cid)
+                # The same delete as one at a time (#771): it snapshots for
+                # Recently deleted and clears completions, timers, groups,
+                # auctions (live ones called off, #999) and the rest. Removing
+                # only the chore left its completions behind, so a restore
+                # then added them a second time.
+                await self.async_remove_chore(cid, refresh=False)
             elif action == "enable":
                 chore.enabled = True
                 chore.disabled_for = []
@@ -446,8 +447,6 @@ class ChoresMixin:
             count += 1
         await self.storage.async_save()
         await self.async_refresh()
-        for auction, bidders in called_off:
-            await self._async_tell_bidders_called_off(auction, bidders)
         return count
 
     async def async_approve_chores_bulk(
@@ -676,6 +675,9 @@ class ChoresMixin:
         self.storage.remove_swap_requests_for_chore(chore_id)
         # Teamwork joins (#928) belong to the occurrence of a chore that's gone.
         self.storage.remove_team_joins_for_chore(chore_id)
+        # A running or paused timer on it goes now, not at the midnight sweep.
+        # Not snapshotted, so a restore never brings a stale timer back (#771).
+        self.storage.remove_timed_sessions_for_chore(chore_id)
         # Its auctions (#982) go with it; live ones are called off (#999).
         called_off = self.remove_chore_from_auctions(chore_id)
         # Remove chore from children's chore_order lists
