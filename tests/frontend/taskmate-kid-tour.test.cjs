@@ -373,7 +373,14 @@ const LOCKED_CHORES = [
   { id: "tidy", name: "Tidy room", points: 3, time_category: "anytime", assigned_to: [], due_days: [], schedule_mode: "specific_days", assignment_mode: "everyone", depends_on: ["walk"] },
   { id: "walk", name: "Walk dog", points: 3, time_category: "anytime", assigned_to: [], due_days: [], schedule_mode: "specific_days", assignment_mode: "everyone" },
 ];
-const BED_DONE = [{ chore_id: "bed", child_id: "kid1", approved: true, completed_at: "2026-11-03T08:00:00" }];
+// A completion stamped earlier today (local time), so "done today" checks hold
+// whatever day the suite runs on.
+const TODAY_8AM = (() => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T08:00:00`;
+})();
+const BED_DONE = [{ chore_id: "bed", child_id: "kid1", approved: true, completed_at: TODAY_8AM }];
 
 for (const design of DESIGNS) {
   test(`child card (${design}): the tick step skips done, locked and blocked chores`, () => {
@@ -411,7 +418,7 @@ test("kiosk: the tick step only points at a row with a live Done button", async 
   const { card } = kiosk();
   const attrs = card.hass.states[ENTITY].attributes;
   attrs.chores = [{ id: "dishes", name: "Dishes", points: 5, assigned_to: [] }, { id: "bins", name: "Bins", points: 2, assigned_to: [] }];
-  attrs.todays_completions = [{ chore_id: "dishes", child_id: "malia", approved: true, completed_at: "2026-11-03T08:00:00" }];
+  attrs.todays_completions = [{ chore_id: "dishes", child_id: "malia", approved: true, completed_at: TODAY_8AM }];
   card.hass.callWS = async (m) => (m.type === "taskmate/kiosk/status"
     ? { children: [{ id: "malia", has_pin: false, can_act: true, due: ["bins"] }] } : {});
   await card._refreshStatus();
