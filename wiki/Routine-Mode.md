@@ -10,6 +10,8 @@ The standard child card is a checklist. That is good for scanning but poor for w
 
 ## Adding the Card
 
+Add it from the dashboard's card picker (**TaskMate Routine**) and set it up in the visual editor: pick the child, the **Time of day** the routine covers (**Whole day** takes every chore due today), an optional title, the card design and the header colour. Or write the YAML yourself:
+
 ```yaml
 type: custom:taskmate-routine-card
 entity: sensor.taskmate_overview

@@ -64,8 +64,11 @@ def test_routine_card_registers_its_custom_element():
     source = (WWW / "taskmate-routine-card.js").read_text(encoding="utf-8")
     editor = (WWW / "editors" / "taskmate-routine-card-editor.js").read_text(encoding="utf-8")
     assert 'customElements.define("taskmate-routine-card"' in source
-    # The editor element lives in its own module (not yet wired to the card).
+    # The visual editor is its own module, which the card loads when the
+    # editor opens; the card must actually point HA at it.
     assert 'customElements.define("taskmate-routine-card-editor"' in editor
+    assert "static async getConfigElement()" in source
+    assert "./editors/taskmate-routine-card-editor.js" in source
 
 
 def test_routine_card_declares_itself_to_the_card_picker():
