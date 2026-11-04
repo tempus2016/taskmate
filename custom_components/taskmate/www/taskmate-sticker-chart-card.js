@@ -28,6 +28,13 @@
 // owns the html tag helper is LitElement itself. Dashboards always define hui-masonry-view;
 // the TaskMate admin panel also shows this card (to log past days) and has no
 // dashboard views, so fall back to elements every HA page defines.
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LIT_HOST_TAGS = ["hui-masonry-view", "hui-view", "home-assistant-main", "ha-card"];
 
 const findLitBase = () => {
@@ -992,8 +999,7 @@ class TaskMateStickerChartCard extends LitElement {
     // reward belong to today, so they are left off.
     const past = this._pastDay();
     if (past) {
-      const day = past.toLocaleDateString(this.hass?.locale?.language || this.hass?.language || undefined,
-        { weekday: "long", day: "numeric", month: "short" });
+      const day = past.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long", day: "numeric", month: "short" }));
       return html`
         <div class="col" style="--tone:${tone}">
           <div class="heading">

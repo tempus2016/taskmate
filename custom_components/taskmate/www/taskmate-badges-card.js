@@ -11,6 +11,13 @@
  * Version: 1.0.0
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -495,9 +502,7 @@ class TaskMateBadgesCard extends LitElement {
   _formatDate(iso) {
     if (!iso) return "";
     try {
-      // In Home Assistant's language, not the browser's ("12. Sept." on a German dashboard).
-      const lang = this.hass?.locale?.language || this.hass?.language || undefined;
-      return new Date(iso).toLocaleDateString(lang, { day: "numeric", month: "short" });
+      return new Date(iso).toLocaleDateString(...__tmDateArgs(this.hass, { day: "numeric", month: "short" }));
     } catch {
       return iso;
     }

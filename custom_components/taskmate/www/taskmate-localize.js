@@ -302,9 +302,108 @@ function familyPointsName(hass) {
   return _pnCache.value || localize(hass, 'common.points');
 }
 
+/**
+ * Arguments for toLocaleDateString / toLocaleTimeString / toLocaleString /
+ * Intl.DateTimeFormat that follow Home Assistant's language and its date/time
+ * settings rather than the browser's (#771): a German HA on an English browser
+ * reads "Dienstag, 3. November", not "Tuesday, 3 November".
+ *
+ *   date.toLocaleDateString(...dateArgs(hass, { weekday: "long" }))
+ *   date.toLocaleTimeString(...dateArgs(hass, { hour: "2-digit", minute: "2-digit" }, "time"))
+ *
+ * - Language: hass.locale.language, else hass.language. HA's "pt" is European
+ *   Portuguese, which Intl spells pt-PT ("pt" alone formats as Brazilian).
+ * - Time format (hass.locale.time_format): "12" / "24" force the clock for
+ *   anything showing a time; "language" keeps the language's own; "system"
+ *   uses the browser's locale for it.
+ * - Date format (hass.locale.date_format) "system" uses the browser's locale
+ *   for a date. DMY / MDY / YMD only reorder numeric dates in HA; TaskMate's
+ *   dates spell the month, so the language's own order applies.
+ * - Time zone (hass.locale.time_zone) "server" shows times in HA's zone, unless
+ *   the caller already chose one. Date-only labels keep the caller's zone: a
+ *   local-midnight Date shown in another zone can land on the day before.
+ *
+ * @param {object} hass
+ * @param {object} [opts] - the Intl options the caller wants
+ * @param {"time"|"datetime"} [kind] - what the method prints when opts are absent
+ * @returns {[string|undefined, object|undefined]}
+ */
+function dateArgs(hass, opts, kind) {
+  const loc = (hass && hass.locale) || {};
+  const o = opts ? { ...opts } : {};
+  const timeish = kind === 'time' || kind === 'datetime'
+    || 'hour' in o || 'minute' in o || 'timeStyle' in o;
+  // "Today" / "now" displays (kind "now") follow HA's server zone too, so the
+  // panel's date line reads the same day the server does. Stored dates keep
+  // the caller's zone: a local-midnight Date in another zone is the day before.
+  const nowish = kind === 'now';
+  let lang = loc.language || (hass && hass.language) || undefined;
+  if (lang === 'pt') lang = 'pt-PT';
+  if (timeish ? loc.time_format === 'system' : loc.date_format === 'system') lang = undefined;
+  if (timeish) {
+    if (loc.time_format === '12' || loc.time_format === '24') {
+      delete o.hour12;
+      o.hourCycle = loc.time_format === '12' ? 'h12' : 'h23';
+    }
+  }
+  if ((timeish || nowish) && loc.time_zone === 'server' && !o.timeZone && hass && hass.config && hass.config.time_zone) {
+    o.timeZone = hass.config.time_zone;
+  }
+  if (lang) {
+    try {
+      if (!Intl.DateTimeFormat.supportedLocalesOf([lang]).length) lang = undefined;
+    } catch (e) {
+      lang = undefined;  // not a valid language tag
+    }
+  }
+  // A 12-hour clock reads "5:00 PM", not "05:00 PM": the leading zero only
+  // belongs to a 24-hour clock (as in HA's own time format).
+  if (timeish && o.hour === '2-digit') {
+    try {
+      const cycle = new Intl.DateTimeFormat(lang, { hour: 'numeric', ...o }).resolvedOptions().hourCycle;
+      if (cycle === 'h11' || cycle === 'h12') o.hour = 'numeric';
+    } catch (e) { /* keep 2-digit */ }
+  }
+  return [lang, Object.keys(o).length ? o : undefined];
+}
+
+/**
+ * A wall-clock time ("17:00", as chores, periods and set times store it) in
+ * HA's time format: "17:00" on a 24-hour profile, "5:00 PM" on a 12-hour
+ * one. Anything that isn't H:MM comes back unchanged.
+ */
+function clock(hass, hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm == null ? '' : hhmm).trim());
+  if (!m) return hhmm == null ? '' : String(hhmm);
+  const d = new Date(Date.UTC(2024, 0, 1, Number(m[1]) % 24, Number(m[2])));
+  try {
+    return d.toLocaleTimeString(...dateArgs(hass, { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }, 'time'));
+  } catch (e) {
+    return String(hhmm);
+  }
+}
+
+/**
+ * The hour of the day (0-23) as HA shows it: the server's when HA's time
+ * zone setting is "server", the browser's otherwise.
+ */
+function hourNow(hass, now = new Date()) {
+  const loc = (hass && hass.locale) || {};
+  const tz = loc.time_zone === 'server' && hass && hass.config && hass.config.time_zone;
+  if (!tz) return now.getHours();
+  try {
+    const h = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hourCycle: 'h23' })
+      .formatToParts(now).find(p => p.type === 'hour');
+    return h ? Number(h.value) % 24 : now.getHours();
+  } catch (e) {
+    return now.getHours();
+  }
+}
+
 // Expose globally so cards can access without ES module imports
 window.__taskmate_badge_name = badgeName;
 window.__taskmate_badge_count = badgeCount;
+window.__taskmate_dates = { args: dateArgs, clock, hourNow };
 window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;

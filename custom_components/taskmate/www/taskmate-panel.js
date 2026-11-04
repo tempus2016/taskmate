@@ -7,6 +7,13 @@
  *   - Version extracted from resource URL (?v=x.x.x), same as cards.
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const PANEL_VERSION = (() => {
   // The version comes from the resource URL (?v=x.x.x), set by the integration
   // itself — but it is still DOM-sourced text that we later splice into
@@ -2132,7 +2139,7 @@ class TaskMatePanel extends HTMLElement {
 
   _inspClock(iso) {
     const d = new Date(iso);
-    return isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return isNaN(d) ? "" : d.toLocaleTimeString(...__tmDateArgs(this._hass, { hour: "2-digit", minute: "2-digit" }, "time"));
   }
 
   _inspBedtime() {
@@ -3612,13 +3619,12 @@ class TaskMatePanel extends HTMLElement {
       return `<span class="tm-recap-off"><ha-icon icon="mdi:information-outline"></ha-icon> ${this._t("panel.recaps_off")}</span>`;
     }
     const next = this._recapSchedule?.next || {};
-    const lang = this._hass?.locale?.language || this._hass?.language || undefined;
     return RECAP_FREQUENCIES.filter(f => selected.includes(f)).map(f => {
       let when = "…";
       if (next[f]) {
         const [y, m, d] = next[f].split("-").map(Number);
         try {
-          when = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(lang, { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: "numeric" });
+          when = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(...__tmDateArgs(this._hass, { timeZone: "UTC", weekday: "short", day: "numeric", month: "short", year: "numeric" }));
         } catch (e) { when = next[f]; }
       }
       return `<span><b>${this._esc(this._t("recap.freq." + f))}:</b> ${this._esc(when)}</span>`;
@@ -4208,7 +4214,7 @@ class TaskMatePanel extends HTMLElement {
     if (diffSec < 3600)       return this._t("panel.time_ago_minutes", {count: Math.floor(diffSec / 60)});
     if (diffSec < 86400)      return this._t("panel.time_ago_hours", {count: Math.floor(diffSec / 3600)});
     if (diffSec < 604800)     return this._t("panel.time_ago_days", {count: Math.floor(diffSec / 86400)});
-    return then.toLocaleDateString();
+    return then.toLocaleDateString(...__tmDateArgs(this._hass, undefined));
   }
 
   // ---- rendering -------------------------------------------------------
@@ -4861,7 +4867,7 @@ class TaskMatePanel extends HTMLElement {
       return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
     }
     const anyLogged = report.children.some(c => c.logged > 0);
-    const dayLabel = iso => new Date(`${iso}T12:00:00`).toLocaleDateString([], { weekday: "narrow" });
+    const dayLabel = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "narrow" }));
     return `
       <div class="tm-card">
         <div class="tm-card-head">
@@ -4899,10 +4905,9 @@ class TaskMatePanel extends HTMLElement {
       return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
     }
     const start = new Date(`${report.start}T12:00:00`);
-    const lang = this._hass?.locale?.language || [];
     // Monday-first weeks: pad the first row so each column is one weekday.
     const lead = (start.getDay() + 6) % 7;
-    const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(lang, { weekday: "narrow" }));
+    const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "narrow" })));
     const level = (n, best) => !n ? 0 : Math.min(4, Math.max(1, Math.ceil((n / Math.max(best, 1)) * 4)));
     const any = report.children.some(c => c.total > 0);
     return `
@@ -4930,7 +4935,7 @@ class TaskMatePanel extends HTMLElement {
                   ${"<i class=\"tm-heat-pad\"></i>".repeat(lead)}
                   ${c.counts.map((n, i) => {
                     const d = new Date(start.getTime() + i * 86400000);
-                    const label = `${d.toLocaleDateString(lang, { weekday: "short", day: "numeric", month: "short" })}: ${this._t(n === 1 ? "panel.insights_calendar_cell_one" : "panel.insights_calendar_cell", { count: n })}`;
+                    const label = `${d.toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "short", day: "numeric", month: "short" }))}: ${this._t(n === 1 ? "panel.insights_calendar_cell_one" : "panel.insights_calendar_cell", { count: n })}`;
                     return `<i class="tm-heat-l${level(n, best)}" title="${this._esc(label)}"></i>`;
                   }).join("")}
                 </div>
@@ -5566,7 +5571,7 @@ class TaskMatePanel extends HTMLElement {
       // recalculated here: a chore edited while the work sat in the
       // queue, or a speed/roulette bonus that no longer applies.
       chorePoints = c.submitted_points ?? chorePoints;
-      const photoCap = [choreName, (child && child.name) || "", c.completed_at ? new Date(c.completed_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""].filter(Boolean).join(" · ");
+      const photoCap = [choreName, (child && child.name) || "", c.completed_at ? new Date(c.completed_at).toLocaleString(...__tmDateArgs(this._hass, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }, "datetime")) : ""].filter(Boolean).join(" · ");
       return `
         <div class="tm-approval-item" data-kind="chore">
           <div class="tm-approval-icon"><ha-icon icon="${c.bonus_subtask_id ? 'mdi:star-plus' : c.bounty_id ? 'mdi:flag-outline' : 'mdi:checkbox-marked-circle-outline'}"></ha-icon></div>
@@ -5752,9 +5757,12 @@ class TaskMatePanel extends HTMLElement {
     const kids = (this._state.children || []).filter(c => this._childInScope(c.id));
     const pointsName = (this._state.settings && this._state.settings.points_name) || this._t("common.points");
     const queue = this._approvalQueue({ wishes: true });
-    const hour = new Date().getHours();
+    // Morning / afternoon / evening by HA's clock (#771): the server's when
+    // HA is set to show server time, not this browser's.
+    const hour = window.__taskmate_dates && window.__taskmate_dates.hourNow
+      ? window.__taskmate_dates.hourNow(this._hass) : new Date().getHours();
     const greet = this._t(hour < 12 ? "panel.today_greeting_morning" : hour < 18 ? "panel.today_greeting_afternoon" : "panel.today_greeting_evening");
-    const dateText = new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+    const dateText = new Date().toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "long", day: "numeric", month: "long" }, "now"));
     const needs = queue.count > 0
       ? `<span class="tm-today-needs">${this._t(queue.count === 1 ? "panel.today_needs_one" : "panel.today_needs_many", { count: queue.count })}</span>`
       : this._t("panel.today_all_clear");
@@ -5858,7 +5866,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _hm(ms) {
-    return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return new Date(ms).toLocaleTimeString(...__tmDateArgs(this._hass, { hour: "2-digit", minute: "2-digit" }, "time"));
   }
 
   _renderBoostsCard() {
@@ -5963,7 +5971,7 @@ class TaskMatePanel extends HTMLElement {
 
   _weekdayShort(i) {
     // 2024-01-01 was a Monday, so day i of that week is weekday i.
-    return new Date(2024, 0, 1 + Number(i)).toLocaleDateString([], { weekday: "short" });
+    return new Date(2024, 0, 1 + Number(i)).toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "short" }));
   }
 
   _renderBoostRuleDialog() {
@@ -6318,7 +6326,7 @@ class TaskMatePanel extends HTMLElement {
   _shortDateLabel(iso) {
     const d = new Date(`${iso}T12:00:00`);
     if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(this._hass?.locale?.language || [], { weekday: "short", day: "numeric", month: "short" });
+    return d.toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "short", day: "numeric", month: "short" }));
   }
 
   async _editListSetting(field, value, add) {
@@ -6388,7 +6396,7 @@ class TaskMatePanel extends HTMLElement {
 
   /** Weekday name for 0 = Monday … 6 = Sunday (Python's numbering). */
   _weekdayName(day) {
-    return new Date(2024, 0, 1 + day).toLocaleDateString(this._hass?.locale?.language || [], { weekday: "long" });
+    return new Date(2024, 0, 1 + day).toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "long" }));
   }
 
   _renderShoppingJobsSettings(s) {
@@ -6609,7 +6617,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-help-text">
                 <strong>${this._esc(names[r.child_id] || "?")}</strong> — ${this._esc(r.chore_name || "")}
                 ${r.message ? `<div class="tm-meta">“${this._esc(r.message)}”</div>` : ""}
-                <div class="tm-meta">${this._esc(this._timeAgo ? this._timeAgo(r.at) : new Date(r.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))}</div>
+                <div class="tm-meta">${this._esc(this._timeAgo ? this._timeAgo(r.at) : new Date(r.at).toLocaleTimeString(...__tmDateArgs(this._hass, { hour: "2-digit", minute: "2-digit" }, "time")))}</div>
               </div>
               <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="answer-help" data-id="${this._esc(r.id)}">${this._t("panel.today_help_answer")}</button>
             </div>`).join("")}
@@ -6655,7 +6663,6 @@ class TaskMatePanel extends HTMLElement {
     if (!win) { this._showToast("err", this._t("panel.voucher_popup_blocked")); return; }
     const claim = (this._state.reward_claims || []).find(c => c.id === claimId);
     const when = claim && (claim.approved_at || claim.claimed_at);
-    const lang = (this._hass && this._hass.locale && this._hass.locale.language) || undefined;
     const msg = {
       type: "taskmate/print/reward_voucher",
       claim_id: claimId,
@@ -6667,7 +6674,7 @@ class TaskMatePanel extends HTMLElement {
         signed: this._t("panel.voucher_signed"),
       },
     };
-    if (when) msg.date_text = new Date(when).toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" });
+    if (when) msg.date_text = new Date(when).toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "short", year: "numeric" }));
     const { ok, res, err } = await this._callWS(msg);
     if (!ok || !res || !res.html) {
       win.close();
@@ -6860,7 +6867,7 @@ class TaskMatePanel extends HTMLElement {
     const history = this._state.today && this._state.today.history;
     if (!history) return `<p class="tm-meta">${this._t("panel.today_board_unavailable")}</p>`;
     const first = kids.map(k => history[k.id]).find(Boolean) || [];
-    const dayName = iso => new Date(`${iso}T12:00:00`).toLocaleDateString([], { weekday: "short" });
+    const dayName = iso => new Date(`${iso}T12:00:00`).toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "short" }));
     const gaps = kids.some(k => (history[k.id] || []).some(d => d.due == null));
     return `
       <div class="tm-board-wrap">
@@ -7807,7 +7814,7 @@ class TaskMatePanel extends HTMLElement {
     const age = this._wizardAgeOf(k);
     if (k.mode === "bday" && age != null) {
       const [y, m, d] = k.bday.split("-").map(Number);
-      const when = new Date(y, m - 1, d).toLocaleDateString([], { day: "numeric", month: "long", year: "numeric" });
+      const when = new Date(y, m - 1, d).toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "long", year: "numeric" }));
       bits.push(`<span><ha-icon icon="mdi:cake-variant-outline"></ha-icon>${this._esc(when)} · ${this._t("wizard.age_n", { age })}</span>`);
     } else if (k.mode === "age" && age != null) {
       bits.push(`<span>${this._t("wizard.age_n", { age })}</span>`);
@@ -9925,13 +9932,9 @@ class TaskMatePanel extends HTMLElement {
     return this._plOccurs(after, to, today) ? [op] : null;
   }
 
-  _plLang() {
-    return (this._hass && this._hass.locale && this._hass.locale.language) || undefined;
-  }
-
   _plFmt(iso, opts) {
     try {
-      return new Date(`${iso}T12:00:00Z`).toLocaleDateString(this._plLang(), { ...opts, timeZone: "UTC" });
+      return new Date(`${iso}T12:00:00Z`).toLocaleDateString(...__tmDateArgs(this._hass, { ...opts, timeZone: "UTC" }));
     } catch (_) {
       return iso;
     }
@@ -11183,7 +11186,7 @@ class TaskMatePanel extends HTMLElement {
     const all = this._state.raffles || [];
     const names = Object.fromEntries((this._state.children || []).map(c => [c.id, c.name]));
     const pts = this._esc(this._pointsName());
-    const when = iso => iso ? this._esc(new Date(iso).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })) : "—";
+    const when = iso => iso ? this._esc(new Date(iso).toLocaleString(...__tmDateArgs(this._hass, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }, "datetime"))) : "—";
     const row = r => {
       const tickets = Object.entries(r.tickets || {}).filter(([, n]) => n > 0);
       const total = tickets.reduce((a, [, n]) => a + n, 0);
@@ -11372,7 +11375,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._num(b.points_awarded || b.points), points_name: this._esc(this._pointsName()) })}</div>`;
     } else if (b.status === "expired") {
       status = `<span class="tm-pill tm-pill-muted">${this._t("panel.bounty_status_expired")}</span>
-        <div class="tm-meta">${this._t(b.lapse_count > 0 ? "panel.bounty_expired_lapsed_meta" : b.claim_count > 0 ? "panel.bounty_expired_unfinished_meta" : "panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString([], { day: "numeric", month: "short" })) : "" })}</div>`;
+        <div class="tm-meta">${this._t(b.lapse_count > 0 ? "panel.bounty_expired_lapsed_meta" : b.claim_count > 0 ? "panel.bounty_expired_unfinished_meta" : "panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "short" }))) : "" })}</div>`;
     }
     if (b.lapse_count > 0) status += `<div class="tm-meta">${this._t("panel.bounty_lapsed_meta", { count: b.lapse_count })}</div>`;
     const expires = (b.status === "open" || b.status === "claimed")
@@ -11607,12 +11610,12 @@ class TaskMatePanel extends HTMLElement {
 
   _auctionDate(iso, opts = { weekday: "short", day: "numeric", month: "short" }) {
     const d = new Date(`${iso}T00:00:00`);
-    return Number.isNaN(d.getTime()) ? String(iso || "") : d.toLocaleDateString(this._hass?.locale?.language, opts);
+    return Number.isNaN(d.getTime()) ? String(iso || "") : d.toLocaleDateString(...__tmDateArgs(this._hass, opts));
   }
 
   _auctionWhen(iso) {
     const d = new Date(iso || "");
-    return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(this._hass?.locale?.language, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(...__tmDateArgs(this._hass, { weekday: "short", hour: "2-digit", minute: "2-digit" }, "datetime"));
   }
 
   _renderAuctionsTab() {
@@ -12115,7 +12118,7 @@ class TaskMatePanel extends HTMLElement {
               const tierCls = this._tierClass(badge.tier || "bronze");
               const srcLabel = a.silent ? this._t("badge.source_silent") : a.manually_awarded ? this._t("badge.source_manual") : this._t("badge.source_auto");
               const srcCls = a.silent ? "tm-badge-src-silent" : a.manually_awarded ? "tm-badge-src-manual" : "tm-badge-src-auto";
-              const when = a.earned_at ? new Date(a.earned_at).toLocaleString() : "—";
+              const when = a.earned_at ? new Date(a.earned_at).toLocaleString(...__tmDateArgs(this._hass, undefined, "datetime")) : "—";
               return `
                 <tr class="tm-row tm-badge-row ${tierCls}">
                   <td>
@@ -12760,7 +12763,7 @@ class TaskMatePanel extends HTMLElement {
     const entries = this._state.audit_log || [];
     const rows = entries.map(a => {
       let when = a.ts || "";
-      try { if (a.ts) when = new Date(a.ts).toLocaleString(); } catch (e) {}
+      try { if (a.ts) when = new Date(a.ts).toLocaleString(...__tmDateArgs(this._hass, undefined, "datetime")); } catch (e) {}
       return `
             <div class="tm-audit-row">
               <div class="tm-audit-when">${this._esc(when)}</div>
@@ -13834,7 +13837,7 @@ class TaskMatePanel extends HTMLElement {
     const kinds = { chore: "panel.trash_kind_chore", reward: "panel.trash_kind_reward", quest: "panel.trash_kind_quest" };
     const when = (iso) => {
       const d = new Date(iso);
-      return isNaN(d) ? "" : d.toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      return isNaN(d) ? "" : d.toLocaleString(...__tmDateArgs(this._hass, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }, "datetime"));
     };
     return `
         <div class="tm-section">
@@ -14215,7 +14218,7 @@ class TaskMatePanel extends HTMLElement {
     const x = (i) => +(i * W / last).toFixed(2);
     const y = (v) => +(2 + (H - 4) * (1 - v / max)).toFixed(2);
     const line = (key) => weeks.map((w, i) => `${x(i)},${y(w[key])}`).join(" ");
-    const label = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(this._hass?.locale?.language || [], { day: "numeric", month: "short" });
+    const label = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "short" }));
     return `
       <div class="tm-econ">
         <svg class="tm-econ-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${this._esc(this._t("panel.economy_chart_label"))}">
@@ -15088,7 +15091,6 @@ class TaskMatePanel extends HTMLElement {
   // clock) must not offer a day the backend would call today or too old.
   _backdateDays() {
     const tz = this._hass?.config?.time_zone;
-    const lang = this._hass?.locale?.language || this._hass?.language || undefined;
     let todayKey;
     try {
       todayKey = new Date().toLocaleDateString("en-CA", tz ? { timeZone: tz } : undefined);
@@ -15103,7 +15105,7 @@ class TaskMatePanel extends HTMLElement {
       const d = new Date(Date.UTC(y, m - 1, d0 - back, 12));
       days.push({
         v: d.toISOString().slice(0, 10),
-        l: d.toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" }),
+        l: d.toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" })),
         dow: ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getUTCDay()],
       });
     }
@@ -15554,14 +15556,14 @@ class TaskMatePanel extends HTMLElement {
     if (!win || win.length !== 2) return "";
     const fmt = iso => {
       const d = new Date(`${iso}T12:00:00`);
-      return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(this._hass?.locale?.language || [], { day: "numeric", month: "short" });
+      return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "short" }));
     };
     return `${fmt(win[0])} – ${fmt(win[1])}`;
   }
 
   _seasonDate(iso) {
     const d = new Date(`${iso}T12:00:00`);
-    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(this._hass?.locale?.language || [], { day: "numeric", month: "short" });
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "short" }));
   }
 
   /** One pack's name for a key in season_pack.<season>.<key>. */
@@ -16818,11 +16820,10 @@ class TaskMatePanel extends HTMLElement {
   _oneOffDaySuffix(created) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(created || "");
     if (!m || created === this._haTodayKey()) return "";
-    const lang = this._hass?.locale?.language || this._hass?.language || undefined;
     const when = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
     let text;
     try {
-      text = when.toLocaleDateString(lang, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+      text = when.toLocaleDateString(...__tmDateArgs(this._hass, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }));
     } catch (_err) {
       text = created;
     }

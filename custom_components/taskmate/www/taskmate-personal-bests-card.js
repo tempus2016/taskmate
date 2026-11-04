@@ -9,6 +9,13 @@
  * `child_id` it is that child's board; without one it shows every child.
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -181,7 +188,7 @@ class TaskMatePersonalBestsCard extends LitElement {
   _fmtDate(iso) {
     const d = new Date(`${iso}T12:00:00`);
     if (isNaN(d)) return iso;
-    return d.toLocaleDateString(this.hass?.locale?.language || undefined, { day: "numeric", month: "short" });
+    return d.toLocaleDateString(...__tmDateArgs(this.hass, { day: "numeric", month: "short" }));
   }
 
   _freshCount(children) {

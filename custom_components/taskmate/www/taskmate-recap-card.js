@@ -10,6 +10,13 @@
  * from a sensor attribute — a year of them would blow the 16 KB cap.
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -242,7 +249,7 @@ class TaskMateRecapCard extends LitElement {
 
   _fmt(iso, opts) {
     try {
-      return new Intl.DateTimeFormat(this._lang(), { timeZone: "UTC", ...opts }).format(_day(iso));
+      return new Intl.DateTimeFormat(...__tmDateArgs(this.hass, { timeZone: "UTC", ...opts })).format(_day(iso));
     } catch (e) {
       return iso;
     }
@@ -250,7 +257,7 @@ class TaskMateRecapCard extends LitElement {
 
   _range(startIso, endIso, opts) {
     try {
-      const f = new Intl.DateTimeFormat(this._lang(), { timeZone: "UTC", ...opts });
+      const f = new Intl.DateTimeFormat(...__tmDateArgs(this.hass, { timeZone: "UTC", ...opts }));
       return f.formatRange ? f.formatRange(_day(startIso), _day(endIso)) : `${f.format(_day(startIso))} – ${f.format(_day(endIso))}`;
     } catch (e) {
       return `${startIso} – ${endIso}`;

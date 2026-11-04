@@ -3,6 +3,13 @@
  * A custom Lovelace card for managing pending chore approvals
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -1172,7 +1179,7 @@ class TaskMateApprovalsCard extends LitElement {
     let when = "";
     if (iso) {
       const d = new Date(iso);
-      if (!isNaN(d)) when = d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      if (!isNaN(d)) when = d.toLocaleString(...__tmDateArgs(this.hass, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }, "datetime"));
     }
     return [chore, child, when].filter(Boolean).join(" · ");
   }
@@ -1223,7 +1230,7 @@ class TaskMateApprovalsCard extends LitElement {
   _apCleanpro(it, i) {
     const tone = this._designTone(i);
     const time = it.completedAt
-      ? new Date(it.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      ? new Date(it.completedAt).toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"))
       : "";
     return html`
       <div class="row ap-cp-item" style="--ac:${tone}">
@@ -1551,15 +1558,9 @@ class TaskMateApprovalsCard extends LitElement {
     return this.hass?.config?.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  _getLocale() {
-    // Get locale from Home Assistant, fallback to browser locale
-    return this.hass?.locale?.language || this.hass?.language || navigator.language || "en";
-  }
-
   _formatDateInTimezone(date, options = {}) {
     const timezone = this._getTimezone();
-    const locale = this._getLocale();
-    return date.toLocaleDateString(locale, { ...options, timeZone: timezone });
+    return date.toLocaleDateString(...__tmDateArgs(this.hass, { ...options, timeZone: timezone }));
   }
 
   _getDatePartsInTimezone(date) {

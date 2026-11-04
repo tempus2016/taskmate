@@ -20,6 +20,15 @@
 // always define hui-masonry-view; the admin panel also shows this card (View
 // as child) and has no dashboard views, so fall back to elements every HA
 // page defines (the sticker chart card's lookup, without its wait).
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+const __tmClock = (hass, hhmm) => (window.__taskmate_dates && window.__taskmate_dates.clock
+  ? window.__taskmate_dates.clock(hass, hhmm) : (hhmm == null ? "" : String(hhmm)));
+
 const LIT_HOST_TAGS = ["hui-masonry-view", "hui-view", "home-assistant-main", "ha-card"];
 
 const findLitBase = () => {
@@ -4282,8 +4291,8 @@ class TaskMateChildCard extends LitElement {
     const entry = chore._setTimeEntry;
     const all = chore._setTimeAll || [entry];
     const stateText = (e) => e.state === "now"
-      ? this._t("child.set_time_open_until", { time: e.closes })
-      : e.state === "later" ? this._t("child.set_time_opens", { time: e.opens })
+      ? this._t("child.set_time_open_until", { time: __tmClock(this.hass, e.closes) })
+      : e.state === "later" ? this._t("child.set_time_opens", { time: __tmClock(this.hass, e.opens) })
       : e.state === "missed" ? this._t("child.set_time_missed")
       : e.state === "pending" ? this._t("child.set_time_waiting")
       : this._t("child.set_time_done");
@@ -4293,17 +4302,17 @@ class TaskMateChildCard extends LitElement {
         <span class="tm-st-count">${_ltrNums(this._t("child.set_time_count", { done: doneCount, total: all.length }))}</span>
         ${all.map(e => html`<button type="button"
             class="tm-st-pill st-${e.state}"
-            title="${e.time.name || e.opens} · ${stateText(e)}"
+            title="${e.time.name || __tmClock(this.hass, e.opens)} · ${stateText(e)}"
             ?disabled=${e.state === "later" || e.state === "missed"}
             @click=${(ev) => { ev.stopPropagation(); this._handleSetTimePill(chore, child, e); }}>
           <span class="tm-st-dot">${e.state === "done" ? "✓" : e.state === "pending" ? "…" : e.state === "missed" ? "✕" : ""}</span>
-          ${e.time.name || e.opens}
-          ${e.state === "later" ? html`<small>${e.opens}</small>` : e.state === "now" ? html`<small>${this._t("child.set_time_now")}</small>` : ""}
+          ${e.time.name || __tmClock(this.hass, e.opens)}
+          ${e.state === "later" ? html`<small>${__tmClock(this.hass, e.opens)}</small>` : e.state === "now" ? html`<small>${this._t("child.set_time_now")}</small>` : ""}
         </button>`)}
       </div>`;
     }
     return html`<div class="tm-st-line ${cls || ""}">
-      <span class="tm-st-name">🕑 ${entry.time.name || entry.opens}</span>
+      <span class="tm-st-name">🕑 ${entry.time.name || __tmClock(this.hass, entry.opens)}</span>
       <span class="tm-st-of">${_ltrNums(this._t("child.set_time_of", { n: chore._setTimeIndex + 1, total: all.length }))}</span>
       <span class="tm-st-state st-${entry.state}">${stateText(entry)}</span>
     </div>`;
@@ -4683,9 +4692,9 @@ class TaskMateChildCard extends LitElement {
       ? (this._getPeriodHours(chore.time_category)?.[0] ?? null)
       : null;
     const lockedUntilLabel = chore._setTime && isLockedPreview
-      ? this._t('child.chore_locked_until', { time: chore._setTime.start })
+      ? this._t('child.chore_locked_until', { time: __tmClock(this.hass, chore._setTime.start) })
       : isLockedPreview && periodStartHour !== null
-      ? this._t('child.chore_locked_until', { time: `${String(Math.floor(periodStartHour)).padStart(2, '0')}:${String(Math.round((periodStartHour % 1) * 60)).padStart(2, '0')}` })
+      ? this._t('child.chore_locked_until', { time: __tmClock(this.hass, `${String(Math.floor(periodStartHour)).padStart(2, '0')}:${String(Math.round((periodStartHour % 1) * 60)).padStart(2, '0')}`) })
       : '';
     const handleRowClick = () => {
       if (isLoading) return;
@@ -5835,7 +5844,7 @@ class TaskMateChildCard extends LitElement {
   _jarOpens(jar) {
     const day = Math.max(0, Math.min(6, Number(jar.day) || 0));
     const d = new Date(2024, 0, 1 + day);
-    const name = d.toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "long" });
+    const name = d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }));
     return `${name} ${jar.at || ""}`.trim();
   }
 
@@ -6071,7 +6080,7 @@ class TaskMateChildCard extends LitElement {
   _clockTime(iso) {
     const d = iso ? new Date(iso) : null;
     if (!d || isNaN(d)) return "";
-    return d.toLocaleTimeString(this.hass?.locale?.language || undefined, { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
   }
 
   async _siblingCheck(child, check, verdict) {
@@ -6197,7 +6206,7 @@ class TaskMateChildCard extends LitElement {
   _renderDayTabs(child, allChores, mode) {
     if (!this._tomorrowChores(child, allChores).length) return "";
     const on = this._showingTomorrow(child, allChores);
-    const day = new Date(Date.now() + 86400000).toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "short" });
+    const day = new Date(Date.now() + 86400000).toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "short" }, "now"));
     const pick = (tab) => { this._dayTab = tab; this.requestUpdate(); };
     return html`<div class="tm-day-tabs ${mode}" role="tablist">
       <button type="button" role="tab" class="tm-day-tab ${on ? "" : "on"}" aria-selected="${on ? "false" : "true"}" @click=${() => pick("today")}>${this._t("child.tab_today")}</button>
@@ -6271,9 +6280,9 @@ class TaskMateChildCard extends LitElement {
 
   _boostStart(boost) {
     const d = new Date(boost.startsMs);
-    const time = d.toLocaleTimeString(this.hass?.locale?.language || undefined, { hour: "2-digit", minute: "2-digit" });
+    const time = d.toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
     if (d.toDateString() === new Date().toDateString()) return time;
-    return `${d.toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "long" })} ${time}`;
+    return `${d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }))} ${time}`;
   }
 
   /* The takeover plays once per device per boost, then the banner carries on. */
@@ -6420,11 +6429,10 @@ class TaskMateChildCard extends LitElement {
   _dayLabel(when) {
     const d = when instanceof Date ? when : new Date(`${when}T12:00:00`);
     if (isNaN(d)) return String(when || "");
-    const lang = this.hass?.locale?.language || undefined;
     const days = Math.round((new Date(d).setHours(12, 0, 0, 0) - new Date().setHours(12, 0, 0, 0)) / 86400000);
     return days >= 0 && days <= 6
-      ? d.toLocaleDateString(lang, { weekday: "long" })
-      : d.toLocaleDateString(lang, { day: "numeric", month: "short" });
+      ? d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }))
+      : d.toLocaleDateString(...__tmDateArgs(this.hass, { day: "numeric", month: "short" }));
   }
 
   /**
@@ -6511,7 +6519,7 @@ class TaskMateChildCard extends LitElement {
     if (!d || isNaN(d)) return iso || "";
     const today = new Date();
     if (d.toDateString() === today.toDateString()) return this._t("child.redeem_today");
-    return d.toLocaleDateString(this.hass?.locale?.language || undefined, { weekday: "long" });
+    return d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }));
   }
 
   _openGoalSheet(child) {

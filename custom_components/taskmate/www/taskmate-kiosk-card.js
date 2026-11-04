@@ -54,6 +54,15 @@
  * Version: 1.0.0
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+const __tmClock = (hass, hhmm) => (window.__taskmate_dates && window.__taskmate_dates.clock
+  ? window.__taskmate_dates.clock(hass, hhmm) : (hhmm == null ? "" : String(hhmm)));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -1087,9 +1096,8 @@ class TaskMateKioskCard extends LitElement {
   }
 
   _renderAmbient(attrs) {
-    const lang = this.hass.locale?.language || undefined;
-    const time = this._now.toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
-    const date = this._now.toLocaleDateString(lang, { weekday: "long", day: "numeric", month: "long" });
+    const time = this._now.toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
+    const date = this._now.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long", day: "numeric", month: "long" }, "now"));
     const photos = this._ambientMode() === "photos" ? this._ambientPhotos() : [];
     if (photos.length) {
       const p = photos[this._slide % photos.length];
@@ -1582,8 +1590,8 @@ class TaskMateKioskCard extends LitElement {
     this._applyDesign();
     const attrs = this._attrs();
     const title = this.config.title || "TaskMate";
-    const time = this._now.toLocaleTimeString(this.hass.locale?.language || undefined, { hour: "2-digit", minute: "2-digit" });
-    const date = this._now.toLocaleDateString(this.hass.locale?.language || undefined, { weekday: "long", day: "numeric", month: "long" });
+    const time = this._now.toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
+    const date = this._now.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long", day: "numeric", month: "long" }, "now"));
     const canFullscreen = typeof document !== "undefined" && document.fullscreenEnabled !== false;
 
     let body;
@@ -1845,7 +1853,7 @@ class TaskMateKioskCard extends LitElement {
     } else if (state === "later" && row.opensAt) {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:lock-clock"></ha-icon><span>${this._t("child.chore_locked_until", { time: window.__taskmate_dates && window.__taskmate_dates.clock ? window.__taskmate_dates.clock(this.hass, row.opensAt) : row.opensAt })}</span></div>`;
     } else if (state === "later") {
-      action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:lock-clock"></ha-icon><span>${this._t("child.set_time_opens", { time: row.setTime.entry.opens })}</span></div>`;
+      action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:lock-clock"></ha-icon><span>${this._t("child.set_time_opens", { time: __tmClock(this.hass, row.setTime.entry.opens) })}</span></div>`;
     } else if (state === "done") {
       action = html`<div class="km-done is-done"><ha-icon icon="mdi:check-bold"></ha-icon> ${this._t("child.done")}</div>`;
     } else if (state === "wait") {
@@ -1864,7 +1872,7 @@ class TaskMateKioskCard extends LitElement {
         </div>
         <div class="km-row-body">
           <div class="km-row-name">${chore.name}</div>
-          ${row.setTime && this._setTimeLayout() === "rows" ? html`<div class="km-st-sub">🕑 <b>${row.setTime.entry.time.name || row.setTime.entry.opens}</b>
+          ${row.setTime && this._setTimeLayout() === "rows" ? html`<div class="km-st-sub">🕑 <b>${row.setTime.entry.time.name || __tmClock(this.hass, row.setTime.entry.opens)}</b>
             <span>${_ltrNums(this._t("child.set_time_of", { n: row.setTime.all.indexOf(row.setTime.entry) + 1, total: row.setTime.all.length }))}</span></div>` : ""}
           ${row.setTime && this._setTimeLayout() === "pills" ? this._renderSetTimePills(child, row) : ""}
           <div class="km-row-meta">
@@ -1896,7 +1904,7 @@ class TaskMateKioskCard extends LitElement {
       return html`<button type="button" class="km-st-pill st-${e.state}" ?disabled=${!open || !!this._busy}
           @click=${() => open && this._complete(child, v)}>
         <span class="km-st-dot">${e.state === "done" ? "✓" : e.state === "pending" ? "…" : e.state === "missed" ? "✕" : ""}</span>
-        ${e.time.name || e.opens}${e.state === "later" ? html` <small>${e.opens}</small>` : ""}
+        ${e.time.name || __tmClock(this.hass, e.opens)}${e.state === "later" ? html` <small>${__tmClock(this.hass, e.opens)}</small>` : ""}
       </button>`;
     })}</div>`;
   }

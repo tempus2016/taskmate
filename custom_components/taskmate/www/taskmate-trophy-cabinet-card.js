@@ -23,6 +23,13 @@
  * narrow column) get three tiles per plank, short labels and no spotlight.
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -253,17 +260,15 @@ class TaskMateTrophyCabinetCard extends LitElement {
     const m = /^(\d{4})-(\d{2})$/.exec(String(month || ""));
     if (!m) return String(month || "");
     const d = new Date(Number(m[1]), Number(m[2]) - 1, 15);
-    const lang = this.hass?.locale?.language || this.hass?.language || undefined;
-    return d.toLocaleDateString(lang, short ? { month: "short" } : { month: "long", year: "numeric" });
+    return d.toLocaleDateString(...__tmDateArgs(this.hass, short ? { month: "short" } : { month: "long", year: "numeric" }));
   }
 
   _fmtDay(day, withYear) {
     if (!day) return "";
     const [y, m, d] = day.split("-").map(Number);
-    const lang = this.hass?.locale?.language || this.hass?.language || undefined;
-    return new Date(y, m - 1, d).toLocaleDateString(lang, withYear
+    return new Date(y, m - 1, d).toLocaleDateString(...__tmDateArgs(this.hass, withYear
       ? { month: "short", year: "numeric" }
-      : { day: "numeric", month: "short" });
+      : { day: "numeric", month: "short" }));
   }
 
   /**

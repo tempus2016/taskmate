@@ -8,6 +8,13 @@
  * Last Updated: 2026-04-17
  */
 
+// Dates and times follow Home Assistant's language and time format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
+  ? window.__taskmate_dates.args(hass, opts, kind)
+  : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -1771,11 +1778,10 @@ class TaskMateRewardsCard extends LitElement {
   _dayLabel(iso) {
     const d = new Date(`${iso}T12:00:00`);
     if (isNaN(d)) return String(iso || "");
-    const lang = this.hass?.locale?.language || undefined;
     const days = Math.round((d - new Date().setHours(12, 0, 0, 0)) / 86400000);
     return days >= 0 && days <= 6
-      ? d.toLocaleDateString(lang, { weekday: "long" })
-      : d.toLocaleDateString(lang, { day: "numeric", month: "short" });
+      ? d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }))
+      : d.toLocaleDateString(...__tmDateArgs(this.hass, { day: "numeric", month: "short" }));
   }
 
   /** Brothers and sisters this reward may be bought for, when gifting is on. */
