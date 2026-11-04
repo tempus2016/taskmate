@@ -547,6 +547,10 @@ class TaskMateChildCard extends LitElement {
         gap: 10px;
         margin-bottom: 12px;
         padding: 4px 0;
+        /* A long countdown ("Neue Aufgaben in 23 Std. 26 Min.") drops under
+           the title instead of running off the card's edge. */
+        flex-wrap: wrap;
+        row-gap: 4px;
       }
 
       .section-title ha-icon { --mdc-icon-size: 28px; }
@@ -1326,7 +1330,12 @@ class TaskMateChildCard extends LitElement {
         padding-block: 2px; padding-inline: 6px 8px;
         white-space: nowrap;
         flex-shrink: 0;
+        /* On its own line it can still be wider than a narrow card: then the
+           text wraps inside the chip rather than being clipped. */
+        max-width: 100%;
+        box-sizing: border-box;
       }
+      .reset-countdown > span { white-space: normal; min-width: 0; overflow-wrap: anywhere; }
 
       .reset-countdown ha-icon {
         --mdc-icon-size: 12px;
@@ -2354,11 +2363,13 @@ class TaskMateChildCard extends LitElement {
       }
       .tmd-section {
         display: flex; align-items: center; gap: 8px; margin-bottom: 11px;
+        flex-wrap: wrap; row-gap: 4px;
         font-family: var(--tmd-font-display); font-weight: 800; font-size: 14px; color: var(--tmd-text);
       }
       .tmd-countdown {
         margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 11px; font-weight: 700; color: var(--tmd-dim);
+        max-width: 100%; min-width: 0;
       }
       .tmd-countdown.soon { color: var(--tmd-warn); }
 
