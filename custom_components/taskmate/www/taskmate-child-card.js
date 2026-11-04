@@ -2298,10 +2298,15 @@ class TaskMateChildCard extends LitElement {
 
       /* Designed: shared chore meta (mandatory / photo / description / dim states) */
       .tmd-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
+      /* A tag whose text wraps on a narrow card ("🕒 Every 3 days · Next:
+         Friday") keeps a clean rounded box: a fixed radius instead of a
+         999px pill, which pinched a two-line tag into a lozenge, and room
+         between the lines (#771). One line looks the same as before. */
       .tmd-tag {
         display: inline-flex; align-items: center; gap: 3px;
-        font-size: 10.5px; font-weight: 800; line-height: 1;
-        padding: 3px 7px; border-radius: 999px;
+        font-size: 10.5px; font-weight: 800; line-height: 1.25;
+        padding: 2px 7px; border-radius: 9px;
+        max-width: 100%; overflow-wrap: anywhere;
         background: var(--tmd-surface-2); color: var(--tmd-dim);
         border: 1px solid var(--tmd-border);
       }
@@ -3371,7 +3376,7 @@ class TaskMateChildCard extends LitElement {
     // Same reason label the classic row carries, so a dimmed designed row is
     // not just mysteriously grey (#803).
     const recLabel = r.recLocked
-      ? (r.chore.recurrence ? r.chore.recurrence.replace(/_/g, " ") : this._t("child.recurring"))
+      ? this._recurrenceLabel(r.chore)
       : "";
     // Same idea as recLabel, but for a first-come chore a sibling already
     // claimed today — name it when we know who, otherwise a generic label.
@@ -3635,6 +3640,7 @@ class TaskMateChildCard extends LitElement {
     // or a sensor that hasn't published yet) has to read as available, or the
     // card would blank itself.
     const availability = attrs.chore_availability || {};
+    const nextOpen = attrs.chore_next_open || {};
     // "current" resolves to the live period; anytime chores are opt-out (#847).
     const isCurrentMode = this.config.time_category === 'current';
     const effectiveCategory = this._effectiveTimeCategory();
@@ -3879,6 +3885,8 @@ class TaskMateChildCard extends LitElement {
           && !comp.bonus_subtask_id
       );
       chore._isRecurrenceLocked = chore._isRecurring && !availableNow && !completedToday;
+      // When the cooldown ends, from the backend's own window maths (#771).
+      chore._recurrenceNextOpen = chore._isRecurrenceLocked ? ((nextOpen[chore.id] || {})[childId] || "") : "";
       if (chore._isRecurrenceLocked && recurrenceDoneMode === 'hide') return false;
 
       // Weekly target (#883): the child picks which days, so the chore keeps
@@ -4760,7 +4768,7 @@ class TaskMateChildCard extends LitElement {
             ${chore._isRecurrenceLocked ? html`
               <div class="recurrence-label">
                 <ha-icon icon="mdi:clock-outline"></ha-icon>
-                ${chore.recurrence ? chore.recurrence.replace(/_/g, ' ') : this._t('child.recurring')}
+                ${this._recurrenceLabel(chore)}
               </div>
             ` : ''}
             ${firstComeLocked ? html`
@@ -6381,6 +6389,25 @@ class TaskMateChildCard extends LitElement {
   }
 
   /** "Thursday" within the week, else "12 Nov". Accepts an ISO date or a Date. */
+  /**
+   * A recurring chore's cadence in the child's language — "Every 3 days",
+   * "Weekly", "Monthly" — plus when it opens again if the backend knows
+   * ("Every 3 days · Next: Friday"), rather than the raw "every 3 days" key
+   * (#771). The sensor omits `recurrence` when it is the default weekly.
+   */
+  _recurrenceLabel(chore) {
+    const rec = chore.recurrence || "weekly";
+    const n = /^every_(\d+)_days$/.exec(rec);
+    const fixed = { weekly: "weekly", every_2_weeks: "every_2_weeks", monthly: "monthly",
+      every_3_months: "every_3_months", every_6_months: "every_6_months" }[rec];
+    const cadence = n ? this._t("child.recurrence_every_n_days", { count: Number(n[1]) })
+      : fixed ? this._t(`child.recurrence_${fixed}`)
+      : this._t("child.recurring");
+    return chore._recurrenceNextOpen
+      ? `${cadence} · ${this._t("child.recurrence_next", { day: this._dayLabel(chore._recurrenceNextOpen) })}`
+      : cadence;
+  }
+
   _dayLabel(when) {
     const d = when instanceof Date ? when : new Date(`${when}T12:00:00`);
     if (isNaN(d)) return String(when || "");

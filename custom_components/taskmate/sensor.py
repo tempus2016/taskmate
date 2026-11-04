@@ -662,6 +662,31 @@ def _build_chore_availability(coordinator: TaskMateCoordinator, common: dict) ->
     return availability
 
 
+def _build_chore_next_open(coordinator: TaskMateCoordinator, common: dict, availability: dict) -> dict:
+    """When each recurring chore in its cooldown opens again (#771).
+
+    ``{chore_id: {child_id: "YYYY-MM-DD"}}``, only for a recurring chore that
+    is unavailable to that child today and opens within a year, so the card can
+    say "Next: Friday" beside the cooldown instead of leaving the child
+    guessing. Everything else is left out to keep the attribute small.
+    """
+    out: dict[str, dict[str, str]] = {}
+    with coordinator.availability_build_scope():
+        for c in common["chores"]:
+            if getattr(c, "schedule_mode", "specific_days") != "recurring":
+                continue
+            per_child = {}
+            for child in common["children"]:
+                if (availability.get(c.id) or {}).get(child.id, True):
+                    continue
+                day = coordinator.recurrence_next_open(c, child.id)
+                if day is not None:
+                    per_child[child.id] = day.isoformat()
+            if per_child:
+                out[c.id] = per_child
+    return out
+
+
 def _completion_award(completion, recalculated: int) -> int:
     """What a completion is worth, recorded rather than re-derived.
 
@@ -1523,7 +1548,7 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
     The map is `{chore_id: {child_id: bool}}`.
     """
 
-    _unrecorded_attributes = frozenset({"chore_availability"})
+    _unrecorded_attributes = frozenset({"chore_availability", "chore_next_open"})
 
     def __init__(
         self,
@@ -1548,8 +1573,10 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
 
     def _build_attributes(self) -> dict:
         common = _compute_common(self.coordinator)
+        availability = _build_chore_availability(self.coordinator, common)
         return {
-            "chore_availability": _build_chore_availability(self.coordinator, common),
+            "chore_availability": availability,
+            "chore_next_open": _build_chore_next_open(self.coordinator, common, availability),
         }
 
 

@@ -2410,13 +2410,19 @@ class ChoresMixin:
         if schedule_mode != "recurring":
             return True
 
+        return self._recurrence_open_on(chore, child_id, dt_util.as_local(dt_util.now()).date(), override)
+
+    def _recurrence_open_on(self, chore, child_id: str, today: date, override) -> bool:
+        """Whether a recurring chore's window is open for ``child_id`` on ``today``.
+
+        The recurrence part of is_chore_available_for_child, on any day, so
+        recurrence_next_open can ask about the days ahead (#771). ``override``
+        is the calendar move for that day (None / True; False never gets here).
+        """
         recurrence = getattr(chore, "recurrence", "weekly")
         first_occurrence_mode = getattr(chore, "first_occurrence_mode", "available_immediately")
         recurrence_day = getattr(chore, "recurrence_day", "")
         recurrence_start = getattr(chore, "recurrence_start", "")
-
-        now = dt_util.now()
-        today = dt_util.as_local(now).date()
 
         interval_days = recurrence_interval_days(recurrence)
         window_days = interval_days or {"weekly": 7, "every_2_weeks": 14}.get(recurrence, 7)
@@ -2483,6 +2489,28 @@ class ChoresMixin:
 
         days_since = (today - last_dt).days
         return days_since >= window_days
+
+    def recurrence_next_open(self, chore, child_id: str, today: date | None = None) -> date | None:
+        """The next day a recurring chore in its cooldown opens for this child.
+
+        None when it isn't recurring, is open today, or doesn't open within a
+        year (a far-off anchor, a disabled chore). Only the recurrence window is
+        asked: a vacation or rota day off on that date isn't foreseen, so the
+        card says "next" rather than promising the day (#771).
+        """
+        if getattr(chore, "schedule_mode", "specific_days") != "recurring" or not getattr(chore, "enabled", True):
+            return None
+        today = today or dt_util.as_local(dt_util.now()).date()
+        if self._recurrence_open_on(chore, child_id, today, self.occurrence_override(chore, today)):
+            return None
+        for step in range(1, 367):
+            day = today + timedelta(days=step)
+            override = self.occurrence_override(chore, day)
+            if override is False:
+                continue
+            if self._recurrence_open_on(chore, child_id, day, override):
+                return day
+        return None
 
     def weekly_completion_count(self, chore_id: str, child_id: str, on: date | None = None) -> int:
         """How many times ``child_id`` has completed ``chore_id`` this week.
