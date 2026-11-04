@@ -491,6 +491,8 @@ class TaskMatePanel extends HTMLElement {
     this._manualText = null;         // page -> lower-cased text, built on the first search
     this._onDocKeyDown = this._onDocKeyDown.bind(this);
     this._onManualImgError = this._onManualImgError.bind(this);
+    this._syncScopeFade = this._syncScopeFade.bind(this);
+    this._onScopeScroll = (e) => { if (e.target && e.target.classList && e.target.classList.contains("tm-scope")) this._syncScopeFade(); };
     this._ensureHaComponents();
   }
 
@@ -561,6 +563,10 @@ class TaskMatePanel extends HTMLElement {
     // A screenshot in the manual that cannot load (no internet) says so.
     // Image errors do not bubble, so listen in the capture phase.
     this.addEventListener("error", this._onManualImgError, true);
+    // The child chips scroll sideways when they don't fit; scroll events
+    // don't bubble, so catch them on the way down.
+    this.addEventListener("scroll", this._onScopeScroll, true);
+    window.addEventListener("resize", this._syncScopeFade);
     if (!this.classList.contains("dark") && !this.classList.contains("light")) {
       const isDark = this._isHaDark();
       this.classList.toggle("dark", isDark);
@@ -588,6 +594,8 @@ class TaskMatePanel extends HTMLElement {
     document.removeEventListener("visibilitychange", this._onVisibilityChange);
     document.removeEventListener("keydown", this._onDocKeyDown);
     this.removeEventListener("error", this._onManualImgError, true);
+    this.removeEventListener("scroll", this._onScopeScroll, true);
+    window.removeEventListener("resize", this._syncScopeFade);
     this._closeRowMenu();
   }
 
@@ -4231,6 +4239,7 @@ class TaskMatePanel extends HTMLElement {
       this._mountBackdateCard();
       this._mountViewAsCard();
       this._afterSettingsRender(true);
+      requestAnimationFrame(() => { if (this.isConnected) this._syncScopeFade(); });
       if (this._palette) this._focusPalette();
       return;
     }
@@ -4284,6 +4293,7 @@ class TaskMatePanel extends HTMLElement {
       if (name === "palette") paletteChanged = true;
       if (name === "body" || name === "dialog") this._labelTables(el);
       if (name === "body") bodyChanged = true;
+      if (name === "topbar") requestAnimationFrame(() => { if (this.isConnected) this._syncScopeFade(); });
       // On a phone the tabs row scrolls; keep the open tab in view. Wait a
       // frame so the icons have their width, and centre it ourselves:
       // scrollIntoView can also scroll the page.
@@ -4620,6 +4630,24 @@ class TaskMatePanel extends HTMLElement {
           </button>`).join("")}
       </div>
     `;
+  }
+
+  /** Fade the edge of the child chips where more chips are scrolled out
+   *  of sight, so a chip cut at the edge reads as "scroll for more"
+   *  rather than as a broken avatar. Physical sides, so RTL works too. */
+  _syncScopeFade() {
+    const sc = this.querySelector(".tm-topbar .tm-scope");
+    if (!sc) return;
+    const hidden = sc.scrollWidth - sc.clientWidth;
+    let fade = "";
+    if (hidden > 2) {
+      const rtl = getComputedStyle(sc).direction === "rtl";
+      const off = Math.abs(sc.scrollLeft);
+      const before = off > 2, after = off < hidden - 2;
+      const left = rtl ? after : before, right = rtl ? before : after;
+      fade = [left ? "left" : "", right ? "right" : ""].filter(Boolean).join(" ");
+    }
+    if (fade) sc.dataset.fade = fade; else delete sc.dataset.fade;
   }
 
   _scopeBanner() {
@@ -20200,13 +20228,40 @@ class TaskMatePanel extends HTMLElement {
         .tm-fb-actions > * { flex: 1 1 100%; justify-content: center; }
       }
       @media (max-width: 480px) {
-        /* The page title keeps its width (hub titles are one short word);
-           the child chips are what gives way, scrolling sideways when
-           squeezed — otherwise a 375 px phone showed "Fa…" for Family. */
+        /* The child chips come first: a squeezed bar shortens the page
+           title (it is repeated as the heading below) before it cuts an
+           avatar in half. The huge shrink factor makes the title give up
+           nearly all of the shortfall. The chips only scroll sideways
+           when there are more children than fit beside a short title. */
         .tm-topbar { gap: 8px; }
-        .tm-topbar .tm-crumbs { flex: 0 0 auto; max-width: 34vw; }
-        .tm-scope { flex: 0 1 auto; min-width: 0; max-width: 46vw; overflow-x: auto; }
+        .tm-topbar .tm-crumbs { flex: 0 1000 auto; min-width: 0; max-width: 34vw; }
+        .tm-scope {
+          flex: 0 1 auto; min-width: 0; max-width: 46vw; overflow-x: auto;
+          scroll-snap-type: x proximity; scroll-padding-inline: 3px;
+        }
+        .tm-scope-btn { scroll-snap-align: start; }
+        /* More chips out of sight: that edge fades (set by _syncScopeFade). */
+        .tm-scope[data-fade="right"] {
+          -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+        }
+        .tm-scope[data-fade="left"] {
+          -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+        }
+        .tm-scope[data-fade="left right"] {
+          -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+        }
         .tm-today-quick { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 400px) {
+        /* 360 px phones: tighter gaps so All and two children sit beside
+           "Settings" whole. The chip cap keeps about 48 px for the title
+           (menu, search, help and new take 148 px plus the gaps). */
+        .tm-topbar { gap: 4px; }
+        .tm-scope { max-width: calc(100% - 216px); padding: 2px; scroll-padding-inline: 2px; }
+        .tm-scope-all { padding: 0 8px; }
       }
 
       /* ===== Phone polish ===== */
