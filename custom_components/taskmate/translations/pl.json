@@ -1999,6 +1999,15 @@
     },
     "calendar_own_event": {
       "message": "To wydarzenie zostało opublikowane przez sam TaskMate, więc nie zostanie dodane jako nowy obowiązek."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} jeszcze się nie zaczęło — poproś o pomoc, gdy przyjdzie na to pora."
+    },
+    "help_chore_time_passed": {
+      "message": "Pora na {chore} minęła, więc nie ma teraz z czym prosić o pomoc."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} nie da się teraz zrobić, więc nie ma jeszcze z czym prosić o pomoc."
     }
   },
   "issues": {

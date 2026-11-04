@@ -1999,6 +1999,15 @@
     },
     "calendar_own_event": {
       "message": "Denne hendelsen er publisert av TaskMate selv, så den legges ikke til som en ny oppgave."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} er ikke åpen ennå – be om hjelp når det er tid for å gjøre den."
+    },
+    "help_chore_time_passed": {
+      "message": "Tiden for {chore} er over, så det er ingenting å be om hjelp til nå."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} kan ikke gjøres akkurat nå, så det er ingenting å be om hjelp til ennå."
     }
   },
   "issues": {

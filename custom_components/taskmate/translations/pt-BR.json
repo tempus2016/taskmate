@@ -1999,6 +1999,15 @@
     },
     "calendar_own_event": {
       "message": "Este evento foi publicado pelo próprio TaskMate, então não é adicionado como uma nova tarefa."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} ainda não abriu — peça ajuda quando for a hora de fazer."
+    },
+    "help_chore_time_passed": {
+      "message": "O horário de {chore} já passou, então não há nada para pedir ajuda agora."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} não pode ser feita agora, então ainda não há nada para pedir ajuda."
     }
   },
   "issues": {
