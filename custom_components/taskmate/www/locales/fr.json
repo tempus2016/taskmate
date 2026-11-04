@@ -236,6 +236,7 @@
   "child.set_time_of": "{n} sur {total}",
   "child.set_time_now": "maintenant",
   "child.chore_locked_until_generic": "Disponible plus tard",
+  "child.recurrence_locked": "Pas disponible pour l'instant — reviens plus tard",
   "child.chores_reset_hours_mins": "Réinitialisation des tâches dans {hours}h {mins}m",
   "child.chores_reset_mins": "Réinitialisation des tâches dans {mins}m",
   "child.chores_resetting_soon": "Réinitialisation des tâches bientôt !",

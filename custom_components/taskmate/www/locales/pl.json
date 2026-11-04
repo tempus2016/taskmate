@@ -242,6 +242,7 @@
   "child.set_time_of": "{n} z {total}",
   "child.set_time_now": "teraz",
   "child.chore_locked_until_generic": "Dostępne później",
+  "child.recurrence_locked": "Teraz niedostępne — zajrzyj później",
   "child.chores_reset_hours_mins": "Reset obowiązków za {hours} godz. {mins} min",
   "child.chores_reset_mins": "Reset obowiązków za {mins} min",
   "child.chores_resetting_soon": "Obowiązki zaraz się zresetują!",

@@ -4607,6 +4607,14 @@ class TaskMateChildCard extends LitElement {
                 : this._t('child.claimed_by_another_generic'))
           : weeklyDone
             ? this._t('child.weekly_target_done')
+          // A recurring chore still in its cooldown is refused like every
+          // other lock, so its tooltip must not invite a tap (#771).
+          : recurrenceLocked
+            ? this._t('child.recurrence_locked')
+          : setTimeLocked
+            ? (chore._setTimeEntry && chore._setTimeEntry.opens
+                ? this._t('child.set_time_opens', { time: chore._setTimeEntry.opens })
+                : '')
           : isCompletedForToday
             ? this._t('child.click_to_undo')
           : team

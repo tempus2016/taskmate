@@ -236,6 +236,7 @@
   "child.set_time_of": "{n} av {total}",
   "child.set_time_now": "nå",
   "child.chore_locked_until_generic": "Tilgjengelig senere",
+  "child.recurrence_locked": "Ikke tilgjengelig akkurat nå – sjekk igjen senere",
   "child.chores_reset_hours_mins": "Oppgavene nullstilles om {hours}t {mins}m",
   "child.chores_reset_mins": "Oppgavene nullstilles om {mins}m",
   "child.chores_resetting_soon": "Oppgavene nullstilles snart!",

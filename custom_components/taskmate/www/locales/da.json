@@ -242,6 +242,7 @@
   "child.set_time_of": "{n} af {total}",
   "child.set_time_now": "nu",
   "child.chore_locked_until_generic": "Tilgængelig senere",
+  "child.recurrence_locked": "Ikke tilgængelig lige nu – kig igen senere",
   "child.chores_reset_hours_mins": "Pligterne nulstilles om {hours} t. {mins} min.",
   "child.chores_reset_mins": "Pligterne nulstilles om {mins} min.",
   "child.chores_resetting_soon": "Pligterne nulstilles snart!",

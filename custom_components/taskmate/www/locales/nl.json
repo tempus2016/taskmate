@@ -242,6 +242,7 @@
   "child.set_time_of": "{n} van {total}",
   "child.set_time_now": "nu",
   "child.chore_locked_until_generic": "Kan later",
+  "child.recurrence_locked": "Nu niet beschikbaar — kijk later nog eens",
   "child.chores_reset_hours_mins": "Taken beginnen over {hours}u {mins}m opnieuw",
   "child.chores_reset_mins": "Taken beginnen over {mins}m opnieuw",
   "child.chores_resetting_soon": "De taken beginnen bijna opnieuw!",

@@ -242,6 +242,7 @@
   "child.set_time_of": "{n} of {total}",
   "child.set_time_now": "now",
   "child.chore_locked_until_generic": "Available later",
+  "child.recurrence_locked": "Not available right now — check back later",
   "child.chores_reset_hours_mins": "Chores reset in {hours}h {mins}m",
   "child.chores_reset_mins": "Chores reset in {mins}m",
   "child.chores_resetting_soon": "Chores resetting soon!",
