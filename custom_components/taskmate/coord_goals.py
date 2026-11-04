@@ -134,7 +134,13 @@ class WeeklyGoalsMixin:
             goal["paid_target"] = target
             await self.storage.async_save()
             if bonus:
-                await self.async_add_points(child_id, bonus, reason=f"Weekly goal reached 🎯 ({target})")
+                await self.async_add_points(
+                    child_id,
+                    bonus,
+                    reason=f"Weekly goal reached 🎯 ({target})",
+                    reason_key="weekly_goal_reached",
+                    reason_params={"target": target},
+                )
             paid += 1
             await self.notifications.fire(
                 NOTIF_TYPE_WEEKLY_GOAL_REACHED,
@@ -200,6 +206,8 @@ class WeeklyGoalsMixin:
                     child_id=child.id,
                     points=-bonus,
                     reason=f"Weekly goal reversed ({target})",
+                    reason_key="weekly_goal_reversed",
+                    reason_params={"target": target},
                     created_at=dt_util.now(),
                 ),
                 reverses_season=True,

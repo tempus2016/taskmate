@@ -1081,6 +1081,9 @@ def _build_recent_transactions(
                 "child_name": child.name,
                 "points": t.points,
                 "reason": t.reason or "",
+                # Only when set, to keep the attribute small (#771).
+                **({"reason_key": t.reason_key} if getattr(t, "reason_key", "") else {}),
+                **({"reason_params": dict(t.reason_params)} if getattr(t, "reason_params", None) else {}),
                 "created_at": t.created_at.isoformat() if hasattr(t.created_at, "isoformat") else str(t.created_at),
             }
         )

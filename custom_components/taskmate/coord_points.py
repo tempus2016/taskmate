@@ -202,6 +202,8 @@ class PointsMixin:
                 child_id=child.id,
                 points=perfect_week_bonus,
                 reason=f"Perfect week bonus! ({last_monday.strftime('%d %b')} – {last_sunday.strftime('%d %b')})",
+                reason_key="perfect_week",
+                reason_params={"start": last_monday.isoformat(), "end": last_sunday.isoformat()},
                 created_at=dt_util.now(),
             )
             self.storage.add_points_transaction(transaction)
@@ -277,6 +279,8 @@ class PointsMixin:
                 child_id=child.id,
                 points=-bonus,
                 reason=f"Perfect week bonus reversed ({monday.strftime('%d %b')} – {sunday.strftime('%d %b')})",
+                reason_key="perfect_week_reversed",
+                reason_params={"start": monday.isoformat(), "end": sunday.isoformat()},
                 created_at=dt_util.now(),
             ),
             reverses_season=True,
@@ -356,7 +360,7 @@ class PointsMixin:
         """Earn a token every N consecutive streak days; 0 means never."""
         return self._setting_int("streak_freeze_earn_every", 7)
 
-    def _log_streak_freeze(self, child: Child, reason: str) -> None:
+    def _log_streak_freeze(self, child: Child, reason: str, key: str = "", params: dict | None = None) -> None:
         """Record a token movement in the activity log.
 
         Tokens are not points, so the entry carries 0 points; the reason is
@@ -365,7 +369,14 @@ class PointsMixin:
         the token to come back.
         """
         self.storage.add_points_transaction(
-            PointsTransaction(child_id=child.id, points=0, reason=reason, created_at=dt_util.now())
+            PointsTransaction(
+                child_id=child.id,
+                points=0,
+                reason=reason,
+                created_at=dt_util.now(),
+                reason_key=key,
+                reason_params=dict(params or {}),
+            )
         )
 
     def _maybe_earn_streak_freeze(self, child: Child) -> bool:
@@ -385,7 +396,9 @@ class PointsMixin:
             return False
         child.streak_freezes = (child.streak_freezes or 0) + 1
         child.streak_freeze_earned_at = streak
-        self._log_streak_freeze(child, f"Streak freeze earned ({streak} day streak!)")
+        self._log_streak_freeze(
+            child, f"Streak freeze earned ({streak} day streak!)", "streak_freeze_earned", {"days": streak}
+        )
         _LOGGER.info("%s earned a streak freeze at a %d-day streak", child.name, streak)
         return True
 
@@ -397,7 +410,7 @@ class PointsMixin:
         child.streak_freeze_earned_at = 0
         if (child.streak_freezes or 0) > 0:
             child.streak_freezes -= 1
-            self._log_streak_freeze(child, "Streak freeze reversed")
+            self._log_streak_freeze(child, "Streak freeze reversed", "streak_freeze_reversed")
 
     async def async_adjust_streak_freezes(self, child_id: str, amount: int) -> int:
         """Grant (positive) or remove (negative) streak-freeze tokens.
@@ -423,7 +436,9 @@ class PointsMixin:
             return before
         child.streak_freezes = after
         delta = after - before
-        self._log_streak_freeze(child, f"Streak freezes adjusted ({delta:+d})")
+        self._log_streak_freeze(
+            child, f"Streak freezes adjusted ({delta:+d})", "streak_freeze_adjusted", {"delta": f"{delta:+d}"}
+        )
         self.storage.update_child(child)
         await self.storage.async_save()
         await self.async_refresh()
@@ -437,7 +452,7 @@ class PointsMixin:
         # walk (an undo can move last_completion_date back), bounded so the
         # child record can't grow without limit.
         child.streak_freeze_dates = sorted(set(child.streak_freeze_dates or []) | {day_str})[-31:]
-        self._log_streak_freeze(child, f"Streak freeze used ({day_str})")
+        self._log_streak_freeze(child, f"Streak freeze used ({day_str})", "streak_freeze_used", {"date": day_str})
         _LOGGER.info("Streak freeze used for %s on %s (%d left)", child.name, day_str, child.streak_freezes)
         self.hass.bus.async_fire(
             "taskmate_streak_freeze_used",
@@ -548,7 +563,9 @@ class PointsMixin:
             await self.storage.async_save()
             await self.async_refresh()
 
-    async def async_add_points(self, child_id: str, points: int, reason: str = "") -> None:
+    async def async_add_points(
+        self, child_id: str, points: int, reason: str = "", *, reason_key: str = "", reason_params: dict | None = None
+    ) -> None:
         """Add points to a child (bonus)."""
         if points < 0:
             raise ValueError("points must be non-negative")
@@ -566,6 +583,8 @@ class PointsMixin:
             child_id=child_id,
             points=points,
             reason=reason,
+            reason_key=reason_key,
+            reason_params=dict(reason_params or {}),
             created_at=dt_util.now(),
         )
         self.storage.add_points_transaction(transaction)
@@ -577,7 +596,9 @@ class PointsMixin:
         if getattr(self, "badges", None) and not (reason or "").startswith("Badge"):
             await self.badges.evaluate_for_child(child_id, "points_changed")
 
-    async def async_remove_points(self, child_id: str, points: int, reason: str = "") -> None:
+    async def async_remove_points(
+        self, child_id: str, points: int, reason: str = "", *, reason_key: str = "", reason_params: dict | None = None
+    ) -> None:
         """Remove points from a child (penalty)."""
         if points < 0:
             raise ValueError("points must be non-negative")
@@ -601,6 +622,8 @@ class PointsMixin:
             child_id=child_id,
             points=-actual_deducted,
             reason=reason,
+            reason_key=reason_key,
+            reason_params=dict(reason_params or {}),
             created_at=dt_util.now(),
         )
         self.storage.add_points_transaction(transaction)
@@ -860,6 +883,8 @@ class PointsMixin:
                 child_id=sender.id,
                 points=-points,
                 reason=f"Gift to {recipient.name}",
+                reason_key="gift_to",
+                reason_params={"name": recipient.name},
                 created_at=now,
                 link_id=gift_link,
             )
@@ -869,6 +894,8 @@ class PointsMixin:
                 child_id=recipient.id,
                 points=points,
                 reason=f"Gift from {sender.name}",
+                reason_key="gift_from",
+                reason_params={"name": sender.name},
                 created_at=now,
                 link_id=gift_link,
             )
@@ -932,6 +959,8 @@ class PointsMixin:
                     points=-loss,
                     reason=reason,
                     created_at=now,
+                    reason_key="points_decay_wish" if wish_loss else "points_decay",
+                    reason_params={"pct": round(pct), "wish": wish_loss} if wish_loss else {"pct": round(pct)},
                 )
             )
             self.hass.bus.async_fire(
@@ -980,7 +1009,13 @@ class PointsMixin:
             interest = round(bal * pct / 100.0)
             if interest <= 0:
                 continue
-            await self.async_add_points(child.id, interest, reason=f"Savings interest (+{pct:.0f}%)")
+            await self.async_add_points(
+                child.id,
+                interest,
+                reason=f"Savings interest (+{pct:.0f}%)",
+                reason_key="savings_interest",
+                reason_params={"pct": round(pct)},
+            )
             self.hass.bus.async_fire(
                 "taskmate_interest_paid",
                 {
@@ -1292,6 +1327,8 @@ class PointsMixin:
                     child_id=child.id,
                     points=milestone_bonus,
                     reason=f"Streak milestone bonus ({child.current_streak} day streak!)",
+                    reason_key="streak_milestone",
+                    reason_params={"days": child.current_streak},
                     created_at=now,
                 )
                 self.storage.add_points_transaction(transaction)
@@ -1451,7 +1488,13 @@ class PointsMixin:
             # The warning has been spent; the card strip goes.
             entry["used"] = True
         before = child.points
-        await self.async_remove_points(child_id, penalty.points, reason=f"Penalty: {penalty.name}")
+        await self.async_remove_points(
+            child_id,
+            penalty.points,
+            reason=f"Penalty: {penalty.name}",
+            reason_key="penalty",
+            reason_params={"name": penalty.name},
+        )
         # Make it right: offer the penalty's chore to earn back what was taken.
         after = self.get_child(child_id)
         deducted = max(0, before - (after.points if after else before))
@@ -1514,7 +1557,13 @@ class PointsMixin:
         child = self.get_child(child_id)
         if not child:
             raise ValueError(f"Child {child_id} not found")
-        await self.async_add_points(child_id, bonus.points, reason=f"Bonus: {bonus.name}")
+        await self.async_add_points(
+            child_id,
+            bonus.points,
+            reason=f"Bonus: {bonus.name}",
+            reason_key="bonus",
+            reason_params={"name": bonus.name},
+        )
         self.hass.bus.async_fire(
             "taskmate_bonus_applied",
             {

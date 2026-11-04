@@ -754,7 +754,7 @@ class TaskMateCoordinator(
         currency = str(self.storage.get_setting("allowance_currency", "") or "")
         amount = round(points / rate, 2)
 
-        await self.async_remove_points(child_id, points, reason="Allowance payout")
+        await self.async_remove_points(child_id, points, reason="Allowance payout", reason_key="allowance_payout")
 
         from .models import generate_id
 
@@ -867,7 +867,7 @@ class TaskMateCoordinator(
             pts = random.randint(lo, hi)
             if pts <= 0:
                 continue
-            await self.async_add_points(child.id, pts, reason="Surprise bonus 🎉")
+            await self.async_add_points(child.id, pts, reason="Surprise bonus 🎉", reason_key="surprise_bonus")
             self.hass.bus.async_fire(
                 "taskmate_surprise_bonus",
                 {

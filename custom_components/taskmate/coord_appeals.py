@@ -241,7 +241,13 @@ class AppealsMixin:
         if kind == "chore":
             points = int(appeal.get("points", 0) or 0)
             if points > 0:
-                await self.async_add_points(child.id, points, reason=f"Appeal: {appeal['item_name']}")
+                await self.async_add_points(
+                    child.id,
+                    points,
+                    reason=f"Appeal: {appeal['item_name']}",
+                    reason_key="appeal",
+                    reason_params={"name": appeal["item_name"]},
+                )
             return
         if kind == "reward":
             reward = self.get_reward(appeal.get("item_id", ""))

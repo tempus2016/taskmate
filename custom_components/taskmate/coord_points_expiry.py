@@ -191,7 +191,13 @@ class PointsExpiryMixin:
                 child.points -= amount
                 self.storage.update_child(child)
                 self.storage.add_points_transaction(
-                    PointsTransaction(child_id=child.id, points=-amount, reason=POINTS_EXPIRED_REASON, created_at=now)
+                    PointsTransaction(
+                        child_id=child.id,
+                        points=-amount,
+                        reason=POINTS_EXPIRED_REASON,
+                        created_at=now,
+                        reason_key="points_expired",
+                    )
                 )
                 self.hass.bus.async_fire(
                     "taskmate_points_expired",

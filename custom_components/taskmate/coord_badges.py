@@ -282,6 +282,8 @@ class BadgeCoordinator:
                         child_id,
                         bonus,
                         reason=f"Badge: {badge.name}",
+                        reason_key="badge",
+                        reason_params={"name": badge.name, "badge_id": badge.id},
                     )
                 self.hass.bus.async_fire(
                     "taskmate_badge_earned",
@@ -332,6 +334,8 @@ class BadgeCoordinator:
                 child_id,
                 bonus,
                 reason=f"Badge: {badge.name}",
+                reason_key="badge",
+                reason_params={"name": badge.name, "badge_id": badge.id},
             )
         self.hass.bus.async_fire(
             "taskmate_badge_earned",
@@ -364,6 +368,8 @@ class BadgeCoordinator:
                 award.child_id,
                 award.bonus_credited,
                 reason=f"Badge revoked: {badge_name}",
+                reason_key="badge_revoked",
+                reason_params={"name": badge_name},
             )
         await self.storage.async_save()
         return True

@@ -247,6 +247,8 @@ class QuestsMixin:
                 child_id=child.id,
                 points=-bonus,
                 reason=f"Quest reversed: {quest.name}",
+                reason_key="quest_reversed",
+                reason_params={"name": quest.name},
                 created_at=dt_util.now(),
             ),
             reverses_season=True,
@@ -267,6 +269,8 @@ class QuestsMixin:
                     child_id=child.id,
                     points=bonus,
                     reason=f"Quest complete: {quest.name}",
+                    reason_key="quest_complete",
+                    reason_params={"name": quest.name},
                     created_at=dt_util.now(),
                 )
             )

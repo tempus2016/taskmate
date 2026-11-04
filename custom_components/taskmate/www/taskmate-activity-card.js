@@ -97,6 +97,26 @@ class TaskMateActivityCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  /**
+   * A transaction's reason in the reader's language (#771). Rows written since
+   * carry a translation key and its parameters; older ones only the English
+   * text, which _translateReason maps where it knows the wording and shows
+   * as stored otherwise.
+   */
+  _reasonFor(item) {
+    if (!item) return "";
+    if (item.reason_key) {
+      const key = `activity.reason_${item.reason_key}`;
+      // Numbers in the reason follow HA's number format once that helper is loaded.
+      const fmt = window.__taskmate_numbers && window.__taskmate_numbers.format;
+      const params = Object.fromEntries(Object.entries(item.reason_params || {})
+        .map(([k, v]) => [k, fmt && typeof v === "number" ? fmt(this.hass, v) : v]));
+      const text = this._t(key, params);
+      if (text && text !== key) return text;
+    }
+    return this._translateReason(item.reason);
+  }
+
   // Transaction reasons are stored in English in the DB (e.g. "Penalty: Messy room").
   // Map known prefixes to translation keys so they render in the user's language.
   _translateReason(reason) {
@@ -109,12 +129,52 @@ class TaskMateActivityCard extends LitElement {
       ['Pool refund (reward deleted):', 'activity.reason_pool_refund_deleted'],
       ['Pool refund (reward funding changed):', 'activity.reason_pool_refund_funding_changed'],
       ['Pool refund (reward assignment changed):', 'activity.reason_pool_refund_assignment_changed'],
+      // Older rows of reasons that now carry a key (#771): same translation.
+      ['Challenge reversed:', 'activity.reason_challenge_reversed'],
+      ['Challenge complete:', 'activity.reason_challenge_complete'],
+      ['Quest reversed:', 'activity.reason_quest_reversed'],
+      ['Quest complete:', 'activity.reason_quest_complete'],
+      ['Badge revoked:', 'activity.reason_badge_revoked'],
+      ['Badge:', 'activity.reason_badge'],
+      ['Appeal:', 'activity.reason_appeal'],
+      ['Raffle called off:', 'activity.reason_raffle_called_off'],
+      ['Made it right undone:', 'activity.reason_made_it_right_undone'],
+      ['Made it right:', 'activity.reason_made_it_right'],
+      ['All times done reversed:', 'activity.reason_all_times_done_reversed'],
+      ['All times done:', 'activity.reason_all_times_done'],
+      ['Weekly target bonus reversed:', 'activity.reason_weekly_target_bonus_reversed'],
+      ['Weekly target bonus:', 'activity.reason_weekly_target_bonus'],
+      ['Pet shop:', 'activity.reason_pet_shop'],
+      ['Gift to ', 'activity.reason_gift_to'],
+      ['Gift from ', 'activity.reason_gift_from'],
       ['Penalty:', 'activity.reason_penalty'],
       ['Bonus:', 'activity.reason_bonus'],
       // Surprise inspections (#981): the pass bonus.
       ['Inspection passed:', 'activity.reason_inspection_passed'],
       ['Sibling check:', 'activity.reason_sibling_check'],
     ];
+    // Reasons with numbers in them (#771): older rows, and the panel table
+    // that reads only the stored text.
+    const numbered = [
+      [/^Weekly goal reached 🎯 \((\d+)\)$/, 'activity.reason_weekly_goal_reached', (m) => ({ target: m[1] })],
+      [/^Weekly goal reversed \((\d+)\)$/, 'activity.reason_weekly_goal_reversed', (m) => ({ target: m[1] })],
+      [/^Penalty: (.+) \(missed mandatory\)$/, 'activity.reason_penalty_missed_mandatory', (m) => ({ name: m[1] })],
+      [/^Savings interest \(\+(\d+)%\)$/, 'activity.reason_savings_interest', (m) => ({ pct: m[1] })],
+      [/^Points decay \(-(\d+)%\), (\d+) from wish savings$/, 'activity.reason_points_decay_wish', (m) => ({ pct: m[1], wish: m[2] })],
+      [/^Points decay \(-(\d+)%\)$/, 'activity.reason_points_decay', (m) => ({ pct: m[1] })],
+      [/^Raffle tickets ×(\d+): (.*)$/, 'activity.reason_raffle_tickets', (m) => ({ tickets: m[1], name: m[2] })],
+      [/^Perfect week bonus reversed\b/, 'activity.reason_perfect_week_reversed', () => ({})],
+    ];
+    for (const [re, key, params] of numbered) {
+      const m = reason.match(re);
+      if (m) {
+        // Old rows carry their numbers as text; group them the HA way too.
+        const fmt = window.__taskmate_numbers && window.__taskmate_numbers.format;
+        const p = Object.fromEntries(Object.entries(params(m))
+          .map(([k, v]) => [k, fmt && /^\d+$/.test(v) ? fmt(this.hass, Number(v)) : v]));
+        return this._t(key, p);
+      }
+    }
     for (const [prefix, key] of prefixMap) {
       if (reason.startsWith(prefix)) {
         const name = reason.slice(prefix.length).trim();
@@ -130,6 +190,12 @@ class TaskMateActivityCard extends LitElement {
     if (reason === 'Points expired') {
       return this._t('activity.reason_points_expired');
     }
+    const exact = {
+      'Allowance payout': 'activity.reason_allowance_payout',
+      'Surprise bonus 🎉': 'activity.reason_surprise_bonus',
+      'Streak milestone reversed': 'activity.reason_streak_milestone_reversed',
+    };
+    if (exact[reason]) return this._t(exact[reason]);
     if (reason === 'Admin panel adjustment') {
       return this._t('activity.reason_admin_adjustment');
     }
@@ -805,7 +871,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="activity-body">
               <div class="activity-title">
                 <strong>${childName}</strong>
-                <span class="reason">— ${this._translateReason(item.reason)}</span>
+                <span class="reason">— ${this._reasonFor(item)}</span>
               </div>
               <div class="activity-meta">
                 <span class="activity-time">${time}</span>
@@ -832,7 +898,7 @@ class TaskMateActivityCard extends LitElement {
       const pillClass = isAdd ? 'gain' : (isSpend ? 'spend' : 'loss');
       const icon = reason.startsWith('Inspection passed:') ? 'mdi:magnify-scan'
         : isAdd ? 'mdi:star-plus' : (isPenalty ? 'mdi:minus-circle' : 'mdi:star-minus');
-      const displayReason = this._translateReason(item.reason);
+      const displayReason = this._reasonFor(item);
 
       return html`
         <div class="activity-item t-${klass}">
@@ -1116,7 +1182,7 @@ class TaskMateActivityCard extends LitElement {
     const time = this._formatTime(new Date(item.completed_at));
 
     if ((type === "points_added" || type === "points_removed") && this._isFreezeEntry(item)) {
-      const displayReason = this._translateReason(item.reason);
+      const displayReason = this._reasonFor(item);
       return {
         childName, tone: 'accent', emoji: this._isWishEntry(item) ? '💝' : '❄️', sign: '', pts: '',
         text: html`<strong>${childName}</strong> <span class="reason">— ${displayReason}</span>`,
@@ -1135,7 +1201,7 @@ class TaskMateActivityCard extends LitElement {
       // Saving into a wish (#932) is the same kind of move as a savings jar.
       const isPoolAllocation = reason.startsWith('Allocated to pool:') || reason.startsWith('Wish savings:');
       const isSpend = !isAdd && !isPenalty && isPoolAllocation;
-      const displayReason = this._translateReason(item.reason);
+      const displayReason = this._reasonFor(item);
       const verb = isAdd ? this._t('activity.received') : isSpend ? this._t('activity.spent') : this._t('activity.lost');
       const sign = isAdd ? '+' : '−';
       const tone = isAdd ? 'good' : (isSpend ? 'accent' : 'bad');

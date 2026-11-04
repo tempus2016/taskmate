@@ -443,7 +443,12 @@ class PetShopMixin:
         self.storage.update_child(child)
         self.storage.add_points_transaction(
             PointsTransaction(
-                child_id=child.id, points=-cost, reason=f"{PET_SHOP_REASON}{name}", created_at=dt_util.now()
+                child_id=child.id,
+                points=-cost,
+                reason=f"{PET_SHOP_REASON}{name}",
+                created_at=dt_util.now(),
+                reason_key="pet_shop",
+                reason_params={"name": name},
             )
         )
         wardrobe = self._pet_wardrobe(child.id, create=True)

@@ -231,6 +231,8 @@ class MandatoryMixin:
                 miss.child_id,
                 miss.penalty_points,
                 reason=f"Penalty: {name} (missed mandatory)",
+                reason_key="penalty_missed_mandatory",
+                reason_params={"name": name},
             )
         self._mark_miss_handled(miss)
         self.storage.remove_mandatory_miss(miss_id)

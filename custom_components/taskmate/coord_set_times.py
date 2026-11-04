@@ -231,6 +231,8 @@ class SetTimesMixin:
                 child_id=child.id,
                 points=bonus,
                 reason=f"All times done: {chore.name}",
+                reason_key="all_times_done",
+                reason_params={"name": chore.name},
                 created_at=dt_util.now(),
             )
         )
@@ -280,6 +282,8 @@ class SetTimesMixin:
                 child_id=child.id,
                 points=-refund,
                 reason=f"All times done reversed: {getattr(chore, 'name', '')}".rstrip(": "),
+                reason_key="all_times_done_reversed",
+                reason_params={"name": getattr(chore, "name", "")},
                 created_at=dt_util.now(),
             ),
             reverses_season=True,

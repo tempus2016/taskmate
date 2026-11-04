@@ -121,7 +121,13 @@ class SiblingChecksMixin:
             await self.async_approve_chore(completion_id, refresh=False)
         if bonus:
             # Saves and refreshes, so the approval above lands with it.
-            await self.async_add_points(checker_id, bonus, reason=f"Sibling check: {chore.name}")
+            await self.async_add_points(
+                checker_id,
+                bonus,
+                reason=f"Sibling check: {chore.name}",
+                reason_key="sibling_check",
+                reason_params={"name": chore.name},
+            )
         else:
             await self.storage.async_save()
             await self.async_refresh()
