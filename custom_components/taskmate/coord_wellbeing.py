@@ -17,9 +17,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from .const import NOTIF_TYPE_HELP_REQUESTED, NOTIF_TYPE_MOOD_LOW
+from .const import DOMAIN, NOTIF_TYPE_HELP_REQUESTED, NOTIF_TYPE_MOOD_LOW
+from .coord_set_times import chore_has_times
 from .models import generate_id
 
 MOODS = ("great", "good", "ok", "sad", "upset")
@@ -68,8 +70,30 @@ class WellbeingMixin:
         # those, but the service takes any chore id, and a sibling's chore
         # name in a parent's push is not this child's to send.
         if not self._is_chore_completable_by_child(chore, child_id):
+            # Theirs, but not available right now — a recurring chore still in
+            # its window, a spent one-off, a vacation or rota day off (#771):
+            # say so, rather than "not one of your chores".
+            assigned = getattr(chore, "assigned_to", []) or []
+            if (not assigned or child_id in assigned) and not self.is_chore_available_for_child(chore, child_id):
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="help_chore_not_available",
+                    translation_placeholders={"chore": chore.name},
+                )
             raise ValueError(f"{chore.name} is not one of {child.name}'s chores today.")
         now = dt_util.now()
+        # Not one the child can do right now (#771): a recurring chore still
+        # in its window, a spent one-off, a set time that isn't open, or a
+        # chore for a part of the day that hasn't started or is over. The card
+        # doesn't offer "I'm stuck" on those rows, and a parent's push about a
+        # chore that can't be done yet would only confuse.
+        reason = self._help_unavailable_reason(chore, child_id, now)
+        if reason:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key=reason,
+                translation_placeholders={"chore": chore.name},
+            )
         repeat_cutoff = now - timedelta(minutes=HELP_REPEAT_MINUTES)
         cooldown_cutoff = now - timedelta(seconds=HELP_COOLDOWN_SECONDS)
         for req in self._help_requests():
@@ -112,6 +136,48 @@ class WellbeingMixin:
         )
         await self.async_refresh()
         return record
+
+    def _help_unavailable_reason(self, chore, child_id: str, now: datetime) -> str:
+        """Why a help request for ``chore`` can't be taken now, or "" when it can.
+
+        On top of _is_chore_completable_by_child (checked first): an open set
+        time, as the completion path requires, and the child card's time-of-day rule
+        (_isChorePreviewLocked / _isTimePeriodElapsed): a chore whose period
+        comes after the current one hasn't started; one whose period is over,
+        past any claim allowance, has passed. "anytime" chores are always open.
+        """
+        if chore_has_times(chore):
+            if self.resolve_set_time(chore, child_id, "", now, as_parent=False) is None:
+                return "help_chore_not_available"
+            return ""
+        cat = getattr(chore, "time_category", "") or "anytime"
+        if cat == "anytime":
+            return ""
+        periods = self.get_time_periods()
+        ids = [p["id"] for p in periods]
+        if cat not in ids:
+            return ""
+
+        def minutes(value: str) -> int:
+            h, m = (int(x) for x in value.split(":"))
+            return h * 60 + m
+
+        local = dt_util.as_local(now)
+        now_min = local.hour * 60 + local.minute
+        # Before the first period starts, it's still the first one (as on the card).
+        current = 0
+        for i, p in enumerate(periods):
+            if now_min >= minutes(p["start"]):
+                current = i
+        own = ids.index(cat)
+        if own > current:
+            return "help_chore_not_open_yet"
+        if own < current:
+            allowance = max(0, int(getattr(chore, "claim_allowance_minutes", 0) or 0))
+            start, end = minutes(periods[own]["start"]), minutes(periods[own]["end"])
+            if not (start <= now_min < min(1440, end + allowance)):
+                return "help_chore_time_passed"
+        return ""
 
     async def async_answer_help(self, request_id: str) -> bool:
         """A parent saw it: close the request so the card stops saying "on its way"."""

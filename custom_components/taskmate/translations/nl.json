@@ -1999,6 +1999,15 @@
     },
     "calendar_own_event": {
       "message": "Dit komt al uit TaskMate zelf en wordt daarom niet als nieuwe taak toegevoegd."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} is nog niet open — vraag om hulp zodra het tijd is om hem te doen."
+    },
+    "help_chore_time_passed": {
+      "message": "De tijd voor {chore} is voorbij, dus er is nu niets om hulp bij te vragen."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} kan nu niet gedaan worden, dus er is nog niets om hulp bij te vragen."
     }
   },
   "issues": {

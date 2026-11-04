@@ -5785,6 +5785,10 @@ class TaskMateChildCard extends LitElement {
     if (!this._helpEnabled()) return "";
     const asked = (child.help || []).includes(chore.id) || (this._helpSent || {})[`${chore.id}_${child.id}`];
     if (asked) return html`<span class="${cls} tm-help-on">🙋 ${this._t("child.help_on_way")}</span>`;
+    // Not on a row the child can't do right now (#771) — a later part of the
+    // day, a passed window (whatever elapsed_time_mode shows), a cooldown, a
+    // sibling's claim, a prerequisite… The server refuses those requests too.
+    if (this._choreLocks(chore, false).locked || chore._isTimeElapsed) return "";
     return html`<button type="button" class="${cls} tm-help-btn"
       @click=${(e) => { e.stopPropagation(); this._askForHelp(chore, child); }}>🙋 ${this._t("child.help_ask")}</button>`;
   }
