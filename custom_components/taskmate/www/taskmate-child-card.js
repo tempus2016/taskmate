@@ -1797,6 +1797,9 @@ class TaskMateChildCard extends LitElement {
       }
       .timed-chore-card.loading { opacity: 0.6; pointer-events: none; }
 
+      /* A long timed title wraps rather than cutting off at "ZZ 771Y timed
+         readin…" (#771). */
+      .timed-chore-card .chore-name { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
       .timed-top-row {
         display: flex;
         align-items: center;
@@ -2205,6 +2208,93 @@ class TaskMateChildCard extends LitElement {
       .tmd-check .c-done {
         background: transparent; border-color: transparent; color: var(--tmd-good);
       }
+
+      /* Designed: timed task card. The designed lists reuse the classic timed
+         card (_designTimed -> _renderTimedChoreCard), so without these it kept
+         its light cyan classic look inside every designed style, dark ones
+         included (#771). Everything here comes from the shadow-scoped --tmd-*
+         tokens, so each design and its dark variant follow automatically;
+         classic is untouched (it carries no tokens and is excluded). The
+         per-design rules repeat the :not(classic) guard only to match the
+         shared rules' specificity, so source order lets them win. */
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-chore-card {
+        background: var(--tmd-surface-2); color: var(--tmd-text);
+        border: 1px solid var(--tmd-border); border-radius: var(--tmd-radius);
+        box-shadow: none; font-family: var(--tmd-font-body);
+      }
+      :host([data-tm-design="accessible"]:not([data-tm-design="classic"])) .timed-chore-card { border-width: 2px; }
+      :host([data-tm-design="console"]:not([data-tm-design="classic"])) .timed-chore-card { border-radius: 8px; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-chore-card .chore-name {
+        color: var(--tmd-text); font-family: var(--tmd-font-display);
+        /* The title wraps instead of cutting off at "ZZ 771X timed ru…" while
+           space was left beside it on a phone (#771). */
+        white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+      }
+      /* The rate chip stays beside the title — a long title wraps next to it
+         — and only drops to its own line when the row can't hold a readable
+         title column next to it at all. */
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-top-row { align-items: flex-start; flex-wrap: wrap; row-gap: 6px; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-top-row .chore-details { flex: 1 1 0; min-width: 8em; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-top-row .chore-number-badge { flex: none; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-chore-card .chore-number-badge {
+        background: var(--tmd-accent); color: #fff;
+        border-radius: var(--tmd-radius-sm); box-shadow: none; text-shadow: none;
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timed-rate {
+        color: var(--tmd-accent);
+        background: color-mix(in srgb, var(--tmd-accent) 14%, transparent);
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-display {
+        background: var(--tmd-surface); border: 1px solid var(--tmd-border);
+        border-radius: var(--tmd-radius-sm);
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter { color: var(--tmd-text); font-family: var(--tmd-font-mono); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter.running { color: var(--tmd-good); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter.paused { color: var(--tmd-warn); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-points-live { color: var(--tmd-gold); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-points-live ha-icon { color: var(--tmd-gold); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .recording-dot { background: var(--tmd-good); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .paused-badge {
+        color: var(--tmd-warn);
+        background: color-mix(in srgb, var(--tmd-warn) 16%, transparent);
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-btn {
+        font-family: var(--tmd-font-display); border-radius: var(--tmd-radius-sm);
+        box-shadow: none;
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-btn.start, :host([data-tm-design]:not([data-tm-design="classic"])) .timer-btn.resume { background: var(--tmd-good); color: #06301f; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-btn.pause { background: var(--tmd-warn); color: #3a2600; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-btn.stop { background: var(--tmd-bad); color: #3a0d0d; }
+      /* Console's primary action is its accent gradient, as on its Done button. */
+      :host([data-tm-design="console"]:not([data-tm-design="classic"])) .timer-btn.start,
+      :host([data-tm-design="console"]:not([data-tm-design="classic"])) .timer-btn.resume {
+        color: #06101c;
+        background: linear-gradient(135deg, var(--tmd-accent), color-mix(in srgb, var(--tmd-accent) 60%, var(--tmd-accent2)));
+      }
+      /* Graphite: actions are near-black on light / near-white on dark, colour
+         is kept for meaning only — Done (stop) reads as the primary confirm. */
+      :host([data-tm-design="graphite"]:not([data-tm-design="classic"])) .timer-btn.start,
+      :host([data-tm-design="graphite"]:not([data-tm-design="classic"])) .timer-btn.resume,
+      :host([data-tm-design="graphite"]:not([data-tm-design="classic"])) .timer-btn.stop {
+        background: var(--tmd-text); color: var(--tmd-surface);
+        font-family: var(--tmd-font-body); font-weight: 500;
+      }
+      /* Graphite dark keeps --tmd-accent a dark grey (header bands), so text
+         drawn in it would vanish on the dark surface — use the text colour. */
+      :host([data-tm-design="graphite"]:not([data-tm-design="classic"])) .timed-rate {
+        color: var(--tmd-text); background: var(--tmd-surface);
+        border: 1px solid var(--tmd-border);
+      }
+      /* Console's accent is a bright cyan: dark digits, as on its buttons. */
+      :host([data-tm-design="console"]:not([data-tm-design="classic"])) .timed-chore-card .chore-number-badge { color: #06101c; }
+      :host([data-tm-design="graphite"]:not([data-tm-design="classic"])) .timer-btn.pause {
+        background: transparent; color: var(--tmd-text); border: 1px solid var(--tmd-border);
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .daily-cap-bar { color: var(--tmd-dim); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .cap-track { background: var(--tmd-surface); border: 1px solid var(--tmd-border); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .cap-fill { background: var(--tmd-accent); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .cap-fill.warning { background: var(--tmd-bad); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .cap-label.near-cap { color: var(--tmd-bad); }
 
       /* Designed: shared chore meta (mandatory / photo / description / dim states) */
       .tmd-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; }
