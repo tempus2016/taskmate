@@ -302,6 +302,12 @@ class TaskMateStickerChartCard extends LitElement {
         display: grid;
         grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
         gap: 8px;
+        /* A finished tile is tilted and scaled up (rotate(-2deg) scale(1.03)),
+           which pushes its corners out by about 3.4% of the tile's width on
+           each side. Keep that inside the card at every width: the overhang
+           is never more than 1.7% of the row (two columns is the fewest), so
+           2% of side padding always covers it. */
+        padding-inline: max(4px, 2%);
       }
       .tile {
         position: relative;
