@@ -4,6 +4,13 @@
  * Allows adding or removing points with optional reasons.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -856,7 +863,7 @@ class TaskMatePointsCard extends LitElement {
           ${addAmounts.map(amt => html`
             <button class="pc-qchip add" ?disabled="${isLoading}"
               @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'add', amt); }}"
-              title="${this._t('points_card.quick_add_title', { amount: amt, pointsName })}">+${amt}</button>`)}
+              title="${this._t('points_card.quick_add_title', { amount: __tmNum(this.hass, amt), pointsName })}">+${__tmNum(this.hass, amt)}</button>`)}
           ${showDialog ? html`
             <button class="pc-qchip more" ?disabled="${isLoading}"
               @click="${(e) => { e.stopPropagation(); this._openDialog(child, 'add', pointsIcon, pointsName); }}"
@@ -866,7 +873,7 @@ class TaskMatePointsCard extends LitElement {
           ${removeAmounts.map(amt => html`
             <button class="pc-qchip remove" ?disabled="${isLoading}"
               @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'remove', amt); }}"
-              title="${this._t('points_card.quick_remove_title', { amount: amt, pointsName })}">−${amt}</button>`)}
+              title="${this._t('points_card.quick_remove_title', { amount: __tmNum(this.hass, amt), pointsName })}">−${__tmNum(this.hass, amt)}</button>`)}
           ${showDialog ? html`
             <button class="pc-qchip more" ?disabled="${isLoading}"
               @click="${(e) => { e.stopPropagation(); this._openDialog(child, 'remove', pointsIcon, pointsName); }}"
@@ -886,7 +893,7 @@ class TaskMatePointsCard extends LitElement {
               ${this._av(child, tone, 46)}
               <div class="pc-mid">
                 <div class="pc-name">${child.name}</div>
-                <div class="pc-pts">${child.points}<ha-icon icon="${pointsIcon}"></ha-icon></div>
+                <div class="pc-pts">${__tmNum(this.hass, child.points)}<ha-icon icon="${pointsIcon}"></ha-icon></div>
               </div>
               ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;
@@ -905,7 +912,7 @@ class TaskMatePointsCard extends LitElement {
               ${this._av(child, tone, 36)}
               <div class="pc-mid">
                 <div class="cn-name">${child.name}</div>
-                <div class="num muted cn-cur">${(child.points + ' ' + pointsName).toUpperCase()}</div>
+                <div class="num muted cn-cur">${(__tmNum(this.hass, child.points) + ' ' + pointsName).toUpperCase()}</div>
               </div>
               ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;
@@ -923,7 +930,7 @@ class TaskMatePointsCard extends LitElement {
             <div class="pc-row cp-row ${isLoading ? "loading" : ""}" style="--ac:${tone}">
               ${this._av(child, tone, 38)}
               <div class="cp-name">${child.name}</div>
-              <div class="num cp-num">${child.points}</div>
+              <div class="num cp-num">${__tmNum(this.hass, child.points)}</div>
               ${this._designQuickActions(child, pointsName, pointsIcon, isLoading)}
             </div>`;
         })}
@@ -948,7 +955,7 @@ class TaskMatePointsCard extends LitElement {
             <div class="child-name">${child.name}</div>
             <div class="child-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              ${child.points} ${pointsName}
+              ${__tmNum(this.hass, child.points)} ${pointsName}
             </div>
           </div>
         </div>
@@ -964,7 +971,7 @@ class TaskMatePointsCard extends LitElement {
                 ${addAmounts.map(amt => html`
                   <button class="quick-btn add" ?disabled="${isLoading}"
                     @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'add', amt); }}"
-                    title="${this._t('points_card.quick_add_title', { amount: amt, pointsName })}">+${amt}</button>
+                    title="${this._t('points_card.quick_add_title', { amount: __tmNum(this.hass, amt), pointsName })}">+${__tmNum(this.hass, amt)}</button>
                 `)}
                 ${this.config.show_dialog !== false ? html`
                   <button class="quick-btn custom" ?disabled="${isLoading}"
@@ -977,7 +984,7 @@ class TaskMatePointsCard extends LitElement {
                 ${removeAmounts.map(amt => html`
                   <button class="quick-btn remove" ?disabled="${isLoading}"
                     @click="${(e) => { e.stopPropagation(); this._quickAdjust(child, 'remove', amt); }}"
-                    title="${this._t('points_card.quick_remove_title', { amount: amt, pointsName })}">&#x2212;${amt}</button>
+                    title="${this._t('points_card.quick_remove_title', { amount: __tmNum(this.hass, amt), pointsName })}">&#x2212;${__tmNum(this.hass, amt)}</button>
                 `)}
                 ${this.config.show_dialog !== false ? html`
                   <button class="quick-btn custom" ?disabled="${isLoading}"

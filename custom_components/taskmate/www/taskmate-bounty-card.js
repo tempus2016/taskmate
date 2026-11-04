@@ -18,6 +18,13 @@
  * bb- prefix: the shared design kit defines its own .btn / .bar / .av / .chip.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -409,7 +416,7 @@ class TaskMateBountyCard extends LitElement {
     } else if (b.status === "pending" && mine) {
       body = html`
         <div class="bb-act">
-          <span class="bb-tag warn bb-wait"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("bounty.waiting", { points: b.points, pointsName: this._pointsName() })}</span>
+          <span class="bb-tag warn bb-wait"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("bounty.waiting", { points: __tmNum(this.hass, b.points), pointsName: this._pointsName() })}</span>
           ${b.undo && b.completion_id ? html`
             <button class="bb-btn bb-text" ?disabled=${this._busy} @click=${() => this._undo(b)}>
               <ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon>${this._t("bounty.undo")}
@@ -426,7 +433,7 @@ class TaskMateBountyCard extends LitElement {
 
     return html`
       <div class="bb-row ${cls}">
-        <div class="bb-cost" title="${b.points} ${this._pointsName()}"><b>${b.points}</b><ha-icon class="bb-cost-ic" icon="${this._pointsIcon()}"></ha-icon></div>
+        <div class="bb-cost" title="${b.points} ${this._pointsName()}"><b>${__tmNum(this.hass, b.points)}</b><ha-icon class="bb-cost-ic" icon="${this._pointsIcon()}"></ha-icon></div>
         <div class="bb-main">
           <div class="bb-title-row">
             <span class="bb-ic"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></span>
@@ -458,7 +465,7 @@ class TaskMateBountyCard extends LitElement {
           <p>${this._t("bounty.claim_body", { hours: b.claim_hours })}</p>
           <div class="bb-dlg-acts">
             <button class="bb-btn bb-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
-            <button class="bb-btn bb-claim" ?disabled=${this._busy} @click=${() => this._claim(b)}>${this._t("bounty.claim_it", { points: b.points, pointsName: this._pointsName() })}</button>
+            <button class="bb-btn bb-claim" ?disabled=${this._busy} @click=${() => this._claim(b)}>${this._t("bounty.claim_it", { points: __tmNum(this.hass, b.points), pointsName: this._pointsName() })}</button>
           </div>
         </div>`;
     } else if (d.kind === "photo") {
@@ -482,7 +489,7 @@ class TaskMateBountyCard extends LitElement {
         <div class="bb-dlg" style="--bb-dlg:var(--tmd-good, #2ecc71)">
           <div class="bb-big-ic"><ha-icon icon="mdi:check"></ha-icon></div>
           <h3>${this._t("bounty.yay_title")}</h3>
-          <p>${this._t("bounty.yay_body", { title: b.title, points: b.points, pointsName: this._pointsName() })}</p>
+          <p>${this._t("bounty.yay_body", { title: b.title, points: __tmNum(this.hass, b.points), pointsName: this._pointsName() })}</p>
           <div class="bb-dlg-acts"><button class="bb-btn bb-done" @click=${close}>${this._t("bounty.ok")}</button></div>
         </div>`;
     }

@@ -157,7 +157,8 @@ class TestPreReaderPointValues:
         """Not the star approximation — the number the completion awards."""
         tile = _tile_source()
         assert "pre-tile-points" in tile
-        assert "+${points}" in tile
+        # Grouped the HA way (#771), but still the exact value.
+        assert "+${__tmNum(this.hass, points)}" in tile
 
     def test_points_row_uses_the_effective_value(self):
         """Difficulty multipliers and boosts land in effective_points."""

@@ -13,6 +13,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -999,7 +1006,7 @@ class TaskMateParentDashboardCard extends LitElement {
               <div class="pd-name">${child.name} <span class="muted pd-mini">${approved}/${total}</span></div>
               <div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div>
             </div>
-            <div class="pd-pts-cn">${child.points}</div>
+            <div class="pd-pts-cn">${__tmNum(this.hass, child.points)}</div>
           </div>`;
       }
       if (design === "cleanpro") {
@@ -1010,7 +1017,7 @@ class TaskMateParentDashboardCard extends LitElement {
             <div style="flex:1;min-width:0">
               <div class="row" style="justify-content:space-between">
                 <span class="pd-name-cp">${child.name}</span>
-                <span class="muted" style="font-size:12px">${approved}/${total} · ${child.points} ${this._t('common.points')}</span>
+                <span class="muted" style="font-size:12px">${approved}/${total} · ${__tmNum(this.hass, child.points)} ${this._t('common.points')}</span>
               </div>
               <div class="bar" style="margin-top:7px;height:8px"><i style="width:${pct}%"></i></div>
             </div>
@@ -1029,7 +1036,7 @@ class TaskMateParentDashboardCard extends LitElement {
               <div class="pd-name">${child.name}</div>
               <div class="muted pd-sub">${_ltrNums(this._t('dashboard.chores_done', { done: approved, total }, `${approved} / ${total} chores done`))}</div>
             </div>
-            <div class="big pd-pts">${child.points}<ha-icon icon="${pointsIcon}"></ha-icon></div>
+            <div class="big pd-pts">${__tmNum(this.hass, child.points)}<ha-icon icon="${pointsIcon}"></ha-icon></div>
           </div>
           <div class="bar" style="margin-top:9px"><i style="width:${pct}%"></i></div>
         </div>`;
@@ -1073,7 +1080,7 @@ class TaskMateParentDashboardCard extends LitElement {
           ${this._av(child?.name || '?', child, tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${comp.chore_name || choreMap[comp.chore_id]?.name || this._t('common.unknown')}</div>
-            <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${pts}${qty}</div>
+            <div class="muted pd-item-sub">${child?.name || this._t('common.unknown')}${time ? ` · ${time}` : ""} · +${__tmNum(this.hass, pts)}${qty}</div>
             ${this._renderStars(comp)}
           </div>
           ${ref}
@@ -1095,7 +1102,7 @@ class TaskMateParentDashboardCard extends LitElement {
           <div class="pd-photo"><ha-icon icon="${claim.reward_icon || 'mdi:gift'}"></ha-icon></div>
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${claim.reward_name}</div>
-            <div class="muted pd-item-sub">${claim.child_name}${time ? ` · ${time}` : ""} · ${claim.cost}</div>
+            <div class="muted pd-item-sub">${claim.child_name}${time ? ` · ${time}` : ""} · ${__tmNum(this.hass, claim.cost)}</div>
           </div>
           <div class="pd-acts">
             <button class="btn good sm round" ?disabled="${isLoading}" title="${this._t('common.approve')}"
@@ -1152,7 +1159,7 @@ class TaskMateParentDashboardCard extends LitElement {
           ${this._av(child.name, child, tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${child.name}</div>
-            <div class="muted pd-item-sub">${child.points} ${pointsName}</div>
+            <div class="muted pd-item-sub">${__tmNum(this.hass, child.points)} ${pointsName}</div>
           </div>
           <div class="pd-acts">
             <button class="btn bad sm round"
@@ -1259,7 +1266,7 @@ class TaskMateParentDashboardCard extends LitElement {
                 <span class="child-tile-name">${child.name}</span>
                 <span class="points-pill">
                   <ha-icon icon="${pointsIcon}"></ha-icon>
-                  ${child.points}
+                  ${__tmNum(this.hass, child.points)}
                 </span>
               </div>
               <div class="progress-row">
@@ -1280,7 +1287,7 @@ class TaskMateParentDashboardCard extends LitElement {
                       <div class="tm-outstanding-row">
                         <span class="tm-outstanding-name">${c.name}</span>
                         <span class="tm-outstanding-pts">
-                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>${c.points}
+                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>${__tmNum(this.hass, c.points)}
                         </span>
                         <button class="btn-complete-behalf" ?disabled="${loading}"
                           title="${this._t('common.complete_on_behalf_tooltip', { name: child.name })}"
@@ -1394,7 +1401,7 @@ class TaskMateParentDashboardCard extends LitElement {
                 <span>${time}</span>
                 <span class="approval-points">
                   <ha-icon icon="${pointsIcon}"></ha-icon>
-                  +${comp.points || chore?.points || 0}
+                  +${__tmNum(this.hass, comp.points || chore?.points || 0)}
                 </span>
               </div>
               ${this._renderStars(comp)}
@@ -1443,7 +1450,7 @@ class TaskMateParentDashboardCard extends LitElement {
                 ${claim.child_name} • ${time} •
                 <span style="display:inline-flex;align-items:center;gap:2px;color:#e67e22;font-weight:600;">
                   <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:11px;color:#f1c40f;"></ha-icon>
-                  ${claim.cost}
+                  ${__tmNum(this.hass, claim.cost)}
                 </span>
               </div>
             </div>
@@ -1473,7 +1480,7 @@ class TaskMateParentDashboardCard extends LitElement {
           <span class="qp-name">${child.name}</span>
           <span class="qp-points">
             <ha-icon icon="${pointsIcon}"></ha-icon>
-            ${child.points}
+            ${__tmNum(this.hass, child.points)}
           </span>
           <div class="qp-actions">
             <button class="btn-remove" @click="${() => this._handlePoints(child.id, -amount)}" title="${this._t('dashboard.btn_remove_points_title', { amount, pointsName })}" aria-label="${this._t('dashboard.btn_remove_points_title', { amount, pointsName })}">

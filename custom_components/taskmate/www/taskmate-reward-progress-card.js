@@ -6,6 +6,13 @@
  * Version: 1.0.0
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -620,14 +627,14 @@ class TaskMateRewardProgressCard extends LitElement {
             </div>
             <div>
               <div class="child-progress-name">${child.name}</div>
-              <div class="child-points-label">${have} ${pointsName}</div>
+              <div class="child-points-label">${__tmNum(this.hass, have)} ${pointsName}</div>
             </div>
           </div>
           <div class="child-progress-cost">
             <div class="cost-label">${this._t('common.goal')}</div>
             <div class="cost-value">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              ${cost}
+              ${__tmNum(this.hass, cost)}
             </div>
           </div>
         </div>
@@ -637,7 +644,7 @@ class TaskMateRewardProgressCard extends LitElement {
             <div class="big-progress-fill ${cls}" style="width: ${pct}%"></div>
           </div>
           <div class="progress-stat-row">
-            <span class="progress-have">${_ltrRatio(have, cost)} ${pointsName}</span>
+            <span class="progress-have">${_ltrRatio(__tmNum(this.hass, have), __tmNum(this.hass, cost))} ${pointsName}</span>
             ${canAfford
               ? html`<span class="progress-need">${this._t('reward_progress.ready_to_claim_emoji')}</span>`
               : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - have })}</span>`}
@@ -678,7 +685,7 @@ class TaskMateRewardProgressCard extends LitElement {
                   <div class="mini-avatar">
                     ${this._avatarGlyph(child)}
                   </div>
-                  <span>${child.name}: ${child.points}</span>
+                  <span>${child.name}: ${__tmNum(this.hass, child.points)}</span>
                 </div>
               `)}
             </div>
@@ -687,13 +694,13 @@ class TaskMateRewardProgressCard extends LitElement {
           <div class="child-progress-header" style="margin-top:4px">
             <div>
               <div class="child-progress-name">${this._t('reward_progress.total_pool')}</div>
-              <div class="child-points-label">${totalHave} ${pointsName} ${this._t('reward_progress.combined')}</div>
+              <div class="child-points-label">${__tmNum(this.hass, totalHave)} ${pointsName} ${this._t('reward_progress.combined')}</div>
             </div>
             <div class="child-progress-cost">
               <div class="cost-label">${this._t('common.goal')}</div>
               <div class="cost-value">
                 <ha-icon icon="${pointsIcon}"></ha-icon>
-                ${cost}
+                ${__tmNum(this.hass, cost)}
               </div>
             </div>
           </div>
@@ -703,7 +710,7 @@ class TaskMateRewardProgressCard extends LitElement {
               <div class="big-progress-fill ${cls}" style="width: ${pct}%"></div>
             </div>
             <div class="progress-stat-row">
-              <span class="progress-have">${_ltrRatio(totalHave, cost)} ${pointsName}</span>
+              <span class="progress-have">${_ltrRatio(__tmNum(this.hass, totalHave), __tmNum(this.hass, cost))} ${pointsName}</span>
               ${canAfford
                 ? html`<span class="progress-need">${this._t('reward_progress.ready')}</span>`
                 : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - totalHave })}</span>`}
@@ -836,27 +843,27 @@ class TaskMateRewardProgressCard extends LitElement {
         ${reward.description ? html`<div class="muted rp-desc">${reward.description}</div>` : ''}
         ${reward.is_jackpot ? html`<div class="chip rp-jackpot">🎰 ${this._t('reward_progress.jackpot_reward')}</div>` : ''}
         ${availabilityLabel ? html`<div class="chip rp-avail rp-avail-${availabilityTone}">${availabilityLabel}</div>` : ''}
-        <div class="chip rp-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${cost} ${pointsName}</div>
+        <div class="chip rp-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${__tmNum(this.hass, cost)} ${pointsName}</div>
         <div class="bar rp-bar"><i style="width:${pct}%;${pct >= 100 ? 'background:var(--tmd-good)' : ''}"></i></div>
         ${design === "cleanpro"
           ? html`<div class="row rp-stat">
               <div class="big rp-pct">${pct}%</div>
               <div class="rp-stat-r">
-                <div class="num rp-frac">${_ltrRatio(have, cost)}</div>
-                <div class="muted rp-need">${this._t('reward_progress.more_needed', { amount: remaining })}</div>
+                <div class="num rp-frac">${_ltrRatio(__tmNum(this.hass, have), __tmNum(this.hass, cost))}</div>
+                <div class="muted rp-need">${this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, remaining) })}</div>
               </div>
             </div>`
           : html`
             <div class="big rp-pct rp-pct-c">${pct}%</div>
             <div class="rp-need rp-need-c">${remaining > 0
-              ? this._t('reward_progress.more_needed', { amount: remaining })
+              ? this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, remaining) })
               : this._t('reward_progress.ready_to_claim')}</div>`}
 
         <div class="grid rp-kids" style="--n:${contributors.length}">
           ${contributors.map((c) => html`
             <div class="rp-kid" style="--ac:${c.tone}">
               ${this._av(c.child, c.tone, 36)}
-              <div class="big rp-kid-pts">${c.points}<ha-icon icon="${pointsIcon}"></ha-icon></div>
+              <div class="big rp-kid-pts">${__tmNum(this.hass, c.points)}<ha-icon icon="${pointsIcon}"></ha-icon></div>
               <div class="rp-kid-name">${c.child.name}</div>
               ${design === "cleanpro" && !reward.is_jackpot && c.cost > 0
                 ? html`<div class="bar rp-kid-bar"><i style="width:${Math.min(100, Math.round((c.points / c.cost) * 100))}%;background:${c.tone}"></i></div>` : ''}

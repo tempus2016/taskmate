@@ -17,6 +17,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -243,10 +250,6 @@ class TaskMateRecapCard extends LitElement {
 
   // ── labels ──────────────────────────────────────────────────────────────
 
-  _lang() {
-    return this.hass?.locale?.language || this.hass?.language || undefined;
-  }
-
   _fmt(iso, opts) {
     try {
       return new Intl.DateTimeFormat(...__tmDateArgs(this.hass, { timeZone: "UTC", ...opts })).format(_day(iso));
@@ -265,7 +268,7 @@ class TaskMateRecapCard extends LitElement {
   }
 
   _num(n) {
-    try { return Number(n || 0).toLocaleString(this._lang()); } catch (e) { return String(n || 0); }
+    return __tmNum(this.hass, Number(n || 0));
   }
 
   /** "August 2026", "15 – 21 Sep 2026", "Apr – Jun 2026", "2026". */
@@ -424,7 +427,7 @@ class TaskMateRecapCard extends LitElement {
     return html`
       <div class="story" data-k="${kind}" style="--s1:${s1};--s2:${s2}" tabindex="0"
            role="group" aria-roledescription="slide"
-           aria-label="${this._t("recap.slide_counter", { index: idx + 1, total: slides.length })}"
+           aria-label="${this._t("recap.slide_counter", { index: idx + 1, total: __tmNum(this.hass, slides.length) })}"
            @keydown=${(e) => this._onKey(e)}>
         <div class="blob b1"></div><div class="blob b2"></div>
         <div class="segs">${slides.map((_, j) => html`<i class="${j <= idx ? "done" : ""}"></i>`)}</div>

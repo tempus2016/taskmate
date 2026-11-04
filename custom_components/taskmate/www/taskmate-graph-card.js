@@ -14,6 +14,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -697,7 +704,7 @@ class TaskMateGraphCard extends LitElement {
       ctx.setLineDash([]);
       ctx.fillStyle = textColor;
       ctx.textAlign = 'right';
-      ctx.fillText(tick, PAD.left - 4, y);
+      ctx.fillText(__tmNum(this.hass, tick), PAD.left - 4, y);
     }
 
     // Zero line (solid)

@@ -63,7 +63,8 @@ for (const design of DESIGNS) {
     assert.ok(markup.includes(localize("child.gift_body")));
     assert.ok(markup.includes(localize("child.rate_title", { reward: "Cinema trip" })), "rating");
     assert.match(markup, /tm-care-forecast/);
-    assert.ok(markup.includes("Lego set · 842/1000"));
+    // Grouped the HA way (#771): the harness HA language is en.
+    assert.ok(markup.includes("Lego set · 842/1,000"));
     // (1000 - 842) / 45 → 4 days
     assert.ok(markup.includes(localize("child.forecast_body", { rate: 45, day: weekday(isoIn(4)) })), "forecast");
     assert.ok(markup.includes(`<img class="tm-reward-pic" src="${IMG}"`), "the reward picture replaces the icon");

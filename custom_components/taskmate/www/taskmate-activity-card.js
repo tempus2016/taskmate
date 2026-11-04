@@ -13,6 +13,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -837,7 +844,7 @@ class TaskMateActivityCard extends LitElement {
             <div class="activity-body">
               <div class="activity-title">
                 <strong>${childName}</strong>
-                ${' '}${verb}${' '}<strong>${pts}</strong>
+                ${' '}${verb}${' '}<strong>${__tmNum(this.hass, pts)}</strong>
                 ${item.reason ? html` <span class="reason">— ${displayReason}</span>` : ` ${this._t('activity.points_manually')}`}
               </div>
               <div class="activity-meta">
@@ -846,7 +853,7 @@ class TaskMateActivityCard extends LitElement {
               </div>
             </div>
             <span class="points-pill ${pillClass}">
-              ${isAdd ? '+' : '−'}${pts}
+              ${isAdd ? '+' : '−'}${__tmNum(this.hass, pts)}
               <ha-icon icon="${pointsIcon}"></ha-icon>
             </span>
             ${this._txnReversible(reason)
@@ -939,7 +946,7 @@ class TaskMateActivityCard extends LitElement {
             </div>
             ${pts ? html`
               <span class="points-pill ${pillClass}">
-                −${pts}
+                −${__tmNum(this.hass, pts)}
                 <ha-icon icon="${pointsIcon}"></ha-icon>
               </span>
             ` : ''}
@@ -981,7 +988,7 @@ class TaskMateActivityCard extends LitElement {
           </div>
           ${pts ? html`
             <span class="points-pill ${pillClass}">
-              +${pts}
+              +${__tmNum(this.hass, pts)}
               <ha-icon icon="${pointsIcon}"></ha-icon>
             </span>
           ` : ''}
@@ -1137,8 +1144,8 @@ class TaskMateActivityCard extends LitElement {
         : (isPenalty ? '⚠️' : '➖');
       return {
         childName, tone, emoji, sign, pts,
-        text: html`<strong>${childName}</strong> ${verb} <strong>${pts}</strong>${item.reason ? html` <span class="reason">— ${displayReason}</span>` : ''}`,
-        plain: `${childName} ${verb} ${pts}`,
+        text: html`<strong>${childName}</strong> ${verb} <strong>${__tmNum(this.hass, pts)}</strong>${item.reason ? html` <span class="reason">— ${displayReason}</span>` : ''}`,
+        plain: `${childName} ${verb} ${__tmNum(this.hass, pts)}`,
         ago, time,
         ptsClass: isAdd ? 'good' : (isSpend ? 'accent' : 'bad'),
         undo: this._txnReversible(reason)
@@ -1213,8 +1220,8 @@ class TaskMateActivityCard extends LitElement {
     if (!undo || !undo.id || this.config.show_undo === false) return '';
     const loading = !!this._loading[undo.id];
     const message = undo.kind === 'chore'
-      ? this._t('activity.undo_confirm_chore', { detail: undo.detail, child: undo.child, points: undo.points })
-      : this._t('activity.undo_confirm_txn', { detail: undo.detail, child: undo.child, points: undo.points });
+      ? this._t('activity.undo_confirm_chore', { detail: undo.detail, child: undo.child, points: __tmNum(this.hass, undo.points) })
+      : this._t('activity.undo_confirm_txn', { detail: undo.detail, child: undo.child, points: __tmNum(this.hass, undo.points) });
     return html`<button class="btn ghost sm tmd-undo" ?disabled=${loading}
       @click=${() => { this._confirm = { kind: undo.kind, id: undo.id, message }; }}>${this.getAttribute?.("dir") === "rtl" ? "↪" : "↩"} ${label}</button>`;
   }
@@ -1301,7 +1308,7 @@ class TaskMateActivityCard extends LitElement {
             ${this._stripe(r)}
             <div class="av act-pl-av" style="--av:38px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
             <div class="act-pl-bub">
-              <div class="act-line">${r.text} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
+              <div class="act-line">${r.text} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${__tmNum(this.hass, r.pts)}</span></div>
               <div class="row act-pl-foot">
                 <span class="muted act-ago">${this._timeMeta(r)}</span>
                 ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
@@ -1318,7 +1325,7 @@ class TaskMateActivityCard extends LitElement {
           <div class="row act-cn-row" style="--ac:var(--tmd-${r.tone})">
             ${this._stripe(r)}
             <div class="av" style="--av:26px;--ac:var(--tmd-${r.tone})">${r.emoji}</div>
-            <div class="act-cn-mid">${r.plain} ${r.stars || ''} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${r.pts}</span></div>
+            <div class="act-cn-mid">${r.plain} ${r.stars || ''} <span class="num" style="color:var(--tmd-${r.ptsClass})">${r.sign}${__tmNum(this.hass, r.pts)}</span></div>
             ${this._designUndoBtn(r.undo, this._t('activity.undo'))}
             <div class="num muted act-cn-time">${this._timeMeta(r)}</div>
           </div>`)}
@@ -1338,7 +1345,7 @@ class TaskMateActivityCard extends LitElement {
               <div class="act-cp-dot" style="--ac:${stripes ? `var(--tmd-${r.tone})` : 'var(--tmd-dim)'}">${r.emoji}</div>
               <div class="row act-cp-head">
                 <div>
-                  <div class="act-line">${r.text} <span style="color:var(--tmd-${r.ptsClass});font-weight:700">${r.sign}${r.pts}</span></div>
+                  <div class="act-line">${r.text} <span style="color:var(--tmd-${r.ptsClass});font-weight:700">${r.sign}${__tmNum(this.hass, r.pts)}</span></div>
                   <div class="muted act-ago">${this._timeMeta(r)}</div>
                 </div>
                 ${this._designUndoBtn(r.undo, this._t('activity.undo'))}

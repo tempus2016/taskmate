@@ -18,6 +18,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -549,8 +556,8 @@ class TaskMateBadgesCard extends LitElement {
 
     const latestEarned = earned.length > 0 ? earned[0] : null;
     const countLabel = earned.length > 0 && latestEarned
-      ? _ltrNums(this._t("badges.count_label_latest", { earned: earned.length, total: totalBadges, latest: this._badgeName(latestEarned) }))
-      : _ltrNums(this._t("badges.count_label", { earned: earned.length, total: totalBadges }));
+      ? _ltrNums(this._t("badges.count_label_latest", { earned: __tmNum(this.hass, earned.length), total: __tmNum(this.hass, totalBadges), latest: this._badgeName(latestEarned) }))
+      : _ltrNums(this._t("badges.count_label", { earned: __tmNum(this.hass, earned.length), total: __tmNum(this.hass, totalBadges) }));
 
     const title = this.config.title || (childName ? this._t("badges.title_with_name", { name: childName }) : this._t("badges.default_title"));
 
@@ -597,7 +604,7 @@ class TaskMateBadgesCard extends LitElement {
     const justEarned = !!this._justEarned && this._justEarned === _badgeId(b);
     return html`
       <div class="badge earned tier-${b.tier} ${justEarned ? 'just-earned' : ''}">
-        ${b.point_bonus > 0 ? html`<div class="badge-bonus">+${b.point_bonus}</div>` : ''}
+        ${b.point_bonus > 0 ? html`<div class="badge-bonus">+${__tmNum(this.hass, b.point_bonus)}</div>` : ''}
         <div class="badge-icon">
           <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
         </div>
@@ -613,11 +620,11 @@ class TaskMateBadgesCard extends LitElement {
     const pct = (b.progress_pct != null) ? b.progress_pct
       : (b.closest_criterion ? Math.min(100, Math.round((b.closest_criterion.current / b.closest_criterion.target) * 100)) : 0);
     const crit = b.closest_criterion;
-    const progressLabel = _ltrNums(b.progress_label || (crit ? `${crit.current} / ${crit.target}` : null));
+    const progressLabel = _ltrNums(b.progress_label || (crit ? `${__tmNum(this.hass, crit.current)} / ${__tmNum(this.hass, crit.target)}` : null));
 
     return html`
       <div class="badge locked tier-${b.tier}">
-        ${b.point_bonus > 0 ? html`<div class="badge-bonus" style="opacity:0.4">+${b.point_bonus}</div>` : ''}
+        ${b.point_bonus > 0 ? html`<div class="badge-bonus" style="opacity:0.4">+${__tmNum(this.hass, b.point_bonus)}</div>` : ''}
         <div class="badge-icon">
           <ha-icon icon="${b.icon || 'mdi:medal-outline'}"></ha-icon>
         </div>
@@ -665,7 +672,7 @@ TaskMateBadgesCard.prototype._designEarnedTile = function (b) {
     ? html`<ha-icon icon="${a}"></ha-icon>` : a;
   return html`
     <div class="bd-tile earned" style="--bt:${tone}">
-      ${b.point_bonus > 0 ? html`<div class="bd-bonus">+${b.point_bonus}</div>` : ""}
+      ${b.point_bonus > 0 ? html`<div class="bd-bonus">+${__tmNum(this.hass, b.point_bonus)}</div>` : ""}
       <div class="bd-ic earned" style="--bt:${tone}">${icon}</div>
       <div class="bd-name">${_ltrNums(this._badgeName(b))}</div>
       <div class="muted bd-date">${this._formatDate(b.earned_at)}</div>
@@ -677,12 +684,12 @@ TaskMateBadgesCard.prototype._designLockedTile = function (b) {
   const pct = (b.progress_pct != null) ? b.progress_pct
     : (b.closest_criterion ? Math.min(100, Math.round((b.closest_criterion.current / b.closest_criterion.target) * 100)) : 0);
   const crit = b.closest_criterion;
-  const progressLabel = _ltrNums(b.progress_label || (crit ? `${crit.current} / ${crit.target}` : null));
+  const progressLabel = _ltrNums(b.progress_label || (crit ? `${__tmNum(this.hass, crit.current)} / ${__tmNum(this.hass, crit.target)}` : null));
   const a = b.icon || "mdi:medal-outline";
   const icon = a.startsWith("mdi:") ? html`<ha-icon icon="${a}"></ha-icon>` : a;
   return html`
     <div class="bd-tile locked" style="--bt:${tone}">
-      ${b.point_bonus > 0 ? html`<div class="bd-bonus" style="opacity:0.45">+${b.point_bonus}</div>` : ""}
+      ${b.point_bonus > 0 ? html`<div class="bd-bonus" style="opacity:0.45">+${__tmNum(this.hass, b.point_bonus)}</div>` : ""}
       <div class="bd-ic locked">${icon}</div>
       <div class="bd-name">${_ltrNums(this._badgeName(b))}</div>
       ${progressLabel ? html`
@@ -695,7 +702,7 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
   const hd = _safeColor(this.config.header_color, DESIGN_HEADER);
   const ic = design === "console" ? "✦" : design === "cleanpro" ? "◈" : "🎖️";
   const sub = d.childName;
-  const countPill = _ltrNums(this._t("badges.count_label", { earned: d.earned.length, total: d.totalBadges }));
+  const countPill = _ltrNums(this._t("badges.count_label", { earned: __tmNum(this.hass, d.earned.length), total: __tmNum(this.hass, d.totalBadges) }));
 
   return html`
     <ha-card class="tmd" style="--hd:${hd}">
@@ -707,7 +714,7 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
       <div class="tmd-bd">
         ${this._designFilters(d.filter)}
         ${(d.filteredEarned.length + d.filteredLocked.length) === 0
-          ? html`<div class="tmd-empty">${_ltrNums(this._t("badges.count_label", { earned: 0, total: d.totalBadges }))}</div>`
+          ? html`<div class="tmd-empty">${_ltrNums(this._t("badges.count_label", { earned: 0, total: __tmNum(this.hass, d.totalBadges) }))}</div>`
           : html`<div class="bd-grid">
               ${d.filteredEarned.map((b) => this._designEarnedTile(b))}
               ${d.filteredLocked.map((b) => this._designLockedTile(b))}

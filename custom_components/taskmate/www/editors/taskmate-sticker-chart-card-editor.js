@@ -61,7 +61,7 @@ class TaskMateStickerChartCardEditor extends LitElement {
           select: {
             options: [
               { value: "", label: this._t("sticker_chart.editor.reward_auto") },
-              ...rewards.map(r => ({ value: r.id, label: `${r.name} (${r.cost})` })),
+              ...rewards.map(r => ({ value: r.id, label: `${r.name} (${(window.__taskmate_numbers ? window.__taskmate_numbers.format(this.hass, r.cost) : r.cost)})` })),
             ],
             mode: "dropdown",
           },

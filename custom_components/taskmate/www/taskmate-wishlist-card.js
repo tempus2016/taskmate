@@ -18,6 +18,13 @@
  * wl- prefix because the shared design kit defines its own .btn / .bar.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -391,8 +398,8 @@ class TaskMateWishlistCard extends LitElement {
         <div class="wl-balance">
           <ha-icon icon="mdi:piggy-bank-outline"></ha-icon>
           <span>${this._t("wishlist.can_spend")}</span>
-          <b class="wl-amount"><ha-icon icon="${pointsIcon}"></ha-icon>${spendable}</b>
-          <span class="wl-reserved">${this._t("wishlist.saved_in_wishes", { points: reserved })}</span>
+          <b class="wl-amount"><ha-icon icon="${pointsIcon}"></ha-icon>${__tmNum(this.hass, spendable)}</b>
+          <span class="wl-reserved">${this._t("wishlist.saved_in_wishes", { points: __tmNum(this.hass, reserved) })}</span>
         </div>
         ${this._flash ? html`<div class="wl-flash" role="alert">${this._flash}</div>` : ""}
         <div class="wl-content">
@@ -432,7 +439,7 @@ class TaskMateWishlistCard extends LitElement {
           <div class="wl-grow">
             <div class="wl-wish-name">${w.name}</div>
             <div class="wl-wish-meta">
-              <span class="wl-tag"><ha-icon icon="mdi:flag-checkered"></ha-icon>${this._t("wishlist.target_tag", { points: target })}</span>
+              <span class="wl-tag"><ha-icon icon="mdi:flag-checkered"></ha-icon>${this._t("wishlist.target_tag", { points: __tmNum(this.hass, target) })}</span>
               ${link ? html`<a class="wl-link" href="${link.href}" target="_blank" rel="noopener noreferrer"
                   title="${this._t("wishlist.open_link")}"><ha-icon icon="mdi:link-variant"></ha-icon>${link.host}</a>` : ""}
             </div>
@@ -444,13 +451,13 @@ class TaskMateWishlistCard extends LitElement {
             <i class="wl-fam" style="width:${pct(Math.min(pledged, Math.max(0, target - saved)))}%"></i>
           </div>
           <div class="wl-legend">
-            <span><span class="wl-sw wl-sw-me"></span>${this._t("wishlist.legend_me", { points: saved })}</span>
-            <span><span class="wl-sw wl-sw-fam"></span>${this._t("wishlist.legend_family", { points: pledged })}</span>
-            <span class="wl-tot">${_ltrRatio(Math.min(target, saved + pledged), target)}</span>
+            <span><span class="wl-sw wl-sw-me"></span>${this._t("wishlist.legend_me", { points: __tmNum(this.hass, saved) })}</span>
+            <span><span class="wl-sw wl-sw-fam"></span>${this._t("wishlist.legend_family", { points: __tmNum(this.hass, pledged) })}</span>
+            <span class="wl-tot">${_ltrRatio(__tmNum(this.hass, Math.min(target, saved + pledged)), __tmNum(this.hass, target))}</span>
           </div>
           ${Array.isArray(w.pledges) && w.pledges.length ? html`
             <div class="wl-pledges">
-              ${w.pledges.map((p) => html`<span class="wl-pl"><ha-icon icon="mdi:heart"></ha-icon>${p.name} +${p.points}</span>`)}
+              ${w.pledges.map((p) => html`<span class="wl-pl"><ha-icon icon="mdi:heart"></ha-icon>${p.name} +${__tmNum(this.hass, p.points)}</span>`)}
             </div>` : ""}
         ` : ""}
         <div class="wl-acts">${this._renderActions(w, spendable, remaining, funded)}</div>
@@ -486,7 +493,7 @@ class TaskMateWishlistCard extends LitElement {
     return html`
       <button class="wl-btn accent" ?disabled=${spendable < 1} @click=${() => this._openMove(w, spendable)}>
         <ha-icon icon="mdi:piggy-bank-outline"></ha-icon>${this._t("wishlist.move_points")}</button>
-      <span class="wl-to-go">${this._t("wishlist.to_go", { points: remaining })}</span>
+      <span class="wl-to-go">${this._t("wishlist.to_go", { points: __tmNum(this.hass, remaining) })}</span>
       <span class="wl-grow"></span>
       ${takeBack}`;
   }
@@ -557,26 +564,26 @@ class TaskMateWishlistCard extends LitElement {
     const service = isMove ? "move_points_to_wish" : "take_points_from_wish";
     return html`
       <h3><ha-icon class=${isMove ? "" : "tm-rtl-flip"} icon="${isMove ? "mdi:piggy-bank-outline" : "mdi:undo-variant"}"></ha-icon>${this._t(isMove ? "wishlist.move_title" : "wishlist.take_title", { name: wish.name })}</h3>
-      <div class="wl-big-amt">${amount}<ha-icon icon="${pointsIcon}"></ha-icon></div>
+      <div class="wl-big-amt">${__tmNum(this.hass, amount)}<ha-icon icon="${pointsIcon}"></ha-icon></div>
       <input class="wl-range" type="range" min="0" max="${max}" step="1" .value=${String(amount)}
         @input=${(e) => this._setSheet({ amount: Number(e.target.value) })}>
       <div class="wl-range-info">
         <span>0</span>
         <span>${isMove
-          ? this._t("wishlist.move_info", { balance: spendable, needed: this._remaining(wish) })
+          ? this._t("wishlist.move_info", { balance: __tmNum(this.hass, spendable), needed: __tmNum(this.hass, this._remaining(wish)) })
           : this._t("wishlist.take_info", { saved: Number(wish.saved) || 0 })}</span>
-        <span>${max}</span>
+        <span>${__tmNum(this.hass, max)}</span>
       </div>
       <div class="wl-chips">
-        ${chips.map((n) => html`<button class="wl-chip ${amount === n ? "on" : ""}" @click=${() => this._setSheet({ amount: n })}>+${n}</button>`)}
+        ${chips.map((n) => html`<button class="wl-chip ${amount === n ? "on" : ""}" @click=${() => this._setSheet({ amount: n })}>+${__tmNum(this.hass, n)}</button>`)}
         <button class="wl-chip ${amount === max ? "on" : ""}" @click=${() => this._setSheet({ amount: max })}>
-          ${this._t(isMove ? "wishlist.all_i_need" : "wishlist.take_all", { points: max })}</button>
+          ${this._t(isMove ? "wishlist.all_i_need" : "wishlist.take_all", { points: __tmNum(this.hass, max) })}</button>
       </div>
       <div class="wl-sheet-acts">
         <button class="wl-btn ghost" ?disabled=${s.busy} @click=${() => this._closeSheet()}>${this._t("common.cancel")}</button>
         <button class="wl-btn accent" ?disabled=${s.busy || amount < 1}
           @click=${() => this._call(service, { wish_id: wish.id, points: amount })}>
-          ${this._t(isMove ? "wishlist.move_confirm" : "wishlist.take_confirm", { points: amount })}</button>
+          ${this._t(isMove ? "wishlist.move_confirm" : "wishlist.take_confirm", { points: __tmNum(this.hass, amount) })}</button>
       </div>`;
   }
 

@@ -4,6 +4,13 @@
  * service-prefix/i18n-prefix, supplied via the P object.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -669,7 +676,7 @@ export function createIncentiveCard(P) {
         <div class="bonus-row" data-bonus-id="${b.id}">
           <div class="points-badge">
             <ha-icon icon="${b.icon || P.icon}"></ha-icon>
-            <div class="points-value">${P.sign}${b.points}</div>
+            <div class="points-value">${P.sign}${__tmNum(this.hass, b.points)}</div>
             <div class="points-label">${pointsName}</div>
           </div>
 
@@ -837,7 +844,7 @@ export function createIncentiveCard(P) {
 
             ${child && !this._editMode && this._canApply() ? html`
               <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary); padding-top:4px;">
-                ${this._tp('applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}
+                ${this._tp('applying_to', { childName: child.name, points: __tmNum(this.hass, child.points), pointsName: this._getPointsName() })}
               </div>
             ` : ""}
           </div>
@@ -955,7 +962,7 @@ export function createIncentiveCard(P) {
     _renderDesignedRow(b, design) {
       const isEditing = this._editingBonus?.id === b.id;
       const accent = P.designAccent;
-      const pv = P.dpts(b.points);
+      const pv = P.dpts(b.points, (v) => __tmNum(this.hass, v));
 
       let row;
       if (design === "playroom") {
@@ -1046,7 +1053,7 @@ export function createIncentiveCard(P) {
                 </button>`)
           : ""}
         ${child && !this._editMode && this._canApply()
-          ? html`<div class="d-foot">${this._tp('applying_to', { childName: child.name, points: child.points, pointsName: this._getPointsName() })}</div>`
+          ? html`<div class="d-foot">${this._tp('applying_to', { childName: child.name, points: __tmNum(this.hass, child.points), pointsName: this._getPointsName() })}</div>`
           : ""}`;
 
       return html`

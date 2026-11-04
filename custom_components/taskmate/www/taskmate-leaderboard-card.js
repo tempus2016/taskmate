@@ -6,6 +6,13 @@
  * Version: 1.0.0
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -467,20 +474,20 @@ class TaskMateLeaderboardCard extends LitElement {
             ${sortBy !== "points" ? html`
               <span class="stat-chip">
                 <ha-icon icon="${pointsIcon}" style="color: #f1c40f;"></ha-icon>
-                ${child.points || 0} ${this._t('common.total')}
+                ${__tmNum(this.hass, child.points || 0)} ${this._t('common.total')}
               </span>
             ` : ''}
             ${this.config.show_career !== false && sortBy !== "career" ? html`
               <span class="stat-chip">
                 <ha-icon icon="mdi:trophy-variant" style="color: #27ae60;"></ha-icon>
-                ${child.career_score || 0} ${this._t('leaderboard.career_label')}
+                ${__tmNum(this.hass, child.career_score || 0)} ${this._t('leaderboard.career_label')}
               </span>
             ` : ''}
           </div>
         </div>
 
         <div class="rank-score" style="color: ${avatarColour};">
-          <div class="score-value">${scoreValue}</div>
+          <div class="score-value">${__tmNum(this.hass, scoreValue)}</div>
           <div class="score-label">${scoreLabel}</div>
         </div>
       </div>
@@ -517,7 +524,7 @@ class TaskMateLeaderboardCard extends LitElement {
               </div>
             </div>
             <div class="rank-score" style="color:#f1c40f;">
-              <div class="score-value">${child.points || 0}</div>
+              <div class="score-value">${__tmNum(this.hass, child.points || 0)}</div>
               <div class="score-label">${pointsName}</div>
             </div>
           </div>
@@ -531,12 +538,12 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="mdi:checkbox-multiple-marked" style="color:#3498db;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.total_chores_completed')}</span>
-            <span class="pb-value">${totalChores}</span>
+            <span class="pb-value">${__tmNum(this.hass, totalChores)}</span>
           </div>
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="mdi:calendar-week" style="color:#9b59b6;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.points_this_week')}</span>
-            <span class="pb-value">${weekly}</span>
+            <span class="pb-value">${__tmNum(this.hass, weekly)}</span>
           </div>
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="${pointsIcon}" style="color:#f1c40f;"></ha-icon>
@@ -546,7 +553,7 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="mdi:trophy-variant" style="color:#27ae60;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.career_score')}</span>
-            <span class="pb-value">${child.career_score || 0}</span>
+            <span class="pb-value">${__tmNum(this.hass, child.career_score || 0)}</span>
           </div>
         </div>
       </ha-card>
@@ -688,8 +695,8 @@ class TaskMateLeaderboardCard extends LitElement {
     // render path the layout alias, which for graphite is "cleanpro").
     const mono = window.__taskmate_design?.active?.(this) === "graphite";
     const stat = (icon, emoji, value) => (mono || !emoji
-      ? html`<span><ha-icon icon="${icon}"></ha-icon>${value}</span>`
-      : html`<span>${emoji} ${value}</span>`);
+      ? html`<span><ha-icon icon="${icon}"></ha-icon>${__tmNum(this.hass, value)}</span>`
+      : html`<span>${emoji} ${__tmNum(this.hass, value)}</span>`);
     if (this.config.show_streak !== false && sortBy !== "streak") chips.push(stat("mdi:fire", "🔥", r.streak));
     if (this.config.show_weekly !== false && sortBy !== "weekly") chips.push(stat("mdi:calendar-blank-outline", "📅", r.weekly));
     if (sortBy !== "points") chips.push(stat(ctx.pointsIcon, null, r.points));
@@ -709,7 +716,7 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="medal">${MEDAL[r.idx]}</div>
           ${this._av(r.child, r.tone, win ? 58 : 46)}
           <div class="lb-pod-name">${r.child.name}</div>
-          <div class="big lb-pod-score">${r.score.toLocaleString()}<ha-icon icon="${ctx.sortBy === "streak" ? "mdi:fire" : ctx.sortBy === "career" ? "mdi:trophy-outline" : ctx.pointsIcon}"></ha-icon></div>
+          <div class="big lb-pod-score">${__tmNum(this.hass, r.score)}<ha-icon icon="${ctx.sortBy === "streak" ? "mdi:fire" : ctx.sortBy === "career" ? "mdi:trophy-outline" : ctx.pointsIcon}"></ha-icon></div>
           ${win && this.config.show_streak !== false && r.streak
             ? html`<div class="chip soft" style="margin-top:7px">🔥 ${this._t('common.d_streak', { count: r.streak })}</div>` : ""}
         </div>`;
@@ -724,7 +731,7 @@ class TaskMateLeaderboardCard extends LitElement {
                 <div class="num" style="width:26px">${r.idx + 1}</div>
                 ${this._av(r.child, r.tone, 38)}
                 <div style="flex:1;min-width:0"><div class="lb-pod-name">${r.child.name}</div></div>
-                <div class="big" style="color:var(--tmd-accent)">${r.score.toLocaleString()}</div>
+                <div class="big" style="color:var(--tmd-accent)">${__tmNum(this.hass, r.score)}</div>
               </div>`)}
           </div>` : ""}`;
     }
@@ -739,7 +746,7 @@ class TaskMateLeaderboardCard extends LitElement {
               <div class="lb-pod-name">${r.child.name}</div>
               ${this._lbMeta(r, ctx)}
             </div>
-            <div class="big" style="font-size:22px;color:var(--tmd-accent)">${r.score.toLocaleString()}</div>
+            <div class="big" style="font-size:22px;color:var(--tmd-accent)">${__tmNum(this.hass, r.score)}</div>
           </div>`)}
       </div>`;
   }
@@ -758,7 +765,7 @@ class TaskMateLeaderboardCard extends LitElement {
               ${this._lbMeta(r, ctx)}
             </div>
             <div class="lb-cn-right">
-              <div class="num lb-cn-score ${r.idx === 0 ? "win" : ""}">${r.score.toLocaleString()}</div>
+              <div class="num lb-cn-score ${r.idx === 0 ? "win" : ""}">${__tmNum(this.hass, r.score)}</div>
               <div class="muted lb-cn-unit">${scoreUnit}</div>
             </div>
           </div>`)}
@@ -778,7 +785,7 @@ class TaskMateLeaderboardCard extends LitElement {
               ${this._lbMetaChips(r, ctx, "lb-cp-meta")}
             </div>
             <div class="lb-cp-right">
-              <div class="num lb-cp-score">${r.score.toLocaleString()}</div>
+              <div class="num lb-cp-score">${__tmNum(this.hass, r.score)}</div>
               <div class="muted lb-cp-unit">${scoreUnit}</div>
             </div>
           </div>`)}

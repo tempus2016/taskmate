@@ -15,6 +15,13 @@
  * like the bounty card; layout classes carry an rf- prefix.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -323,9 +330,9 @@ class TaskMateRaffleCard extends LitElement {
           <div class="rf-name">${r.name}</div>
           ${r.prize ? html`<div class="rf-prize">🏆 ${r.prize}</div>` : ""}
           <div class="rf-meta">
-            <span class="rf-chip"><ha-icon icon="${this._pointsIcon()}"></ha-icon>${this._t("raffle.per_ticket", { cost: r.cost })}</span>
+            <span class="rf-chip"><ha-icon icon="${this._pointsIcon()}"></ha-icon>${this._t("raffle.per_ticket", { cost: __tmNum(this.hass, r.cost) })}</span>
             ${isOpen ? html`<span class="rf-chip">⏳ ${this._until(r.draw_at)}</span>` : ""}
-            ${r.max ? html`<span class="rf-chip">${this._t("raffle.max_each", { max: r.max })}</span>` : ""}
+            ${r.max ? html`<span class="rf-chip">${this._t("raffle.max_each", { max: __tmNum(this.hass, r.max) })}</span>` : ""}
           </div>
           ${holders.length ? html`
             <div class="rf-holders" aria-label="${this._t(total === 1 ? "raffle.tickets_total_one" : "raffle.tickets_total", { count: total })}">

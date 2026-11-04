@@ -14,6 +14,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const PANEL_VERSION = (() => {
   // The version comes from the resource URL (?v=x.x.x), set by the integration
   // itself — but it is still DOM-sourced text that we later splice into
@@ -2192,7 +2199,7 @@ class TaskMatePanel extends HTMLElement {
     if (insp) {
       const tags = {
         open: ["tm-pill-warn", "panel.insp_tag_open", { time: this._inspLeft(insp.until) }],
-        passed: ["tm-pill-success", "panel.insp_tag_passed", { bonus: this._num(insp.bonus) }],
+        passed: ["tm-pill-success", "panel.insp_tag_passed", { bonus: this._fmtNum(this._num(insp.bonus)) }],
         redo: ["tm-pill-warn", "panel.insp_tag_redo", {}],
         failed: ["", "panel.insp_tag_failed", {}],
         expired: ["", "panel.insp_tag_expired", {}],
@@ -2214,7 +2221,7 @@ class TaskMatePanel extends HTMLElement {
       const child = childById[i.child_id];
       const name = (child && child.name) || "?";
       const meta = [
-        this._t("panel.insp_needs_meta", { bonus: this._num(i.bonus), time: this._inspLeft(i.until) }),
+        this._t("panel.insp_needs_meta", { bonus: this._fmtNum(this._num(i.bonus)), time: this._inspLeft(i.until) }),
         i.tell_child ? this._t("panel.insp_told", { name }) : this._t("panel.insp_secret"),
       ].join(" · ");
       return `
@@ -2265,7 +2272,7 @@ class TaskMatePanel extends HTMLElement {
         <span class="tm-insp-ctx-ic"><ha-icon icon="mdi:magnify-scan"></ha-icon></span>
         <div>
           <div><strong>${this._esc(d.chore_name)}</strong> · <span style="color:${child ? this._childColor(child.id) : "inherit"};font-weight:600">${this._esc(d.child_name)}</span></div>
-          <div class="tm-meta">${this._esc(this._t("panel.insp_ctx", { time: when, points: this._num(d.points), points_name: pointsName }))}</div>
+          <div class="tm-meta">${this._esc(this._t("panel.insp_ctx", { time: when, points: this._fmtNum(this._num(d.points)), points_name: pointsName }))}</div>
         </div>
       </div>`;
   }
@@ -2374,7 +2381,7 @@ class TaskMatePanel extends HTMLElement {
         data-act="insp-fail-mode" data-mode="${mode}" ${disabled ? "disabled" : ""}>
         <span class="tm-insp-radio"></span>
         <span><strong>${this._t(titleKey)}</strong>
-          <small>${this._esc(disabled ? this._t("panel.insp_fail_redo_unavailable") : this._t(hintKey, { name: d.child_name, points: this._num(d.points), points_name: pointsName }))}</small></span>
+          <small>${this._esc(disabled ? this._t("panel.insp_fail_redo_unavailable") : this._t(hintKey, { name: d.child_name, points: this._fmtNum(this._num(d.points)), points_name: pointsName }))}</small></span>
       </button>`;
     const body = `
       ${this._inspDialogCtx(d)}
@@ -2438,7 +2445,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "insp-pass-save") {
       const note = String(d.note || "").trim().slice(0, 200);
       this._inspectionCall({ type: "taskmate/inspection/pass", inspection_id: d.inspection_id, bonus, note },
-        "panel.insp_toast_passed", { name: d.child_name, bonus: this._num(bonus) });
+        "panel.insp_toast_passed", { name: d.child_name, bonus: this._fmtNum(this._num(bonus)) });
       return true;
     }
     if (act === "insp-fail-save") {
@@ -2569,7 +2576,7 @@ class TaskMatePanel extends HTMLElement {
     const tags = this._dialog.data.tag_ids || [];
     if (tags.includes(value)) { input.value = ""; return; }
     if (tags.length >= MAX_CHORE_TAGS) {
-      this._showToast("err", this._t("panel.chore_tags_limit", {max: MAX_CHORE_TAGS}));
+      this._showToast("err", this._t("panel.chore_tags_limit", {max: this._fmtNum(MAX_CHORE_TAGS)}));
       return;
     }
     this._toggleArrayField("tag_ids", value);
@@ -3031,7 +3038,7 @@ class TaskMatePanel extends HTMLElement {
       const n = Number(d.recurrence_interval);
       if (!Number.isInteger(n) || n < RECURRENCE_INTERVAL_MIN || n > RECURRENCE_INTERVAL_MAX) {
         this._showToast("err", this._t("panel.chore_recurrence_interval_invalid",
-          { min: RECURRENCE_INTERVAL_MIN, max: RECURRENCE_INTERVAL_MAX }));
+          { min: this._fmtNum(RECURRENCE_INTERVAL_MIN), max: this._fmtNum(RECURRENCE_INTERVAL_MAX) }));
         return;
       }
       recurrence = `every_${n}_days`;
@@ -4929,7 +4936,7 @@ class TaskMatePanel extends HTMLElement {
               return `
               <div class="tm-heat-child">
                 <div class="tm-heat-name">${this._esc(c.name)}
-                  <span class="tm-meta">${this._ltrNums(this._t("panel.insights_calendar_summary", { total: c.total, active: c.active_days, days: report.days }))}</span></div>
+                  <span class="tm-meta">${this._ltrNums(this._t("panel.insights_calendar_summary", { total: this._fmtNum(c.total), active: c.active_days, days: report.days }))}</span></div>
                 <div class="tm-heat-grid" role="img" aria-label="${this._esc(c.name)}">
                   ${weekdays.map(w => `<span class="tm-heat-wd">${this._esc(w)}</span>`).join("")}
                   ${"<i class=\"tm-heat-pad\"></i>".repeat(lead)}
@@ -5072,9 +5079,9 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-fair-name">${this._esc(k.name)}</div>
               <div class="tm-fair-bar"><i style="width:${Math.round(k.points / maxPoints * 100)}%"></i></div>
               <div class="tm-fair-figs">
-                ${this._t("panel.insights_projected_earn", { points: k.points, name: this._esc(pointsName) })}
+                ${this._t("panel.insights_projected_earn", { points: this._fmtNum(k.points), name: this._esc(pointsName) })}
                 · ${k.chores} ${this._t(k.chores === 1 ? "panel.insights_chore" : "panel.insights_chores")}
-                · ${this._t("panel.insights_projected_total", { total: k.projected_total })}
+                · ${this._t("panel.insights_projected_total", { total: this._fmtNum(k.projected_total) })}
               </div>
             </div>
           `).join("")}
@@ -5082,7 +5089,7 @@ class TaskMatePanel extends HTMLElement {
 
         ${report.unassigned_points > 0 ? `
           <div class="tm-verdict tm-verdict-warn">
-            ${this._t("panel.insights_projection_unassigned", { points: report.unassigned_points })}
+            ${this._t("panel.insights_projection_unassigned", { points: this._fmtNum(report.unassigned_points) })}
           </div>` : ""}
 
         <table class="tm-table tm-projection">
@@ -5096,7 +5103,7 @@ class TaskMatePanel extends HTMLElement {
                 <td><strong>${this._t("panel.day_" + d.weekday.slice(0, 3))}</strong> <span class="tm-proj-date">${d.date.slice(5)}</span></td>
                 ${kids.map(k => {
                   const cell = d.children.find(c => c.id === k.id) || { points: 0, chores: 0 };
-                  return `<td>${cell.chores ? `${this._num(cell.points)} <span class="tm-proj-count">(${this._num(cell.chores)})</span>` : "—"}</td>`;
+                  return `<td>${cell.chores ? `${this._fmtNum(this._num(cell.points))} <span class="tm-proj-count">(${this._fmtNum(this._num(cell.chores))})</span>` : "—"}</td>`;
                 }).join("")}
               </tr>
             `).join("")}
@@ -5118,7 +5125,7 @@ class TaskMatePanel extends HTMLElement {
       this._loadHealth();
       return `<div class="tm-card"><div class="tm-empty">${this._t("panel.insights_loading")}</div></div>`;
     }
-    const kb = (report.storage_bytes / 1024).toFixed(1);
+    const kb = __tmNum(this._hass, report.storage_bytes / 1024, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const counts = report.counts;
 
     return `
@@ -5151,7 +5158,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-health-counts">
           ${Object.entries(counts).map(([key, value]) => `
             <div class="tm-health-stat">
-              <div class="tm-health-num">${value}</div>
+              <div class="tm-health-num">${this._fmtNum(value)}</div>
               <div class="tm-health-label">${this._t("panel.health_count_" + key)}</div>
             </div>
           `).join("")}
@@ -5239,8 +5246,8 @@ class TaskMatePanel extends HTMLElement {
                   <span class="tm-fair-target" style="inset-inline-start:${Math.round(report.fair_share / maxShare * 100)}%"></span>
                 </div>
                 <div class="tm-fair-figs">
-                  <strong>${c.completions}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
-                  · ${this._num(c.points)} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
+                  <strong>${__tmNum(this._hass, c.completions)}</strong> ${this._t(c.completions === 1 ? "panel.insights_chore" : "panel.insights_chores")}
+                  · ${this._fmtNum(this._num(c.points))} ${this._esc(this._state.settings?.points_name || this._t("common.points"))}
                   · ${c.share_completions}%
                   ${report.total_minutes ? ` · ${this._t("panel.insights_minutes", { minutes: this._num(c.minutes), percent: c.share_minutes })}` : ""}
                 </div>
@@ -5269,7 +5276,7 @@ class TaskMatePanel extends HTMLElement {
       if (avg === null || avg === undefined) return `<span class="tm-meta">—</span>`;
       const full = Math.round(avg);
       return `<span class="tm-q-stars" aria-hidden="true">${"★".repeat(full)}<span class="tm-q-off">${"☆".repeat(3 - full)}</span></span>
-              <span class="tm-numeric">${avg.toFixed(1)}</span>`;
+              <span class="tm-numeric">${__tmNum(this._hass, avg, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>`;
     };
     const table = (title, rows) => `
       <h3 class="tm-section-title" style="margin-top:16px">${this._esc(title)}</h3>
@@ -5314,7 +5321,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-empty">${this._t("panel.insights_quality_none")}</div>
         ` : `
           <div class="tm-verdict tm-verdict-ok">${this._t("panel.insights_quality_overall", {
-            average: Number(report.average).toFixed(1), rated: report.rated_completions, total: report.total_completions,
+            average: __tmNum(this._hass, Number(report.average), { minimumFractionDigits: 1, maximumFractionDigits: 1 }), rated: report.rated_completions, total: this._fmtNum(report.total_completions),
           })}</div>
           ${table(this._t("panel.insights_quality_by_child"), report.children)}
           ${table(this._t("panel.insights_quality_by_chore"), report.chores.filter(r => r.rated > 0))}
@@ -5446,10 +5453,10 @@ class TaskMatePanel extends HTMLElement {
     const btn = (delta) => {
       const amount = Math.abs(delta);
       const label = this._t(delta < 0 ? "panel.adjust_remove_title" : "panel.adjust_add_title",
-                            { amount, points: pointsName, child: name });
+                            { amount, points: this._fmtNum(pointsName), child: name });
       return `<button type="button" class="tm-btn tm-btn-sm ${delta < 0 ? "tm-btn-danger" : "tm-btn-raised"}"
                 data-act="adjust-points" data-id="${id}" data-delta="${delta}"
-                title="${this._esc(label)}" aria-label="${this._esc(label)}">${delta < 0 ? "−" : "+"}${amount}</button>`;
+                title="${this._esc(label)}" aria-label="${this._esc(label)}">${delta < 0 ? "−" : "+"}${this._fmtNum(amount)}</button>`;
     };
     const customLabel = this._t("panel.adjust_custom_title", { child: name });
     return `
@@ -5526,7 +5533,7 @@ class TaskMatePanel extends HTMLElement {
               <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}${ev.kind === "completion" && ev.completion_id ? ` ${this._inspSlot(ev.completion_id)}` : ""}${ev.kind === "claim" && ev.claim_id ? ` <button type="button" class="tm-btn tm-btn-sm tm-voucher-btn" data-act="print-voucher" data-id="${this._esc(ev.claim_id)}" title="${this._t("panel.voucher_print")}" aria-label="${this._t("panel.voucher_print")}">🖨️</button>` : ""}</div>
               ${ev.note ? `<div class="tm-meta tm-insp-note">“${this._esc(ev.note)}”</div>` : ""}
             </div>
-            <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points == null ? "" : `${ev.points >= 0 ? '+' : ''}${this._num(ev.points)}`}</div>
+            <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points == null ? "" : `${ev.points >= 0 ? '+' : ''}${this._fmtNum(this._num(ev.points))}`}</div>
           </div>
         `).join("")}
       </div>
@@ -5578,7 +5585,7 @@ class TaskMatePanel extends HTMLElement {
           ${this._safePhotoUrl(c.photo_url) ? `<a class="tm-approval-photo" href="${this._esc(this._safePhotoUrl(c.photo_url))}" target="_blank" rel="noopener" data-act="view-photo" data-photo="${this._esc(this._safePhotoUrl(c.photo_url))}" data-cap="${this._esc(photoCap)}" title="${this._t("panel.activity_view_photo")}"><img src="${this._esc(this._safePhotoUrl(c.photo_url))}" alt="" loading="lazy"></a>` : ""}
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
-            <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${chorePoints} ${this._t("panel.activity_points")}${redoIds.has(c.id) ? ` · ${this._esc(this._t("panel.insp_redo_queue"))}` : ""}</div>
+            <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${this._fmtNum(chorePoints)} ${this._t("panel.activity_points")}${redoIds.has(c.id) ? ` · ${this._esc(this._t("panel.insp_redo_queue"))}` : ""}</div>
             ${this._siblingNoteLine(c, childById)}
             ${this._praiseRow(c.id)}
           </div>
@@ -5600,7 +5607,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-approval-icon"><ha-icon icon="mdi:gift-outline"></ha-icon></div>
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_claimed_text", {child: this._esc((child && child.name) || "?"), reward: this._esc((reward && reward.name) || this._t("panel.activity_deleted_reward"))})}</div>
-            <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${this._num(reward.cost)} ${this._t("panel.activity_points")}` : ""}${c.recipient_id && childById[c.recipient_id] ? ` · 🎁 ${this._esc(this._t("panel.reward_gift_for", { name: childById[c.recipient_id].name }))}` : ""}</div>
+            <div class="tm-meta">${this._timeAgo(c.claimed_at)}${reward ? ` · ${this._fmtNum(this._num(reward.cost))} ${this._t("panel.activity_points")}` : ""}${c.recipient_id && childById[c.recipient_id] ? ` · 🎁 ${this._esc(this._t("panel.reward_gift_for", { name: childById[c.recipient_id].name }))}` : ""}</div>
           </div>
           <div class="tm-approval-actions">
             <button type="button" class="tm-btn tm-btn-sm" data-act="reject-reward" data-id="${this._esc(c.id)}">${this._t("panel.activity_reject")}</button>
@@ -5729,7 +5736,7 @@ class TaskMatePanel extends HTMLElement {
                     <tr class="tm-row">
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
                       <td>${this._esc((child && child.name) || "?")}</td>
-                      <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${this._num(t.points)}</strong></td>
+                      <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${this._fmtNum(this._num(t.points))}</strong></td>
                       <td>${this._esc(this._translateReason(t.reason) || "—")}</td>
                       <td>${undoable ? `<button type="button" class="tm-icon-btn" data-act="undo-tx" data-id="${this._esc(t.id)}" title="${this._esc(this._t("panel.activity_undo"))}"><ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon></button>` : ""}</td>
                     </tr>
@@ -6570,7 +6577,7 @@ class TaskMatePanel extends HTMLElement {
     const ids = new Set(kids.map(k => k.id));
     const appeals = (this._state.appeals || []).filter(a => ids.has(a.child_id));
     if (!appeals.length) return "";
-    const what = (a) => this._t(`panel.appeal_item_${a.kind}`, { name: a.item_name, points: this._num(a.points) });
+    const what = (a) => this._t(`panel.appeal_item_${a.kind}`, { name: a.item_name, points: this._fmtNum(this._num(a.points)) });
     return `
       <div class="tm-card tm-appeals-card">
         <h3 class="tm-section-title"><span aria-hidden="true">⚖️</span>${this._t("panel.appeals_title")}
@@ -6698,7 +6705,7 @@ class TaskMatePanel extends HTMLElement {
     }).sort((a, b) => b.avg - a.avg || b.count - a.count);
     const stars = (avg) => {
       const n = Math.round(avg);
-      return `<span class="tm-rating-stars" aria-label="${this._esc(this._t("panel.ratings_stars", { stars: avg.toFixed(1) }))}">${"★".repeat(n)}${"☆".repeat(3 - n)}</span>`;
+      return `<span class="tm-rating-stars" aria-label="${this._esc(this._t("panel.ratings_stars", { stars: __tmNum(this._hass, avg, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }))}">${"★".repeat(n)}${"☆".repeat(3 - n)}</span>`;
     };
     return `
       <div class="tm-card tm-ratings-card">
@@ -7752,7 +7759,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
           <nav class="tm-wz-steps" aria-label="${this._esc(this._t("wizard.title"))}">
             ${steps}
-            <span class="tm-wz-mlabel">${this._t("wizard.step_of", { n: step + 1, total: WZ_STEPS.length, name: this._t(`wizard.step_${WZ_STEPS[step]}`) })}</span>
+            <span class="tm-wz-mlabel">${this._t("wizard.step_of", { n: step + 1, total: this._fmtNum(WZ_STEPS.length), name: this._t(`wizard.step_${WZ_STEPS[step]}`) })}</span>
           </nav>
           <div class="tm-wz-body">${body}</div>
           ${last ? "" : `
@@ -7857,7 +7864,7 @@ class TaskMatePanel extends HTMLElement {
         <span class="tm-meta tm-wz-age-now">${pa != null ? this._t("wizard.age_n", { age: pa }) : ""}</span></div>
         <p class="tm-wz-hint">${this._t("wizard.bday_hint")}</p>`;
     } else if (f.mode === "age") {
-      ageCtl = `<div class="tm-wz-stepper"><button type="button" data-act="wz-fage" data-d="-1" aria-label="−">−</button><span>${this._num(f.age)}</span><button type="button" data-act="wz-fage" data-d="1" aria-label="+">+</button></div>`;
+      ageCtl = `<div class="tm-wz-stepper"><button type="button" data-act="wz-fage" data-d="-1" aria-label="−">−</button><span>${this._fmtNum(this._num(f.age))}</span><button type="button" data-act="wz-fage" data-d="1" aria-label="+">+</button></div>`;
     } else {
       ageCtl = `<div class="tm-chip-row">${groups.map(g => `<button type="button" class="tm-chip-btn ${f.band === g.id ? "tm-chip-on" : ""}" data-act="wz-fband" data-v="${g.id}">${this._wizardGroupLabel(g.id)}</button>`).join("")}</div>
         <p class="tm-wz-hint">${this._t("wizard.group_hint")}</p>`;
@@ -8153,7 +8160,7 @@ class TaskMatePanel extends HTMLElement {
             <span class="tm-wz-mini-av"><ha-icon icon="${this._esc(k.icon)}"></ha-icon></span>
             <div class="tm-wz-grow"><div class="tm-wz-mini-name">${this._esc(k.name)}</div>
               <div class="tm-wz-mini-sub">${age != null ? `${this._t("wizard.age_n", { age })} · ` : this._wizardBand(k) ? `${this._wizardGroupLabel(this._wizardBand(k))} · ` : ""}${this._t(k.existing ? "wizard.kid_existing" : "wizard.kid_new")}</div></div>
-            <span class="tm-wz-mini-pts">${this._t("wizard.per_week_short", { amount: w.pts })}<ha-icon icon="${this._esc(wz.picon)}"></ha-icon></span>
+            <span class="tm-wz-mini-pts">${this._t("wizard.per_week_short", { amount: this._fmtNum(w.pts) })}<ha-icon icon="${this._esc(wz.picon)}"></ha-icon></span>
           </div>
           <ul>${names.slice(0, 5).map(n => `<li>${this._esc(n)}</li>`).join("") || `<li class="tm-wz-faint">${this._t("wizard.no_new_chores")}</li>`}</ul>
           ${names.length > 5 ? `<div class="tm-wz-more">${this._t("wizard.n_more", { count: names.length - 5 })}</div>` : ""}
@@ -8666,7 +8673,7 @@ class TaskMatePanel extends HTMLElement {
   _libAgeLabel(item) {
     const lo = Number(item.min_age) || 0;
     if (!lo && item.max_age == null) return "";
-    return item.max_age == null ? this._t("library.age_from", { min: lo }) : this._t("library.age_range", { min: lo, max: item.max_age });
+    return item.max_age == null ? this._t("library.age_from", { min: this._fmtNum(lo) }) : this._t("library.age_range", { min: this._fmtNum(lo), max: this._fmtNum(item.max_age) });
   }
 
   // Pack chores become library items of their own: pack.<pack>.<n>.
@@ -8853,7 +8860,7 @@ class TaskMatePanel extends HTMLElement {
         ${kids.map(k => {
           const fit = picked.filter(it => this._libSuits(it, k)).length;
           const on = keys.includes(k.key);
-          return `<button type="button" class="tm-lib-kid ${on ? "tm-lib-kid-on" : ""}" data-act="lib-assign" data-k="${this._esc(k.key)}" aria-pressed="${on}" title="${this._esc(this._t("library.assign_fit", { fit, total: picked.length }))}">
+          return `<button type="button" class="tm-lib-kid ${on ? "tm-lib-kid-on" : ""}" data-act="lib-assign" data-k="${this._esc(k.key)}" aria-pressed="${on}" title="${this._esc(this._t("library.assign_fit", { fit, total: this._fmtNum(picked.length) }))}">
             ${this._wizardKav(k, 22, !on)}<span>${this._esc(k.name)}</span>${picked.length ? `<small>${fit}/${picked.length}</small>` : ""}</button>`;
         }).join("")}`;
     } else if (lib.kind === "chores") {
@@ -9585,7 +9592,7 @@ class TaskMatePanel extends HTMLElement {
             <button type="button" class="tm-icon-btn" data-act="toggle-row-menu" data-id="${this._esc(c.id)}" title="${this._t("panel.row_menu_more")}" aria-haspopup="menu" aria-label="${this._t("panel.row_menu_more")}">⋮</button>
           </span>`}
         </div></td>
-        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._num(c.timed_rate_points)}/${this._num(c.timed_rate_minutes, 1)} min` : this._num(c.points)}</strong></td>
+        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._fmtNum(this._num(c.timed_rate_points))}/${this._fmtNum(this._num(c.timed_rate_minutes, 1))} min` : this._num(c.points)}</strong></td>
         <td><span class="tm-pill" ${(c.times || []).length ? `title="${this._esc((c.times || []).map(t => `${t.name || t.start} ${t.start}–${t.end}`).join(" · "))}"` : ""}>${this._esc((c.times || []).length ? this._t("panel.st_list_pill", { count: c.times.length }) : this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames} ${modeBadge}${teamPill}</td>
         <td>${currentName}</td>
@@ -10720,7 +10727,7 @@ class TaskMatePanel extends HTMLElement {
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr ${r.expires_at ? "1fr" : ""};">
           <div class="tm-stat"><div class="tm-stat-value tm-numeric tm-cost">${this._fmtNum(r.cost)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_cost", {points_name: this._esc(pointsName)})}</div></div>
-          ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._num(r.quantity)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_remaining")}</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">${this._t("panel.reward_stat_unlimited")}</div></div>`}
+          ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(this._num(r.quantity))}</div><div class="tm-stat-label">${this._t("panel.reward_stat_remaining")}</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">${this._t("panel.reward_stat_unlimited")}</div></div>`}
           ${r.expires_at ? `<div class="tm-stat"><div class="tm-stat-value" style="font-size: 14px;">${this._esc(r.expires_at)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_expires")}</div></div>` : ""}
         </div>
         ${showProgress ? `
@@ -11144,7 +11151,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </div>
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
-          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._num(c.target)}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(this._num(c.target))}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(c.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: this._esc(pointsName)})}</div></div>
         </div>
         <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
@@ -11205,7 +11212,7 @@ class TaskMatePanel extends HTMLElement {
       return `<tr class="tm-row">
         <td class="tm-col-sticky"><strong>${this._esc(r.name)}</strong>${r.prize ? `<div class="tm-meta">🏆 ${this._esc(r.prize)}</div>` : ""}
           <div class="tm-meta">🗓 ${when(r.drawn_at || r.draw_at)}</div></td>
-        <td class="tm-numeric">${this._num(r.ticket_cost)} ${pts}${r.max_tickets ? `<div class="tm-meta">${this._t("panel.raffle_max_meta", { max: r.max_tickets })}</div>` : ""}</td>
+        <td class="tm-numeric">${this._fmtNum(this._num(r.ticket_cost))} ${pts}${r.max_tickets ? `<div class="tm-meta">${this._t("panel.raffle_max_meta", { max: this._fmtNum(r.max_tickets) })}</div>` : ""}</td>
         <td>${total ? tickets.map(([cid, n]) => `<span class="tm-pill">${this._esc(names[cid] || "?")} × ${n}</span>`).join(" ") : `<span class="tm-meta">${this._t("panel.raffle_none_yet")}</span>`}</td>
         <td>${status}</td>
         <td class="tm-row-actions" style="white-space:nowrap">${actions}</td>
@@ -11372,7 +11379,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-meta">${this._esc(name(b.claimed_by))}${comp ? ` · ${this._timeAgo(comp.completed_at)}` : ""}</div>`;
     } else if (b.status === "completed") {
       status = `<span class="tm-pill tm-pill-success">${this._t("panel.bounty_status_completed")}</span>
-        <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._num(b.points_awarded || b.points), points_name: this._esc(this._pointsName()) })}</div>`;
+        <div class="tm-meta">${this._t("panel.bounty_completed_meta", { name: this._esc(name(b.claimed_by)), points: this._fmtNum(this._num(b.points_awarded || b.points)), points_name: this._esc(this._pointsName()) })}</div>`;
     } else if (b.status === "expired") {
       status = `<span class="tm-pill tm-pill-muted">${this._t("panel.bounty_status_expired")}</span>
         <div class="tm-meta">${this._t(b.lapse_count > 0 ? "panel.bounty_expired_lapsed_meta" : b.claim_count > 0 ? "panel.bounty_expired_unfinished_meta" : "panel.bounty_expired_meta", { date: b.closed_at ? this._esc(new Date(b.closed_at).toLocaleDateString(...__tmDateArgs(this._hass, { day: "numeric", month: "short" }))) : "" })}</div>`;
@@ -11406,7 +11413,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
           <div class="tm-name-actions tm-bounty-actions">${actions}</div>
         </div></td>
-        <td><strong class="tm-numeric">${this._num(b.points)}</strong></td>
+        <td><strong class="tm-numeric">${this._fmtNum(this._num(b.points))}</strong></td>
         <td>${eligible}</td>
         <td>${status}</td>
         <td class="tm-meta">${expires}</td>
@@ -11679,7 +11686,7 @@ class TaskMatePanel extends HTMLElement {
       const child = childById[b.child_id];
       return `<span class="tm-auc-chip" title="${this._esc(child ? child.name : "?")}">
         ${child ? this._childAvatar(child) : ""}
-        ${show ? `<b>${this._num(b.points)} ${this._pointsIconHtml()}</b>` : `<span class="tm-text-muted">${this._t("panel.auction_sealed")}</span>`}
+        ${show ? `<b>${this._fmtNum(this._num(b.points))} ${this._pointsIconHtml()}</b>` : `<span class="tm-text-muted">${this._t("panel.auction_sealed")}</span>`}
         ${i === 0 && a.status === "open" && show ? `<span class="tm-meta">· ${this._t("panel.auction_leading")}</span>` : ""}
       </span>`;
     }).join("");
@@ -11690,9 +11697,9 @@ class TaskMatePanel extends HTMLElement {
     const chore = `
       <div class="tm-name-main tm-bounty-cell">
         <span class="tm-avatar tm-auc-ic">${this._mdi(a.icon || "mdi:gavel")}</span>
-        <div><strong>${this._esc(a.chore_name)}</strong><div class="tm-meta">${this._esc(this._t("panel.auction_normally", { date: this._auctionDate(a.occurrence), points: this._num(a.normal_points), points_name: this._pointsName() }))}</div></div>
+        <div><strong>${this._esc(a.chore_name)}</strong><div class="tm-meta">${this._esc(this._t("panel.auction_normally", { date: this._auctionDate(a.occurrence), points: this._fmtNum(this._num(a.normal_points)), points_name: this._pointsName() }))}</div></div>
       </div>`;
-    const max = `<strong class="tm-numeric tm-auc-gold">${this._num(a.max_points)} ${this._pointsIconHtml()}</strong>${a.min_points > 1 ? `<div class="tm-meta">${this._t("panel.auction_min_meta", { points: this._num(a.min_points), points_name: this._esc(this._pointsName()) })}</div>` : ""}`;
+    const max = `<strong class="tm-numeric tm-auc-gold">${this._fmtNum(this._num(a.max_points))} ${this._pointsIconHtml()}</strong>${a.min_points > 1 ? `<div class="tm-meta">${this._t("panel.auction_min_meta", { points: this._fmtNum(this._num(a.min_points)), points_name: this._esc(this._pointsName()) })}</div>` : ""}`;
     if (a.status === "open") {
       const left = Date.parse(a.closes_at || "") - Date.now();
       const who = (a.eligible_child_ids || []).map(cid => childById[cid]).filter(Boolean)
@@ -11720,11 +11727,11 @@ class TaskMatePanel extends HTMLElement {
       result = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_cancelled")}</span>`;
       status = `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_normal")}</span>`;
     } else if (a.winner_id) {
-      result = `<div class="tm-auc-win">${winner ? this._childAvatar(winner) : ""}<div><strong>${this._esc(winner ? winner.name : "?")}</strong> ${this._t("panel.auction_won_at", { points: `<strong class="tm-auc-gold">${this._num(a.price)} ${this._pointsIconHtml()}</strong>` })}
+      result = `<div class="tm-auc-win">${winner ? this._childAvatar(winner) : ""}<div><strong>${this._esc(winner ? winner.name : "?")}</strong> ${this._t("panel.auction_won_at", { points: `<strong class="tm-auc-gold">${this._fmtNum(this._num(a.price))} ${this._pointsIconHtml()}</strong>` })}
         <div class="tm-meta">${this._esc(this._t("panel.auction_assigned_for", { date: this._auctionDate(a.occurrence) }))}</div></div></div>`;
       const st = a.chore_status || "todo";
       status = st === "done"
-        ? `<span class="tm-pill tm-pill-success">${this._t("panel.auction_status_done", { points: this._num(a.points_awarded) })}</span>`
+        ? `<span class="tm-pill tm-pill-success">${this._t("panel.auction_status_done", { points: this._fmtNum(this._num(a.points_awarded)) })}</span>`
         : st === "pending" ? `<span class="tm-pill tm-pill-warn">${this._t("panel.auction_status_pending")}</span>`
           : st === "missed" ? `<span class="tm-pill tm-pill-muted">${this._t("panel.auction_status_missed")}</span>`
             : `<span class="tm-pill tm-pill-accent">${this._t("panel.auction_status_todo")}</span>`;
@@ -11868,10 +11875,10 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-auc-steprow">
             <div class="tm-auc-stepper">
               <button type="button" data-act="auction-max-step" data-id="-1" aria-label="−">−</button>
-              <span>${this._num(d.max_points)} ${this._pointsIconHtml()}</span>
+              <span>${this._fmtNum(this._num(d.max_points))} ${this._pointsIconHtml()}</span>
               <button type="button" data-act="auction-max-step" data-id="1" aria-label="+">+</button>
             </div>
-            <span class="tm-meta">${this._t("panel.auction_normally_worth", { points: normal, points_name: this._esc(this._pointsName()) })}</span>
+            <span class="tm-meta">${this._t("panel.auction_normally_worth", { points: this._fmtNum(normal), points_name: this._esc(this._pointsName()) })}</span>
           </div>
           <div class="tm-chip-row" style="margin-top:8px">
             ${multiples.map(([m, n]) => chip("auction-max-set", n, Number(d.max_points) === n, `${m}× · ${n}`)).join("")}
@@ -11996,7 +12003,7 @@ class TaskMatePanel extends HTMLElement {
     const joinKey = combinator === "OR" ? "badge.criteria_or" : "badge.criteria_and";
     // Plain text: both callers escape the whole label, so escaping the
     // operator here too rendered ">=" as a literal "&gt;=" (#972).
-    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${c.operator} ${this._num(c.value)}`).join(` ${this._t(joinKey)} `);
+    return criteria.map(c => `${this._t("badge.criteria_" + c.metric)} ${c.operator} ${this._fmtNum(this._num(c.value))}`).join(` ${this._t(joinKey)} `);
   }
 
   _badgeName(b) {
@@ -12037,7 +12044,7 @@ class TaskMatePanel extends HTMLElement {
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
                 <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria, b.combinator))}</code></td>
-                <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
+                <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${this._fmtNum(b.point_bonus)}` : "—"}</strong></td>
                 <td>
                   <button type="button" class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
                     data-act="toggle-badge-enabled" data-id="${this._esc(b.id)}" data-enabled="${b.enabled !== false}"
@@ -12078,7 +12085,7 @@ class TaskMatePanel extends HTMLElement {
                 </td>
                 <td><span class="tm-badge-tier-label">${this._t("badge.tier_" + (b.tier || "bronze"))}</span></td>
                 <td><code class="tm-badge-criteria">${this._esc(this._criteriaLabel(b.criteria, b.combinator))}</code></td>
-                <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${b.point_bonus}` : "—"}</strong></td>
+                <td><strong class="${b.point_bonus ? "tm-pos" : "tm-text-muted"}">${b.point_bonus ? `+${this._fmtNum(b.point_bonus)}` : "—"}</strong></td>
                 <td>
                   <button type="button" class="tm-badge-toggle${b.enabled !== false ? " tm-badge-toggle-on" : ""}"
                     data-act="toggle-badge-enabled" data-id="${this._esc(b.id)}" data-enabled="${b.enabled !== false}"
@@ -12360,7 +12367,7 @@ class TaskMatePanel extends HTMLElement {
                 return `
                   <tr class="tm-row">
                     <td><span class="tm-row-icon">${this._mdi(item.icon)}</span><strong>${this._esc(item.name)}</strong>${this._idBadge(item.id)}${item.description ? `<div class="tm-meta">${this._esc(item.description)}</div>` : ""}</td>
-                    <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${this._num(item.points)}</strong></td>
+                    <td><strong class="tm-numeric ${kind === "penalty" ? "tm-neg" : "tm-pos"}">${kind === "penalty" ? "−" : "+"}${this._fmtNum(this._num(item.points))}</strong></td>
                     <td>${assignedNames}</td>
                     <td class="tm-row-actions"><div>
                       <button type="button" class="tm-btn tm-btn-sm" data-act="apply-${kind}" data-id="${this._esc(item.id)}">${this._t("panel.btn_apply")}</button>
@@ -12450,7 +12457,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
         <div class="tm-manage-tpl-info">
           <div class="tm-manage-tpl-name">${this._esc(tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
-          <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: pts, points_name: this._esc(this._pointsName()) })}</div>
+          <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: this._fmtNum(pts), points_name: this._esc(this._pointsName()) })}</div>
         </div>
         <div class="tm-row-actions">
           ${locked ? "" : `<button type="button" class="tm-btn tm-btn-sm" data-act="tpl-edit" data-id="${this._esc(tpl.id)}">${this._t("panel.btn_edit")}</button>`}
@@ -12492,7 +12499,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
           <div style="flex:1">
             <div class="tm-tpl-picker-name">${this._esc(tpl.name)}</div>
-            <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: pts, points_name: this._esc(this._pointsName()) })}</div>
+            <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: this._fmtNum(pts), points_name: this._esc(this._pointsName()) })}</div>
           </div>
           <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         </div>
@@ -12533,7 +12540,7 @@ class TaskMatePanel extends HTMLElement {
       ${chores.map((c, i) => this._renderTemplateChoreCard(c, i)).join("")}
       ${chores.length > 0 ? `
         <div class="tm-tpl-confirm-bar">
-          <div>${this._tn("panel.template_confirm_bar", chores.length, { points: totalPts, points_name: this._esc(this._pointsName()) })}</div>
+          <div>${this._tn("panel.template_confirm_bar", chores.length, { points: this._fmtNum(totalPts), points_name: this._esc(this._pointsName()) })}</div>
           <button type="button" class="tm-btn tm-btn-raised" data-act="tpl-apply">${this._tn("panel.template_create_btn", chores.length)}</button>
         </div>
       ` : `<div class="tm-card tm-empty"><p>${this._t("panel.empty_template_all_removed")}</p></div>`}
@@ -12768,7 +12775,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-audit-row">
               <div class="tm-audit-when">${this._esc(when)}</div>
               <div class="tm-audit-user">${this._esc(a.user_name || a.user_id || "—")}</div>
-              <div class="tm-audit-action">${this._esc(a.action || "")}${a.count > 1 ? ` <span class="tm-meta">×${this._num(a.count)}</span>` : ""}</div>
+              <div class="tm-audit-action">${this._esc(a.action || "")}${a.count > 1 ? ` <span class="tm-meta">×${this._fmtNum(this._num(a.count))}</span>` : ""}</div>
               <div class="tm-audit-target">${this._esc(a.target || "")}</div>
             </div>`;
     }).join("");
@@ -13325,7 +13332,7 @@ class TaskMatePanel extends HTMLElement {
             ${row(this._t("panel.fb_family"), `${this._ltrNums(this._t("panel.fb_family_value", { children: c.children || 0, adults: c.adults || 0, chores: c.chores || 0, rewards: c.rewards || 0 }))}${auto}`)}
             ${row(this._t("panel.fb_browser"), `${this._esc(this._fbBrowser())}${auto}`)}
             ${row(this._t("panel.fb_health"), `${(info.health_codes || []).length ? this._esc(info.health_codes.join(", ")) : this._t("panel.fb_health_ok")}${auto}`)}
-          ` : row(this._t("panel.fb_children_count"), `${this._num(c.children)}${auto}`)}
+          ` : row(this._t("panel.fb_children_count"), `${this._fmtNum(this._num(c.children))}${auto}`)}
         </dl>
         ${d.type === "bug" ? `
           <div class="tm-field-row tm-fb-env">
@@ -14067,7 +14074,7 @@ class TaskMatePanel extends HTMLElement {
     const choreById = Object.fromEntries((s.chores || []).map(c => [c.id, c]));
     const marks = { done: "✅", pending: "⏳", todo: "○", missed: "✕" };
     const today = ((entry && entry.chores) || []).filter(it => choreById[it.chore_id]);
-    const stat = (label, value) => `<div class="tm-kd-stat"><div class="tm-meta">${label}</div><strong class="tm-numeric">${value}</strong></div>`;
+    const stat = (label, value) => `<div class="tm-kd-stat"><div class="tm-meta">${label}</div><strong class="tm-numeric">${typeof value === "number" ? this._fmtNum(value) : value}</strong></div>`;
     const streak = this._num(child.current_streak);
     const scoped = this._scopeId() === id;
     return this._dialogShell(child.name || this._t("panel.child_unnamed"), `
@@ -14227,7 +14234,7 @@ class TaskMatePanel extends HTMLElement {
           <polyline class="tm-econ-spent" fill="none" points="${line("spent")}"/>
         </svg>
         <div class="tm-econ-weeks tm-meta" dir="ltr">
-          ${weeks.map((w, i) => `<span style="inset-inline-start:${(i * 100 / last).toFixed(2)}%" title="${this._esc(`${label(w.start)} – ${label(w.end)}: ${this._t("panel.economy_earned")} ${w.earned} · ${this._t("panel.economy_spent")} ${w.spent}`)}">${this._esc(label(w.start))}</span>`).join("")}
+          ${weeks.map((w, i) => `<span style="inset-inline-start:${(i * 100 / last).toFixed(2)}%" title="${this._esc(`${label(w.start)} – ${label(w.end)}: ${this._t("panel.economy_earned")} ${w.earned} · ${this._t("panel.economy_spent")} ${__tmNum(this._hass, w.spent)}`)}">${this._esc(label(w.start))}</span>`).join("")}
         </div>
       </div>`;
   }
@@ -14244,8 +14251,8 @@ class TaskMatePanel extends HTMLElement {
     const growth = report.earned_growth_pct > 0 ? this._t("panel.economy_growth", { pct: report.earned_growth_pct }) + " " : "";
     const warn = report.inflating
       ? growth + (names
-        ? this._t("panel.economy_warn", { earned: report.recent_earned, spent: report.recent_spent, rewards: names })
-        : this._t("panel.economy_warn_no_rewards", { earned: report.recent_earned, spent: report.recent_spent }))
+        ? this._t("panel.economy_warn", { earned: this._fmtNum(report.recent_earned), spent: report.recent_spent, rewards: names })
+        : this._t("panel.economy_warn_no_rewards", { earned: this._fmtNum(report.recent_earned), spent: report.recent_spent }))
       : "";
     return `
       <div class="tm-card">
@@ -14260,7 +14267,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-verdict tm-verdict-${report.inflating ? "warn" : "ok"}">
             ${report.inflating ? `⚠️ ${warn}` : this._t("panel.economy_ok")}
           </div>`}
-        <span class="tm-field-hint">${this._t("panel.economy_rule", { ratio: report.ratio, min: report.min_earned })}</span>
+        <span class="tm-field-hint">${this._t("panel.economy_rule", { ratio: report.ratio, min: this._fmtNum(report.min_earned) })}</span>
       </div>`;
   }
 
@@ -14699,7 +14706,7 @@ class TaskMatePanel extends HTMLElement {
                   <tr>
                     <td>${this._esc((p.date || "").slice(0, 10))}</td>
                     <td>${this._esc(p.child_name || "")}</td>
-                    <td style="text-align:end">${this._num(p.points)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
+                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
                   </tr>
                 `).join("")}
               </tbody></table></div>
@@ -15287,7 +15294,7 @@ class TaskMatePanel extends HTMLElement {
         this._select(this._t("panel.backdate_day"), "day", day.v, days, "", true),
         chores.length
           ? this._select(this._t("panel.backdate_chore"), "chore_id", d.chore_id,
-              chores.map(c => ({ v: c.id, l: `${c.name} (${c.points})` })))
+              chores.map(c => ({ v: c.id, l: `${c.name} (${__tmNum(this._hass, c.points)})` })))
           : `<p class="tm-field-hint">${this._esc(this._t("panel.backdate_none", { name }))}</p>`,
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
@@ -15581,7 +15588,7 @@ class TaskMatePanel extends HTMLElement {
       if (c.kind === "quest") return chip("🗺️", this._t("panel.season_kind_quest"), this._esc(this._t("panel.season_quest_steps", { name: this._seasonItemName(key, c.key), count: c.steps })));
       if (c.kind === "challenge") return chip("📚", this._t("panel.season_kind_challenge"), name(c.key));
       if (c.kind === "chores") return chip("🧹", this._t("panel.season_kind_chores", { count: c.items.length }), c.items.map(i => name(i.key)).join(" · "));
-      if (c.kind === "reward") return chip("🎁", this._t("panel.season_kind_reward"), `${name(c.key)} · ⭐ ${this._num(c.points)}`);
+      if (c.kind === "reward") return chip("🎁", this._t("panel.season_kind_reward"), `${name(c.key)} · ⭐ ${this._fmtNum(this._num(c.points))}`);
       if (c.kind === "badge") return chip("🏅", this._t("panel.season_kind_badge"), name(c.key));
       return "";
     }).join("");
@@ -15646,7 +15653,7 @@ class TaskMatePanel extends HTMLElement {
     const p = ((this._state && this._state.season_packs) || []).find(x => x.season === key);
     const label = this._t(`panel.seasonal_${key}`);
     const name = k => this._esc(this._seasonItemName(key, k));
-    const pts = n => `<span class="tm-spack-pts">⭐ ${this._num(n)}</span>`;
+    const pts = n => `<span class="tm-spack-pts">⭐ ${this._fmtNum(this._num(n))}</span>`;
     const li = (text, n) => `<li><span>${text}</span>${n == null ? "" : pts(n)}</li>`;
     const block = (ic, title, items) => `<div class="tm-spack-pv"><h4><span aria-hidden="true">${ic}</span> ${this._esc(title)}</h4><ul>${items.join("")}</ul></div>`;
     const parts = ((p && p.contents) || []).map(c => {
@@ -15961,7 +15968,7 @@ class TaskMatePanel extends HTMLElement {
               ${this._select(this._t("panel.chore_recurrence_label"), "recurrence", d.recurrence, RECURRENCES, "", true)}
               ${d.recurrence === "every_n_days"
                 ? this._field(this._t("panel.chore_recurrence_interval_label"), "recurrence_interval", d.recurrence_interval, "number",
-                    this._t("panel.chore_recurrence_interval_hint", { min: RECURRENCE_INTERVAL_MIN, max: RECURRENCE_INTERVAL_MAX }))
+                    this._t("panel.chore_recurrence_interval_hint", { min: this._fmtNum(RECURRENCE_INTERVAL_MIN), max: this._fmtNum(RECURRENCE_INTERVAL_MAX) }))
                 : this._field(this._t("panel.chore_recurrence_day_label"), "recurrence_day", d.recurrence_day, "text", this._t("panel.chore_recurrence_day_hint"))}
             </div>
             <div class="tm-field-row">
@@ -16646,7 +16653,7 @@ class TaskMatePanel extends HTMLElement {
       ? children
       : children.filter(c => (item.assigned_to || []).includes(c.id));
     return this._dialogShell(isPenalty ? this._t("panel.dialog_apply_penalty", {name: item.name}) : this._t("panel.dialog_apply_bonus", {name: item.name}),
-      `<p>${isPenalty ? this._t("panel.penalty_apply_text", {points: item.points}) : this._t("panel.bonus_apply_text", {points: item.points})}</p>
+      `<p>${isPenalty ? this._t("panel.penalty_apply_text", {points: this._fmtNum(item.points)}) : this._t("panel.bonus_apply_text", {points: this._fmtNum(item.points)})}</p>
        ${eligible.length === 0 ? `<p class="tm-meta">${this._t("panel.penbon_no_eligible", {kind})}</p>` : `
         <div class="tm-chip-row" style="margin-top: 12px;">
           ${eligible.map(c => `
@@ -16767,7 +16774,7 @@ class TaskMatePanel extends HTMLElement {
              <div class="tm-reorder-item" draggable="true" data-drag-id="${this._esc(id)}">
                <div class="tm-reorder-handle" aria-hidden="true"><ha-icon icon="mdi:drag"></ha-icon></div>
                <div class="tm-reorder-name">${this._esc(c.name)}</div>
-               <div class="tm-reorder-points tm-numeric">${this._num(c.points)}</div>
+               <div class="tm-reorder-points tm-numeric">${this._fmtNum(this._num(c.points))}</div>
                <div class="tm-reorder-moves">
                  <button type="button" class="tm-reorder-move" data-act="reorder-move" data-dir="-1" data-drag-id="${this._esc(id)}" ${idx === 0 ? "disabled" : ""} title="${this._t("reorder.move_up")}" aria-label="${this._t("reorder.move_up")}">▲</button>
                  <button type="button" class="tm-reorder-move" data-act="reorder-move" data-dir="1" data-drag-id="${this._esc(id)}" ${idx === arr.length - 1 ? "disabled" : ""} title="${this._t("reorder.move_down")}" aria-label="${this._t("reorder.move_down")}">▼</button>
@@ -16880,7 +16887,7 @@ class TaskMatePanel extends HTMLElement {
     const every = this._field(
       this._t(period === "week" ? "panel.chore_rotation_every_week_label" : "panel.chore_rotation_every_month_label"),
       "assignment_rotation_every", d.assignment_rotation_every || 1, "number",
-      this._t("panel.chore_rotation_every_hint", { max: ROTATION_EVERY_MAX }));
+      this._t("panel.chore_rotation_every_hint", { max: this._fmtNum(ROTATION_EVERY_MAX) }));
     const handover = period === "week"
       ? this._select(this._t("panel.chore_rotation_weekday_label"), "assignment_rotation_weekday",
           d.assignment_rotation_weekday || "monday", DAYS)
@@ -17249,7 +17256,9 @@ class TaskMatePanel extends HTMLElement {
 
   _fmtNum(n) {
     if (n == null) return "0";
-    return new Intl.NumberFormat().format(n);
+    // Numeric strings (settings, typed fields) are numbers here too.
+    const v = typeof n === "number" ? n : Number(n);
+    return Number.isFinite(v) ? __tmNum(this._hass, v) : String(n);
   }
 
   // Keeps number runs like "3 / 1" reading left to right when the panel is
@@ -17327,7 +17336,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-petshop-pending">
         <span class="tm-petshop-emoji" aria-hidden="true">${this._esc(p.emoji)}</span>
         <div class="tm-help-text"><strong>${this._esc(this._petItemName(p))}</strong>
-          <div class="tm-meta">${this._t("panel.petshop_pending_meta", { name: this._esc(p.child_name), cost: this._num(p.cost), points: pts })}</div></div>
+          <div class="tm-meta">${this._t("panel.petshop_pending_meta", { name: this._esc(p.child_name), cost: this._fmtNum(this._num(p.cost)), points: this._fmtNum(pts) })}</div></div>
         <div class="tm-petshop-tools">
           <button type="button" class="tm-btn tm-btn-sm" data-act="petshop-decline" data-id="${this._esc(p.id)}">${this._t("panel.petshop_decline")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-raised" data-act="petshop-approve" data-id="${this._esc(p.id)}">${this._t("panel.petshop_approve")}</button>
@@ -17338,7 +17347,7 @@ class TaskMatePanel extends HTMLElement {
         <td class="tm-col-sticky"><span class="tm-petshop-emoji" aria-hidden="true">${this._esc(it.emoji)}</span> <strong>${this._esc(this._petItemName(it))}</strong>
           ${it.slot === "colour" && it.tint && it.tint !== "rainbow" ? `<span class="tm-petshop-swatch" style="background:${this._esc(it.tint)}"></span>` : ""}</td>
         <td>${slot(it.slot)}</td>
-        <td class="tm-numeric">${this._num(it.cost)}</td>
+        <td class="tm-numeric">${this._fmtNum(this._num(it.cost))}</td>
         <td class="tm-numeric">${Number(it.level) > 0 ? this._num(it.level) : "—"}</td>
         <td><ha-switch data-act="petshop-shown" data-id="${this._esc(it.id)}" ${it.shown ? "checked" : ""} title="${this._esc(this._t("panel.petshop_col_shown"))}"></ha-switch></td>
         <td><div class="tm-petshop-acts">${btn("petshop-edit", it.id, "mdi:pencil", this._t("panel.btn_edit"))}${btn("petshop-delete", it.id, "mdi:delete-outline", this._t("panel.tooltip_remove"))}</div></td>

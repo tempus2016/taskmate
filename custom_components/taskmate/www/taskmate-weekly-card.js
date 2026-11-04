@@ -14,6 +14,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -470,11 +477,11 @@ class TaskMateWeeklyCard extends LitElement {
           <!-- Summary stats -->
           <div class="stats-row">
             <div class="stat-card">
-              <span class="stat-value green">${weekChores}</span>
+              <span class="stat-value green">${__tmNum(this.hass, weekChores)}</span>
               <span class="stat-label">${this._t('weekly.stat_chores')}</span>
             </div>
             <div class="stat-card">
-              <span class="stat-value orange">${weekPoints}</span>
+              <span class="stat-value orange">${__tmNum(this.hass, weekPoints)}</span>
               <span class="stat-label">${pointsName}</span>
             </div>
             <div class="stat-card">
@@ -527,7 +534,7 @@ class TaskMateWeeklyCard extends LitElement {
                       <div class="child-name">${child.name}</div>
                       <div class="child-week-stats">
                         <span><ha-icon icon="mdi:checkbox-marked-circle" style="color:var(--wk-green)"></ha-icon>${this._t(childChoreCount === 1 ? 'weekly.child_chores_one' : 'weekly.child_chores', { count: childChoreCount })}</span>
-                        <span><ha-icon icon="${pointsIcon}" style="color:var(--wk-gold)"></ha-icon>${childPoints} ${pointsName}</span>
+                        <span><ha-icon icon="${pointsIcon}" style="color:var(--wk-gold)"></ha-icon>${__tmNum(this.hass, childPoints)} ${pointsName}</span>
                         <span><ha-icon icon="mdi:calendar-check" style="color:var(--wk-blue)"></ha-icon>${this._t('weekly.child_days', { count: childDaysActive })}</span>
                       </div>
                     </div>
@@ -654,7 +661,7 @@ class TaskMateWeeklyCard extends LitElement {
         <span class="ic">${icon}</span>
         <span class="tt">${title}<small>${weekLabel}</small></span>
         ${design === "console"
-          ? html`<span class="pill">${d.weekPoints} ${d.pointsName}</span>` : ""}
+          ? html`<span class="pill">${__tmNum(this.hass, d.weekPoints)} ${d.pointsName}</span>` : ""}
       </div>`;
 
     const stats = [
@@ -736,8 +743,8 @@ class TaskMateWeeklyCard extends LitElement {
               ${this._av(r.child, tone, av)}
               <div class="name">${r.child.name}</div>
               ${design === "playroom"
-                ? html`<div class="chip soft">+${r.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon></div>`
-                : html`<div class="num" style="color:${valColor}">+${r.points}</div>`}
+                ? html`<div class="chip soft">+${__tmNum(this.hass, r.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon></div>`
+                : html`<div class="num" style="color:${valColor}">+${__tmNum(this.hass, r.points)}</div>`}
             </div>`;
         })}
       </div>`;
