@@ -314,6 +314,10 @@ class TaskMateLeaderboardCard extends LitElement {
             header_color: '#b7950b',
     ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "Leaderboard" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "Leaderboard") this.config.title = "";
   }
 
   getCardSize() { return 4; }
@@ -326,7 +330,7 @@ class TaskMateLeaderboardCard extends LitElement {
     return document.createElement("taskmate-leaderboard-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Leaderboard" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   render() {

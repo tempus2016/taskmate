@@ -657,6 +657,10 @@ class TaskMateActivityCard extends LitElement {
       show_undo: true,
       ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "Activity" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "Activity") this.config.title = "";
   }
 
   getCardSize() { return 4; }
@@ -669,7 +673,7 @@ class TaskMateActivityCard extends LitElement {
     return document.createElement("taskmate-activity-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Activity" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   _setFilter(filter) {

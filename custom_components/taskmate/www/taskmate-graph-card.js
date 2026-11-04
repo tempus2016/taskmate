@@ -260,6 +260,10 @@ class TaskMateGraphCard extends LitElement {
             header_color: '#d35400',
     ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "Points Graph" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "Points Graph") this.config.title = "";
   }
 
   getCardSize() { return 4; }
@@ -272,7 +276,7 @@ class TaskMateGraphCard extends LitElement {
     return document.createElement("taskmate-graph-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Points Graph", days: 14 };
+    return { entity: "sensor.taskmate_overview", days: 14 };
   }
 
   render() {

@@ -482,6 +482,10 @@ class TaskMateRewardProgressCard extends LitElement {
       child_id: null,
     ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "Reward Goal" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "Reward Goal") this.config.title = "";
   }
 
   getCardSize() { return 5; }
@@ -494,7 +498,7 @@ class TaskMateRewardProgressCard extends LitElement {
     return document.createElement("taskmate-reward-progress-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "Reward Goal" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   render() {

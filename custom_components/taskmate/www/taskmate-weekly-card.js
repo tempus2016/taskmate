@@ -333,6 +333,10 @@ class TaskMateWeeklyCard extends LitElement {
             header_color: '#27ae60',
     ...config,
     };
+    // Cards added before v7.7.1 saved the English default title "This Week" from
+    // the card picker; treat exactly that as unset so the translated
+    // default shows. Any other title is the user's own and is kept.
+    if (this.config.title === "This Week") this.config.title = "";
   }
 
   getCardSize() { return 4; }
@@ -345,7 +349,7 @@ class TaskMateWeeklyCard extends LitElement {
     return document.createElement("taskmate-weekly-card-editor");
   }
   static getStubConfig() {
-    return { entity: "sensor.taskmate_overview", title: "This Week" };
+    return { entity: "sensor.taskmate_overview" };
   }
 
   /* Set times (several times a day): the ticks of one chore's times on one
