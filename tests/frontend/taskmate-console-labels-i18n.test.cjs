@@ -16,7 +16,7 @@ test("the console labels come from the locale files", () => {
   const child = read("taskmate-child-card.js");
   assert.doesNotMatch(child, /\} ACTIVE`|`\$\{remaining\} ACTIVE`/);
   assert.doesNotMatch(child, />CLEARED</);
-  assert.match(child, /this\._t\("child\.console_active", \{ count: remaining \}\)/);
+  assert.match(child, /this\._t\("child\.console_active", \{ count: (?:remaining|__tmNum\(this\.hass, remaining\)) \}\)/);
   assert.match(child, /this\._t\("child\.console_cleared"\)/);
   const graph = read("taskmate-graph-card.js");
   assert.doesNotMatch(graph, />LIVE</);

@@ -26,6 +26,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -334,10 +341,10 @@ class TaskMateAuctionCard extends LitElement {
     return html`
       <div class="ac-gauge">
         <div class="ac-gauge-row">
-          <span>${a.min_points} <ha-icon class="ac-inl-ic" icon="${this._pointsIcon()}"></ha-icon></span><span class="ac-caps">${this._t("auction.lowest_wins")}</span><span>${this._t("auction.gauge_max", { points: a.max_points, pointsName: this._pointsName() })}</span>
+          <span>${a.min_points} <ha-icon class="ac-inl-ic" icon="${this._pointsIcon()}"></ha-icon></span><span class="ac-caps">${this._t("auction.lowest_wins")}</span><span>${this._t("auction.gauge_max", { points: __tmNum(this.hass, a.max_points), pointsName: this._pointsName() })}</span>
         </div>
         <div class="ac-gauge-bar"></div>
-        <div class="ac-gauge-hint">${this._t("auction.gauge_hint", { points: a.normal_points, pointsName: this._pointsName() })}</div>
+        <div class="ac-gauge-hint">${this._t("auction.gauge_hint", { points: __tmNum(this.hass, a.normal_points), pointsName: this._pointsName() })}</div>
       </div>`;
   }
 
@@ -350,7 +357,7 @@ class TaskMateAuctionCard extends LitElement {
           <div class="ac-lot-t">${a.chore_name}</div>
           <div class="ac-lot-when"><ha-icon icon="mdi:calendar-blank-outline"></ha-icon>${this._date(a.occurrence)}</div>
         </div>
-        ${a.status === "open" ? html`<span class="ac-tag ac-tag-max">${this._t("auction.up_to", { points: a.max_points, pointsName: this._pointsName() })}</span>` : ""}
+        ${a.status === "open" ? html`<span class="ac-tag ac-tag-max">${this._t("auction.up_to", { points: __tmNum(this.hass, a.max_points), pointsName: this._pointsName() })}</span>` : ""}
       </div>`;
 
     if (a.status === "open") {
@@ -393,7 +400,7 @@ class TaskMateAuctionCard extends LitElement {
           ${head}
           <div class="ac-result ac-win">
             <span class="ac-ri"><ha-icon icon="mdi:trophy"></ha-icon></span>
-            <div>${this._t("auction.you_won", { points: a.price, pointsName: this._pointsName() })}<small>${this._t("auction.you_won_sub", { date: this._date(a.occurrence, false) })}</small></div>
+            <div>${this._t("auction.you_won", { points: __tmNum(this.hass, a.price), pointsName: this._pointsName() })}<small>${this._t("auction.you_won_sub", { date: this._date(a.occurrence, false) })}</small></div>
           </div>
           <div class="ac-won-chore">
             <ha-icon icon="${a.icon || "mdi:clipboard-check-outline"}"></ha-icon>
@@ -407,9 +414,9 @@ class TaskMateAuctionCard extends LitElement {
     // Lowest bid wins and the earliest breaks a tie, so a losing bid equal to
     // the price lost on timing, not on the amount.
     const winner = this._childName(a.winner_id);
-    const sub = a.my_bid == null ? this._t("auction.sibling_won_sub", { points: a.price, pointsName: this._pointsName() })
-      : Number(a.my_bid) === Number(a.price) ? this._t("auction.tied_sub", { points: a.price, name: winner, pointsName: this._pointsName() })
-      : this._t("auction.sibling_won_sub_bid", { points: a.price, bid: a.my_bid, pointsName: this._pointsName() });
+    const sub = a.my_bid == null ? this._t("auction.sibling_won_sub", { points: __tmNum(this.hass, a.price), pointsName: this._pointsName() })
+      : Number(a.my_bid) === Number(a.price) ? this._t("auction.tied_sub", { points: __tmNum(this.hass, a.price), name: winner, pointsName: this._pointsName() })
+      : this._t("auction.sibling_won_sub_bid", { points: __tmNum(this.hass, a.price), bid: a.my_bid, pointsName: this._pointsName() });
     return html`
       <div class="ac-lot ac-lost">
         ${head}
@@ -438,7 +445,7 @@ class TaskMateAuctionCard extends LitElement {
           <input type="range" class="ac-range" min="${a.min_points}" max="${a.max_points}" .value=${String(Math.max(a.min_points, v))}
                  aria-label="${this._t("auction.bid_label")}"
                  @input=${e => this._setBid(e.target.value, a)}>
-          <div class="ac-rng-l"><span>${this._t("auction.range_low", { points: a.min_points })}</span><span>${this._t("auction.range_high", { points: a.max_points })}</span></div>
+          <div class="ac-rng-l"><span>${this._t("auction.range_low", { points: __tmNum(this.hass, a.min_points) })}</span><span>${this._t("auction.range_high", { points: __tmNum(this.hass, a.max_points) })}</span></div>
           <div class="ac-keypad">
             ${keys.map(k => html`<button type="button" @click=${() => this._key(k, a)}>${k}</button>`)}
             <button type="button" class="ac-key-clear" @click=${() => this._key("c", a)}>${this._t("auction.clear")}</button>
@@ -448,13 +455,13 @@ class TaskMateAuctionCard extends LitElement {
           <div class="ac-rules">
             <div><ha-icon icon="mdi:lock-outline"></ha-icon><span>${this._t("auction.rule_secret")}${others ? ` ${others === 1 ? this._t("auction.other_bids_one") : this._t("auction.other_bids", { count: others })}.` : ""}</span></div>
             <div><ha-icon icon="mdi:trophy-outline"></ha-icon><span>${this._t("auction.rule_lowest")}</span></div>
-            ${a.min_points > 1 ? html`<div><ha-icon icon="mdi:arrow-collapse-down"></ha-icon><span>${this._t("auction.rule_min", { points: a.min_points, pointsName: this._pointsName() })}</span></div>` : ""}
+            ${a.min_points > 1 ? html`<div><ha-icon icon="mdi:arrow-collapse-down"></ha-icon><span>${this._t("auction.rule_min", { points: __tmNum(this.hass, a.min_points), pointsName: this._pointsName() })}</span></div>` : ""}
             <div><ha-icon icon="mdi:check"></ha-icon><span>${this._t("auction.rule_win", { date: this._date(a.occurrence, false) })}</span></div>
           </div>
           <div class="ac-sheet-acts">
             <button type="button" class="ac-btn ac-ghost" @click=${close}>${this._t("auction.cancel")}</button>
             <button type="button" class="ac-btn ac-bid ac-seal" ?disabled=${!valid || this._busy} @click=${() => this._seal(a)}>
-              <ha-icon icon="mdi:email-lock"></ha-icon>${this._t("auction.seal", { points: v, pointsName: this._pointsName() })}
+              <ha-icon icon="mdi:email-lock"></ha-icon>${this._t("auction.seal", { points: __tmNum(this.hass, v), pointsName: this._pointsName() })}
             </button>
           </div>
         </div>

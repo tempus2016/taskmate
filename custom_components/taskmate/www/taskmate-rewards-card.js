@@ -15,6 +15,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -1346,21 +1353,21 @@ class TaskMateRewardsCard extends LitElement {
                         <span>${availableLabel}</span>
                         <span class="points-val">
                           <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                          ${currentPoints}
+                          ${__tmNum(this.hass, currentPoints)}
                         </span>
                       </div>
                       <div class="dialog-points-row cost">
                         <span>${this._t('rewards.confirm_cost')}</span>
                         <span class="points-val">
                           <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                          −${cost}
+                          −${__tmNum(this.hass, cost)}
                         </span>
                       </div>
                       <div class="dialog-points-row remaining">
                         <span>${this._t('rewards.confirm_remaining')}</span>
                         <span class="points-val">
                           <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                          ${remaining}
+                          ${__tmNum(this.hass, remaining)}
                         </span>
                       </div>
                     </div>
@@ -1384,7 +1391,7 @@ class TaskMateRewardsCard extends LitElement {
     const gross = child.points || 0;
     // Only show "/ gross" when points are reserved by a pending claim.
     const detail = spendable !== gross
-      ? html`<span class="spendable-of">/ ${gross} ${pointsName}</span>`
+      ? html`<span class="spendable-of">/ ${__tmNum(this.hass, gross)} ${pointsName}</span>`
       : html`<span class="spendable-of">${pointsName}</span>`;
     return html`
       <div class="spendable-banner">
@@ -1393,8 +1400,8 @@ class TaskMateRewardsCard extends LitElement {
         <span class="spendable-value">
           ${spendable !== gross && this.getAttribute("dir") === "rtl"
             // "12 / 40" spans two elements, so isolate it with markup (#995).
-            ? html`<bdi dir="ltr">${spendable} ${detail}</bdi>`
-            : html`${spendable} ${detail}`}
+            ? html`<bdi dir="ltr">${__tmNum(this.hass, spendable)} ${detail}</bdi>`
+            : html`${__tmNum(this.hass, spendable)} ${detail}`}
         </span>
       </div>
     `;
@@ -1518,7 +1525,7 @@ class TaskMateRewardsCard extends LitElement {
       <div class="reward-row ${isJackpot ? 'jackpot' : ''} ${hasPendingClaim ? 'pending-approval' : ''} ${enablePoolMode ? 'pool-mode' : ''} ${isUnavailable || isTimeLocked ? 'unavailable' : ''}">
         <div class="cost-badge">
           <ha-icon icon="${pointsIcon}"></ha-icon>
-          <span class="cost-value">${displayCost}</span>
+          <span class="cost-value">${__tmNum(this.hass, displayCost)}</span>
           <span class="cost-label">${pointsName}</span>
         </div>
         <div class="reward-details">
@@ -1659,7 +1666,7 @@ class TaskMateRewardsCard extends LitElement {
               @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, child, amt); }}"
               title="${tooltip}"
               aria-label="${tooltip}"
-            >+${amt}</button>
+            >+${__tmNum(this.hass, amt)}</button>
           `;
         })}
         ${this._renderCustomDeposit(reward, child, spendable, isAllocLoading)}
@@ -1673,7 +1680,7 @@ class TaskMateRewardsCard extends LitElement {
     if (spendable < amt) {
       return this._t('rewards.deposit_disabled_insufficient', { spendable });
     }
-    return this._t('rewards.deposit_points', { amount: amt });
+    return this._t('rewards.deposit_points', { amount: __tmNum(this.hass, amt) });
   }
 
   /**
@@ -1893,7 +1900,7 @@ class TaskMateRewardsCard extends LitElement {
           <div class="progress-bar">
             <div class="progress-fill" style="width: ${percentage}%"></div>
           </div>
-          <span class="progress-text">${currentStars}/${cost} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
+          <span class="progress-text">${__tmNum(this.hass, currentStars)}/${__tmNum(this.hass, cost)} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
         </div>
       </div>
     `;
@@ -1941,14 +1948,14 @@ class TaskMateRewardsCard extends LitElement {
                    style="width: ${seg.width}%"></div>
             `)}
           </div>
-          <span class="progress-text">${totalStars}/${cost} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
+          <span class="progress-text">${__tmNum(this.hass, totalStars)}/${__tmNum(this.hass, cost)} <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 14px;"></ha-icon></span>
         </div>
         <div class="jackpot-breakdown">
           ${segments.map((contrib) => html`
             <span class="jackpot-child-contribution">
               <span class="color-dot color-${contrib.colorIndex}"></span>
               <strong>${contrib.name}</strong>:
-              ${contrib.points}
+              ${__tmNum(this.hass, contrib.points)}
               <ha-icon icon="${pointsIcon}" style="--mdc-icon-size: 12px;"></ha-icon>
               ${cost > 0 ? html`
                 <span class="jackpot-pct">(${Math.round(contrib.sharePct)}%)</span>
@@ -2190,7 +2197,7 @@ class TaskMateRewardsCard extends LitElement {
           : this._rewardPeople(reward, children).badgeIds.map((cid) => html`<span class="chip rw-badge">${childMap[cid] || cid}</span>`))
       : '';
 
-    const costBadge = html`<span class="chip rw-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${d.displayCost} ${pointsName}</span>`;
+    const costBadge = html`<span class="chip rw-cost"><ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon> ${__tmNum(this.hass, d.displayCost)} ${pointsName}</span>`;
 
     const bar = d.isJackpot
       ? html`<div class="bar rw-pool-bar">
@@ -2222,7 +2229,7 @@ class TaskMateRewardsCard extends LitElement {
                 ?disabled="${disabled}"
                 title="${this._depositTooltip({ child: d.relevantChild, spendable: d.spendable, amt, isAllocLoading: this._loading[`${reward.id}_alloc`] })}"
                 @click="${(e) => { e.stopPropagation(); this._handleAllocate(reward, d.relevantChild, amt); }}"
-              >+${amt}</button>`;
+              >+${__tmNum(this.hass, amt)}</button>`;
             })}
             ${this._renderCustomDeposit(reward, d.relevantChild, d.spendable, this._loading[`${reward.id}_alloc`], { button: 'btn sm', input: 'rw-deposit-input' })}
           </span>`)
@@ -2234,7 +2241,7 @@ class TaskMateRewardsCard extends LitElement {
         ? html`<span class="muted rw-status">📅 ${this._t('rewards.limit_again', { day: this._dayLabel(d.limitNext) })}</span>`
       : d.canAfford && d.showClaim
         ? html`<span class="rw-status rw-status-good">${this._t('reward_progress.ready_to_claim')}</span>`
-        : html`<span class="muted rw-status">${_ltrRatio(d.currentStars, d.displayCost)}</span>`;
+        : html`<span class="muted rw-status">${_ltrRatio(__tmNum(this.hass, d.currentStars), __tmNum(this.hass, d.displayCost))}</span>`;
 
     return html`
       <div class="rw-card ${d.isJackpot ? 'rw-jackpot' : ''} ${d.isUnavailable || d.isTimeLocked ? 'rw-unavail' : ''}"
@@ -2255,7 +2262,7 @@ class TaskMateRewardsCard extends LitElement {
         ${d.isJackpot ? html`
           <div class="row rw-pool-foot">
             ${d.childContributions.map((c) => html`
-              <span class="chip rw-contrib">${this._av(c.child, c.tone, 16)} ${c.points}</span>`)}
+              <span class="chip rw-contrib">${this._av(c.child, c.tone, 16)} ${__tmNum(this.hass, c.points)}</span>`)}
           </div>` : ''}
         <div class="row rw-foot">
           ${statusLine}
@@ -2288,21 +2295,21 @@ class TaskMateRewardsCard extends LitElement {
                       <span>${this._t('rewards.confirm_your_points', { name: pointsName })}</span>
                       <span class="points-val">
                         <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                        ${currentPoints}
+                        ${__tmNum(this.hass, currentPoints)}
                       </span>
                     </div>
                     <div class="dialog-points-row cost">
                       <span>${this._t('rewards.confirm_cost')}</span>
                       <span class="points-val">
                         <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                        −${cost}
+                        −${__tmNum(this.hass, cost)}
                       </span>
                     </div>
                     <div class="dialog-points-row remaining">
                       <span>${this._t('rewards.confirm_remaining')}</span>
                       <span class="points-val">
                         <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                        ${remaining}
+                        ${__tmNum(this.hass, remaining)}
                       </span>
                     </div>
                   </div>

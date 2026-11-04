@@ -29,6 +29,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
 const __tmClock = (hass, hhmm) => (window.__taskmate_dates && window.__taskmate_dates.clock
   ? window.__taskmate_dates.clock(hass, hhmm) : (hhmm == null ? "" : String(hhmm)));
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LIT_HOST_TAGS = ["hui-masonry-view", "hui-view", "home-assistant-main", "ha-card"];
 
 const findLitBase = () => {
@@ -2726,7 +2733,7 @@ class TaskMateChildCard extends LitElement {
               <div class="stars-section">
                 <div class="stars-value my-stars">
                   ${look.season ? html`<span aria-hidden="true">${look.season.emoji}</span>` : html`<ha-icon icon="${pointsIcon}"></ha-icon>`}
-                  ${child.points}
+                  ${__tmNum(this.hass, child.points)}
                 </div>
                 <div class="stars-label my-stars">${pointsName}</div>
               </div>
@@ -2735,7 +2742,7 @@ class TaskMateChildCard extends LitElement {
                 <div class="stars-section">
                   <div class="stars-value waiting-stars">
                     <ha-icon icon="mdi:timer-sand"></ha-icon>
-                    +${pendingPoints}
+                    +${__tmNum(this.hass, pendingPoints)}
                   </div>
                   <div class="stars-label waiting-stars">${this._t('common.pending')}</div>
                 </div>
@@ -2764,7 +2771,7 @@ class TaskMateChildCard extends LitElement {
                 <ha-icon icon="${b.icon || 'mdi:medal'}"></ha-icon>
               </div>
             `)}
-            ${earnedBadges.length > 5 ? html`<span class="badge-strip-more">+${earnedBadges.length - 5} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ''}
+            ${earnedBadges.length > 5 ? html`<span class="badge-strip-more">+${__tmNum(this.hass, earnedBadges.length - 5)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ''}
           </div>
         ` : ''}
 
@@ -2916,7 +2923,7 @@ class TaskMateChildCard extends LitElement {
     const c = best.badge.closest_criterion;
     // Older backends (and criteria-free, manual-award badges) have no
     // closest_criterion — fall back to the percentage.
-    best.label = c && c.target ? _ltrNums(`${c.current} / ${c.target}`) : `${best.pct}%`;
+    best.label = c && c.target ? _ltrNums(`${__tmNum(this.hass, c.current)} / ${__tmNum(this.hass, c.target)}`) : `${best.pct}%`;
     best.name = _ltrNums(this._badgeName(best.badge));
     return best;
   }
@@ -3291,7 +3298,7 @@ class TaskMateChildCard extends LitElement {
                 style="--t:${this._tierColor(b.tier)}">
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </div>`)}
-            ${earnedBadges.length > 5 ? html`<span class="more">+${earnedBadges.length - 5} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ""}
+            ${earnedBadges.length > 5 ? html`<span class="more">+${__tmNum(this.hass, earnedBadges.length - 5)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ""}
           </div>` : ""}
         ${nextBadge ? html`
           <div class="tmd-next-badge" role="button" tabindex="0"
@@ -3357,9 +3364,9 @@ class TaskMateChildCard extends LitElement {
       ? `${(child.name || "").toUpperCase()} · ${this._t("child.todays_chores").toUpperCase()}`
       : this._t("points_display.single_title", { name: child.name });
     const sub = design === "console"
-      ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${this._t("child.console_active", { count: remaining })}` : this._t("child.console_active", { count: remaining }))
-      : design === "cleanpro" ? _ltrNums(`${remaining} / ${total}`)
-      : `${remaining} · ${this._t("child.todays_chores")}`;
+      ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${this._t("child.console_active", { count: __tmNum(this.hass, remaining) })}` : this._t("child.console_active", { count: __tmNum(this.hass, remaining) }))
+      : design === "cleanpro" ? _ltrNums(`${__tmNum(this.hass, remaining)} / ${total}`)
+      : `${__tmNum(this.hass, remaining)} · ${this._t("child.todays_chores")}`;
     // Avatar picker: classic makes the avatar tappable; the designed header
     // must too, or the picker only ever works on classic. Same eligibility
     // rule (allow_avatar_change + more than one unlocked option).
@@ -3381,7 +3388,7 @@ class TaskMateChildCard extends LitElement {
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
         ${this._renderFreezeBadge(child, "tmd-freeze")}
         ${pendingPoints > 0 ? html`<span class="tmd-pending">
-          <ha-icon icon="mdi:timer-sand"></ha-icon>+${pendingPoints}</span>` : ""}
+          <ha-icon icon="mdi:timer-sand"></ha-icon>+${__tmNum(this.hass, pendingPoints)}</span>` : ""}
         ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ""}
       </div>`;
   }
@@ -3412,7 +3419,7 @@ class TaskMateChildCard extends LitElement {
       ? `${Math.min(r.shared, r.chore.daily_limit)}/${r.chore.daily_limit}`
       : "";
     const weeklyLabel = r.chore._weeklyTarget > 0
-      ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: r.chore._weeklyTarget })
+      ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: __tmNum(this.hass, r.chore._weeklyTarget) })
       : "";
     return html`
       ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
@@ -3504,7 +3511,7 @@ class TaskMateChildCard extends LitElement {
           <span class="ch-emoji">${r.glyph}</span>
           <div class="ch-mid">
             <div class="ch-name">${r.chore.name}</div>
-            ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${r.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
+            ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${__tmNum(this.hass, r.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
@@ -3526,7 +3533,7 @@ class TaskMateChildCard extends LitElement {
             <div class="q-name">${r.chore.name}</div>
             ${r.done
               ? html`<div class="num q-cleared">${this._t("child.console_cleared")}</div>`
-              : html`<div class="num q-xp">+${r.points} XP</div>`}
+              : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} XP</div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
@@ -3550,7 +3557,7 @@ class TaskMateChildCard extends LitElement {
           </div>
           ${r.done
             ? this._designUndoChip(r, this._t("child.done") || "Completed", "c-done")
-            : html`<span class="chip c-pts">+${r.points}</span>
+            : html`<span class="chip c-pts">+${__tmNum(this.hass, r.points)}</span>
                 ${this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"), "sm")}`}
         </div>
         ${this._designBonus(r)}`)}
@@ -3589,7 +3596,7 @@ class TaskMateChildCard extends LitElement {
             <div class="swap-row">
               <div class="swap-info">
                 <div class="chore-name">${c.name}</div>
-                <div class="chore-points"><ha-icon icon="${pointsIcon}"></ha-icon>+${c.effective_points ?? c.points}</div>
+                <div class="chore-points"><ha-icon icon="${pointsIcon}"></ha-icon>+${__tmNum(this.hass, c.effective_points ?? c.points)}</div>
               </div>
               <button class="swap-btn ${requested ? 'requested' : ''}"
                       ?disabled=${loading || requested}
@@ -4299,7 +4306,7 @@ class TaskMateChildCard extends LitElement {
     if (this._setTimeLayout() === "pills") {
       const doneCount = all.filter(e => e.state === "done" || e.state === "pending").length;
       return html`<div class="tm-st-pills ${cls || ""}" role="group" aria-label="${chore.name}">
-        <span class="tm-st-count">${_ltrNums(this._t("child.set_time_count", { done: doneCount, total: all.length }))}</span>
+        <span class="tm-st-count">${_ltrNums(this._t("child.set_time_count", { done: doneCount, total: __tmNum(this.hass, all.length) }))}</span>
         ${all.map(e => html`<button type="button"
             class="tm-st-pill st-${e.state}"
             title="${e.time.name || __tmClock(this.hass, e.opens)} · ${stateText(e)}"
@@ -4313,7 +4320,7 @@ class TaskMateChildCard extends LitElement {
     }
     return html`<div class="tm-st-line ${cls || ""}">
       <span class="tm-st-name">🕑 ${entry.time.name || __tmClock(this.hass, entry.opens)}</span>
-      <span class="tm-st-of">${_ltrNums(this._t("child.set_time_of", { n: chore._setTimeIndex + 1, total: all.length }))}</span>
+      <span class="tm-st-of">${_ltrNums(this._t("child.set_time_of", { n: chore._setTimeIndex + 1, total: __tmNum(this.hass, all.length) }))}</span>
       <span class="tm-st-state st-${entry.state}">${stateText(entry)}</span>
     </div>`;
   }
@@ -4406,7 +4413,7 @@ class TaskMateChildCard extends LitElement {
     return html`
       <span class="deadline-badge ${urgent ? 'deadline-urgent' : ''}"
             title="${this._t('child.deadline_title')}">
-        ⏱ ${label}${bonus ? html` <span class="deadline-bonus">+${bonus}</span>` : ''}
+        ⏱ ${label}${bonus ? html` <span class="deadline-bonus">+${__tmNum(this.hass, bonus)}</span>` : ''}
       </span>
     `;
   }
@@ -4536,7 +4543,7 @@ class TaskMateChildCard extends LitElement {
         ${showPoints
           ? html`
             <div class="pre-tile-points">
-              <ha-icon icon="${pointsIcon}"></ha-icon>+${points}
+              <ha-icon icon="${pointsIcon}"></ha-icon>+${__tmNum(this.hass, points)}
             </div>`
           : html`
             <div class="pre-tile-stars">
@@ -4799,11 +4806,11 @@ class TaskMateChildCard extends LitElement {
             ` : ''}
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              ${isCompletedForToday ? html`+${chore.effective_points ?? chore.points}` : this._boostedPoints(chore, child)}
+              ${isCompletedForToday ? html`+${__tmNum(this.hass, chore.effective_points ?? chore.points)}` : this._boostedPoints(chore, child)}
               ${isFirstCome && (chore.daily_limit || 1) > 1
                 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${Math.min(sharedToday, chore.daily_limit)}/${chore.daily_limit})</span>`
                 : dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
-              ${chore._weeklyTarget > 0 ? html`<span style="font-size: 0.8em; opacity: 0.7;">${this._t('child.weekly_target_progress', { done: chore._weeklyProgress, target: chore._weeklyTarget })}</span>` : ''}
+              ${chore._weeklyTarget > 0 ? html`<span style="font-size: 0.8em; opacity: 0.7;">${this._t('child.weekly_target_progress', { done: chore._weeklyProgress, target: __tmNum(this.hass, chore._weeklyTarget) })}</span>` : ''}
             </div>
             ${chore.require_photo && !isCompletedForToday ? html`
               <div class="recurrence-label">
@@ -4931,8 +4938,8 @@ class TaskMateChildCard extends LitElement {
     // Rate display
     const pointsName = attrs.points_name || this._t('common.stars');
     const rateLabel = chore.timed_rate_minutes === 1
-      ? `${ratePoints} ${this._t('child.pts_per_min', {pointsName})}`
-      : `${ratePoints} ${this._t('child.pts_per_n_min', {count: chore.timed_rate_minutes, pointsName})}`;
+      ? `${__tmNum(this.hass, ratePoints)} ${this._t('child.pts_per_min', {pointsName})}`
+      : `${__tmNum(this.hass, ratePoints)} ${this._t('child.pts_per_n_min', {count: chore.timed_rate_minutes, pointsName})}`;
 
     // Daily cap info
     const maxMin = chore.timed_max_daily_minutes || 0;
@@ -5010,7 +5017,7 @@ class TaskMateChildCard extends LitElement {
             <div class="timer-counter ${state}">${timeStr}</div>
             <div class="timer-points-live">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              ${earnedPoints}
+              ${__tmNum(this.hass, earnedPoints)}
             </div>
           </div>
         ` : ''}
@@ -5046,7 +5053,7 @@ class TaskMateChildCard extends LitElement {
 
         ${maxMin > 0 ? html`
           <div class="daily-cap-bar">
-            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${_ltrNums(this._t('child.timed_cap_label', {used: usedMin, max: maxMin}))}</span>
+            <span class="cap-label ${nearCap ? 'near-cap' : ''}">${_ltrNums(this._t('child.timed_cap_label', {used: usedMin, max: __tmNum(this.hass, maxMin)}))}</span>
             <div class="cap-track">
               <div class="cap-fill ${nearCap ? 'warning' : ''}" style="width: ${capPct}%"></div>
             </div>
@@ -5105,7 +5112,7 @@ class TaskMateChildCard extends LitElement {
               <div class="chore-name bonus-name">${subtask.name}</div>
               <div class="chore-points">
                 <ha-icon icon="${pointsIcon}"></ha-icon>
-                +${subtask.points}
+                +${__tmNum(this.hass, subtask.points)}
                 <span class="bonus-label">${this._t('child.bonus_label')}</span>
               </div>
             </div>
@@ -5245,10 +5252,10 @@ class TaskMateChildCard extends LitElement {
           <div class="celebration-message">${this._t('child.celebration_message')}</div>
           <div class="celebration-points">
             <ha-icon icon="${pointsIcon}"></ha-icon>
-            +${points}
+            +${__tmNum(this.hass, points)}
           </div>
           ${this._celebrationWeeklyBonus ? html`
-            <div class="celebration-weekly-bonus">${this._t('child.weekly_target_bonus_reached', { points: this._celebrationWeeklyBonus })}</div>
+            <div class="celebration-weekly-bonus">${this._t('child.weekly_target_bonus_reached', { points: __tmNum(this.hass, this._celebrationWeeklyBonus) })}</div>
           ` : ''}
         </div>
       </div>
@@ -5901,7 +5908,7 @@ class TaskMateChildCard extends LitElement {
       return html`<div class="${cls}" role="listitem" aria-label="${this._t("child.advent_door_aria", { n, state: stateLabel(l) })}">${n}${n === 24 ? " 🎁" : ""}${mark ? html`<small>${mark}</small>` : ""}</div>`;
     };
     const loading = chore ? !!this._loading[chore.id] : false;
-    const points = chore ? `${chore.points} ${this._pointsNameFor()}` : "";
+    const points = chore ? `${__tmNum(this.hass, chore.points)} ${this._pointsNameFor()}` : "";
     const badgeLine = adv.goal && adv.badge && opened < adv.goal
       ? ` · ${this._t("child.advent_badge", { goal: adv.goal, badge: adv.badge })}` : "";
     return html`
@@ -5918,7 +5925,7 @@ class TaskMateChildCard extends LitElement {
             ${todayLetter === "t" ? html`<button type="button" ?disabled=${loading}
               @click=${() => { if (!loading) this._handleComplete(chore, child); }}>${this._t("child.done")} ✓</button>` : ""}
           </div>` : ""}
-        <div class="tm-advent-ft">${_ltrNums(this._t("child.advent_opened", { done: opened, total: counted.length }))}${badgeLine}</div>
+        <div class="tm-advent-ft">${_ltrNums(this._t("child.advent_opened", { done: opened, total: __tmNum(this.hass, counted.length) }))}${badgeLine}</div>
       </div>`;
   }
 
@@ -5934,7 +5941,7 @@ class TaskMateChildCard extends LitElement {
     // Warning first: the yellow card before a penalty's points go.
     for (const w of child.penalty_warnings || []) {
       parts.push(html`<div class="tm-care tm-care-warning" role="status">
-        <span class="ic">🟨</span><span><b>${this._t("child.penalty_warning_title", { name: w.name })}</b><br>${this._t("child.penalty_warning_body", { points: w.points, points_name: this._pointsNameFor() })}</span></div>`);
+        <span class="ic">🟨</span><span><b>${this._t("child.penalty_warning_title", { name: w.name })}</b><br>${this._t("child.penalty_warning_body", { points: __tmNum(this.hass, w.points), points_name: this._pointsNameFor() })}</span></div>`);
     }
     // Sibling checks: a brother or sister's chore this child may check.
     const bonus = Number(this._attrsNow().sibling_check_bonus) || 0;
@@ -6012,7 +6019,7 @@ class TaskMateChildCard extends LitElement {
     for (const offer of child.redemptions || []) {
       parts.push(html`<div class="tm-care tm-care-redeem" role="note">
         <span class="ic">🤝</span><span><b>${this._t("child.redeem_title")}</b><br>${this._t("child.redeem_body", {
-          chore: offer.chore_name, points: offer.points, date: this._shortDate(offer.expires) })}</span></div>`);
+          chore: offer.chore_name, points: __tmNum(this.hass, offer.points), date: this._shortDate(offer.expires) })}</span></div>`);
     }
     // Reward fulfilment (#1098): what this child is still owed, with "Got it!".
     for (const o of child.owed_rewards || []) {
@@ -6035,7 +6042,7 @@ class TaskMateChildCard extends LitElement {
       for (const item of child.appealable || []) {
         parts.push(html`<div class="tm-care tm-care-appealable" role="note">
           <span class="ic">⚖️</span>
-          <span class="tm-appeal-body"><b>${this._t(`child.appeal_item_${item.kind}`, { name: item.name, points: item.points })}</b><br>${this._t("child.appeal_hint")}</span>
+          <span class="tm-appeal-body"><b>${this._t(`child.appeal_item_${item.kind}`, { name: item.name, points: __tmNum(this.hass, item.points) })}</b><br>${this._t("child.appeal_hint")}</span>
           <button type="button" class="tm-goal-change" @click=${() => this._openAppealSheet(child, item)}>${this._t("child.appeal_button")}</button>
         </div>`);
       }
@@ -6056,13 +6063,13 @@ class TaskMateChildCard extends LitElement {
       if (!goal.target) {
         parts.push(html`<button type="button" class="tm-care tm-care-goal tm-goal-set" @click=${() => this._openGoalSheet(child)}>
           <span class="ic">🎯</span><span><b>${this._t("child.goal_set_title")}</b><br>${goal.bonus
-            ? this._t("child.goal_set_body", { bonus: goal.bonus }) : this._t("child.goal_set_body_plain")}</span></button>`);
+            ? this._t("child.goal_set_body", { bonus: __tmNum(this.hass, goal.bonus) }) : this._t("child.goal_set_body_plain")}</span></button>`);
       } else {
         const pct = Math.min(100, Math.round(((goal.earned || 0) / goal.target) * 100));
         parts.push(html`<div class="tm-care tm-care-goal ${goal.reached ? "reached" : ""}">
           <span class="ic">🎯</span>
           <span class="tm-goal-body">
-            <b>${goal.reached ? (goal.bonus ? this._t("child.goal_reached", { bonus: goal.bonus }) : this._t("child.goal_reached_plain")) : _ltrNums(this._t("child.goal_progress", { earned: goal.earned || 0, target: goal.target }))}</b>
+            <b>${goal.reached ? (goal.bonus ? this._t("child.goal_reached", { bonus: __tmNum(this.hass, goal.bonus) }) : this._t("child.goal_reached_plain")) : _ltrNums(this._t("child.goal_progress", { earned: __tmNum(this.hass, goal.earned || 0), target: __tmNum(this.hass, goal.target) }))}</b>
             <span class="tm-goal-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></span>
           </span>
           <button type="button" class="tm-goal-change" @click=${() => this._openGoalSheet(child)}>${this._t("child.goal_change")}</button>
@@ -6222,7 +6229,7 @@ class TaskMateChildCard extends LitElement {
         <div class="tm-tomorrow-row" aria-disabled="true" title="${this._t("child.tomorrow_locked")}">
           <span class="tm-tomorrow-glyph">${this._choreGlyph(c)}</span>
           <span class="tm-tomorrow-mid"><span class="tm-tomorrow-name">${c.name}</span>
-            <small>+${c.effective_points ?? c.points}${(child.reminders || {})[c.id] ? ` · 🔔 ${child.reminders[c.id]}` : ""}</small></span>
+            <small>+${__tmNum(this.hass, c.effective_points ?? c.points)}${(child.reminders || {})[c.id] ? ` · 🔔 ${child.reminders[c.id]}` : ""}</small></span>
           <ha-icon class="tm-tomorrow-lock" icon="mdi:lock-outline"></ha-icon>
         </div>`)}
       <div class="tm-tomorrow-hint">🔒 ${this._t("child.tomorrow_locked")}</div>
@@ -6258,8 +6265,8 @@ class TaskMateChildCard extends LitElement {
   _boostedPoints(chore, child) {
     const base = chore.effective_points ?? chore.points;
     const m = this._boostMult(chore, child);
-    if (!m || !(Number(base) > 0)) return html`+${base}`;
-    return html`<span class="tm-boost-old">+${base}</span> <b class="tm-boost-new">+${Math.round(Number(base) * m)}</b> <span class="tm-boost-x">×${this._fmtMult(m)}</span>`;
+    if (!m || !(Number(base) > 0)) return html`+${__tmNum(this.hass, base)}`;
+    return html`<span class="tm-boost-old">+${__tmNum(this.hass, base)}</span> <b class="tm-boost-new">+${__tmNum(this.hass, Math.round(Number(base) * m))}</b> <span class="tm-boost-x">×${this._fmtMult(m)}</span>`;
   }
 
   _fmtMult(m) {
@@ -6313,7 +6320,7 @@ class TaskMateChildCard extends LitElement {
           <div class="tm-boost-take-bolt">⚡</div>
           <div class="tm-boost-take-title">${this._t("child.boost_takeover_title")}</div>
           <div class="tm-boost-take-mult">×${this._fmtMult(b.multiplier)}</div>
-          ${names.length ? html`<div class="tm-boost-take-chips">${names.slice(0, 4).map(n => html`<span>${n}</span>`)}${names.length > 4 ? html`<span>+${names.length - 4}</span>` : ""}</div>` : ""}
+          ${names.length ? html`<div class="tm-boost-take-chips">${names.slice(0, 4).map(n => html`<span>${n}</span>`)}${names.length > 4 ? html`<span>+${__tmNum(this.hass, names.length - 4)}</span>` : ""}</div>` : ""}
           <div class="tm-boost-take-sub">${names.length ? this._t("child.boost_takeover_some", { multiplier: this._fmtMult(b.multiplier) }) : this._t("child.boost_takeover_all", { multiplier: this._fmtMult(b.multiplier) })}</div>
           <div class="tm-boost-take-clock">${this._clock(b.endsMs - Date.now())}</div>
           ${b.name ? html`<div class="tm-boost-take-name">${b.name}</div>` : ""}
@@ -6335,7 +6342,7 @@ class TaskMateChildCard extends LitElement {
       <div class="photo-overlay" @click=${close}>
         <div class="photo-sheet tm-appeal-sheet" role="dialog" aria-modal="true" aria-label="${this._t("child.appeal_sheet_title")}" @click=${(e) => e.stopPropagation()}>
           <div class="photo-title">⚖️ ${this._t("child.appeal_sheet_title")}</div>
-          <div class="photo-dropzone-hint">${this._t(`child.appeal_item_${sheet.item.kind}`, { name: sheet.item.name, points: sheet.item.points })}</div>
+          <div class="photo-dropzone-hint">${this._t(`child.appeal_item_${sheet.item.kind}`, { name: sheet.item.name, points: __tmNum(this.hass, sheet.item.points) })}</div>
           <textarea class="tm-appeal-text" maxlength="200" rows="3" placeholder="${this._t("child.appeal_placeholder")}"
                     .value=${sheet.message} @input=${(e) => { sheet.message = e.target.value; }}></textarea>
           <div class="photo-btn-row">
@@ -6377,7 +6384,7 @@ class TaskMateChildCard extends LitElement {
     const exp = child.points_expiry;
     if (exp && exp.points > 0) {
       out.push(html`<div class="tm-care tm-care-expiry" role="status">
-        <span class="ic">⏳</span><span><b>${_ltrNums(this._t("child.expiry_title", { points: exp.points, points_name: this._pointsNameFor(child), day: this._dayLabel(exp.date) }))}</b><br>${this._t("child.expiry_body")}</span></div>`);
+        <span class="ic">⏳</span><span><b>${_ltrNums(this._t("child.expiry_title", { points: __tmNum(this.hass, exp.points), points_name: this._pointsNameFor(child), day: this._dayLabel(exp.date) }))}</b><br>${this._t("child.expiry_body")}</span></div>`);
     }
     for (const g of child.gifts || []) {
       out.push(html`<div class="tm-care tm-care-gift" role="note">
@@ -6400,7 +6407,7 @@ class TaskMateChildCard extends LitElement {
       const pic = typeof r.image_url === "string" && r.image_url.startsWith("/api/taskmate/image/") ? r.image_url : "";
       out.push(html`<div class="tm-care tm-care-forecast" role="note">
         <span class="ic">${pic ? html`<img class="tm-reward-pic" src="${pic}" alt="">` : html`<ha-icon icon="${r.icon || "mdi:gift"}"></ha-icon>`}</span>
-        <span class="tm-forecast-body"><b>${r.name} · ${_ltrNums(`${next.have}/${next.cost}`)}</b><br>📈 ${_ltrNums(this._t("child.forecast_body", { rate: next.rate, day: this._dayLabel(next.date) }))}</span>
+        <span class="tm-forecast-body"><b>${r.name} · ${_ltrNums(`${__tmNum(this.hass, next.have)}/${__tmNum(this.hass, next.cost)}`)}</b><br>📈 ${_ltrNums(this._t("child.forecast_body", { rate: next.rate, day: this._dayLabel(next.date) }))}</span>
       </div>`);
     }
     return out;
@@ -6902,17 +6909,17 @@ class TaskMateChildCard extends LitElement {
       let sub;
       if (i.status === "open") {
         title = this._t("inspection.coming_title");
-        sub = this._t("inspection.coming_sub", { name, time: this._inspLeft(i.until), bonus: i.bonus, points_name: pointsName });
+        sub = this._t("inspection.coming_sub", { name, time: this._inspLeft(i.until), bonus: __tmNum(this.hass, i.bonus), points_name: pointsName });
       } else if (i.status === "passed") {
         icon = "mdi:check-decagram";
-        title = this._t("inspection.passed_title", { bonus: i.bonus, points_name: pointsName });
+        title = this._t("inspection.passed_title", { bonus: __tmNum(this.hass, i.bonus), points_name: pointsName });
         sub = i.note
           ? this._t("inspection.passed_sub_note", { name, note: i.note })
           : this._t("inspection.passed_sub", { name });
       } else if (i.status === "redo") {
         icon = "mdi:restore";
         title = this._t("inspection.redo_title", { name });
-        sub = this._t("inspection.redo_sub", { points: i.points || 0, points_name: pointsName });
+        sub = this._t("inspection.redo_sub", { points: __tmNum(this.hass, i.points || 0), points_name: pointsName });
       } else {
         title = this._t("inspection.nope_title");
         sub = this._t("inspection.nope_sub", { name });
@@ -6946,7 +6953,7 @@ class TaskMateChildCard extends LitElement {
     if (!i) return "";
     const tags = {
       open: ["mdi:magnify-scan", this._t("inspection.tag_open")],
-      passed: [this._pointsIcon(), this._t("inspection.tag_passed", { bonus: i.bonus })],
+      passed: [this._pointsIcon(), this._t("inspection.tag_passed", { bonus: __tmNum(this.hass, i.bonus) })],
       redo: ["mdi:restore", this._t("inspection.tag_redo")],
       failed: ["mdi:magnify-scan", this._t("inspection.tag_failed")],
     };
@@ -6989,7 +6996,7 @@ class TaskMateChildCard extends LitElement {
           <div class="tm-insp-cele-mag"><ha-icon icon="mdi:magnify-scan"></ha-icon></div>
           <div class="tm-insp-cele-title">${this._t("inspection.celebrate_title")}</div>
           <div class="tm-insp-cele-msg">${this._t("inspection.celebrate_sub", { name: i.name || "" })}</div>
-          <div class="tm-insp-cele-big">+${i.bonus || 0} <ha-icon icon="${pointsIcon || "mdi:star"}"></ha-icon></div>
+          <div class="tm-insp-cele-big">+${__tmNum(this.hass, i.bonus || 0)} <ha-icon icon="${pointsIcon || "mdi:star"}"></ha-icon></div>
           ${i.note ? html`<div class="tm-insp-cele-note">“${i.note}”</div>` : ""}
           <button class="tm-insp-cele-btn" @click=${close}>${this._t("inspection.celebrate_ok")}</button>
         </div>

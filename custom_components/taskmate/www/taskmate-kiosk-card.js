@@ -63,6 +63,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
 const __tmClock = (hass, hhmm) => (window.__taskmate_dates && window.__taskmate_dates.clock
   ? window.__taskmate_dates.clock(hass, hhmm) : (hhmm == null ? "" : String(hhmm)));
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -670,7 +677,7 @@ class TaskMateKioskCard extends LitElement {
     }
     if (!best) return null;
     const c = best.badge.closest_criterion;
-    best.label = c && c.target ? _ltrNums(`${c.current} / ${c.target}`) : `${best.pct}%`;
+    best.label = c && c.target ? _ltrNums(`${__tmNum(this.hass, c.current)} / ${__tmNum(this.hass, c.target)}`) : `${best.pct}%`;
     best.oneMore = !!c && Number(c.target) - Number(c.current) === 1;
     return best;
   }
@@ -691,7 +698,7 @@ class TaskMateKioskCard extends LitElement {
           ${letters.map((l, i) => html`<span role="listitem" class="km-door ${l === "-" ? "x" : l}"
             aria-label="${this._t("child.advent_door_aria", { n: i + 1, state: this._t(`child.advent_state_${l === "-" ? "l" : l}`) })}">${i + 1}</span>`)}
         </div>
-        <div class="km-dim km-small">${_ltrNums(this._t("child.advent_opened", { done: opened, total: counted }))}</div>
+        <div class="km-dim km-small">${_ltrNums(this._t("child.advent_opened", { done: opened, total: __tmNum(this.hass, counted) }))}</div>
       </div>`;
   }
 
@@ -711,7 +718,7 @@ class TaskMateKioskCard extends LitElement {
               <span class="km-badge" style="--t:${TIER_COLOURS[b.tier] || "#888"}" title="${_ltrNums(this._badgeName(b))}">
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </span>`)}
-            ${earned.length > shown.length ? html`<span class="km-dim km-badge-more">+${earned.length - shown.length}</span>` : ""}
+            ${earned.length > shown.length ? html`<span class="km-dim km-badge-more">+${__tmNum(this.hass, earned.length - shown.length)}</span>` : ""}
           </div>` : ""}
         ${next ? html`
           <div class="km-next-badge">
@@ -1121,7 +1128,7 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-amb-ring">${this._face(child, tone)}</div>
                 <div class="km-name">${child.name}</div>
                 <div class="km-amb-sub">${!total ? this._t("kiosk.nothing_today") : done === total ? this._t("kiosk.all_done_short") : _ltrNums(this._t("kiosk.progress", { done, total }))}</div>
-                <div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${child.points ?? 0}</div>
+                <div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, child.points ?? 0)}</div>
               </div>`;
           })}
         </div>
@@ -1671,7 +1678,7 @@ class TaskMateKioskCard extends LitElement {
                       <div class="km-bar"><i style="width:${total ? Math.round((done / total) * 100) : 0}%"></i></div>
                       <small>${!total ? none : all ? this._t("kiosk.all_done_short") : _ltrNums(this._t("kiosk.progress", { done, total }))}</small>
                     </div>` : ""}
-                ${showPoints ? html`<div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${child.points ?? 0}</div>` : ""}
+                ${showPoints ? html`<div class="km-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, child.points ?? 0)}</div>` : ""}
               </button>`;
           })}
         </div>
@@ -1756,7 +1763,7 @@ class TaskMateKioskCard extends LitElement {
                 <span class="km-level-track"><i style="width:${levelPct}%"></i></span>
               </div>` : ""}
           </div>
-          ${showPoints ? html`<div class="km-pts-pill">${season ? html`<span aria-hidden="true">${season.emoji}</span>` : html`<ha-icon icon="${icon}"></ha-icon>`} ${child.points ?? 0}</div>` : ""}
+          ${showPoints ? html`<div class="km-pts-pill">${season ? html`<span aria-hidden="true">${season.emoji}</span>` : html`<ha-icon icon="${icon}"></ha-icon>`} ${__tmNum(this.hass, child.points ?? 0)}</div>` : ""}
           <button class="km-switch" @click=${() => this._toPicker()}>
             <span>${this._t("kiosk.switch", { name: child.name })}</span>
             <span class="km-ring" style="--p:${left / timeout}"><span>${left}</span></span>
@@ -1785,7 +1792,7 @@ class TaskMateKioskCard extends LitElement {
             </div>
             ${showPoints || showStreak ? html`
               <div class="km-stat2">
-                ${showPoints ? html`<div class="km-tile"><b class="gold"><ha-icon icon="${icon}"></ha-icon> +${earnedToday}</b><small>${this._t("kiosk.earned_today")}</small></div>` : ""}
+                ${showPoints ? html`<div class="km-tile"><b class="gold"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, earnedToday)}</b><small>${this._t("kiosk.earned_today")}</small></div>` : ""}
                 ${showStreak ? html`<div class="km-tile"><b class="warm"><ha-icon icon="mdi:fire"></ha-icon> ${child.current_streak || 0}</b><small>${this._t("kiosk.day_streak")}</small></div>` : ""}
               </div>` : ""}
             ${next ? html`
@@ -1793,10 +1800,10 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-reward-row">
                   <ha-icon icon="${next.reward.icon || "mdi:gift"}"></ha-icon>
                   <b class="km-grow">${next.reward.name}</b>
-                  <span class="km-dim">${_ltrRatio(child.points ?? 0, next.cost)}</span>
+                  <span class="km-dim">${_ltrRatio(__tmNum(this.hass, child.points ?? 0), __tmNum(this.hass, next.cost))}</span>
                 </div>
                 <div class="km-bar"><i style="width:${Math.min(100, Math.round(((Number(child.points) || 0) / next.cost) * 100))}%"></i></div>
-                <div class="km-dim km-small">${this._t("kiosk.to_go", { points: next.cost - (Number(child.points) || 0) })}</div>
+                <div class="km-dim km-small">${this._t("kiosk.to_go", { points: __tmNum(this.hass, next.cost - (Number(child.points) || 0)) })}</div>
               </div>` : ""}
             ${this._adventTile(child, attrs)}
             ${this._badgesTile(child)}
@@ -1820,7 +1827,7 @@ class TaskMateKioskCard extends LitElement {
               <div class="km-pop-stars">🌟🌟🌟</div>
               <h2>${this._t("child.celebration_title")}</h2>
               <p>${this._t("child.celebration_message")}</p>
-              ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${this._popup.points}</div>` : ""}
+              ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
             </div>
           </div>` : ""}
         ${this._celebrating ? html`
@@ -1873,7 +1880,7 @@ class TaskMateKioskCard extends LitElement {
         <div class="km-row-body">
           <div class="km-row-name">${chore.name}</div>
           ${row.setTime && this._setTimeLayout() === "rows" ? html`<div class="km-st-sub">🕑 <b>${row.setTime.entry.time.name || __tmClock(this.hass, row.setTime.entry.opens)}</b>
-            <span>${_ltrNums(this._t("child.set_time_of", { n: row.setTime.all.indexOf(row.setTime.entry) + 1, total: row.setTime.all.length }))}</span></div>` : ""}
+            <span>${_ltrNums(this._t("child.set_time_of", { n: row.setTime.all.indexOf(row.setTime.entry) + 1, total: __tmNum(this.hass, row.setTime.all.length) }))}</span></div>` : ""}
           ${row.setTime && this._setTimeLayout() === "pills" ? this._renderSetTimePills(child, row) : ""}
           <div class="km-row-meta">
             <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${this._pointsFor(chore, child.id)}</span>
@@ -1972,7 +1979,7 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-row-name">${b.title}</div>
           ${b.description ? html`<div class="km-row-desc">${b.description}</div>` : ""}
           <div class="km-row-meta">
-            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${b.points}</span>
+            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, b.points)}</span>
             ${expLeft !== null ? html`<span class="km-tag"><ha-icon icon="mdi:clock-outline"></ha-icon> ${this._t("bounty.left", { time: this._fmtDur(expLeft) })}</span>` : ""}
             ${b.require_photo ? html`<span class="km-tag"><ha-icon icon="mdi:camera-outline"></ha-icon> ${this._t("bounty.photo_tag")}</span>` : ""}
             ${extra}
@@ -1999,7 +2006,7 @@ class TaskMateKioskCard extends LitElement {
         <div class="km-bdlg-acts">
           <button class="km-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
           <button class="km-primary" ?disabled=${!!this._busy} @click=${() => this._claimBounty(child, b)}>
-            ${this._t("bounty.claim_it", { points: b.points, pointsName })}</button>
+            ${this._t("bounty.claim_it", { points: __tmNum(this.hass, b.points), pointsName })}</button>
         </div>`;
     } else if (d.kind === "photo") {
       inner = html`
@@ -2016,7 +2023,7 @@ class TaskMateKioskCard extends LitElement {
       inner = html`
         <div class="km-bdlg-ic good"><ha-icon icon="mdi:check-bold"></ha-icon></div>
         <h2>${this._t("bounty.yay_title")}</h2>
-        <p>${this._t("bounty.yay_body", { title: b.title, points: b.points, pointsName })}</p>
+        <p>${this._t("bounty.yay_body", { title: b.title, points: __tmNum(this.hass, b.points), pointsName })}</p>
         <div class="km-bdlg-acts"><button class="km-primary" @click=${close}>${this._t("bounty.ok")}</button></div>`;
     }
     return html`

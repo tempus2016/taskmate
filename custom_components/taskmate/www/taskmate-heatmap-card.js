@@ -16,6 +16,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -150,8 +157,8 @@ class TaskMateHeatmapCard extends LitElement {
     return html`
       <div class="hm-child">
         <div class="${nameCls}">${child.name}
-          <span class="hm-sub">${this._t("heatmap.summary", { total: g.total, active: g.active, days: g.days })}</span></div>
-        <div class="hm-grid" role="img" aria-label="${this._t("heatmap.aria", { name: child.name, total: g.total, days: g.days })}">
+          <span class="hm-sub">${this._t("heatmap.summary", { total: __tmNum(this.hass, g.total), active: g.active, days: g.days })}</span></div>
+        <div class="hm-grid" role="img" aria-label="${this._t("heatmap.aria", { name: child.name, total: __tmNum(this.hass, g.total), days: g.days })}">
           ${g.weekdays.map(w => html`<span class="hm-wd">${w}</span>`)}
           ${Array.from({ length: g.lead }, () => html`<i class="pad"></i>`)}
           ${g.cells.map(c => html`<i class="${c.level ? `l${c.level}` : ""} ${c.today ? "today" : ""}" title="${c.title}"></i>`)}

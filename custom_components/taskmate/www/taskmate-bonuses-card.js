@@ -15,7 +15,8 @@ createIncentiveCard({
   headerIcon: "mdi:star-circle",
   applyIcon: "mdi:plus-circle-outline",
   sign: "+",
-  dpts: (n) => `+${n}`,
+  // `fmt` formats the figure the HA way (#771); the card passes its helper.
+  dpts: (n, fmt = String) => `+${fmt(n)}`,
   accent: "#2e7d32",
   accentDark: "#1b5e20",
   accentLight: "rgba(46, 125, 50, 0.12)",

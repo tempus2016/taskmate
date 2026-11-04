@@ -13,6 +13,13 @@
  * Version: 1.0.0
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -356,7 +363,7 @@ class TaskMateRoutineCard extends LitElement {
 
         <div class="progress">
           <div class="rt-bar"><i style="width:${pct}%"></i></div>
-          <div class="count">${this._t("routine.task_of", { current: index + 1, total: tasks.length })}</div>
+          <div class="count">${this._t("routine.task_of", { current: index + 1, total: __tmNum(this.hass, tasks.length) })}</div>
         </div>
 
         <div class="dots">
@@ -375,9 +382,9 @@ class TaskMateRoutineCard extends LitElement {
           <div class="task">${chore.name}</div>
           ${chore.description ? html`<div class="desc">${chore.description}</div>` : ""}
           <div class="points">
-            <ha-icon icon="${pointsIcon}"></ha-icon> +${chore.quantity_unit && !done
+            <ha-icon icon="${pointsIcon}"></ha-icon> +${__tmNum(this.hass, chore.quantity_unit && !done
               ? this._pointsFor(chore) * this._qtyFor(chore)
-              : (done ? done.points : this._pointsFor(chore))}
+              : (done ? done.points : this._pointsFor(chore)))}
           </div>
           ${chore.quantity_unit && !done ? html`
             <div class="rt-qty" role="group" aria-label="${chore.quantity_unit}">
@@ -451,17 +458,17 @@ class TaskMateRoutineCard extends LitElement {
         <div class="head"><span class="who">${title}</span></div>
         <div class="progress">
           <div class="rt-bar"><i class="full" style="width:100%"></i></div>
-          <div class="count">${this._t("routine.all_done_count", { total: tasks.length })}</div>
+          <div class="count">${this._t("routine.all_done_count", { total: __tmNum(this.hass, tasks.length) })}</div>
         </div>
         <div class="finished">
           <div class="cheer">🎉</div>
           <h2>${this._t("routine.finished_title")}</h2>
           <p>${this._t("routine.finished_body", { name: child.name })}</p>
           ${earned > 0 ? html`
-            <div class="earned"><ha-icon icon="${pointsIcon}"></ha-icon> ${this._t("routine.earned", { points: earned })}</div>
+            <div class="earned"><ha-icon icon="${pointsIcon}"></ha-icon> ${this._t("routine.earned", { points: __tmNum(this.hass, earned) })}</div>
           ` : ""}
           ${pending > 0 ? html`
-            <div class="earned pending-total">${this._t("routine.awaiting_points", { points: pending })}</div>
+            <div class="earned pending-total">${this._t("routine.awaiting_points", { points: __tmNum(this.hass, pending) })}</div>
           ` : ""}
           ${skipped > 0 ? html`
             <p class="skipped">${this._t(skipped === 1 ? "routine.skipped_note_one" : "routine.skipped_note", { count: skipped })}</p>

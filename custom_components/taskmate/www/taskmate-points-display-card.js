@@ -22,6 +22,13 @@
  * Version: 1.0.0
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -713,10 +720,10 @@ class TaskMatePointsDisplayCard extends LitElement {
           <ha-icon class="pd-wm" icon="${this._pointsIcon()}"></ha-icon>
           <div class="points-label">${this._primaryLabel()}</div>
           <div class="points-number" style="color:${colour}">
-            <ha-icon class="points-star" icon="${this._pointsIcon()}"></ha-icon>${primary.toLocaleString()}
+            <ha-icon class="points-star" icon="${this._pointsIcon()}"></ha-icon>${__tmNum(this.hass, primary)}
           </div>
           <div class="secondary-info">
-            ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
+            ${this._secondaryLabel()}: <span class="secondary-value">${__tmNum(this.hass, secondary)}</span>
           </div>
         </div>
 
@@ -725,7 +732,7 @@ class TaskMatePointsDisplayCard extends LitElement {
             <div class="stat-pill">
               <ha-icon icon="mdi:calendar-week"></ha-icon>
               <div>
-                <div>${this._t("points_display.weekly_pts", { count: weekly, pointsName: this._pointsName() })}</div>
+                <div>${this._t("points_display.weekly_pts", { count: __tmNum(this.hass, weekly), pointsName: this._pointsName() })}</div>
                 <div class="pill-label">${this._t("points_display.this_week")}</div>
               </div>
             </div>` : ""}
@@ -780,16 +787,16 @@ class TaskMatePointsDisplayCard extends LitElement {
               ${childAvatar(child, colour)}
               <div class="child-name">${child.name}</div>
               <div class="tile-points" style="color:${colour}">
-                <ha-icon class="tile-star" icon="${this._pointsIcon()}"></ha-icon>${primary.toLocaleString()}
+                <ha-icon class="tile-star" icon="${this._pointsIcon()}"></ha-icon>${__tmNum(this.hass, primary)}
               </div>
               <div class="tile-label">${this._isCareerMode()
                 ? this._t("points_display.career_score_label")
                 : this._t("points_display.points_label")}</div>
               <div class="secondary-info">
-                ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
+                ${this._secondaryLabel()}: <span class="secondary-value">${__tmNum(this.hass, secondary)}</span>
               </div>
               ${this.config.show_weekly ? html`
-                <div class="tile-weekly">${this._t("points_display.weekly_plus", { count: weekly })}</div>` : ""}
+                <div class="tile-weekly">${this._t("points_display.weekly_plus", { count: __tmNum(this.hass, weekly) })}</div>` : ""}
               ${this.config.show_streak ? html`
                 <div class="streak-chip">\u{1F525} ${streak}</div>` : ""}
               ${isTop ? html`<div style="position:absolute;bottom:0;inset-inline-start:0;inset-inline-end:0;height:4px;background:${colour};border-radius:0 0 18px 18px;"></div>` : ""}
@@ -818,10 +825,10 @@ class TaskMatePointsDisplayCard extends LitElement {
           <ha-icon class="pd-wm" icon="${this._pointsIcon()}"></ha-icon>
           <div class="points-label">${this._t("points_display.combined_family_total")}</div>
           <div class="points-number" style="color:${_safeColor(this.config.header_color, DEFAULT_HEADER)}">
-            <ha-icon class="points-star" icon="${this._pointsIcon()}"></ha-icon>${total.toLocaleString()}
+            <ha-icon class="points-star" icon="${this._pointsIcon()}"></ha-icon>${__tmNum(this.hass, total)}
           </div>
           <div class="secondary-info">
-            ${this._secondaryLabel()}: <span class="secondary-value">${secTotal.toLocaleString()}</span>
+            ${this._secondaryLabel()}: <span class="secondary-value">${__tmNum(this.hass, secTotal)}</span>
           </div>
           <div class="family-label">${this._t(ranked.length === 1 ? "points_display.family_subtitle_one" : "points_display.family_subtitle", { count: ranked.length })}</div>
         </div>
@@ -840,11 +847,11 @@ class TaskMatePointsDisplayCard extends LitElement {
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
                   <span class="child-name">${child.name}</span>
                   <span class="cumul-points" style="color:${colour}">
-                    <ha-icon class="cumul-star" icon="${this._pointsIcon()}"></ha-icon>${primary.toLocaleString()}
+                    <ha-icon class="cumul-star" icon="${this._pointsIcon()}"></ha-icon>${__tmNum(this.hass, primary)}
                   </span>
                 </div>
                 <div class="secondary-info" style="margin-top:0;margin-bottom:4px;">
-                  ${this._secondaryLabel()}: <span class="secondary-value">${secondary.toLocaleString()}</span>
+                  ${this._secondaryLabel()}: <span class="secondary-value">${__tmNum(this.hass, secondary)}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <div class="cumul-bar-wrap" style="flex:1;">
@@ -1037,11 +1044,11 @@ class TaskMatePointsDisplayCard extends LitElement {
           <div class="pl-tile" style="--ac:${r.tone}">
             ${showRank && r.rank < 3 ? html`<div class="pl-medal">${RANK_MEDAL[r.rank]}</div>` : ""}
             ${this._av(r.child, r.tone, 52)}
-            <div class="pl-pts">${r.points.toLocaleString()}<ha-icon icon="${this._pointsIcon()}"></ha-icon></div>
+            <div class="pl-pts">${__tmNum(this.hass, r.points)}<ha-icon icon="${this._pointsIcon()}"></ha-icon></div>
             <div class="pl-name">${r.child.name}</div>
             ${showWeekly || (showStreak && r.streak) ? html`
               <div class="pl-chips">
-                ${showWeekly ? html`<div class="chip soft">${this._t("points_display.weekly_plus", { count: r.weekly })}</div>` : ""}
+                ${showWeekly ? html`<div class="chip soft">${this._t("points_display.weekly_plus", { count: __tmNum(this.hass, r.weekly) })}</div>` : ""}
                 ${showStreak && r.streak ? html`<div class="chip soft">\u{1F525} ${r.streak}</div>` : ""}
               </div>` : ""}
           </div>`)}
@@ -1064,8 +1071,8 @@ class TaskMatePointsDisplayCard extends LitElement {
               <div class="bar"><i style="width:${Math.round((r.points / max) * 100)}%"></i></div>
             </div>
             <div class="cn-right">
-              <div class="num cn-pts ${r.rank === 0 ? "lead" : ""}">${r.points.toLocaleString()}</div>
-              <div class="cn-sub muted">XP${showWeekly ? html` · +${r.weekly}` : ""}${showStreak && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
+              <div class="num cn-pts ${r.rank === 0 ? "lead" : ""}">${__tmNum(this.hass, r.points)}</div>
+              <div class="cn-sub muted">XP${showWeekly ? html` · +${__tmNum(this.hass, r.weekly)}` : ""}${showStreak && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
             </div>
           </div>`)}
       </div>`;
@@ -1080,12 +1087,12 @@ class TaskMatePointsDisplayCard extends LitElement {
         ${rows.map((r) => html`
           <div class="cp-tile" style="--ac:${r.tone}">
             ${this._av(r.child, r.tone, 46)}
-            <div class="big cp-pts">${r.points.toLocaleString()}</div>
+            <div class="big cp-pts">${__tmNum(this.hass, r.points)}</div>
             <div class="cp-name">${r.child.name}</div>
             <div class="cp-chips">
               ${showRank ? html`<div class="chip cp-rank">${r.rank === 0
                 ? html`<span class="lead-dot">●</span> ` : ""}#${r.rank + 1}</div>` : ""}
-              ${showWeekly ? html`<div class="chip cp-rank">+${r.weekly}</div>` : ""}
+              ${showWeekly ? html`<div class="chip cp-rank">+${__tmNum(this.hass, r.weekly)}</div>` : ""}
               ${showStreak && r.streak ? html`<div class="chip cp-rank">\u{1F525} ${r.streak}</div>` : ""}
             </div>
           </div>`)}
@@ -1094,7 +1101,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         <div class="divide"></div>
         <div class="row cp-total">
           <span class="muted">${this._t("points_display.combined_family_total")}</span>
-          <span class="num">${total.toLocaleString()} ${this._t("points_display.points_label")}</span>
+          <span class="num">${__tmNum(this.hass, total)} ${this._t("points_display.points_label")}</span>
         </div>` : ""}`;
   }
 
@@ -1102,7 +1109,7 @@ class TaskMatePointsDisplayCard extends LitElement {
     return html`
       <div class="cumul-total-d">
         <div class="muted">${this._t("points_display.combined_family_total")}</div>
-        <div class="big cumul-big">${total.toLocaleString()} <ha-icon class="cumul-big-star" icon="${this._pointsIcon()}"></ha-icon></div>
+        <div class="big cumul-big">${__tmNum(this.hass, total)} <ha-icon class="cumul-big-star" icon="${this._pointsIcon()}"></ha-icon></div>
       </div>
       <div class="cumul-list">
         ${rows.map((r) => html`
@@ -1111,7 +1118,7 @@ class TaskMatePointsDisplayCard extends LitElement {
             <div class="cumul-mid">
               <div class="row cumul-head">
                 <span class="cumul-name">${r.child.name}</span>
-                <span class="num">${r.points.toLocaleString()}</span>
+                <span class="num">${__tmNum(this.hass, r.points)}</span>
               </div>
               <div class="bar"><i style="width:${r.pct}%"></i></div>
             </div>

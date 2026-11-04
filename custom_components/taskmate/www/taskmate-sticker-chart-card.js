@@ -35,6 +35,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LIT_HOST_TAGS = ["hui-masonry-view", "hui-view", "home-assistant-main", "ha-card"];
 
 const findLitBase = () => {
@@ -878,7 +885,7 @@ class TaskMateStickerChartCard extends LitElement {
           `}
           <div class="celebration-points">
             <ha-icon icon="${attrs.points_icon || "mdi:star"}"></ha-icon>
-            +${c.points}
+            +${__tmNum(this.hass, c.points)}
           </div>
         </div>
       </div>`;
@@ -1005,11 +1012,11 @@ class TaskMateStickerChartCard extends LitElement {
           <div class="heading">
             <ha-icon icon="mdi:calendar-check"></ha-icon>
             <span class="title">${child.name}</span>
-            <span class="score"><ha-icon icon="${attrs.points_icon || "mdi:star"}"></ha-icon>${points}</span>
+            <span class="score"><ha-icon icon="${attrs.points_icon || "mdi:star"}"></ha-icon>${__tmNum(this.hass, points)}</span>
           </div>
           <div class="panel summary">
             <div class="today">
-              ${_ltrNums(this._t("sticker_chart.day_count", { day, done, total: rows.length }))}
+              ${_ltrNums(this._t("sticker_chart.day_count", { day, done, total: __tmNum(this.hass, rows.length) }))}
               ${allDone ? html` 🏆` : ""}
             </div>
           </div>
@@ -1026,7 +1033,7 @@ class TaskMateStickerChartCard extends LitElement {
         <div class="heading">
           <ha-icon icon="mdi:star-face"></ha-icon>
           <span class="title">${title}</span>
-          <span class="score"><ha-icon icon="${attrs.points_icon || "mdi:star"}"></ha-icon>${points}</span>
+          <span class="score"><ha-icon icon="${attrs.points_icon || "mdi:star"}"></ha-icon>${__tmNum(this.hass, points)}</span>
         </div>
 
         <div class="panel summary">
@@ -1034,26 +1041,26 @@ class TaskMateStickerChartCard extends LitElement {
             <div class="top-main">
               ${this.config.show_today === false ? "" : html`
                 <div class="today">
-                  ${_ltrNums(this._t("sticker_chart.today", { done, total: rows.length }))}
+                  ${_ltrNums(this._t("sticker_chart.today", { done, total: __tmNum(this.hass, rows.length) }))}
                   ${allDone ? html` 🏆 ${this._t("sticker_chart.all_done", { name: child.name })}` : ""}
                 </div>`}
               <div class="stickers" role="img"
-                   aria-label="${this._t("sticker_chart.stickers_alt", { count: earned, points: unit })}">
+                   aria-label="${this._t("sticker_chart.stickers_alt", { count: earned, points: __tmNum(this.hass, unit) })}">
                 ${earned === 0
                   ? html`<span class="stickers-none">${this._t("sticker_chart.no_stickers")}</span>`
                   : html`${Array.from({ length: shown }, (_, i) => STICKERS[i % STICKERS.length]).join("")}${
-                      earned > shown ? html`<span class="overflow">+${earned - shown}</span>` : ""}`}
+                      earned > shown ? html`<span class="overflow">+${__tmNum(this.hass, earned - shown)}</span>` : ""}`}
               </div>
             </div>
             <div class="face">${this._face(child)}</div>
           </div>
 
           ${weekly ? (target > 0 ? html`
-            <div class="goal-line">${_ltrNums(this._t("sticker_chart.week_goal", { points: earned, goal: target, unit }))}</div>
+            <div class="goal-line">${_ltrNums(this._t("sticker_chart.week_goal", { points: __tmNum(this.hass, earned), goal: target, unit }))}</div>
             ${this._renderBlocks(progress, target, unit)}
             ${full ? html`<div class="reached">🌟 ${this._t("sticker_chart.week_perfect")} 🌟</div>` : ""}
           ` : "") : goal > 0 ? html`
-            <div class="goal-line">${_ltrNums(this._t("sticker_chart.goal", { points: earned, goal, unit }))}</div>
+            <div class="goal-line">${_ltrNums(this._t("sticker_chart.goal", { points: __tmNum(this.hass, earned), goal, unit }))}</div>
             ${this._renderBlocks(points, goal, unit)}
             ${reached ? html`<div class="reached">🎉 ${this._t("sticker_chart.goal_reached")} 🎉</div>` : ""}
           ` : html`<div class="goal-line muted">${this._t("sticker_chart.no_reward")}</div>`}

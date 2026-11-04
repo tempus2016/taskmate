@@ -109,8 +109,8 @@ class TaskMatePointsCardEditor extends LitElement {
         @value-changed=${this._formChanged}
       ></ha-form>
       <div class="amounts-preview">
-        ${addAmounts.map(a => html`<span class="preview-btn add">+${a}</span>`)}
-        ${removeAmounts.map(a => html`<span class="preview-btn remove">−${a}</span>`)}
+        ${addAmounts.map(a => html`<span class="preview-btn add">+${(window.__taskmate_numbers ? window.__taskmate_numbers.format(this.hass, a) : a)}</span>`)}
+        ${removeAmounts.map(a => html`<span class="preview-btn remove">−${(window.__taskmate_numbers ? window.__taskmate_numbers.format(this.hass, a) : a)}</span>`)}
       </div>
       ${this._renderColourPicker('header_color', '')}
     `;

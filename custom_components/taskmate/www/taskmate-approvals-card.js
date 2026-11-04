@@ -10,6 +10,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -809,7 +816,7 @@ class TaskMateApprovalsCard extends LitElement {
                     ? html`<span class="btn-spinner"></span>${this._t('approvals.approve_all_busy')}`
                     : this._t('approvals.approve_all')}</button>`
               : ""}
-            ${totalPending > 0 ? html`<span class="pending-count">${totalPending}</span>` : ""}
+            ${totalPending > 0 ? html`<span class="pending-count">${__tmNum(this.hass, totalPending)}</span>` : ""}
           </div>
         </div>
 
@@ -1204,7 +1211,7 @@ class TaskMateApprovalsCard extends LitElement {
             <div class="muted ap-pl-sub">${it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
           </div>
           ${this._apPhotoDesigned(it, "ap-pl-photo")}
-          <div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${it.points} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
+          <div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
         </div>
         <div class="row" style="margin-top:11px;gap:8px">
           ${this._designActions(it, "full")}
@@ -1219,7 +1226,7 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
-          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${it.points} XP`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
+          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${__tmNum(this.hass, it.points)} XP`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
           ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
         ${this._apPhotoDesigned(it, "ap-cn-photo")}
@@ -1240,7 +1247,7 @@ class TaskMateApprovalsCard extends LitElement {
           <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
         </div>
         ${this._apPhotoDesigned(it, "ap-cp-photo")}
-        <span class="chip soft ap-gold-soft">${it.kind === "owed" ? "" : "+"}${it.points}</span>
+        <span class="chip soft ap-gold-soft">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)}</span>
         <div class="ap-cp-actions">${this._designActions(it, "ghost")}</div>
       </div>`;
   }
@@ -1302,7 +1309,7 @@ class TaskMateApprovalsCard extends LitElement {
             </span>
             <span class="points-badge">
               <ha-icon icon="${this._pointsIcon()}"></ha-icon>
-              ${cost}
+              ${__tmNum(this.hass, cost)}
             </span>
           </div>
         </div>
@@ -1452,7 +1459,7 @@ class TaskMateApprovalsCard extends LitElement {
             </span>
           </div>
           ${penalty > 0
-            ? html`<span class="penalty-note">${this._t('approvals.penalty_points', { points: penalty, pointsName: this._pointsName() })}</span>`
+            ? html`<span class="penalty-note">${this._t('approvals.penalty_points', { points: __tmNum(this.hass, penalty), pointsName: this._pointsName() })}</span>`
             : html`<span class="penalty-note none">${this._t('approvals.no_penalty')}</span>`}
         </div>
         <div class="action-buttons right">
@@ -1747,7 +1754,7 @@ class TaskMateApprovalsCard extends LitElement {
             ` : ''}
             <span class="points-badge">
               <ha-icon icon="${this._pointsIcon()}"></ha-icon>
-              ${completion.points}
+              ${__tmNum(this.hass, completion.points)}
             </span>
             ${this._renderStars(completion)}
           </div>
@@ -2037,7 +2044,7 @@ class TaskMateApprovalsCard extends LitElement {
           <div class="tm-rv-title">${completion.chore_name}</div>
           <div class="tm-rv-sub">
             ${completion.child_name}${completion.suggested_points
-              ? html` · ${this._t('approvals.suggested', { points: completion.suggested_points })}`
+              ? html` · ${this._t('approvals.suggested', { points: __tmNum(this.hass, completion.suggested_points) })}`
               : ""}
           </div>
 

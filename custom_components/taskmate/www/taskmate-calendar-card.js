@@ -12,6 +12,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -606,7 +613,7 @@ class TaskMateCalendarCard extends LitElement {
           <ha-icon class="chore-icon ${state}" icon="${stateIcon}"></ha-icon>
           <span class="chore-name">${chore.name}</span>
           <span class="chore-points">
-            <ha-icon icon="${pointsIcon}"></ha-icon>${this._dayPoints(chore, child.id, day.key)}
+            <ha-icon icon="${pointsIcon}"></ha-icon>${__tmNum(this.hass, this._dayPoints(chore, child.id, day.key))}
           </span>
         </div>
       `;
@@ -614,7 +621,7 @@ class TaskMateCalendarCard extends LitElement {
 
     const summary = dueCount === 0
       ? this._t("calendar.no_chores_today")
-      : _ltrNums(this._t("calendar.child_summary", { done: doneCount, total: dueCount }));
+      : _ltrNums(this._t("calendar.child_summary", { done: doneCount, total: __tmNum(this.hass, dueCount) }));
 
     return html`
       <div class="child-block">
@@ -722,7 +729,7 @@ class TaskMateCalendarCard extends LitElement {
 
     const sub = isToday ? this._t("common.today") : dayShort;
     const pill = design === "console" && totalPending
-      ? _ltrNums(this._t("calendar.child_summary", { done: 0, total: totalPending })) : "";
+      ? _ltrNums(this._t("calendar.child_summary", { done: 0, total: __tmNum(this.hass, totalPending) })) : "";
     return wrap(sub, pill, body);
   }
 

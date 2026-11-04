@@ -7,6 +7,13 @@
  * Last Updated: 2025-12-31
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -969,7 +976,7 @@ class TaskMateReorderCard extends LitElement {
         <span class="d-emoji">${emoji}</span>
         <div class="d-info">
           <div class="d-row-name">${chore.name}</div>
-          <div class="d-row-pts">+${chore.points} ${this._pointsName()}</div>
+          <div class="d-row-pts">+${__tmNum(this.hass, chore.points)} ${this._pointsName()}</div>
         </div>
         <div class="d-arrows">
           <button class="btn ghost round d-arrow" @click="${() => this._moveChore(category, index, -1)}"
@@ -1014,7 +1021,7 @@ class TaskMateReorderCard extends LitElement {
           <span class="chore-name">${chore.name}</span>
           <span class="chore-points">
             <ha-icon icon="${pointsIcon}"></ha-icon>
-            ${chore.points} ${this._pointsName()}
+            ${__tmNum(this.hass, chore.points)} ${this._pointsName()}
           </span>
         </div>
         <div class="reorder-buttons">

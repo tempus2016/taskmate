@@ -65,7 +65,7 @@ test("a no-bid auction offers a re-open, a won one shows the winner and the chor
   panel._auctionSubTab = "closed";
   const markup = panel._renderAuctionsTab();
   assert.ok(markup.includes('data-act="auction-reopen" data-id="nb"'));
-  assert.ok(markup.includes("Vaiha") && markup.includes('panel.auction_status_done{"points":17}'));
+  assert.ok(markup.includes("Vaiha") && markup.includes('panel.auction_status_done{"points":"17"}'));
 });
 
 test("finished auctions get a Delete; live ones keep Cancel instead (#999)", () => {

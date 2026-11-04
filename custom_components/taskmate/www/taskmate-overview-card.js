@@ -7,6 +7,13 @@
  * Last Updated: 2026-03-18
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -480,12 +487,12 @@ class TaskMateOverviewCard extends LitElement {
           </div>
           <div class="summary-divider"></div>
           <div class="summary-stat">
-            <span class="summary-stat-value">${totalCompletedToday}</span>
+            <span class="summary-stat-value">${__tmNum(this.hass, totalCompletedToday)}</span>
             <span class="summary-stat-label">${this._t('overview.footer_done_today')}</span>
           </div>
           <div class="summary-divider"></div>
           <div class="summary-stat">
-            <span class="summary-stat-value">${totalPoints}</span>
+            <span class="summary-stat-value">${__tmNum(this.hass, totalPoints)}</span>
             <span class="summary-stat-label">${this._t('overview.footer_total_points', { pointsName })}</span>
           </div>
           ${pendingApprovals > 0 ? html`
@@ -685,11 +692,11 @@ class TaskMateOverviewCard extends LitElement {
         @click="${expandable ? () => { this._expanded = { ...this._expanded, [k.child.id]: !isOpen }; this.requestUpdate(); } : null}">
         ${(k.pendingPoints > 0 || k.childPending > 0) ? html`
           <div class="ov-kid-flags">
-            ${k.pendingPoints > 0 ? html`<span class="ov-kid-flag pend">⏳+${k.pendingPoints}</span>` : ""}
+            ${k.pendingPoints > 0 ? html`<span class="ov-kid-flag pend">⏳+${__tmNum(this.hass, k.pendingPoints)}</span>` : ""}
             ${k.childPending > 0 ? html`<span class="ov-kid-flag wait">${k.childPending}</span>` : ""}
           </div>` : ""}
         ${this._av(k.child, k.tone, design === "console" ? 34 : design === "cleanpro" ? 38 : 42)}
-        <div class="pts ${design === "console" ? "num" : ""}">${k.points.toLocaleString()}</div>
+        <div class="pts ${design === "console" ? "num" : ""}">${__tmNum(this.hass, k.points)}</div>
         <div class="nm ${cls}">${nameUpper}</div>
         <div class="bar"><i style="width:${k.pct}%"></i></div>
       </div>`;
@@ -708,7 +715,7 @@ class TaskMateOverviewCard extends LitElement {
           return html`
             <div class="ov-behalf-row">
               <span class="ov-behalf-name">${c.name}</span>
-              <span class="muted num">${c.points}</span>
+              <span class="muted num">${__tmNum(this.hass, c.points)}</span>
               <button class="btn good sm" ?disabled="${loading}"
                 title="${this._t('common.complete_on_behalf_tooltip', { name: k.child.name })}"
                 @click="${() => this._handleCompleteOnBehalf(c.id, k.child.id)}">✓</button>
@@ -803,12 +810,12 @@ class TaskMateOverviewCard extends LitElement {
             <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
               ${child.pending_points > 0 ? html`
                 <span class="pending-points-pill">
-                  <ha-icon icon="mdi:timer-sand"></ha-icon>+${child.pending_points}
+                  <ha-icon icon="mdi:timer-sand"></ha-icon>+${__tmNum(this.hass, child.pending_points)}
                 </span>
               ` : ''}
               <span class="points-pill">
                 <ha-icon icon="${pointsIcon}"></ha-icon>
-                ${child.points}
+                ${__tmNum(this.hass, child.points)}
               </span>
               ${childPending > 0 ? html`
                 <span class="approvals-chip">
@@ -844,7 +851,7 @@ class TaskMateOverviewCard extends LitElement {
                   <div class="tm-outstanding-row">
                     <span class="tm-outstanding-name">${c.name}</span>
                     <span class="tm-outstanding-pts">
-                      <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>${c.points}
+                      <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>${__tmNum(this.hass, c.points)}
                     </span>
                     <button class="btn-complete-behalf" ?disabled="${loading}"
                       title="${this._t('common.complete_on_behalf_tooltip', { name: child.name })}"

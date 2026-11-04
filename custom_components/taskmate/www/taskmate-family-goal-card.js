@@ -10,6 +10,13 @@
  * — which defines no tokens — renders exactly as it did before.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -112,7 +119,7 @@ class TaskMateFamilyGoalCard extends LitElement {
         <div class="fg-body">
           <div class="fg-bar"><div class="fg-fill ${achieved ? "done" : ""}" style="width:${pct}%"></div></div>
           <div class="fg-stats">
-            <span>${_ltrRatio(progress, target)} ${pointsName}</span>
+            <span>${_ltrRatio(__tmNum(this.hass, progress), __tmNum(this.hass, target))} ${pointsName}</span>
             <span>${pct}%</span>
           </div>
           ${achieved

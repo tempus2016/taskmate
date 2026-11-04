@@ -23,6 +23,13 @@
  * carry a pt- prefix.
  */
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -879,7 +886,7 @@ class TaskMatePetCard extends LitElement {
     const pending = new Set(sensorShop.pending || []);
     const spendable = this._spendable(child);
     const icon = this._pointsIcon();
-    const price = (cost) => html`<span class="pt-price"><ha-icon icon="${icon}"></ha-icon>${cost}</span>`;
+    const price = (cost) => html`<span class="pt-price"><ha-icon icon="${icon}"></ha-icon>${__tmNum(this.hass, cost)}</span>`;
     const earned = Object.keys(ACC_ICON).map(id => {
       const unlocked = level >= ACC_LEVEL[id];
       const on = wornIds.has(id);

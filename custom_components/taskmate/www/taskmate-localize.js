@@ -368,6 +368,57 @@ function dateArgs(hass, opts, kind) {
 }
 
 /**
+ * Arguments for Number#toLocaleString / Intl.NumberFormat that follow Home
+ * Assistant's language and number format (hass.locale.number_format), not the
+ * browser's (#771): a German HA shows 1.234 points, not 1,234.
+ *
+ *   "language"       HA's language (the default)
+ *   "system"         the browser's locale
+ *   "comma_decimal"  1,234.5
+ *   "decimal_comma"  1.234,5
+ *   "space_comma"    1 234,5
+ *   "none"           HA's language, no thousands grouping
+ */
+const _NUMBER_FORMAT_LOCALE = { comma_decimal: 'en-US', decimal_comma: 'de', space_comma: 'fr' };
+
+function numberArgs(hass, opts) {
+  const loc = (hass && hass.locale) || {};
+  const o = opts ? { ...opts } : {};
+  let lang = loc.language || (hass && hass.language) || undefined;
+  if (lang === 'pt') lang = 'pt-PT';
+  const fmt = loc.number_format;
+  if (fmt === 'system') lang = undefined;
+  else if (_NUMBER_FORMAT_LOCALE[fmt]) lang = _NUMBER_FORMAT_LOCALE[fmt];
+  else if (fmt === 'none') o.useGrouping = false;
+  if (lang) {
+    try {
+      if (!Intl.NumberFormat.supportedLocalesOf([lang]).length) lang = undefined;
+    } catch (e) {
+      lang = undefined;  // not a valid language tag
+    }
+  }
+  return [lang, Object.keys(o).length ? o : undefined];
+}
+
+/**
+ * A number as text in HA's number format. Only real numbers are formatted:
+ * a string comes back as given, so text that was already formatted ("1.234"
+ * in German) is never re-read as a decimal and formatted twice.
+ */
+function formatNumber(hass, value, opts) {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return String(value);
+  if (Object.is(value, -0)) value = 0;  // "-0" for a zero-point row reads as a penalty
+  try {
+    // One minus sign everywhere: the cards write "−15" (U+2212), so a
+    // formatted negative uses it too rather than the hyphen "-15".
+    return value.toLocaleString(...numberArgs(hass, opts)).replace(/^-/, '\u2212');
+  } catch (e) {
+    return String(value).replace(/^-/, '\u2212');
+  }
+}
+
+/**
  * A wall-clock time ("17:00", as chores, periods and set times store it) in
  * HA's time format: "17:00" on a 24-hour profile, "5:00 PM" on a 12-hour
  * one. Anything that isn't H:MM comes back unchanged.
@@ -404,6 +455,7 @@ function hourNow(hass, now = new Date()) {
 window.__taskmate_badge_name = badgeName;
 window.__taskmate_badge_count = badgeCount;
 window.__taskmate_dates = { args: dateArgs, clock, hourNow };
+window.__taskmate_numbers = { args: numberArgs, format: formatNumber };
 window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
 window.__taskmate_loadTranslations = loadTranslations;

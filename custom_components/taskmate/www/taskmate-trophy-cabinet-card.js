@@ -30,6 +30,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -299,7 +306,7 @@ class TaskMateTrophyCabinetCard extends LitElement {
           items.push({
             id: `season:${c.month}`, emoji: "🥇", gold: true,
             name: this._fmtMonth(c.month, false), short: this._fmtMonth(c.month, true),
-            value: c.points != null ? `${c.points} ${pointsName}` : "",
+            value: c.points != null ? `${__tmNum(this.hass, c.points)} ${pointsName}` : "",
             who: [String(c.child_id)], date,
             spot: { key: "trophy.spot_season", params: { season: this._fmtMonth(c.month, false) } },
           });
