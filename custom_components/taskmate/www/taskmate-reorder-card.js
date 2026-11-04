@@ -828,6 +828,15 @@ class TaskMateReorderCard extends LitElement {
     return html`<span class="av" style="--av:${size}px;--ac:${tone}">${inner}</span>`;
   }
 
+  // The family's own name for points ("Stars"), as every other card shows it;
+  // the translated "Points" only when none is set. Never lower-cased: German
+  // nouns keep their capital, and so does a name the parents chose.
+  _pointsName() {
+    const entity = this.hass && this.hass.states[this.config.entity];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || (entity && entity.attributes) || {};
+    return attrs.points_name || this._t('common.points');
+  }
+
   _renderDesigned(design) {
     const hd = _safeColor(this.config.header_color, '#5b7fb9');
     const entity = this.hass.states[this.config.entity];
@@ -955,7 +964,7 @@ class TaskMateReorderCard extends LitElement {
         <span class="d-emoji">${emoji}</span>
         <div class="d-info">
           <div class="d-row-name">${chore.name}</div>
-          <div class="d-row-pts">+${chore.points} ${this._t('common.points').toLowerCase()}</div>
+          <div class="d-row-pts">+${chore.points} ${this._pointsName()}</div>
         </div>
         <div class="d-arrows">
           <button class="btn ghost round d-arrow" @click="${() => this._moveChore(category, index, -1)}"
@@ -1000,7 +1009,7 @@ class TaskMateReorderCard extends LitElement {
           <span class="chore-name">${chore.name}</span>
           <span class="chore-points">
             <ha-icon icon="${pointsIcon}"></ha-icon>
-            ${chore.points} ${this._t('common.points').toLowerCase()}
+            ${chore.points} ${this._pointsName()}
           </span>
         </div>
         <div class="reorder-buttons">

@@ -387,10 +387,17 @@ class TaskMateLeaderboardCard extends LitElement {
           })}
         </div>
         <div class="card-footer">
-          ${this._t('leaderboard.ranked_by', { period: periodLabel.toLowerCase() })}
+          ${this._rankedBy(sortBy)}
         </div>
       </ha-card>
     `;
+  }
+
+  // "Ranked by …" is a whole sentence per sort, so no language has its label
+  // lower-cased into it ("Geordnet nach allzeitpunkte").
+  _rankedBy(sortBy) {
+    const key = { streak: "streak", weekly: "weekly", career: "career", season: "season" }[sortBy] || "points";
+    return this._t(`leaderboard.ranked_by_${key}`);
   }
 
   _isTie(a, b, sortBy, weeklyPoints) {
