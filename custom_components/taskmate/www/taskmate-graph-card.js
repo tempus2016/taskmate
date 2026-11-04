@@ -75,11 +75,17 @@ class TaskMateGraphCard extends LitElement {
         background: var(--taskmate-header-bg, #d35400);
         color: white;
         gap: 12px;
+        /* When the title and the Daily/Total/Growth toggle don't both fit
+           (a ~360px card, a long translation or a child's name after the
+           title), the toggle moves under the title instead of the title
+           being cut to "Punktediagr…". */
+        flex-wrap: wrap;
+        row-gap: 8px;
       }
 
-      .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
       .header-icon { --mdc-icon-size: 26px; opacity: 0.9; flex-shrink: 0; }
-      .header-title { font-size: 1.15rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .header-title { font-size: 1.15rem; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
 
       .mode-toggle {
         display: flex;
@@ -201,7 +207,7 @@ class TaskMateGraphCard extends LitElement {
       .empty-state .submessage { font-size: 0.85rem; margin-top: 4px; }
 
       @media (max-width: 480px) {
-        .card-header { padding: 12px 14px; flex-wrap: wrap; row-gap: 8px; }
+        .card-header { padding: 12px 14px; }
         .header-title { font-size: 1rem; }
         .mode-toggle { flex-shrink: 1; }
         .mode-btn { padding: 3px 8px; font-size: 0.7rem; }
@@ -209,6 +215,10 @@ class TaskMateGraphCard extends LitElement {
       }
 
       /* ── Designed styles (shared .tmd kit comes from taskmate-design.js) ── */
+      /* The title (and the child filter under it) wraps rather than being cut
+         off with an ellipsis on a narrow card. */
+      .tmd-hd .tt { white-space: normal; overflow-wrap: break-word; }
+      .tmd-hd .tt small { white-space: normal; }
       .tmg-chips { gap: 6px; margin-bottom: 11px; }
       .tmg-plot { margin-bottom: 4px; }
       .tmg-plot-pl { background: var(--tmd-surface-2); border-radius: 16px; padding: 12px 10px 6px; }
