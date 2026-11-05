@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Aktiv",
   "panel.chore_status_disabled": "Deaktiviert",
   "panel.chore_filt_count": "{shown} von {total} Aufgaben",
-  "panel.chore_filt_clear": "Filter zurücksetzen"
+  "panel.chore_filt_clear": "Filter zurücksetzen",
+  "panel.chore_sort_short": "Sortieren",
+  "panel.chore_sort_saved": "Gespeicherte Reihenfolge"
 }

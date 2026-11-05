@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Ativa",
   "panel.chore_status_disabled": "Desativada",
   "panel.chore_filt_count": "{shown} de {total} tarefas",
-  "panel.chore_filt_clear": "Limpar filtros"
+  "panel.chore_filt_clear": "Limpar filtros",
+  "panel.chore_sort_short": "Ordenar",
+  "panel.chore_sort_saved": "Ordem salva"
 }

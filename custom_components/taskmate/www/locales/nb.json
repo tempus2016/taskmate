@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Aktivert",
   "panel.chore_status_disabled": "Deaktivert",
   "panel.chore_filt_count": "{shown} av {total} oppgaver",
-  "panel.chore_filt_clear": "Tøm filtre"
+  "panel.chore_filt_clear": "Tøm filtre",
+  "panel.chore_sort_short": "Sorter",
+  "panel.chore_sort_saved": "Lagret rekkefølge"
 }

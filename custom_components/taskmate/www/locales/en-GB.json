@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Enabled",
   "panel.chore_status_disabled": "Disabled",
   "panel.chore_filt_count": "{shown} of {total} chores",
-  "panel.chore_filt_clear": "Clear filters"
+  "panel.chore_filt_clear": "Clear filters",
+  "panel.chore_sort_short": "Sort",
+  "panel.chore_sort_saved": "Saved order"
 }

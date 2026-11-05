@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Ingeschakeld",
   "panel.chore_status_disabled": "Uitgeschakeld",
   "panel.chore_filt_count": "{shown} van {total} taken",
-  "panel.chore_filt_clear": "Filters wissen"
+  "panel.chore_filt_clear": "Filters wissen",
+  "panel.chore_sort_short": "Sorteren",
+  "panel.chore_sort_saved": "Opgeslagen volgorde"
 }

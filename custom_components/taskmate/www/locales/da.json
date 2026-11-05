@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Aktiveret",
   "panel.chore_status_disabled": "Deaktiveret",
   "panel.chore_filt_count": "{shown} af {total} pligter",
-  "panel.chore_filt_clear": "Ryd filtre"
+  "panel.chore_filt_clear": "Ryd filtre",
+  "panel.chore_sort_short": "Sortér",
+  "panel.chore_sort_saved": "Gemt rækkefølge"
 }

@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Włączone",
   "panel.chore_status_disabled": "Wyłączone",
   "panel.chore_filt_count": "{shown} z {total} obowiązków",
-  "panel.chore_filt_clear": "Wyczyść filtry"
+  "panel.chore_filt_clear": "Wyczyść filtry",
+  "panel.chore_sort_short": "Sortuj",
+  "panel.chore_sort_saved": "Zapisana kolejność"
 }

@@ -4881,5 +4881,7 @@
   "panel.chore_status_enabled": "Activée",
   "panel.chore_status_disabled": "Désactivée",
   "panel.chore_filt_count": "{shown} sur {total} tâches",
-  "panel.chore_filt_clear": "Effacer les filtres"
+  "panel.chore_filt_clear": "Effacer les filtres",
+  "panel.chore_sort_short": "Trier",
+  "panel.chore_sort_saved": "Ordre enregistré"
 }
