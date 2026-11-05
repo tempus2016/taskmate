@@ -190,6 +190,7 @@ class TaskMateChildCardEditor extends LitElement {
           },
         },
       },
+      { name: 'sort_available_first', selector: { boolean: {} } },
       { name: 'include_anytime_chores', selector: { boolean: {} } },
       { name: 'show_countdown', selector: { boolean: {} } },
       { name: 'show_minutes_left', selector: { boolean: {} } },
@@ -224,6 +225,7 @@ class TaskMateChildCardEditor extends LitElement {
       dependency_mode: this._t('child.editor.dependency_mode'),
       elapsed_time_mode: this._t('child.editor.missed_time_chores'),
       set_times_layout: this._t('common.set_times.layout_label'),
+      sort_available_first: this._t('child.editor.sort_available_first'),
       include_anytime_chores: this._t('child.editor.include_anytime_chores'),
       show_countdown: this._t('child.editor.show_countdown'),
       show_minutes_left: this._t('child.editor.show_minutes_left'),
@@ -259,6 +261,7 @@ class TaskMateChildCardEditor extends LitElement {
       dependency_mode: this._t('child.editor.dependency_helper'),
       elapsed_time_mode: this._t('child.editor.elapsed_helper'),
       set_times_layout: this._t('common.set_times.layout_helper'),
+      sort_available_first: this._t('child.editor.sort_available_first_helper'),
       include_anytime_chores: this._t('child.editor.include_anytime_chores_helper'),
       show_parent_actions: this._t('common.editor.show_parent_actions_helper'),
     };
@@ -281,6 +284,7 @@ class TaskMateChildCardEditor extends LitElement {
       dependency_mode: this.config.dependency_mode || 'hide',
       elapsed_time_mode: this.config.elapsed_time_mode || 'dim',
       set_times_layout: this.config.set_times_layout || 'family',
+      sort_available_first: this.config.sort_available_first !== false,
       include_anytime_chores: this.config.include_anytime_chores !== false,
       show_countdown: this.config.show_countdown !== false,
       show_minutes_left: this.config.show_minutes_left !== false,
@@ -339,7 +343,7 @@ class TaskMateChildCardEditor extends LitElement {
         show_tour: true, show_description: false, debug: false, density: 'normal', seasonal: true,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
-        first_come_claimed_mode: 'hide', set_times_layout: 'family',
+        first_come_claimed_mode: 'hide', set_times_layout: 'family', sort_available_first: true,
       };
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];

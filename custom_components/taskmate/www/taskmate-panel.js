@@ -1114,6 +1114,7 @@ class TaskMatePanel extends HTMLElement {
     if (act === "reorder-move") { this._moveInReorder(t.dataset.dragId, Number(t.dataset.dir)); return; }
     if (act === "save-chore-order") { this._dialog && this._dialog.data && this._dialog.data.global ? this._doSaveGlobalChoreOrder() : this._doSaveChoreOrder(); return; }
     if (act === "reorder-chores-global") { this._openGlobalReorderDialog(); return; }
+    if (act === "sort-chores-once") { this._doSortChoresOnce(); return; }
 
     // Chores
     if (act === "add-chore")    { this._openChoreDialog(null); return; }
@@ -2719,6 +2720,19 @@ class TaskMatePanel extends HTMLElement {
     this._closeDialog(true);
     await this._fetchState();
     this._showToast("ok", this._t("panel.toast_order_saved"));
+  }
+
+  // Sort every child's own chore order once by a preset (#1231). The cards
+  // follow it while "Chore order on cards" is Manual; the reorder dialog and
+  // the reorder card can fine-tune it afterwards.
+  async _doSortChoresOnce() {
+    const by = this.querySelector("#tm-sort-once-by")?.value || "time";
+    const mode = this._t("panel.chore_sort_" + by);
+    if (!confirm(this._t("panel.chore_sort_once_confirm", { mode }))) return;
+    const { ok, err } = await this._callWS({ type: "taskmate/sort_chore_orders", sort_by: by });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.chore_sort_once_done", { mode }));
   }
 
   // ---- Global chore reorder ---------------------------------------------
@@ -14380,6 +14394,21 @@ class TaskMatePanel extends HTMLElement {
               </select>
             </div>
             <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.chore_sort_label")}<small>${this._t("panel.chore_sort_hint")}</small></div>
+              <select class="tm-select" data-setting="chore_sort">
+                ${["manual", "time", "name", "added"].map(v => `<option value="${v}" ${v === (s.chore_sort || "manual") ? "selected" : ""}>${this._esc(this._t("panel.chore_sort_" + v))}</option>`).join("")}
+              </select>
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.chore_sort_once_label")}<small>${this._t("panel.chore_sort_once_hint")}</small></div>
+              <div class="tm-sort-once">
+                <select class="tm-select" id="tm-sort-once-by" aria-label="${this._esc(this._t("panel.chore_sort_once_label"))}">
+                  ${["time", "name", "added"].map(v => `<option value="${v}">${this._esc(this._t("panel.chore_sort_" + v))}</option>`).join("")}
+                </select>
+                <button type="button" class="tm-btn tm-btn-sm" data-act="sort-chores-once">${this._t("panel.chore_sort_once_button")}</button>
+              </div>
+            </div>
+            <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_quick_points_label")}<small>${this._t("panel.settings_quick_points_hint")}</small></div>
               <input type="text" class="tm-input" data-setting="quick_point_amounts" value="${this._esc(s.quick_point_amounts == null ? "" : s.quick_point_amounts)}" placeholder="5, 10, 20">
             </div>
@@ -16830,8 +16859,14 @@ class TaskMatePanel extends HTMLElement {
     const choreById = Object.fromEntries((d.rewards ? this._state.rewards || [] : this._state.chores || []).map(c => [c.id, d.rewards ? { ...c, points: c.cost } : c]));
     const title = d.rewards ? this._t("panel.reward_reorder_title") : d.global ? this._t("panel.reorder_global_title") : this._t("panel.reorder_title", {name: d.name});
     const hint = d.rewards ? this._t("panel.reward_reorder_hint") : d.global ? this._t("panel.reorder_global_hint") : this._t("panel.reorder_hint");
+    // A family-wide sort is in charge of the cards (#1231): say so, since this
+    // order only shows again once the setting is back on Manual.
+    const sortMode = this._state.settings?.chore_sort || "manual";
+    const sortNote = !d.rewards && !d.global && sortMode !== "manual"
+      ? `<p class="tm-meta tm-sort-note">${this._t("panel.chore_sort_auto_note", { mode: this._esc(this._t("panel.chore_sort_" + sortMode)) })}</p>`
+      : "";
     return this._dialogShell(title,
-      `<p class="tm-meta">${hint}</p>
+      `<p class="tm-meta">${hint}</p>${sortNote}
        <div class="tm-reorder-list">
          ${(d.order || []).map((id, idx, arr) => {
            const c = choreById[id];
@@ -18569,6 +18604,10 @@ class TaskMatePanel extends HTMLElement {
         border-top: 1px solid var(--tm-border-soft);
       }
       .tm-setting-row:first-child { border-top: 0; }
+      /* Settings → General: sort every child's chores once (#1231) */
+      .tm-sort-once { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .tm-sort-once .tm-select { flex: 1 1 160px; min-width: 0; }
+      .tm-sort-note { font-weight: 600; }
       /* Settings → Seasons & events */
       .tm-spacks { display: flex; flex-direction: column; gap: 14px; }
       .tm-spack { border: 1px solid var(--tm-border); border-radius: 12px; overflow: hidden; background: var(--tm-surface-0); }

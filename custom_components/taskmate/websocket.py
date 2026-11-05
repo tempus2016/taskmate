@@ -37,6 +37,7 @@ Task groups:
 Ordering:
     taskmate/set_chore_order        — child_id + chore_order (per-child)
     taskmate/set_global_chore_order — chore_order (admin panel display order)
+    taskmate/sort_chore_orders  — sort_by (+ child_ids): sort every child's order once
 
 Settings:
     taskmate/update_settings    — partial dict of {points_name, points_icon, history_days, streak_reset_mode, ...}
@@ -62,6 +63,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
 from . import images, photos
+from .chore_sort import CHORE_SORT_MODES, CHORE_SORT_PRESETS, CHORE_SORT_SETTING
 from .const import (
     AGE_GROUPS,
     ASSIGNMENT_MODES,
@@ -215,6 +217,7 @@ WS_APPROVE_REWARD: Final = "taskmate/approve_reward"
 WS_REJECT_REWARD: Final = "taskmate/reject_reward"
 WS_SET_CHORE_ORDER: Final = "taskmate/set_chore_order"
 WS_SET_GLOBAL_CHORE_ORDER: Final = "taskmate/set_global_chore_order"
+WS_SORT_CHORE_ORDERS: Final = "taskmate/sort_chore_orders"
 WS_ADD_CHORES_BULK: Final = "taskmate/add_chores_bulk"
 WS_PARENT_COMPLETE_CHORE: Final = "taskmate/parent_complete_chore"
 WS_DAY_COMPLETIONS: Final = "taskmate/day_completions"
@@ -546,6 +549,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "points_icon": data.get("points_icon", "mdi:star"),
             "card_design": "classic",
             "set_times_layout": "rows",
+            # Family-wide chore order on the cards (#1231).
+            CHORE_SORT_SETTING: "manual",
             # Child undo window (#918): off unless a parent opts in.
             "chore_undo_seconds": 0,
             # Difficulty multiplier defaults; overridden by stored values below.
@@ -2220,6 +2225,7 @@ _TOP_LEVEL_SETTINGS = {"points_name", "points_icon"}
 _ALLOWED_CARD_DESIGNS = {"classic", "playroom", "console", "cleanpro", "accessible", "graphite"}
 # Settings stored under storage._data["settings"][key]
 _SUBKEY_SETTINGS = {
+    CHORE_SORT_SETTING,
     "require_linked_child",
     "chore_undo_seconds",
     "auto_approve_hours",
@@ -2604,6 +2610,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("points_icon"): str,
     vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("set_times_layout"): vol.In(["rows", "pills"]),
+    vol.Optional(CHORE_SORT_SETTING): vol.In(CHORE_SORT_MODES),
     **{vol.Optional(key): bool for key in SEASON_THEME_KEYS.values()},
     **{vol.Optional(key): bool for key in SEASON_PACK_KEYS.values()},
     vol.Optional(SEASON_SCHOOL_START_KEY): _validate_school_start,
@@ -2982,6 +2989,20 @@ async def _ws_day_completions(hass, connection, msg, coordinator):
 async def _ws_set_chore_order(hass, connection, msg, coordinator):
     await coordinator.async_set_chore_order(msg["child_id"], list(msg["chore_order"]))
     connection.send_result(msg["id"], {"child_id": msg["child_id"]})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_SORT_CHORE_ORDERS,
+        vol.Required("sort_by"): vol.In(CHORE_SORT_PRESETS),
+        vol.Optional("child_ids"): vol.All([str], vol.Length(max=100)),
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_sort_chore_orders(hass, connection, msg, coordinator):
+    count = await coordinator.async_sort_chore_orders(msg["sort_by"], msg.get("child_ids"))
+    connection.send_result(msg["id"], {"count": count})
 
 
 @websocket_api.websocket_command(
@@ -3748,6 +3769,7 @@ _COMMANDS = (
     _ws_day_completions,
     _ws_set_chore_order,
     _ws_set_global_chore_order,
+    _ws_sort_chore_orders,
     _ws_add_chores_bulk,
     _ws_templates_list,
     _ws_templates_get,

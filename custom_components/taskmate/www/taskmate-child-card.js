@@ -123,6 +123,8 @@ class TaskMateChildCard extends LitElement {
     this._stopTimerTick();
     clearTimeout(this._undoExpiryTimer);
     this._undoExpiryTimer = null;
+    clearTimeout(this._settleTimer);
+    this._settleTimer = null;
     if (this._justEarnedTimeout) {
       clearTimeout(this._justEarnedTimeout);
       this._justEarnedTimeout = null;
@@ -2574,6 +2576,7 @@ class TaskMateChildCard extends LitElement {
       undo_sound: "undo",
       due_days_mode: "hide",         // "hide" = hide chores not due today, "dim" = show greyed out
       elapsed_time_mode: "dim",      // "dim" | "hide" | "show" — chores whose time period has passed without completion
+      sort_available_first: true,    // what can be done now first; later, missed, then finished chores below (#1231)
       show_countdown: true,          // Show midnight reset countdown below section title
       show_due_days_only: true,      // Whether to apply due_days filtering at all
       show_badges: true,             // Show badge strip between points and chores
@@ -3637,7 +3640,63 @@ class TaskMateChildCard extends LitElement {
     // Kept so a pill can rebuild the row for any of the chore's times.
     this._setTimeBase = {};
     for (const c of base) if (Array.isArray(c.times) && c.times.length) this._setTimeBase[c.id] = c;
-    return this._expandSetTimeChores(base, child);
+    const expanded = this._expandSetTimeChores(base, child);
+    return this.config.sort_available_first === false ? expanded : this._availableFirst(expanded, child);
+  }
+
+  // ── Available first (#1231) ─────────────────────────────────────────────
+  // What a child can do right now goes to the top, so nobody scrolls past
+  // the evening's chores in the morning. Then the chores still to come today,
+  // then the ones whose time has passed, and last the finished ones. The
+  // order inside each group is untouched (the family sort or the child's own
+  // order), and both render paths read this list, so every design gets it.
+  //
+  // A finished chore stays where it is while it can still be taken back (the
+  // child undo window) and for a few seconds after the tap, so the row the
+  // child just ticked does not jump away under their finger.
+  static get AVAILABLE_FIRST_SETTLE_MS() { return 8000; }
+
+  _availableFirst(chores, child) {
+    if (chores.length < 2) return chores;
+    const entity = this.hass?.states?.[this.config.entity];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity)) || entity?.attributes || {};
+    const todays = this._filterCompletionsForToday(attrs.todays_completions || attrs.completions || []);
+    const now = Date.now();
+    let settleAt = Infinity;
+    const tierOf = (chore) => {
+      const baseId = chore._baseId || chore.id;
+      const done = chore._setTime
+        ? chore._setTimeState === "done" || chore._setTimeState === "pending"
+        : this._isChoreDone(chore, child, todays).done;
+      if (done) {
+        const mine = todays.filter(c => c.chore_id === baseId && c.child_id === child.id && !c.bonus_subtask_id);
+        if (mine.some(c => this._childCanUndo(c, now))) return 0;
+        // A tap still in flight counts from the moment it was made.
+        const opt = this._optimisticCompletions?.[`${baseId}_${child.id}`];
+        const optTimes = opt ? (opt.timestamps || [opt.timestamp || now]) : [];
+        const latest = Math.max(0, ...mine.map(c => Date.parse(c.completed_at || "") || 0), ...optTimes);
+        if (latest && now - latest < this.constructor.AVAILABLE_FIRST_SETTLE_MS) {
+          settleAt = Math.min(settleAt, latest + this.constructor.AVAILABLE_FIRST_SETTLE_MS);
+          return 0;
+        }
+        return 3;
+      }
+      if (chore._isRecurrenceLocked || chore._isFirstComeLocked || chore._weeklyTargetMet) return 3;
+      if (chore._isTimeElapsed) return 2;
+      if (chore._isLockedPreview || chore._isDependencyBlocked) return 1;
+      return 0;
+    };
+    const ranked = chores.map((chore, i) => ({ chore, i, tier: tierOf(chore) }));
+    ranked.sort((a, b) => a.tier - b.tier || a.i - b.i);
+    clearTimeout(this._settleTimer);
+    this._settleTimer = null;
+    if (Number.isFinite(settleAt)) {
+      this._settleTimer = setTimeout(() => {
+        this._settleTimer = null;
+        this.requestUpdate();
+      }, Math.max(50, settleAt - now + 50));
+    }
+    return ranked.map(r => r.chore);
   }
 
   _filterAndSortChoresBase(chores, child) {
