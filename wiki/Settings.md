@@ -125,6 +125,23 @@ v4.0.0 generalises the four fixed windows above into a fully **customisable peri
 |---------|---------|-------|-------------|
 | **Default card design** (`card_design`) | `classic` | `classic` / `playroom` / `console` / `cleanpro` / `accessible` / `graphite` | The style new cards use unless overridden per card. A selector offering Classic / Playroom / Console / Clean Pro / Accessible / Graphite. Every card left on *Use global default* follows this value. See [Card Design Styles](Card-Design-Styles.md). |
 
+### Chore Order on Cards (v7.8.0)
+
+Settings → General → **Chore order on cards** decides the order chores appear in on the Child, Kiosk, Routine and Sticker Chart cards, and which chore a watch's *next chore* button picks.
+
+| Choice | What it does |
+|--------|--------------|
+| **Manual** (default) | Each child's own order from the Reorder Card or the panel's ⇅ button, as before. Chores that aren't in it follow in the order they were added. |
+| **Time of day** | Anytime chores first, then each period in order through the day. Chores with set times sort by their first time. Within a period, the child's own order still applies. |
+| **Name (A–Z)** | Alphabetical, ignoring capitals. |
+| **Date added** | The order the chores were created. |
+
+The automatic choices put new chores in their place straight away, so nobody has to reorder anything. Each child's hand-made order is kept underneath and comes back when you set this to Manual again. While an automatic choice is on, the Reorder Card shows a notice instead of the drag list, and the panel's reorder dialog says the cards are sorted automatically.
+
+**Sort everyone's chores once** sits underneath. Pick *Time of day*, *Name* or *Date added* and press **Sort now**. After you confirm, it writes that order into every child's own order in one go and leaves the setting on Manual. You can then fine-tune it with the Reorder Card. This replaces each child's existing hand-made order and can't be undone.
+
+The Child Card also puts what can be done now first (see [Dashboard Cards → Child Card](Dashboard-Cards.md)); that works on top of whichever order you choose here.
+
 ### Allowance (v4.4.0)
 
 Convert points into a real-money allowance. When enabled, parents can record a payout (via [`record_allowance_payout`](Services.md#taskmaterecord_allowance_payout-v440) or the admin panel) that deducts points and logs a ledger entry at the fixed conversion rate. See [Allowance](Allowance.md).

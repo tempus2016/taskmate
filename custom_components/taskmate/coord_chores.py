@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.util import dt as dt_util
 
 from . import images, notify_strings, photos
+from .chore_sort import CHORE_SORT_PRESETS, sorted_chore_ids
 from .chore_undo import affected_completions, child_can_undo, undo_window_seconds
 from .const import (
     CHORE_NOTE_MAX_LENGTH,
@@ -448,6 +449,61 @@ class ChoresMixin:
         await self.storage.async_save()
         await self.async_refresh()
         return count
+
+    # The settings "Edit selected" can change on several chores at once (#1174).
+    BULK_EDIT_FIELDS: tuple[str, ...] = (
+        "points",
+        "assigned_to",
+        "requires_approval",
+        "time_category",
+        "schedule_mode",
+        "due_days",
+        "recurrence",
+        "recurrence_day",
+    )
+
+    async def async_bulk_edit_chores(self, chore_ids: list[str], changes: dict) -> dict:
+        """Apply the same settings to several chores at once (#1174).
+
+        Only the fields in ``changes`` are written; everything else on each
+        chore stays as it was. Each chore goes through ``async_update_chore``
+        like a one-at-a-time edit, so the same rules apply; a chore that
+        refuses the change (say, a team chore given a rotation it can't have)
+        is left untouched and named in ``skipped``. One save and one refresh
+        for the batch (#794).
+        """
+        unknown = set(changes) - set(self.BULK_EDIT_FIELDS)
+        if unknown:
+            raise ValueError(f"Can't bulk edit {', '.join(sorted(unknown))}")
+        if not changes:
+            return {"count": 0, "skipped": []}
+        if "assigned_to" in changes:
+            known = {c.id for c in self.storage.get_children()}
+            missing = [cid for cid in changes["assigned_to"] if cid not in known]
+            if missing:
+                raise ValueError(f"Unknown child {missing[0]}")
+        if "time_category" in changes:
+            periods = {"anytime", *(p["id"] for p in self.get_time_periods())}
+            if changes["time_category"] not in periods:
+                raise ValueError(f"Unknown time period {changes['time_category']}")
+        count = 0
+        skipped: list[str] = []
+        for cid in dict.fromkeys(chore_ids or []):
+            chore = self.storage.get_chore(cid)
+            if not chore:
+                continue
+            for field, value in changes.items():
+                setattr(chore, field, list(value) if isinstance(value, list) else value)
+            try:
+                await self.async_update_chore(chore, refresh=False)
+            except ValueError:
+                skipped.append(chore.name)
+                continue
+            count += 1
+        if count:
+            await self.storage.async_save()
+            await self.async_refresh()
+        return {"count": count, "skipped": skipped}
 
     async def async_approve_chores_bulk(
         self, completion_ids: list[str] | None = None, rating: int | None = None
@@ -2992,6 +3048,30 @@ class ChoresMixin:
         self.storage.update_child(child)
         await self.storage.async_save()
         await self.async_refresh()
+
+    async def async_sort_chore_orders(self, sort_by: str, child_ids: list[str] | None = None) -> int:
+        """Sort every child's manual chore order once by a preset (#1231).
+
+        Writes the sorted list into each child's own ``chore_order`` (all of
+        them, or just ``child_ids``) and saves once, so the reorder card can
+        fine-tune it afterwards. Returns how many children were updated.
+        """
+        if sort_by not in CHORE_SORT_PRESETS:
+            raise ValueError(f"Unknown sort {sort_by!r}")
+        chores = self.storage.get_chores()
+        periods = self.get_time_periods() if sort_by == "time" else None
+        wanted = set(child_ids) if child_ids else None
+        updated = 0
+        for child in self.storage.get_children():
+            if wanted is not None and child.id not in wanted:
+                continue
+            child.chore_order = sorted_chore_ids(sort_by, chores, child.chore_order, periods)
+            self.storage.update_child(child)
+            updated += 1
+        if updated:
+            await self.storage.async_save()
+            await self.async_refresh()
+        return updated
 
     async def async_set_global_chore_order(self, chore_order: list[str]) -> None:
         """Set the global chore display order."""

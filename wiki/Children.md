@@ -139,6 +139,8 @@ Each child stores the following data internally:
 
 The order chores appear on the Child Card can be customised per child using the **Reorder Card** or the `taskmate.set_chore_order` service. The order is stored on the child record, so each child can have a different chore display order.
 
+*(v7.8.0)* To sort every child at once, use Settings → **Chore order on cards** (always sort by time of day, name or date added) or **Sort everyone's chores once** (write one sort into every child's order, then fine-tune by hand). See [Settings → Chore Order on Cards](Settings.md#chore-order-on-cards-v780).
+
 ---
 
 ## Logging a Past Job

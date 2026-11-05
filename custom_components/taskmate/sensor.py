@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import images
+from .chore_sort import chore_sort_mode, effective_chore_order
 from .chore_undo import child_undo_metadata, undo_window_seconds
 from .const import BOUNTY_RECENT_HOURS, DOMAIN, WISH_MAX_OPEN_PER_CHILD
 from .coord_rewards import reward_is_time_locked
@@ -263,7 +264,9 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 # Allocations were deducted from child.points already, so spendable
                 # only needs to account for pending-claim commitments.
                 "spendable_balance": max(0, c.points - committed_amount),
-                "chore_order": c.chore_order,
+                # The order the cards follow: the family-wide sort, or this
+                # child's own manual order (#1231).
+                "chore_order": effective_chore_order(coordinator, c, common["chores"]),
                 "current_streak": getattr(c, "current_streak", 0) or 0,
                 "best_streak": getattr(c, "best_streak", 0) or 0,
                 "season_points": int(season.get(c.id, 0)),
@@ -1451,6 +1454,9 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             # How chores with set times show on the child and kiosk cards:
             # one row per time, or one row with a pill per time.
             "set_times_layout": "pills" if settings.get("set_times_layout") == "pills" else "rows",
+            # Family-wide chore order (#1231): "manual" leaves each child's own
+            # order in charge; the reorder card and panel say when it is not.
+            "chore_sort": chore_sort_mode(self.coordinator.storage),
             # Seasonal themes: the season the cards dress for today, only while one is.
             **({"season": today_season} if (today_season := active_season(settings, dt_util.now().date())) else {}),
             # Season event packs: today's advent door (the per-child doors are
@@ -2006,7 +2012,7 @@ class ChildStatsSensor(TaskMateBaseSensor):
                 {"id": c.id, "name": c.name, "points": c.points, "time_category": c.time_category}
                 for c in assigned_chores
             ],
-            "chore_order": child.chore_order,
+            "chore_order": effective_chore_order(self.coordinator, child, chores),
         }
 
 
