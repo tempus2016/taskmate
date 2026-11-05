@@ -265,6 +265,7 @@ WS_CLONE_CHORE: Final = "taskmate/clone_chore"
 
 # Bulk chore operations
 WS_BULK_CHORE_ACTION: Final = "taskmate/bulk_chore_action"
+WS_BULK_EDIT_CHORES: Final = "taskmate/bulk_edit_chores"
 
 # Inter-child gifting
 WS_GIFT_POINTS: Final = "taskmate/gift_points"
@@ -3596,6 +3597,42 @@ async def _ws_bulk_chore_action(hass, connection, msg, coordinator):
     connection.send_result(msg["id"], {"count": count})
 
 
+_WEEKDAY_NAMES = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+# "Edit selected" on the Earn page (#1174): only the keys sent are changed.
+_BULK_EDIT_CHANGES_SCHEMA = vol.Schema(
+    {
+        vol.Optional("points"): vol.All(int, vol.Range(min=0, max=1000000)),
+        vol.Optional("assigned_to"): vol.All([str], vol.Length(max=100)),
+        vol.Optional("requires_approval"): bool,
+        vol.Optional("time_category"): vol.All(str, vol.Length(min=1, max=64)),
+        # One-offs need a date, so they stay a one-at-a-time edit.
+        vol.Optional("schedule_mode"): vol.In(["specific_days", "recurring"]),
+        vol.Optional("due_days"): vol.All([vol.In(_WEEKDAY_NAMES)], vol.Length(max=7)),
+        vol.Optional("recurrence"): _recurrence,
+        vol.Optional("recurrence_day"): vol.All(str, vol.Length(max=20)),
+    }
+)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_BULK_EDIT_CHORES,
+        vol.Required("chore_ids"): vol.All([str], vol.Length(min=1, max=500)),
+        vol.Required("changes"): _BULK_EDIT_CHANGES_SCHEMA,
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_bulk_edit_chores(hass, connection, msg, coordinator):
+    try:
+        result = await coordinator.async_bulk_edit_chores(msg["chore_ids"], dict(msg["changes"]))
+    except ValueError as err:
+        connection.send_error(msg["id"], "invalid_format", str(err))
+        return
+    connection.send_result(msg["id"], result)
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): WS_GIFT_POINTS,
@@ -3702,6 +3739,7 @@ _COMMANDS = (
     _ws_templates_import,
     _ws_print_chart,
     _ws_bulk_chore_action,
+    _ws_bulk_edit_chores,
     _ws_gift_points,
     _ws_request_swap,
     _ws_approve_swap,
