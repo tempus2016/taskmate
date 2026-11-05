@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Ordenar agora",
   "panel.chore_sort_once_confirm": "Substituir a ordem manual das tarefas de cada criança por “{mode}”? Não é possível desfazer.",
   "panel.chore_sort_once_done": "Tarefas de todas as crianças ordenadas por {mode}",
-  "panel.chore_sort_auto_note": "Os cartões ordenam agora as tarefas por “{mode}” (Definições → Ordem das tarefas nos cartões). Esta ordem é guardada e volta quando a opção estiver em Manual."
+  "panel.chore_sort_auto_note": "Os cartões ordenam agora as tarefas por “{mode}” (Definições → Ordem das tarefas nos cartões). Esta ordem é guardada e volta quando a opção estiver em Manual.",
+  "panel.chore_table_mode": "Modo",
+  "panel.chore_table_status": "Estado",
+  "panel.chore_sort_by": "Ordenar por {column}",
+  "panel.chore_mode_everyone": "Todos",
+  "panel.chore_filt_none": "Nenhuma tarefa corresponde a estes filtros.",
+  "panel.chore_filt_any": "Qualquer",
+  "panel.chore_filt_set_times": "Horas fixas",
+  "panel.chore_filt_label": "Filtrar tarefas",
+  "panel.chore_filt_days": "Dias específicos",
+  "panel.chore_filt_recurring": "Recorrente",
+  "panel.chore_status_enabled": "Ativa",
+  "panel.chore_status_disabled": "Desativada",
+  "panel.chore_filt_count": "{shown} de {total} tarefas",
+  "panel.chore_filt_clear": "Limpar filtros"
 }

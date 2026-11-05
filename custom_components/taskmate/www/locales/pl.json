@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Sortuj teraz",
   "panel.chore_sort_once_confirm": "Zastąpić ręczną kolejność obowiązków każdego dziecka sortowaniem „{mode}”? Tego nie można cofnąć.",
   "panel.chore_sort_once_done": "Obowiązki wszystkich dzieci posortowane według: {mode}",
-  "panel.chore_sort_auto_note": "Karty sortują teraz obowiązki według „{mode}” (Ustawienia → Kolejność obowiązków na kartach). Ta kolejność zostaje zachowana i wróci po ustawieniu opcji Ręcznie."
+  "panel.chore_sort_auto_note": "Karty sortują teraz obowiązki według „{mode}” (Ustawienia → Kolejność obowiązków na kartach). Ta kolejność zostaje zachowana i wróci po ustawieniu opcji Ręcznie.",
+  "panel.chore_table_mode": "Tryb",
+  "panel.chore_table_status": "Stan",
+  "panel.chore_sort_by": "Sortuj według: {column}",
+  "panel.chore_mode_everyone": "Wszyscy",
+  "panel.chore_filt_none": "Żaden obowiązek nie pasuje do tych filtrów.",
+  "panel.chore_filt_any": "Dowolne",
+  "panel.chore_filt_set_times": "Stałe godziny",
+  "panel.chore_filt_label": "Filtruj obowiązki",
+  "panel.chore_filt_days": "Wybrane dni",
+  "panel.chore_filt_recurring": "Cykliczne",
+  "panel.chore_status_enabled": "Włączone",
+  "panel.chore_status_disabled": "Wyłączone",
+  "panel.chore_filt_count": "{shown} z {total} obowiązków",
+  "panel.chore_filt_clear": "Wyczyść filtry"
 }

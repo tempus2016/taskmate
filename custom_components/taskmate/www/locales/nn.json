@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Sorter no",
   "panel.chore_sort_once_confirm": "Byte ut den manuelle rekkjefølgja på oppgåver for kvart barn med «{mode}»? Dette kan ikkje angrast.",
   "panel.chore_sort_once_done": "Oppgåvene til alle borna er sorterte etter {mode}",
-  "panel.chore_sort_auto_note": "Korta sorterer no oppgåver etter «{mode}» (Innstillingar → Rekkjefølgje på oppgåver på kort). Denne rekkjefølgja blir teken vare på og kjem tilbake når innstillinga blir sett til Manuell."
+  "panel.chore_sort_auto_note": "Korta sorterer no oppgåver etter «{mode}» (Innstillingar → Rekkjefølgje på oppgåver på kort). Denne rekkjefølgja blir teken vare på og kjem tilbake når innstillinga blir sett til Manuell.",
+  "panel.chore_table_mode": "Modus",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sorter etter {column}",
+  "panel.chore_mode_everyone": "Alle",
+  "panel.chore_filt_none": "Ingen oppgåver passar til desse filtera.",
+  "panel.chore_filt_any": "Alle",
+  "panel.chore_filt_set_times": "Faste tider",
+  "panel.chore_filt_label": "Filtrer oppgåver",
+  "panel.chore_filt_days": "Bestemte dagar",
+  "panel.chore_filt_recurring": "Gjentakande",
+  "panel.chore_status_enabled": "Aktivert",
+  "panel.chore_status_disabled": "Deaktivert",
+  "panel.chore_filt_count": "{shown} av {total} oppgåver",
+  "panel.chore_filt_clear": "Tøm filter"
 }

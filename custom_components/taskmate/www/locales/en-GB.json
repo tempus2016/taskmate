@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Sort now",
   "panel.chore_sort_once_confirm": "Replace every child's manual chore order with “{mode}”? This can't be undone.",
   "panel.chore_sort_once_done": "Every child's chores sorted by {mode}",
-  "panel.chore_sort_auto_note": "The cards currently sort chores by “{mode}” (Settings → Chore order on cards). This order is kept and comes back when that is set to Manual."
+  "panel.chore_sort_auto_note": "The cards currently sort chores by “{mode}” (Settings → Chore order on cards). This order is kept and comes back when that is set to Manual.",
+  "panel.chore_table_mode": "Mode",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sort by {column}",
+  "panel.chore_mode_everyone": "Everyone",
+  "panel.chore_filt_none": "No chores match these filters.",
+  "panel.chore_filt_any": "Any",
+  "panel.chore_filt_set_times": "Set times",
+  "panel.chore_filt_label": "Filter chores",
+  "panel.chore_filt_days": "Specific days",
+  "panel.chore_filt_recurring": "Recurring",
+  "panel.chore_status_enabled": "Enabled",
+  "panel.chore_status_disabled": "Disabled",
+  "panel.chore_filt_count": "{shown} of {total} chores",
+  "panel.chore_filt_clear": "Clear filters"
 }

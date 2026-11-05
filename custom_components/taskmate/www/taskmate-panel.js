@@ -449,6 +449,8 @@ class TaskMatePanel extends HTMLElement {
     this._vacationDraft = null;     // local edit state for the vacation editor
     this._bulkMode = false;         // chores multi-select mode
     this._bulkSel = new Set();      // selected chore ids for bulk actions
+    this._choreSort = null;         // Earn table: {key, dir} from a header click (#1173)
+    this._choreFilt = {};           // Earn table: {child, period, schedule, approval, status}
     // Today (#966) is the home page.
     this._activeTab = "today";
     this._mobileNavOpen = false;     // mobile section-picker dropdown state
@@ -1125,6 +1127,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-swap")    { this._doRequestSwap(); return; }
     if (act === "approve-swap") { this._doSwap("approve", t.dataset.id); return; }
     if (act === "reject-swap")  { this._doSwap("reject", t.dataset.id); return; }
+    if (act === "chore-sort") { this._toggleChoreSort(t.dataset.key); return; }
+    if (act === "chore-filt-clear") { this._choreFilt = {}; this._render(); return; }
     if (act === "bulk-toggle")  { this._bulkMode = !this._bulkMode; this._bulkSel.clear(); this._render(); return; }
     if (act === "bulk-enable")  { this._doBulk("enable"); return; }
     if (act === "bulk-disable") { this._doBulk("disable"); return; }
@@ -1681,6 +1685,11 @@ class TaskMatePanel extends HTMLElement {
     if ("viewAsDesign" in t.dataset) { this._setViewAs("design", t.value); return; }
     if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.libIn) { this._libInput(t, true); return; }
+    if (t.dataset.choreFilt) {
+      this._choreFilt = { ...this._choreFilt, [t.dataset.choreFilt]: t.value };
+      this._render();
+      return;
+    }
     if (t.dataset.act === "bulk-toggle-row") {
       const id = t.dataset.id;
       if (t.checked) this._bulkSel.add(id); else this._bulkSel.delete(id);
@@ -9585,8 +9594,9 @@ class TaskMatePanel extends HTMLElement {
   _renderChoresTab() {
     const raw = this._state.chores || [];
     const all = this._sortChoresByDisplayOrder(raw);
-    const chores = this._filterByName(all);
     const childById = Object.fromEntries((this._state.children || []).map(c => [c.id, c]));
+    const chores = this._choreView(this._filterByName(all), childById);
+    const filtered = this._choreFiltActive();
     return `
       <div class="tm-toolbar">
         <h2 class="tm-toolbar-title">${this._t("panel.chore_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
@@ -9613,11 +9623,13 @@ class TaskMatePanel extends HTMLElement {
           <button type="button" class="tm-btn" data-act="bulk-reassign" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_apply")}</button>
         </div>` : ""}
       ${all.length === 0 ? this._emptyState("📋", this._t("panel.empty_chores_title"), this._t("panel.empty_chores_copy"), "add-chore", this._t("panel.btn_add_chore")) :
-        chores.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_chores").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        `${this._renderChoreFilters(all, chores.length)}${chores.length === 0 ? `<div class="tm-card tm-empty"><p>${filtered && !this._filter
+          ? this._t("panel.chore_filt_none")
+          : this._t("panel.empty_no_match", {kind: this._t("panel.tab_chores").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
-              ${this._bulkMode ? "<th></th>" : ""}<th class="${this._bulkMode ? "" : "tm-col-sticky"}">${this._t("panel.chore_table_name")}</th><th>${this._t("panel.chore_table_points")}</th><th>${this._t("panel.chore_table_period")}</th><th>${this._t("panel.chore_table_assigned")}</th><th>${this._t("panel.chore_table_current")}</th><th>${this._t("panel.chore_table_schedule")}</th><th>${this._t("panel.chore_table_approval")}</th>
+              ${this._bulkMode ? "<th></th>" : ""}${this._choreTh("name", "panel.chore_table_name", this._bulkMode ? "" : "tm-col-sticky")}${this._choreTh("points", "panel.chore_table_points")}${this._choreTh("period", "panel.chore_table_period")}${this._choreTh("assigned", "panel.chore_table_assigned")}${this._choreTh("mode", "panel.chore_table_mode")}${this._choreTh("current", "panel.chore_table_current")}${this._choreTh("schedule", "panel.chore_table_schedule")}${this._choreTh("approval", "panel.chore_table_approval")}${this._choreTh("status", "panel.chore_table_status")}
             </tr></thead>
             <tbody>
               ${chores.map(c => this._renderChoreRow(c, childById)).join("")}
@@ -9625,8 +9637,135 @@ class TaskMatePanel extends HTMLElement {
           </table>
         </div>
         <p class="tm-meta tm-table-hint">${this._t("panel.chore_tip_rename")}</p>
-      `}
+      `}`}
     `;
+  }
+
+  // ---- Earn table: sort + filter (#1173) ----------------------------------
+  // Click a heading to sort by it (ascending, then descending, then back to
+  // the saved order); the filter row narrows by child, period, schedule,
+  // approval and enabled. Both only change what this screen shows: the saved
+  // order, the cards and the reorder dialogs are untouched.
+
+  _choreTh(key, labelKey, cls = "") {
+    const s = this._choreSort;
+    const dir = s && s.key === key ? s.dir : "";
+    const aria = dir === "asc" ? "ascending" : dir === "desc" ? "descending" : "none";
+    const arrow = dir === "asc" ? "▲" : dir === "desc" ? "▼" : "";
+    return `<th class="${cls}" aria-sort="${aria}"><button type="button" class="tm-th-sort ${dir ? "tm-th-on" : ""}" data-act="chore-sort" data-key="${key}" title="${this._esc(this._t("panel.chore_sort_by", { column: this._t(labelKey) }))}">${this._t(labelKey)}<span class="tm-th-arrow" aria-hidden="true">${arrow}</span></button></th>`;
+  }
+
+  _toggleChoreSort(key) {
+    const s = this._choreSort;
+    if (!s || s.key !== key) this._choreSort = { key, dir: "asc" };
+    else if (s.dir === "asc") this._choreSort = { key, dir: "desc" };
+    else this._choreSort = null;
+    this._render();
+  }
+
+  _choreFiltActive() {
+    return Object.values(this._choreFilt || {}).some(Boolean);
+  }
+
+  _choreScheduleKind(c) {
+    if (c.schedule_mode === "recurring") return "recurring";
+    if (c.schedule_mode === "one_shot") return "one_shot";
+    return (c.due_days || []).length ? "days" : "daily";
+  }
+
+  _choreMatchesFilters(c) {
+    const f = this._choreFilt || {};
+    if (f.child) {
+      const who = c.assigned_to || [];
+      if (f.child === "__none__") { if (c.assignment_mode !== "unassigned") return false; }
+      else if (f.child === "__all__") { if (c.assignment_mode === "unassigned" || who.length) return false; }
+      else if (c.assignment_mode === "unassigned" || (who.length && !who.includes(f.child))) return false;
+    }
+    if (f.period) {
+      const hasTimes = (c.times || []).length > 0;
+      if (f.period === "__times__" ? !hasTimes : hasTimes || (c.time_category || "anytime") !== f.period) return false;
+    }
+    if (f.schedule && this._choreScheduleKind(c) !== f.schedule) return false;
+    if (f.approval && (!!c.requires_approval) !== (f.approval === "yes")) return false;
+    if (f.status && (c.enabled !== false) !== (f.status === "enabled")) return false;
+    return true;
+  }
+
+  _choreSortValue(c, key, childById) {
+    const nameOf = id => (childById[id] && childById[id].name) || "";
+    switch (key) {
+      case "name": return (c.name || "").toLocaleLowerCase();
+      case "points": return Number(c.task_type === "timed" ? c.timed_rate_points : c.points) || 0;
+      case "period": {
+        if ((c.times || []).length) return 1000 + Math.min(...c.times.map(t => parseInt(String(t.start).replace(":", ""), 10) || 0)) / 10000;
+        const cat = c.time_category || "anytime";
+        if (cat === "anytime") return -1;
+        const i = this._effectiveTimePeriods().findIndex(p => p.id === cat);
+        return i < 0 ? 999 : i;
+      }
+      case "assigned":
+        if (c.assignment_mode === "unassigned") return "￿";
+        return (c.assigned_to || []).length ? (c.assigned_to || []).map(nameOf).sort().join(", ").toLocaleLowerCase() : "";
+      case "mode": return this._choreModeLabel(c).toLocaleLowerCase();
+      case "current": return nameOf(c.assignment_current_child_id || "").toLocaleLowerCase() || "￿";
+      case "schedule": return ["daily", "days", "recurring", "one_shot"].indexOf(this._choreScheduleKind(c));
+      case "approval": return c.requires_approval ? 1 : 0;
+      case "status": return c.enabled === false ? 1 : 0;
+      default: return 0;
+    }
+  }
+
+  _choreModeLabel(c) {
+    const m = c.assignment_mode || "everyone";
+    return m === "everyone" ? this._t("panel.chore_mode_everyone") : this._t(`panel.assign_${m}_short`);
+  }
+
+  _choreView(chores, childById) {
+    const out = chores.filter(c => this._choreMatchesFilters(c));
+    const s = this._choreSort;
+    if (!s) return out;
+    const sign = s.dir === "desc" ? -1 : 1;
+    const ranked = out.map((c, i) => ({ c, i, v: this._choreSortValue(c, s.key, childById) }));
+    ranked.sort((a, b) => {
+      const cmp = typeof a.v === "number" && typeof b.v === "number" ? a.v - b.v : String(a.v).localeCompare(String(b.v));
+      // Ties keep the saved order, whichever way the column runs.
+      return cmp ? cmp * sign : a.i - b.i;
+    });
+    return ranked.map(r => r.c);
+  }
+
+  _renderChoreFilters(all, shown) {
+    const f = this._choreFilt || {};
+    const sel = (key, label, opts) => `<label class="tm-filt"><span>${label}</span><select class="tm-select" data-chore-filt="${key}">
+        <option value="">${this._t("panel.chore_filt_any")}</option>
+        ${opts.map(o => `<option value="${this._esc(o.v)}" ${f[key] === o.v ? "selected" : ""}>${this._esc(o.l)}</option>`).join("")}
+      </select></label>`;
+    const periods = this._timeCategoryOptions();
+    if (all.some(c => (c.times || []).length)) periods.push({ v: "__times__", l: this._t("panel.chore_filt_set_times") });
+    return `<div class="tm-filt-bar" role="group" aria-label="${this._esc(this._t("panel.chore_filt_label"))}">
+      ${sel("child", this._t("panel.chore_table_assigned"), [
+        { v: "__all__", l: this._t("panel.common_all_children") },
+        { v: "__none__", l: this._t("panel.assign_unassigned_short") },
+        ...(this._state.children || []).map(c => ({ v: c.id, l: c.name })),
+      ])}
+      ${sel("period", this._t("panel.chore_table_period"), periods)}
+      ${sel("schedule", this._t("panel.chore_table_schedule"), [
+        { v: "daily", l: this._t("panel.common_daily") },
+        { v: "days", l: this._t("panel.chore_filt_days") },
+        { v: "recurring", l: this._t("panel.chore_filt_recurring") },
+        { v: "one_shot", l: this._t("panel.common_one_shot") },
+      ])}
+      ${sel("approval", this._t("panel.chore_table_approval"), [
+        { v: "yes", l: this._t("panel.common_yes") },
+        { v: "no", l: this._t("panel.common_no") },
+      ])}
+      ${sel("status", this._t("panel.chore_table_status"), [
+        { v: "enabled", l: this._t("panel.chore_status_enabled") },
+        { v: "disabled", l: this._t("panel.chore_status_disabled") },
+      ])}
+      ${this._choreFiltActive() ? `<span class="tm-filt-count">${this._ltrNums(this._t("panel.chore_filt_count", { shown: this._fmtNum(shown), total: this._fmtNum(all.length) }))}</span>
+        <button type="button" class="tm-btn tm-btn-sm" data-act="chore-filt-clear">${this._t("panel.chore_filt_clear")}</button>` : ""}
+    </div>`;
   }
 
   _renderChoreRow(c, childById) {
@@ -9661,7 +9800,7 @@ class TaskMatePanel extends HTMLElement {
       ? `<input class="tm-inline-input" type="text" data-field="_inlineRename" value="${this._esc(this._inlineRename.value)}" autofocus>
          <button type="button" class="tm-icon-btn" data-act="rename-chore-commit" title="${this._t("panel.tooltip_save")}">✓</button>
          <button type="button" class="tm-icon-btn" data-act="rename-chore-cancel" title="${this._t("panel.tooltip_cancel")}">✕</button>`
-      : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="${this._t("panel.tooltip_rename")}">${this._esc(c.name)}</strong>${c.enabled === false ? ` <span class="tm-pill">${this._t("panel.common_disabled")}</span>` : ""}${this._idBadge(c.id)}`;
+      : `<strong data-rename="chore" data-id="${this._esc(c.id)}" title="${this._t("panel.tooltip_rename")}">${this._esc(c.name)}</strong>${this._idBadge(c.id)}`;
     return `
       <tr class="tm-row ${c.enabled === false ? "tm-row-disabled" : ""}">
         ${this._bulkMode ? `<td><input type="checkbox" data-act="bulk-toggle-row" data-id="${this._esc(c.id)}" ${this._bulkSel.has(c.id) ? "checked" : ""}></td>` : ""}
@@ -9674,10 +9813,12 @@ class TaskMatePanel extends HTMLElement {
         </div></td>
         <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._fmtNum(this._num(c.timed_rate_points))}/${this._fmtNum(this._num(c.timed_rate_minutes, 1))} min` : this._num(c.points)}</strong></td>
         <td><span class="tm-pill" ${(c.times || []).length ? `title="${this._esc((c.times || []).map(t => `${t.name || t.start} ${t.start}–${t.end}`).join(" · "))}"` : ""}>${this._esc((c.times || []).length ? this._t("panel.st_list_pill", { count: c.times.length }) : this._timeCategoryLabel(c.time_category))}</span></td>
-        <td>${assignedNames} ${modeBadge}${teamPill}</td>
+        <td>${assignedNames}${teamPill}</td>
+        <td>${modeBadge || `<span class="tm-text-muted">${this._t("panel.chore_mode_everyone")}</span>`}</td>
         <td>${currentName}</td>
         <td><span class="tm-pill ${schedClass} tm-pill-dot">${this._esc(schedLabel)}</span>${weeklyPill}</td>
         <td>${c.requires_approval ? `<span class='tm-yes'>${this._t("panel.common_yes")}</span>` : `<span class='tm-no'>${this._t("panel.common_no")}</span>`}</td>
+        <td>${c.enabled === false ? `<span class="tm-pill">${this._t("panel.chore_status_disabled")}</span>` : `<span class="tm-text-muted">${this._t("panel.chore_status_enabled")}</span>`}</td>
       </tr>
     `;
   }
@@ -18243,6 +18384,15 @@ class TaskMatePanel extends HTMLElement {
         background: var(--tm-surface-2);
         border-bottom: 1px solid var(--tm-border);
       }
+      /* Earn table: click-to-sort headings + filter row (#1173) */
+      .tm-th-sort { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; text-transform: inherit; letter-spacing: inherit; font: inherit; color: inherit; border-radius: 6px; }
+      .tm-th-sort:hover, .tm-th-sort.tm-th-on { color: var(--tm-text); }
+      .tm-th-sort:focus-visible { outline: 2px solid var(--tm-accent); outline-offset: 2px; }
+      .tm-th-arrow { font-size: 9px; min-width: 9px; }
+      .tm-filt-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin: 0 0 12px; }
+      .tm-filt { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tm-text-faint); flex: 0 1 160px; min-width: 120px; }
+      .tm-filt .tm-select { width: 100%; }
+      .tm-filt-count { font-size: 12.5px; color: var(--tm-text-muted); align-self: center; }
       .tm-table tr:last-child td { border-bottom: 0; }
       .tm-row { transition: background 0.1s var(--tm-easing); }
       .tm-row:hover { background: var(--tm-surface-hover); }

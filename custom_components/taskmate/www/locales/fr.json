@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Trier maintenant",
   "panel.chore_sort_once_confirm": "Remplacer l'ordre manuel des tâches de chaque enfant par « {mode} » ? Cette action est irréversible.",
   "panel.chore_sort_once_done": "Tâches de tous les enfants triées par {mode}",
-  "panel.chore_sort_auto_note": "Les cartes trient actuellement les tâches par « {mode} » (Paramètres → Ordre des tâches sur les cartes). Cet ordre est conservé et revient lorsque ce réglage repasse sur Manuel."
+  "panel.chore_sort_auto_note": "Les cartes trient actuellement les tâches par « {mode} » (Paramètres → Ordre des tâches sur les cartes). Cet ordre est conservé et revient lorsque ce réglage repasse sur Manuel.",
+  "panel.chore_table_mode": "Mode",
+  "panel.chore_table_status": "Statut",
+  "panel.chore_sort_by": "Trier par {column}",
+  "panel.chore_mode_everyone": "Tout le monde",
+  "panel.chore_filt_none": "Aucune tâche ne correspond à ces filtres.",
+  "panel.chore_filt_any": "Tous",
+  "panel.chore_filt_set_times": "Heures fixes",
+  "panel.chore_filt_label": "Filtrer les tâches",
+  "panel.chore_filt_days": "Jours précis",
+  "panel.chore_filt_recurring": "Récurrente",
+  "panel.chore_status_enabled": "Activée",
+  "panel.chore_status_disabled": "Désactivée",
+  "panel.chore_filt_count": "{shown} sur {total} tâches",
+  "panel.chore_filt_clear": "Effacer les filtres"
 }

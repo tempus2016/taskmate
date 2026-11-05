@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Nu sorteren",
   "panel.chore_sort_once_confirm": "De handmatige takenvolgorde van elk kind vervangen door “{mode}”? Dit kan niet ongedaan worden gemaakt.",
   "panel.chore_sort_once_done": "Taken van alle kinderen gesorteerd op {mode}",
-  "panel.chore_sort_auto_note": "De kaarten sorteren taken nu op “{mode}” (Instellingen → Volgorde van taken op kaarten). Deze volgorde blijft bewaard en komt terug zodra dat op Handmatig staat."
+  "panel.chore_sort_auto_note": "De kaarten sorteren taken nu op “{mode}” (Instellingen → Volgorde van taken op kaarten). Deze volgorde blijft bewaard en komt terug zodra dat op Handmatig staat.",
+  "panel.chore_table_mode": "Modus",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sorteren op {column}",
+  "panel.chore_mode_everyone": "Iedereen",
+  "panel.chore_filt_none": "Geen taken die bij deze filters passen.",
+  "panel.chore_filt_any": "Alle",
+  "panel.chore_filt_set_times": "Vaste tijden",
+  "panel.chore_filt_label": "Taken filteren",
+  "panel.chore_filt_days": "Bepaalde dagen",
+  "panel.chore_filt_recurring": "Terugkerend",
+  "panel.chore_status_enabled": "Ingeschakeld",
+  "panel.chore_status_disabled": "Uitgeschakeld",
+  "panel.chore_filt_count": "{shown} van {total} taken",
+  "panel.chore_filt_clear": "Filters wissen"
 }

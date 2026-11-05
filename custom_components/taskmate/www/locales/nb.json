@@ -4886,5 +4886,19 @@
   "panel.chore_sort_once_button": "Sorter nå",
   "panel.chore_sort_once_confirm": "Erstatte hvert barns manuelle rekkefølge på oppgaver med «{mode}»? Dette kan ikke angres.",
   "panel.chore_sort_once_done": "Alle barnas oppgaver er sortert etter {mode}",
-  "panel.chore_sort_auto_note": "Kortene sorterer nå oppgaver etter «{mode}» (Innstillinger → Rekkefølge på oppgaver på kort). Denne rekkefølgen beholdes og kommer tilbake når innstillingen settes til Manuell."
+  "panel.chore_sort_auto_note": "Kortene sorterer nå oppgaver etter «{mode}» (Innstillinger → Rekkefølge på oppgaver på kort). Denne rekkefølgen beholdes og kommer tilbake når innstillingen settes til Manuell.",
+  "panel.chore_table_mode": "Modus",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sorter etter {column}",
+  "panel.chore_mode_everyone": "Alle",
+  "panel.chore_filt_none": "Ingen oppgaver passer til disse filtrene.",
+  "panel.chore_filt_any": "Alle",
+  "panel.chore_filt_set_times": "Faste tider",
+  "panel.chore_filt_label": "Filtrer oppgaver",
+  "panel.chore_filt_days": "Bestemte dager",
+  "panel.chore_filt_recurring": "Gjentakende",
+  "panel.chore_status_enabled": "Aktivert",
+  "panel.chore_status_disabled": "Deaktivert",
+  "panel.chore_filt_count": "{shown} av {total} oppgaver",
+  "panel.chore_filt_clear": "Tøm filtre"
 }
