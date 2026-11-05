@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Slå på minst én innstilling.",
   "panel.bulk_edit_done": "{count} oppgaver oppdatert",
   "panel.bulk_edit_done_one": "{count} oppgave oppdatert",
-  "panel.bulk_edit_skipped": "{count} oppdatert. Ikke endret (de nye innstillingene passer ikke): {names}"
+  "panel.bulk_edit_skipped": "{count} oppdatert. Ikke endret (de nye innstillingene passer ikke): {names}",
+  "panel.chore_sort_short": "Sorter",
+  "panel.chore_sort_saved": "Lagret rekkefølge"
 }

@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Zet minstens één instelling aan.",
   "panel.bulk_edit_done": "{count} taken bijgewerkt",
   "panel.bulk_edit_done_one": "{count} taak bijgewerkt",
-  "panel.bulk_edit_skipped": "{count} bijgewerkt. Niet gewijzigd (de nieuwe instellingen passen niet): {names}"
+  "panel.bulk_edit_skipped": "{count} bijgewerkt. Niet gewijzigd (de nieuwe instellingen passen niet): {names}",
+  "panel.chore_sort_short": "Sorteren",
+  "panel.chore_sort_saved": "Opgeslagen volgorde"
 }

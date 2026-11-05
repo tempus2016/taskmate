@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Activez au moins un réglage à changer.",
   "panel.bulk_edit_done": "{count} tâches mises à jour",
   "panel.bulk_edit_done_one": "{count} tâche mise à jour",
-  "panel.bulk_edit_skipped": "{count} mises à jour. Non modifiées (les nouveaux réglages ne leur conviennent pas) : {names}"
+  "panel.bulk_edit_skipped": "{count} mises à jour. Non modifiées (les nouveaux réglages ne leur conviennent pas) : {names}",
+  "panel.chore_sort_short": "Trier",
+  "panel.chore_sort_saved": "Ordre enregistré"
 }

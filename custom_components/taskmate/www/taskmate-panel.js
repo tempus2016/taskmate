@@ -1687,6 +1687,13 @@ class TaskMatePanel extends HTMLElement {
     if ("viewAsDesign" in t.dataset) { this._setViewAs("design", t.value); return; }
     if (t.dataset.fbField) { this._fbInput(t); return; }
     if (t.dataset.libIn) { this._libInput(t, true); return; }
+    // Phones hide the table headings, so the same sort is a select there.
+    if (t.dataset.role === "chore-sort-select") {
+      const [key, dir] = (t.value || "").split(":");
+      this._choreSort = key ? { key, dir: dir === "desc" ? "desc" : "asc" } : null;
+      this._render();
+      return;
+    }
     if (t.dataset.choreFilt) {
       this._choreFilt = { ...this._choreFilt, [t.dataset.choreFilt]: t.value };
       this._render();
@@ -9833,7 +9840,16 @@ class TaskMatePanel extends HTMLElement {
       </select></label>`;
     const periods = this._timeCategoryOptions();
     if (all.some(c => (c.times || []).length)) periods.push({ v: "__times__", l: this._t("panel.chore_filt_set_times") });
+    const cur = this._choreSort ? `${this._choreSort.key}:${this._choreSort.dir}` : "";
+    const cols = [["name", "panel.chore_table_name"], ["points", "panel.chore_table_points"], ["period", "panel.chore_table_period"],
+      ["assigned", "panel.chore_table_assigned"], ["mode", "panel.chore_table_mode"], ["current", "panel.chore_table_current"],
+      ["schedule", "panel.chore_table_schedule"], ["approval", "panel.chore_table_approval"], ["status", "panel.chore_table_status"]];
+    const sortSel = `<label class="tm-filt tm-filt-sort"><span>${this._t("panel.chore_sort_short")}</span><select class="tm-select" data-role="chore-sort-select">
+        <option value="">${this._t("panel.chore_sort_saved")}</option>
+        ${cols.map(([k, lk]) => ["asc", "desc"].map(d => `<option value="${k}:${d}" ${cur === `${k}:${d}` ? "selected" : ""}>${this._esc(this._t(lk))} ${d === "asc" ? "▲" : "▼"}</option>`).join("")).join("")}
+      </select></label>`;
     return `<div class="tm-filt-bar" role="group" aria-label="${this._esc(this._t("panel.chore_filt_label"))}">
+      ${sortSel}
       ${sel("child", this._t("panel.chore_table_assigned"), [
         { v: "__all__", l: this._t("panel.common_all_children") },
         { v: "__none__", l: this._t("panel.assign_unassigned_short") },
@@ -18484,6 +18500,9 @@ class TaskMatePanel extends HTMLElement {
       .tm-filt-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin: 0 0 12px; }
       .tm-filt { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tm-text-faint); flex: 1 1 140px; min-width: 120px; max-width: 220px; }
       .tm-filt .tm-select { width: 100%; }
+      /* The headings sort on a wide screen; phones get this select instead. */
+      .tm-filt-sort { display: none; }
+      @media (max-width: 900px) { .tm-filt-sort { display: flex; } }
       .tm-filt-count { font-size: 12.5px; color: var(--tm-text-muted); align-self: center; }
       /* Edit selected chores (#1174): one switch per setting, its control below when on */
       .tm-bulk-edit-item { border: 1px solid var(--tm-border-soft); border-radius: 10px; padding: 4px 12px; margin-bottom: 10px; }

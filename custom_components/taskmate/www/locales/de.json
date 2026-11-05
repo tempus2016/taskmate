@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Schalte mindestens eine Einstellung ein.",
   "panel.bulk_edit_done": "{count} Aufgaben aktualisiert",
   "panel.bulk_edit_done_one": "{count} Aufgabe aktualisiert",
-  "panel.bulk_edit_skipped": "{count} aktualisiert. Nicht geändert (die neuen Einstellungen passen nicht): {names}"
+  "panel.bulk_edit_skipped": "{count} aktualisiert. Nicht geändert (die neuen Einstellungen passen nicht): {names}",
+  "panel.chore_sort_short": "Sortieren",
+  "panel.chore_sort_saved": "Gespeicherte Reihenfolge"
 }

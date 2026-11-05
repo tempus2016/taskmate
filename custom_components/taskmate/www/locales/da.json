@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Slå mindst én indstilling til.",
   "panel.bulk_edit_done": "{count} pligter opdateret",
   "panel.bulk_edit_done_one": "{count} pligt opdateret",
-  "panel.bulk_edit_skipped": "{count} opdateret. Ikke ændret (de nye indstillinger passer ikke): {names}"
+  "panel.bulk_edit_skipped": "{count} opdateret. Ikke ændret (de nye indstillinger passer ikke): {names}",
+  "panel.chore_sort_short": "Sortér",
+  "panel.chore_sort_saved": "Gemt rækkefølge"
 }

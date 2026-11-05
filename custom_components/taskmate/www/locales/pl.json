@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Włącz co najmniej jedno ustawienie.",
   "panel.bulk_edit_done": "Zaktualizowano obowiązki: {count}",
   "panel.bulk_edit_done_one": "Zaktualizowano {count} obowiązek",
-  "panel.bulk_edit_skipped": "Zaktualizowano: {count}. Bez zmian (nowe ustawienia do nich nie pasują): {names}"
+  "panel.bulk_edit_skipped": "Zaktualizowano: {count}. Bez zmian (nowe ustawienia do nich nie pasują): {names}",
+  "panel.chore_sort_short": "Sortuj",
+  "panel.chore_sort_saved": "Zapisana kolejność"
 }

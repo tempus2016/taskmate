@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Switch on at least one setting to change.",
   "panel.bulk_edit_done": "{count} chores updated",
   "panel.bulk_edit_done_one": "{count} chore updated",
-  "panel.bulk_edit_skipped": "{count} updated. Not changed (the new settings don't fit them): {names}"
+  "panel.bulk_edit_skipped": "{count} updated. Not changed (the new settings don't fit them): {names}",
+  "panel.chore_sort_short": "Sort",
+  "panel.chore_sort_saved": "Saved order"
 }

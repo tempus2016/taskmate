@@ -4918,5 +4918,7 @@
   "panel.bulk_edit_pick_one": "Ative pelo menos uma configuração.",
   "panel.bulk_edit_done": "{count} tarefas atualizadas",
   "panel.bulk_edit_done_one": "{count} tarefa atualizada",
-  "panel.bulk_edit_skipped": "{count} atualizadas. Não alteradas (as novas configurações não servem para elas): {names}"
+  "panel.bulk_edit_skipped": "{count} atualizadas. Não alteradas (as novas configurações não servem para elas): {names}",
+  "panel.chore_sort_short": "Ordenar",
+  "panel.chore_sort_saved": "Ordem salva"
 }
