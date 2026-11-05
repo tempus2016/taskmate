@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.util import dt as dt_util
 
 from . import images, notify_strings, photos
+from .chore_sort import CHORE_SORT_PRESETS, sorted_chore_ids
 from .chore_undo import affected_completions, child_can_undo, undo_window_seconds
 from .const import (
     CHORE_NOTE_MAX_LENGTH,
@@ -2992,6 +2993,30 @@ class ChoresMixin:
         self.storage.update_child(child)
         await self.storage.async_save()
         await self.async_refresh()
+
+    async def async_sort_chore_orders(self, sort_by: str, child_ids: list[str] | None = None) -> int:
+        """Sort every child's manual chore order once by a preset (#1231).
+
+        Writes the sorted list into each child's own ``chore_order`` (all of
+        them, or just ``child_ids``) and saves once, so the reorder card can
+        fine-tune it afterwards. Returns how many children were updated.
+        """
+        if sort_by not in CHORE_SORT_PRESETS:
+            raise ValueError(f"Unknown sort {sort_by!r}")
+        chores = self.storage.get_chores()
+        periods = self.get_time_periods() if sort_by == "time" else None
+        wanted = set(child_ids) if child_ids else None
+        updated = 0
+        for child in self.storage.get_children():
+            if wanted is not None and child.id not in wanted:
+                continue
+            child.chore_order = sorted_chore_ids(sort_by, chores, child.chore_order, periods)
+            self.storage.update_child(child)
+            updated += 1
+        if updated:
+            await self.storage.async_save()
+            await self.async_refresh()
+        return updated
 
     async def async_set_global_chore_order(self, chore_order: list[str]) -> None:
         """Set the global chore display order."""

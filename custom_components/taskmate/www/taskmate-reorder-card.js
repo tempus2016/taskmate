@@ -602,6 +602,17 @@ class TaskMateReorderCard extends LitElement {
     }
   }
 
+  // A family-wide chore order (#1231) is in charge of the cards, so a hand
+  // order saved here would never show: say so instead of offering the list.
+  _autoSortMode(attrs) {
+    const mode = attrs?.chore_sort;
+    return mode && mode !== "manual" ? mode : "";
+  }
+
+  _autoSortMessage(mode) {
+    return this._t('reorder.auto_sorted', { mode: this._t(`reorder.sort_${mode}`) });
+  }
+
   _getChoresForChild(chores, childId) {
     // Ensure childId is a string for consistent comparison
     const childIdStr = String(childId || "");
@@ -750,6 +761,26 @@ class TaskMateReorderCard extends LitElement {
       `;
     }
 
+    const autoSort = this._autoSortMode(attrs);
+    if (autoSort) {
+      return html`
+        <ha-card>
+          <div class="card-header">
+            <div class="header-left">
+              <ha-icon class="header-icon" icon="mdi:sort"></ha-icon>
+              <span class="card-title">${this.config.title || this._t('reorder.default_title')}</span>
+              <span class="child-name">${child.name}</span>
+            </div>
+          </div>
+          <div class="empty-state">
+            <ha-icon icon="mdi:sort-variant-lock"></ha-icon>
+            <div class="message">${this._autoSortMessage(autoSort)}</div>
+            <div class="submessage">${this._t('reorder.auto_sorted_hint')}</div>
+          </div>
+        </ha-card>
+      `;
+    }
+
     const timeCategories = this._getTimeCategories();
     const pointsIcon = attrs.points_icon || "mdi:star";
 
@@ -866,9 +897,10 @@ class TaskMateReorderCard extends LitElement {
       || (!this.config.child_id && children[0]);
 
     const icon = design === "console" ? "≡" : design === "cleanpro" ? "⇅" : "↕️";
+    // No "drag to reorder" while a family-wide sort has the list (#1231).
     const sub = design === "console"
       ? this._t('reorder.default_title')
-      : this._t('reorder.drag_to_reorder');
+      : this._autoSortMode(attrs) ? "" : this._t('reorder.drag_to_reorder');
 
     if (!child) {
       return html`<ha-card class="tmd" style="--hd:${hd}">
@@ -892,6 +924,16 @@ class TaskMateReorderCard extends LitElement {
         ${header}
         <div class="tmd-bd">
           <div class="tmd-empty">${this._t('reorder.no_chores_assigned')}<br>${this._t('reorder.add_chores_first')}</div>
+        </div>
+      </ha-card>`;
+    }
+
+    const autoSort = this._autoSortMode(attrs);
+    if (autoSort) {
+      return html`<ha-card class="tmd" style="--hd:${hd}">
+        ${header}
+        <div class="tmd-bd">
+          <div class="tmd-empty">${this._autoSortMessage(autoSort)}<br>${this._t('reorder.auto_sorted_hint')}</div>
         </div>
       </ha-card>`;
     }

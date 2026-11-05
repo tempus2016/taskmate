@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from homeassistant.util import dt as dt_util
 
+from .chore_sort import effective_chore_order
+
 # Complication text has to stay short; long chore names are clipped.
 NEXT_CHORE_NAME_MAX = 40
 
@@ -52,7 +54,8 @@ def chore_needs_input(coordinator, chore) -> bool:
 def next_chore_for_child(coordinator, child_id: str):
     """The chore ``complete_next_chore`` would complete for this child, or None.
 
-    "Next" follows the child card: the child's custom ``chore_order`` first,
+    "Next" follows the child card: the published ``chore_order`` first (the
+    family-wide sort, or the child's own order — #1231),
     then the remaining chores in their default order. Only chores the child
     still owes today (``get_due_chores_for_child``) that a single tap can
     finish are considered.
@@ -65,7 +68,7 @@ def next_chore_for_child(coordinator, child_id: str):
         return None
     # indexOf semantics, as on the card: a duplicated id keeps its first slot.
     rank: dict[str, int] = {}
-    for index, chore_id in enumerate(getattr(child, "chore_order", None) or []):
+    for index, chore_id in enumerate(effective_chore_order(coordinator, child)):
         rank.setdefault(chore_id, index)
     unranked = len(rank)
     # sorted() is stable, so unranked chores keep their default order.
