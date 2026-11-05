@@ -115,6 +115,22 @@ The admin panel provides full management for every aspect of TaskMate:
 - Delete chores
 - Reorder chores per child
 
+#### Sorting and filtering the chore list (v7.8.0)
+
+Click any heading in the **Earn → Chores** table to sort by it. One click sorts low-to-high (or A–Z), a second click reverses it, and a third goes back to your saved order. Name sorting ignores capitals, so two copies of the same chore end up next to each other, which makes duplicates from the wizard or the library easy to spot.
+
+The row of filters above the table narrows the list by **Assigned** (a child, *All children* or *Unassigned*), **Period**, **Schedule** (daily, specific days, recurring, one-off), **Approval** and **Status**. They combine, so *Morning* plus *Approval: No* shows only morning chores that don't need checking. A count shows how many chores match, and **Clear filters** resets them all. The table also has separate **Mode** (Everyone, Alternating, First come…) and **Status** (Enabled / Disabled) columns.
+
+On a phone the headings are hidden, so the filter row has a **Sort** menu instead. Sorting and filtering only change what you see in the panel: the saved order, the cards and every child's own order stay exactly as they were.
+
+#### Editing several chores at once (v7.8.0)
+
+Press **Select**, tick the chores you want, and choose **Edit selected**. Each setting has its own switch: **Change points**, **Change who it's for**, **Change schedule**, **Change time of day** and **Change approval**. Switch on only the ones you want to change; everything else on every selected chore stays as it is. **Apply to N chores** saves them all in one go.
+
+- **Change who it's for** replaces the children on every selected chore. Leave every child unticked for all children.
+- **Change schedule** sets either specific days of the week (none ticked = every day) or a recurrence. One-off chores need their own date, so they are still set one at a time.
+- If a chore can't take the new settings (for example a team chore given a rotation it can't have), it is left unchanged and the message names it.
+
 #### Week planner
 
 **Earn → Planner** lays the week out in seven day columns. Drag a chore to another day to move it, hold **Alt** to copy it, drop it on a child's initial to give it to them, and press **Save week** to save every change at once. A repeating chore asks whether to move just this week's one or the whole series. On a phone it shows one day at a time with a **Move to…** menu on each chore. See [Week Planner](Week-Planner.md).
@@ -191,6 +207,7 @@ The **Raffles** tab, under **Spend**, lists every raffle with its ticket price, 
   - History retention
   - Time-of-day boundaries (morning/afternoon/evening/night windows)
   - Default card design selector (see [Card Design Styles](Card-Design-Styles.md))
+  - **Chore order on cards** (v7.8.0+) — sort every child's chores by time of day, name or date added, or keep each child's own order; plus **Sort everyone's chores once**. See [Settings → Chore Order on Cards](Settings.md#chore-order-on-cards-v780)
   - Show IDs toggle (see below)
   - **Setup wizard** (v6.0.0+) — run the guided setup again to add more. See [Setup Wizard](Setup-Wizard.md)
   - **Ready-made dashboards** (v6.3.0+) — create a Kids, Parents or Wall tablet dashboard filled in with your family. See [Ready-Made Dashboards](Ready-Made-Dashboards.md)

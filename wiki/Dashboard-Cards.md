@@ -136,6 +136,7 @@ show_tomorrow: true           # the Today / Tomorrow switch, when something is d
 show_reminders: true          # the 🔔 Remind me tag (needs the global setting)
 show_praise: true             # praise notes sent with today's approvals
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose window has passed
+sort_available_first: true    # (v7.8.0) what can be done now first; later, missed, then finished chores below
 show_description: false       # show chore description below name
 show_badges: true             # show earned badge strip below points
 show_next_badge: true         # show progress toward the closest unearned badge
@@ -172,6 +173,7 @@ header_color: "#9b59b6"       # leave unset to use the child's own colour
 - **Avatar picker** — tap the child's avatar to open a picker of available avatars. Locked avatars are greyed out and show their unlock requirement on hover; tapping an unlocked one calls `taskmate.choose_avatar` to switch. See [Avatars](Avatars.md)
 - **`elapsed_time_mode`** controls morning/afternoon/evening/night chores once their time window has passed: `dim` (default) greys them out, `hide` removes them, `show` leaves them active. Chores set to `Anytime` are never affected. Already-completed chores still show their green done style regardless
 - **`time_category: current` (v5.5.0+)** shows only the chores for whichever period is active at that moment, and re-titles the card to match ("Afternoon Chores"). Unlike a fixed period, **future chores are not shown at all** — no dimmed previews — which is what makes it suitable for a wall dashboard or kiosk where upcoming work would confuse a child. It follows your own [custom time periods](Settings.md#custom-time-of-day-periods-v400), not just the built-in four, so a `School run` period works the same way. Chores still inside their post-period claim grace stay tappable, and past periods are governed by `elapsed_time_mode` as usual
+- **`sort_available_first` (v7.8.0+)** puts the chores a child can do right now at the top of the list. Below them come chores for later today (and ones waiting on another chore), then missed ones, then finished ones. The order inside each group follows [Chore order on cards](Settings.md#chore-order-on-cards-v780). A finished chore stays where it is while the child can still undo it, and for a few seconds after the tap, so the row doesn't jump away under their finger. On by default; set `false` to keep the plain order. The visual editor calls it **Available chores first**. Works in every card design
 - **`include_anytime_chores` (v5.5.0+)** — Anytime chores normally appear under *every* `time_category`. Set this to `false` to hide them, leaving only the chores belonging to the selected period. Defaults to `true`, so existing cards are unaffected. Pairs well with `time_category: current` for a strict "what's due right now" view
 - **Difficulty badge** — each chore shows a small badge for its difficulty tier (easy / medium / hard). See [Difficulty Tiers](Difficulty-Tiers.md)
 - **Mandatory badge** — chores marked mandatory show a **⚠ Mandatory** badge
@@ -363,6 +365,7 @@ header_color: "#16a085"
 - Drag chore rows up and down within each time category group
 - Click **Save Order** to apply — the order is stored per-child
 - Shows unsaved changes indicator when you have moved items
+- *(v7.8.0)* When [Chore order on cards](Settings.md#chore-order-on-cards-v780) is set to Time of day, Name or Date added, the card shows a notice instead of the list, since a hand-made order wouldn't show. Set it back to Manual to arrange chores by hand
 
 ---
 
