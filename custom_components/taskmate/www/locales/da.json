@@ -4867,5 +4867,19 @@
   "pet.card_description": "Et virtuelt kæledyr, der vokser, når barnet klarer sine pligter",
   "pet.card_name": "TaskMate Kæledyr",
   "trophy.card_description": "Hele familiens sæsonsejre, rekorder, badges, missioner og perfekte uger på hylder",
-  "trophy.card_name": "TaskMate Pokalskab"
+  "trophy.card_name": "TaskMate Pokalskab",
+  "panel.chore_table_mode": "Tilstand",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sortér efter {column}",
+  "panel.chore_mode_everyone": "Alle",
+  "panel.chore_filt_none": "Ingen pligter passer til disse filtre.",
+  "panel.chore_filt_any": "Alle",
+  "panel.chore_filt_set_times": "Faste tider",
+  "panel.chore_filt_label": "Filtrér pligter",
+  "panel.chore_filt_days": "Bestemte dage",
+  "panel.chore_filt_recurring": "Gentagende",
+  "panel.chore_status_enabled": "Aktiveret",
+  "panel.chore_status_disabled": "Deaktiveret",
+  "panel.chore_filt_count": "{shown} af {total} pligter",
+  "panel.chore_filt_clear": "Ryd filtre"
 }

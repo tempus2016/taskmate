@@ -4867,5 +4867,19 @@
   "pet.card_description": "Un animal virtuel qui grandit à mesure que l'enfant fait ses tâches",
   "pet.card_name": "Animal TaskMate",
   "trophy.card_description": "Les victoires de saison, records, badges, quêtes et semaines parfaites de toute la famille sur des étagères",
-  "trophy.card_name": "Vitrine des trophées TaskMate"
+  "trophy.card_name": "Vitrine des trophées TaskMate",
+  "panel.chore_table_mode": "Mode",
+  "panel.chore_table_status": "Statut",
+  "panel.chore_sort_by": "Trier par {column}",
+  "panel.chore_mode_everyone": "Tout le monde",
+  "panel.chore_filt_none": "Aucune tâche ne correspond à ces filtres.",
+  "panel.chore_filt_any": "Tous",
+  "panel.chore_filt_set_times": "Heures fixes",
+  "panel.chore_filt_label": "Filtrer les tâches",
+  "panel.chore_filt_days": "Jours précis",
+  "panel.chore_filt_recurring": "Récurrente",
+  "panel.chore_status_enabled": "Activée",
+  "panel.chore_status_disabled": "Désactivée",
+  "panel.chore_filt_count": "{shown} sur {total} tâches",
+  "panel.chore_filt_clear": "Effacer les filtres"
 }

@@ -4867,5 +4867,19 @@
   "pet.card_description": "A virtual pet that grows as the child does chores",
   "pet.card_name": "TaskMate Pet",
   "trophy.card_description": "The whole family's season wins, personal bests, badges, quests and perfect weeks on shelves",
-  "trophy.card_name": "TaskMate Trophy Cabinet"
+  "trophy.card_name": "TaskMate Trophy Cabinet",
+  "panel.chore_table_mode": "Mode",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sort by {column}",
+  "panel.chore_mode_everyone": "Everyone",
+  "panel.chore_filt_none": "No chores match these filters.",
+  "panel.chore_filt_any": "Any",
+  "panel.chore_filt_set_times": "Set times",
+  "panel.chore_filt_label": "Filter chores",
+  "panel.chore_filt_days": "Specific days",
+  "panel.chore_filt_recurring": "Recurring",
+  "panel.chore_status_enabled": "Enabled",
+  "panel.chore_status_disabled": "Disabled",
+  "panel.chore_filt_count": "{shown} of {total} chores",
+  "panel.chore_filt_clear": "Clear filters"
 }

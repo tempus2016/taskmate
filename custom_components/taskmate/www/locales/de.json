@@ -4867,5 +4867,19 @@
   "pet.card_description": "Ein virtuelles Haustier, das mit den erledigten Aufgaben des Kindes wächst",
   "pet.card_name": "TaskMate-Haustier",
   "trophy.card_description": "Saisonsiege, Bestleistungen, Abzeichen, Abenteuer und perfekte Wochen der ganzen Familie in Regalen",
-  "trophy.card_name": "TaskMate-Pokalschrank"
+  "trophy.card_name": "TaskMate-Pokalschrank",
+  "panel.chore_table_mode": "Modus",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Nach {column} sortieren",
+  "panel.chore_mode_everyone": "Alle",
+  "panel.chore_filt_none": "Keine Aufgaben passen zu diesen Filtern.",
+  "panel.chore_filt_any": "Beliebig",
+  "panel.chore_filt_set_times": "Feste Zeiten",
+  "panel.chore_filt_label": "Aufgaben filtern",
+  "panel.chore_filt_days": "Bestimmte Tage",
+  "panel.chore_filt_recurring": "Wiederkehrend",
+  "panel.chore_status_enabled": "Aktiv",
+  "panel.chore_status_disabled": "Deaktiviert",
+  "panel.chore_filt_count": "{shown} von {total} Aufgaben",
+  "panel.chore_filt_clear": "Filter zurücksetzen"
 }

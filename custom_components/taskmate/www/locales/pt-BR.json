@@ -4867,5 +4867,19 @@
   "pet.card_description": "Um bichinho virtual que cresce conforme a criança faz as tarefas",
   "pet.card_name": "Bichinho TaskMate",
   "trophy.card_description": "As vitórias de temporada, recordes, conquistas, missões e semanas perfeitas de toda a família em prateleiras",
-  "trophy.card_name": "Estante de troféus TaskMate"
+  "trophy.card_name": "Estante de troféus TaskMate",
+  "panel.chore_table_mode": "Modo",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Ordenar por {column}",
+  "panel.chore_mode_everyone": "Todos",
+  "panel.chore_filt_none": "Nenhuma tarefa corresponde a estes filtros.",
+  "panel.chore_filt_any": "Qualquer",
+  "panel.chore_filt_set_times": "Horários fixos",
+  "panel.chore_filt_label": "Filtrar tarefas",
+  "panel.chore_filt_days": "Dias específicos",
+  "panel.chore_filt_recurring": "Recorrente",
+  "panel.chore_status_enabled": "Ativa",
+  "panel.chore_status_disabled": "Desativada",
+  "panel.chore_filt_count": "{shown} de {total} tarefas",
+  "panel.chore_filt_clear": "Limpar filtros"
 }

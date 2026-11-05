@@ -4867,5 +4867,19 @@
   "pet.card_description": "Een virtueel huisdier dat groeit terwijl het kind taken doet",
   "pet.card_name": "TaskMate Huisdier",
   "trophy.card_description": "De seizoenszeges, records, medailles, missies en perfecte weken van het hele gezin op planken",
-  "trophy.card_name": "TaskMate Prijzenkast"
+  "trophy.card_name": "TaskMate Prijzenkast",
+  "panel.chore_table_mode": "Modus",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sorteren op {column}",
+  "panel.chore_mode_everyone": "Iedereen",
+  "panel.chore_filt_none": "Geen taken die bij deze filters passen.",
+  "panel.chore_filt_any": "Alle",
+  "panel.chore_filt_set_times": "Vaste tijden",
+  "panel.chore_filt_label": "Taken filteren",
+  "panel.chore_filt_days": "Bepaalde dagen",
+  "panel.chore_filt_recurring": "Terugkerend",
+  "panel.chore_status_enabled": "Ingeschakeld",
+  "panel.chore_status_disabled": "Uitgeschakeld",
+  "panel.chore_filt_count": "{shown} van {total} taken",
+  "panel.chore_filt_clear": "Filters wissen"
 }

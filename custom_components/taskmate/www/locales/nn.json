@@ -4867,5 +4867,19 @@
   "pet.card_description": "Eit virtuelt kjæledyr som veks når barnet gjer oppgåver",
   "pet.card_name": "TaskMate Kjæledyr",
   "trophy.card_description": "Sesongsigrar, rekordar, merke, oppdrag og perfekte veker for heile familien i hyller",
-  "trophy.card_name": "TaskMate Pokalskap"
+  "trophy.card_name": "TaskMate Pokalskap",
+  "panel.chore_table_mode": "Modus",
+  "panel.chore_table_status": "Status",
+  "panel.chore_sort_by": "Sorter etter {column}",
+  "panel.chore_mode_everyone": "Alle",
+  "panel.chore_filt_none": "Ingen oppgåver passar til desse filtera.",
+  "panel.chore_filt_any": "Alle",
+  "panel.chore_filt_set_times": "Faste tider",
+  "panel.chore_filt_label": "Filtrer oppgåver",
+  "panel.chore_filt_days": "Bestemte dagar",
+  "panel.chore_filt_recurring": "Gjentakande",
+  "panel.chore_status_enabled": "Aktivert",
+  "panel.chore_status_disabled": "Deaktivert",
+  "panel.chore_filt_count": "{shown} av {total} oppgåver",
+  "panel.chore_filt_clear": "Tøm filter"
 }

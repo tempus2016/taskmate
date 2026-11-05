@@ -4867,5 +4867,19 @@
   "pet.card_description": "Wirtualny zwierzak, który rośnie, gdy dziecko wykonuje obowiązki",
   "pet.card_name": "TaskMate – Zwierzak",
   "trophy.card_description": "Zwycięstwa sezonowe, rekordy, odznaki, misje i idealne tygodnie całej rodziny na półkach",
-  "trophy.card_name": "TaskMate – Gablota z trofeami"
+  "trophy.card_name": "TaskMate – Gablota z trofeami",
+  "panel.chore_table_mode": "Tryb",
+  "panel.chore_table_status": "Stan",
+  "panel.chore_sort_by": "Sortuj według: {column}",
+  "panel.chore_mode_everyone": "Wszyscy",
+  "panel.chore_filt_none": "Żaden obowiązek nie pasuje do tych filtrów.",
+  "panel.chore_filt_any": "Dowolne",
+  "panel.chore_filt_set_times": "Stałe godziny",
+  "panel.chore_filt_label": "Filtruj obowiązki",
+  "panel.chore_filt_days": "Wybrane dni",
+  "panel.chore_filt_recurring": "Cykliczne",
+  "panel.chore_status_enabled": "Włączone",
+  "panel.chore_status_disabled": "Wyłączone",
+  "panel.chore_filt_count": "{shown} z {total} obowiązków",
+  "panel.chore_filt_clear": "Wyczyść filtry"
 }
