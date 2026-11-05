@@ -18482,7 +18482,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-th-sort:focus-visible { outline: 2px solid var(--tm-accent); outline-offset: 2px; }
       .tm-th-arrow { font-size: 9px; min-width: 9px; }
       .tm-filt-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin: 0 0 12px; }
-      .tm-filt { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tm-text-faint); flex: 0 1 160px; min-width: 120px; }
+      .tm-filt { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tm-text-faint); flex: 1 1 140px; min-width: 120px; max-width: 220px; }
       .tm-filt .tm-select { width: 100%; }
       .tm-filt-count { font-size: 12.5px; color: var(--tm-text-muted); align-self: center; }
       /* Edit selected chores (#1174): one switch per setting, its control below when on */
