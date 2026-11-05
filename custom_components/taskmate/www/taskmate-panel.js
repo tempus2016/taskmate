@@ -1130,6 +1130,8 @@ class TaskMatePanel extends HTMLElement {
     if (act === "chore-sort") { this._toggleChoreSort(t.dataset.key); return; }
     if (act === "chore-filt-clear") { this._choreFilt = {}; this._render(); return; }
     if (act === "bulk-toggle")  { this._bulkMode = !this._bulkMode; this._bulkSel.clear(); this._render(); return; }
+    if (act === "bulk-edit")    { this._openBulkEditDialog(); return; }
+    if (act === "save-bulk-edit") { this._doSaveBulkEdit(); return; }
     if (act === "bulk-enable")  { this._doBulk("enable"); return; }
     if (act === "bulk-disable") { this._doBulk("disable"); return; }
     if (act === "bulk-delete")  { this._doBulk("delete"); return; }
@@ -2845,6 +2847,94 @@ class TaskMatePanel extends HTMLElement {
     this._bulkMode = false;
     await this._fetchState();
     this._showToast("ok", this._tn("panel.bulk_done_toast", (res && res.count) || ids.length));
+  }
+
+  // ---- Edit selected chores (#1174) ----------------------------------------
+  // Each setting has its own "Change" switch; only the switched-on ones are
+  // sent, so everything else on every selected chore stays as it was.
+  _openBulkEditDialog() {
+    const ids = [...this._bulkSel];
+    if (!ids.length) return;
+    const first = (this._state.chores || []).find(c => c.id === ids[0]) || {};
+    this._openDialog({ kind: "bulk-edit", mode: "edit", data: {
+      ids,
+      ch_points: false, points: Number(first.points) || 0,
+      ch_assigned: false, assigned_to: [...(first.assigned_to || [])],
+      ch_approval: false, requires_approval: !!first.requires_approval,
+      ch_period: false, time_category: first.time_category || "anytime",
+      ch_schedule: false,
+      schedule_mode: first.schedule_mode === "recurring" ? "recurring" : "specific_days",
+      due_days: [...(first.due_days || [])],
+      recurrence: first.recurrence && first.recurrence !== "every_n_days" && !recurrenceIntervalDays(first.recurrence) ? first.recurrence : "weekly",
+      recurrence_day: first.recurrence_day && first.recurrence_day !== "any_day" ? first.recurrence_day : "",
+    } });
+  }
+
+  _bulkEditChanges(d) {
+    const changes = {};
+    if (d.ch_points) changes.points = Math.max(0, Math.round(Number(d.points) || 0));
+    if (d.ch_assigned) changes.assigned_to = [...(d.assigned_to || [])];
+    if (d.ch_approval) changes.requires_approval = !!d.requires_approval;
+    if (d.ch_period) changes.time_category = d.time_category || "anytime";
+    if (d.ch_schedule) {
+      changes.schedule_mode = d.schedule_mode === "recurring" ? "recurring" : "specific_days";
+      if (changes.schedule_mode === "specific_days") changes.due_days = [...(d.due_days || [])];
+      else { changes.recurrence = d.recurrence || "weekly"; changes.recurrence_day = d.recurrence_day || ""; }
+    }
+    return changes;
+  }
+
+  async _doSaveBulkEdit() {
+    const d = this._dialog.data;
+    const changes = this._bulkEditChanges(d);
+    if (!Object.keys(changes).length) { this._showToast("err", this._t("panel.bulk_edit_pick_one")); return; }
+    const { ok, err, res } = await this._callWS({ type: "taskmate/bulk_edit_chores", chore_ids: d.ids, changes });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    this._bulkSel.clear();
+    this._bulkMode = false;
+    await this._fetchState();
+    const skipped = (res && res.skipped) || [];
+    this._showToast(skipped.length ? "err" : "ok", skipped.length
+      ? this._t("panel.bulk_edit_skipped", { count: this._fmtNum((res && res.count) || 0), names: skipped.join(", ") })
+      : this._tn("panel.bulk_edit_done", (res && res.count) || d.ids.length));
+  }
+
+  _renderBulkEditDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const block = (sw, on, body) => `<div class="tm-bulk-edit-item ${on ? "tm-bulk-edit-on" : ""}">${sw}${on ? `<div class="tm-bulk-edit-body">${body}</div>` : ""}</div>`;
+    const recurrences = RECURRENCES.filter(r => r.v !== "every_n_days");
+    return this._dialogShell(this._tn("panel.bulk_edit_title", d.ids.length),
+      [
+        `<p class="tm-meta">${this._t("panel.bulk_edit_intro")}</p>`,
+        block(this._switch(this._t("panel.bulk_edit_points"), "ch_points", d.ch_points, "", true), d.ch_points,
+          this._field(this._t("panel.bulk_points_label"), "points", d.points, "number")),
+        block(this._switch(this._t("panel.bulk_edit_children"), "ch_assigned", d.ch_assigned, this._t("panel.bulk_edit_children_hint"), true), d.ch_assigned,
+          `<div class="tm-chip-row">${children.map(c => `
+            <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" data-act="toggle-assigned" data-id="${this._esc(c.id)}">${this._esc(c.name)}</button>`).join("")}</div>
+           <span class="tm-field-hint">${this._t("panel.bulk_leave_empty_hint")}</span>`),
+        block(this._switch(this._t("panel.bulk_edit_schedule"), "ch_schedule", d.ch_schedule, this._t("panel.bulk_edit_schedule_hint"), true), d.ch_schedule,
+          this._select(this._t("panel.chore_schedule_mode_label"), "schedule_mode", d.schedule_mode, SCHEDULE_MODES.filter(m => m.v !== "one_shot"), "", true)
+          + (d.schedule_mode === "recurring"
+            ? `<div class="tm-field-row">
+                ${this._select(this._t("panel.chore_recurrence_label"), "recurrence", d.recurrence, recurrences)}
+                ${this._select(this._t("panel.chore_recurrence_day_label"), "recurrence_day", d.recurrence_day,
+                  [{ v: "", l: this._t("panel.bulk_edit_any_day") }, ...DAYS])}
+              </div>`
+            : `<div class="tm-field">
+                <span class="tm-field-label">${this._t("panel.bulk_days_label")}</span>
+                <div class="tm-day-row">${DAYS.map(day => `
+                  <button type="button" class="tm-day-btn ${(d.due_days || []).includes(day.v) ? "tm-day-on" : ""}" data-act="toggle-bulk-day" data-day="${day.v}">${this._t(day.lk)}</button>`).join("")}</div>
+              </div>`)),
+        block(this._switch(this._t("panel.bulk_edit_period"), "ch_period", d.ch_period, "", true), d.ch_period,
+          this._select(this._t("panel.chore_time_category_label"), "time_category", d.time_category, this._timeCategoryOptions())),
+        block(this._switch(this._t("panel.bulk_edit_approval"), "ch_approval", d.ch_approval, "", true), d.ch_approval,
+          this._switch(this._t("panel.chore_approval_label"), "requires_approval", d.requires_approval)),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-bulk-edit">${this._tn("panel.bulk_edit_apply", d.ids.length)}</button>`
+    );
   }
 
   async _doCloneChore(id) {
@@ -9612,6 +9702,7 @@ class TaskMatePanel extends HTMLElement {
       ${this._bulkMode && all.length > 0 ? `
         <div class="tm-bulk-bar">
           <span class="tm-bulk-count">${this._tn("panel.bulk_selected", this._bulkSel.size)}</span>
+          <button type="button" class="tm-btn tm-btn-raised" data-act="bulk-edit" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_edit_btn")}</button>
           <button type="button" class="tm-btn" data-act="bulk-enable" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_enable")}</button>
           <button type="button" class="tm-btn" data-act="bulk-disable" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_disable")}</button>
           <button type="button" class="tm-btn" data-act="bulk-delete" ${this._bulkSel.size ? "" : "disabled"}>${this._t("panel.bulk_delete")}</button>
@@ -15622,6 +15713,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "apply-penalty") return this._renderApplyDialog("penalty");
     if (this._dialog.kind === "apply-bonus")   return this._renderApplyDialog("bonus");
     if (this._dialog.kind === "bulk-chore")    return this._renderBulkChoreDialog();
+    if (this._dialog.kind === "bulk-edit")     return this._renderBulkEditDialog();
     if (this._dialog.kind === "reorder")       return this._renderReorderDialog();
     if (this._dialog.kind === "kid-drawer")    return this._renderKidDrawer();
     if (this._dialog.kind === "view-as")       return this._renderViewAsDialog();
@@ -18393,6 +18485,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-filt { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--tm-text-faint); flex: 0 1 160px; min-width: 120px; }
       .tm-filt .tm-select { width: 100%; }
       .tm-filt-count { font-size: 12.5px; color: var(--tm-text-muted); align-self: center; }
+      /* Edit selected chores (#1174): one switch per setting, its control below when on */
+      .tm-bulk-edit-item { border: 1px solid var(--tm-border-soft); border-radius: 10px; padding: 4px 12px; margin-bottom: 10px; }
+      .tm-bulk-edit-item.tm-bulk-edit-on { border-color: var(--tm-accent-border); }
+      .tm-bulk-edit-body { padding: 4px 0 10px; }
       .tm-table tr:last-child td { border-bottom: 0; }
       .tm-row { transition: background 0.1s var(--tm-easing); }
       .tm-row:hover { background: var(--tm-surface-hover); }
