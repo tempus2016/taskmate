@@ -13,6 +13,7 @@ import logging
 from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -97,15 +98,22 @@ class AvatarsMixin:
                 req = f"{value}-day streak"
             else:
                 req = ""
-            out.append(
-                {
-                    "id": entry.get("id", entry.get("icon")),
-                    "label": entry.get("label", ""),
-                    "icon": entry.get("icon"),
-                    "unlocked": self._avatar_unlocked(entry, child),
-                    "requirement": req,
-                }
-            )
+            unlocked = self._avatar_unlocked(entry, child)
+            option = {
+                "id": entry.get("id", entry.get("icon")),
+                "label": entry.get("label", ""),
+                "icon": entry.get("icon"),
+                "unlocked": unlocked,
+                # English; the kiosk and child cards parse it, so its format
+                # stays fixed. Cards should prefer unlock_type/unlock_value.
+                "requirement": req,
+            }
+            if not unlocked:
+                # Raw requirement for the cards to word in the user's
+                # language. Locked options only: sensor attributes are capped.
+                option["unlock_type"] = kind
+                option["unlock_value"] = value
+            out.append(option)
         return out
 
     async def async_update_avatar_catalog(self, catalog: list[dict]) -> None:
@@ -136,13 +144,13 @@ class AvatarsMixin:
         """
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         catalog = self.avatar_catalog()
         entry = next((a for a in catalog if a.get("icon") == icon or a.get("id") == icon), None)
         if not entry:
-            raise ValueError("That avatar is not in the catalogue")
+            raise TaskMateError("avatar_not_in_catalogue")
         if enforce_unlock and not self._avatar_unlocked(entry, child):
-            raise ValueError("That avatar is not unlocked yet")
+            raise TaskMateError("avatar_locked")
         child.avatar = entry.get("icon")
         self.storage.update_child(child)
         await self.storage.async_save()

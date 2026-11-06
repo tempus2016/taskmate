@@ -12,6 +12,7 @@ from homeassistant.components import websocket_api
 from homeassistant.util import dt as dt_util
 
 from . import voucher
+from .errors import send_translated_error
 from .websocket import _admin_only
 
 WS_PRINT_VOUCHER = "taskmate/print/reward_voucher"
@@ -32,12 +33,12 @@ WS_PRINT_VOUCHER = "taskmate/print/reward_voucher"
 async def ws_print_reward_voucher(hass, connection, msg, coordinator):
     claim = next((c for c in coordinator.storage.get_reward_claims() if c.id == msg["claim_id"]), None)
     if claim is None or not claim.approved or claim.wish_id:
-        connection.send_error(msg["id"], "not_found", "Only an approved reward can be printed")
+        send_translated_error(connection, msg["id"], "not_found", "voucher_not_approved")
         return
     reward = coordinator.get_reward(claim.reward_id)
     holder = coordinator.get_child(claim.holder_id)
     if reward is None or holder is None:
-        connection.send_error(msg["id"], "not_found", "That reward or child no longer exists")
+        send_translated_error(connection, msg["id"], "not_found", "voucher_missing")
         return
     buyer = coordinator.get_child(claim.child_id) if claim.recipient_id else None
     when = dt_util.as_local(claim.approved_at or claim.claimed_at)

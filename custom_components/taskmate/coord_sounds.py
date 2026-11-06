@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 
+from .errors import TaskMateError
 from .models import CustomSound
 from .sounds import (
     CUSTOM_PREFIX,
@@ -54,9 +55,9 @@ class SoundsMixin:
     async def async_add_custom_sound(self, file: str, name: str) -> CustomSound:
         """Register an already-uploaded sound file under a display name."""
         if not FILENAME_RE.match(file or ""):
-            raise ValueError(f"Not a valid sound file name: {file}")
+            raise TaskMateError("sound_invalid_file_name", file=file)
         if self.storage.get_custom_sound(file):
-            raise ValueError(f"Sound {file} is already registered")
+            raise TaskMateError("sound_already_registered", file=file)
 
         sound = CustomSound(name=clean_sound_name(name), file=file)
         self.storage.add_custom_sound(sound)
@@ -67,7 +68,7 @@ class SoundsMixin:
     async def async_rename_custom_sound(self, file: str, name: str) -> CustomSound:
         """Change a custom sound's display name."""
         if not self.storage.rename_custom_sound(file, clean_sound_name(name)):
-            raise ValueError(f"Unknown custom sound: {file}")
+            raise TaskMateError("sound_unknown_custom", file=file)
         await self.storage.async_save()
         await self.async_refresh()
         return self.storage.get_custom_sound(file)
@@ -80,7 +81,7 @@ class SoundsMixin:
         the UI rather than leaving a row whose file may be gone.
         """
         if not self.storage.get_custom_sound(file):
-            raise ValueError(f"Unknown custom sound: {file}")
+            raise TaskMateError("sound_unknown_custom", file=file)
 
         reset = self.storage.reset_chores_using_sound(f"{CUSTOM_PREFIX}{file}")
         self.storage.remove_custom_sound(file)

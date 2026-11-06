@@ -18,6 +18,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
 from . import sounds
+from .errors import error_body
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,16 +38,16 @@ class TaskMateSoundUploadView(HomeAssistantView):
         # Admin-only: this writes files and is only ever called by the panel.
         user = request.get("hass_user")
         if user is None or not user.is_admin:
-            return self.json_message("Admin required", HTTPStatus.FORBIDDEN)
+            return self.json(error_body("upload_admin_required"), HTTPStatus.FORBIDDEN)
 
         # Cheap pre-check on the declared length before reading the body.
         if request.content_length and request.content_length > sounds.MAX_UPLOAD_BYTES:
-            return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            return self.json(error_body("upload_file_too_large"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         try:
             reader = await request.multipart()
         except (ValueError, AssertionError):
-            return self.json_message("Expected multipart form", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_expected_multipart"), HTTPStatus.BAD_REQUEST)
 
         # Bound the scan so a stream of endlessly-named non-"file" parts can't
         # hold the handler open indefinitely (mirrors the photo upload).
@@ -55,10 +56,10 @@ class TaskMateSoundUploadView(HomeAssistantView):
         while field is not None and field.name != "file":
             parts_scanned += 1
             if parts_scanned > 16:
-                return self.json_message("Too many form parts", HTTPStatus.BAD_REQUEST)
+                return self.json(error_body("upload_too_many_parts"), HTTPStatus.BAD_REQUEST)
             field = await reader.next()
         if field is None:
-            return self.json_message("No file provided", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_no_file"), HTTPStatus.BAD_REQUEST)
 
         # Stream the part, enforcing the size cap as we go.
         data = bytearray()
@@ -68,15 +69,15 @@ class TaskMateSoundUploadView(HomeAssistantView):
                 break
             data.extend(chunk)
             if len(data) > sounds.MAX_UPLOAD_BYTES:
-                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return self.json(error_body("upload_file_too_large"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         ext = sounds.detect_allowed_ext(bytes(data))
         if ext is None:
-            return self.json_message("Not a supported sound (MP3, OGG, WAV or M4A)", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_sound_unsupported"), HTTPStatus.BAD_REQUEST)
 
         used = await self.hass.async_add_executor_job(sounds.total_sounds_bytes, self.hass)
         if used + len(data) > sounds.MAX_TOTAL_BYTES:
-            return self.json_message("Sound storage full", HTTPStatus.INSUFFICIENT_STORAGE)
+            return self.json(error_body("upload_sound_storage_full"), HTTPStatus.INSUFFICIENT_STORAGE)
 
         name = f"{uuid.uuid4().hex}.{ext}"
         directory = sounds.sounds_path(self.hass)
@@ -90,7 +91,7 @@ class TaskMateSoundUploadView(HomeAssistantView):
             await self.hass.async_add_executor_job(_write)
         except OSError as err:
             _LOGGER.error("Failed to store custom sound: %s", err)
-            return self.json_message("Could not store sound", HTTPStatus.INTERNAL_SERVER_ERROR)
+            return self.json(error_body("upload_sound_store_failed"), HTTPStatus.INTERNAL_SERVER_ERROR)
 
         return self.json({"file": name, "sound_url": sounds.sound_url_for_name(name)})
 

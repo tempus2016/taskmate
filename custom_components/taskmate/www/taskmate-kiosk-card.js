@@ -278,6 +278,21 @@ class TaskMateKioskCard extends LitElement {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /** A refused upload as an error: the server's JSON body (translation_key, message) when it sent one. */
+  async _uploadError(resp) {
+    let body = null;
+    try { body = await resp.json(); } catch (_e) { /* not JSON */ }
+    const err = new Error((body && body.message) || `upload failed (${resp.status})`);
+    return body && typeof body === "object" ? Object.assign(err, body) : err;
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -373,7 +388,7 @@ class TaskMateKioskCard extends LitElement {
       this._status = map;
       this._statusError = "";
     } catch (err) {
-      this._statusError = String(err?.message || err);
+      this._statusError = this._errText(err) || String(err);
     } finally {
       this._statusInflight = false;
       if (this._statusAgain) {
@@ -630,10 +645,10 @@ class TaskMateKioskCard extends LitElement {
             ${opts.map(o => html`
               <button class="km-av-opt ${o.unlocked ? "" : "locked"} ${o.icon === child.avatar ? "current" : ""}"
                       ?disabled=${!o.unlocked || !!this._busy}
-                      title="${o.unlocked ? (o.label || "") : (o.requirement ? this._t("kiosk.avatar_locked_req", { requirement: this._avatarReq(o.requirement) }) : this._t("child.avatar_locked"))}"
+                      title="${o.unlocked ? (window.__taskmate_avatar_label ? window.__taskmate_avatar_label(this.hass, o) : (o.label || "")) : (o.requirement ? this._t("kiosk.avatar_locked_req", { requirement: this._avatarReq(o.requirement, o) }) : this._t("child.avatar_locked"))}"
                       @click=${() => this._chooseAvatar(child, o.icon)}>
                 <ha-icon icon="${o.unlocked ? o.icon : "mdi:lock"}"></ha-icon>
-                ${o.label ? html`<span>${o.label}</span>` : ""}
+                ${o.label ? html`<span>${window.__taskmate_avatar_label ? window.__taskmate_avatar_label(this.hass, o) : o.label}</span>` : ""}
               </button>`)}
           </div>` : ""}
       </div>`;
@@ -641,7 +656,14 @@ class TaskMateKioskCard extends LitElement {
 
   // The server words an unlock requirement in English ("Level 5", "120 earned",
   // "7-day streak"; coord_avatars.py); say it in the tablet's language.
-  _avatarReq(req) {
+  _avatarReq(req, opt) {
+    // Newer backends send the rule as data; older ones only the English text.
+    const t = opt && opt.unlock_type, v = opt && Number(opt.unlock_value);
+    if (t && Number.isFinite(v)) {
+      if (t === "level") return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, v) });
+      if (t === "points") return this._t("kiosk.avatar_req_points", { value: __tmNum(this.hass, v), pointsName: this._pointsName() });
+      if (t === "streak") return this._t(v === 1 ? "kiosk.avatar_req_streak_one" : "kiosk.avatar_req_streak", { value: __tmNum(this.hass, v) });
+    }
     const s = String(req || "");
     let m = /^Level (\d+)$/.exec(s);
     if (m) return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, Number(m[1])) });
@@ -981,7 +1003,7 @@ class TaskMateKioskCard extends LitElement {
       this._pin = "";
     } catch (err) {
       this._pin = "";
-      this._pinError = String(err?.message || err);
+      this._pinError = this._errText(err) || String(err);
     } finally {
       this._busy = "";
       this.requestUpdate();
@@ -1020,7 +1042,7 @@ class TaskMateKioskCard extends LitElement {
         this._enqueue(child, chore);
         this._cheer(chore, child);
       } else {
-        this._notify(String(err?.message || err));
+        this._notify(this._errText(err) || String(err));
       }
     } finally {
       this._busy = "";
@@ -1217,7 +1239,7 @@ class TaskMateKioskCard extends LitElement {
       });
       if (this.config.play_sounds !== false) this._playSound(this.config.undo_sound || "undo");
     } catch (err) {
-      this._notify(String(err?.message || err));
+      this._notify(this._errText(err) || String(err));
     } finally {
       this._busy = "";
       this._scheduleStatus(0);
@@ -1268,7 +1290,7 @@ class TaskMateKioskCard extends LitElement {
       await run();
       return true;
     } catch (err) {
-      this._notify(String(err?.message || err));
+      this._notify(this._errText(err) || String(err));
       return false;
     } finally {
       this._busy = "";
@@ -1349,9 +1371,12 @@ class TaskMateKioskCard extends LitElement {
       this._idle = 0;
     } catch (err) {
       if (here()) {
-        this._bountyDlg = { kind: "photo", id: target.bountyId, error: this._t("child.photo_upload_failed") };
+        // A refusal the server explains (storage full, bounty taken, ...) in
+        // the user's language; anything else keeps the generic wording.
+        const error = err && err.translation_key ? this._errText(err) : this._t("child.photo_upload_failed");
+        this._bountyDlg = { kind: "photo", id: target.bountyId, error };
       } else {
-        this._notify(String(err?.message || err));
+        this._notify(this._errText(err) || String(err));
       }
     } finally {
       this._busy = "";
@@ -1403,7 +1428,7 @@ class TaskMateKioskCard extends LitElement {
       await this.hass.auth.refreshAccessToken();
       resp = await post();
     }
-    if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+    if (!resp.ok) throw await this._uploadError(resp);
     const { photo_url: photoUrl } = await resp.json();
     if (!photoUrl) throw new Error("no photo_url");
     return photoUrl;

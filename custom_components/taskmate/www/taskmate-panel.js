@@ -869,7 +869,7 @@ class TaskMatePanel extends HTMLElement {
         await new Promise(r => setTimeout(r, 800));
         return this._fetchState(_attempt + 1);
       }
-      this._error = (err && err.message) || String(err);
+      this._error = this._errText(err) || String(err);
       this._state = null;
     }
     // Fetch notifications state separately — failure here must not abort
@@ -887,12 +887,34 @@ class TaskMatePanel extends HTMLElement {
     this._wizardMaybeAutoOpen();
   }
 
+  /**
+   * A backend error in the user's language: HA's translation of its
+   * translation_key, else the English message (see __taskmate_error_text in
+   * taskmate-localize.js). Every _callWS / _callService failure goes through it.
+   */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this._hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /**
+   * A refused upload's message in the user's language, when the server sent
+   * a translated JSON error body; "" otherwise (the caller keeps its own
+   * wording for the status).
+   */
+  async _uploadRefusal(resp) {
+    let body;
+    try { body = await resp.json(); } catch (_e) { return ""; }
+    return body && typeof body === "object" && body.translation_key ? this._errText(body) : "";
+  }
+
   async _callWS(payload) {
     try {
       const res = await this._hass.callWS(payload);
       return { ok: true, res };
     } catch (err) {
-      return { ok: false, err: (err && err.message) || String(err), code: err && err.code };
+      return { ok: false, err: this._errText(err) || String(err), code: err && err.code };
     }
   }
 
@@ -3093,6 +3115,10 @@ class TaskMatePanel extends HTMLElement {
         await this._hass.auth.refreshAccessToken();
         resp = await post();
       }
+      if (!resp.ok) {
+        const refusal = await this._uploadRefusal(resp);
+        if (refusal) { this._showToast("err", refusal); return; }
+      }
       if (resp.status === 413) { this._showToast("err", this._t("panel.sound_too_large")); return; }
       if (resp.status === 400) { this._showToast("err", this._t("panel.sound_bad_type")); return; }
       if (resp.status === 507) { this._showToast("err", this._t("panel.sound_storage_full")); return; }
@@ -3203,6 +3229,10 @@ class TaskMatePanel extends HTMLElement {
         && this._hass.auth.refreshAccessToken) {
         await this._hass.auth.refreshAccessToken();
         resp = await post();
+      }
+      if (!resp.ok) {
+        const refusal = await this._uploadRefusal(resp);
+        if (refusal) { this._showToast("err", refusal); return; }
       }
       if (resp.status === 413) { this._showToast("err", this._t("panel.chore_image_too_large")); return; }
       if (resp.status === 400) { this._showToast("err", this._t("panel.chore_image_bad_type")); return; }
@@ -12606,7 +12636,7 @@ class TaskMatePanel extends HTMLElement {
       await this._hass.callService("taskmate", service, data);
       return { ok: true };
     } catch (err) {
-      return { ok: false, err: (err && err.message) || String(err) };
+      return { ok: false, err: this._errText(err) || String(err) };
     }
   }
 

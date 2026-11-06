@@ -17,6 +17,8 @@ from typing import Any
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
+
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MULTIPLIER = 2.0
@@ -93,18 +95,18 @@ class RouletteMixin:
         layer can surface a clear message rather than silently doing nothing.
         """
         if not self.roulette_enabled():
-            raise ValueError("Chore roulette is switched off")
+            raise TaskMateError("roulette_off")
 
         child = self.storage.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         if self.roulette_spins_left(child_id) <= 0:
-            raise ValueError("No spins left today")
+            raise TaskMateError("roulette_no_spins")
 
         candidates = self._roulette_candidates(child_id)
         if not candidates:
-            raise ValueError("Nothing left to spin for")
+            raise TaskMateError("roulette_nothing_left")
 
         # Don't hand back the chore they were already given today.
         current = self.roulette_selection(child_id)

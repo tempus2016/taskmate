@@ -22,7 +22,6 @@ from datetime import date
 
 import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -38,6 +37,7 @@ from .const import (
     TIME_CATEGORIES,
     recurrence_interval_days,
 )
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -177,10 +177,10 @@ def resolve_children(coordinator, refs) -> list[str]:
         else:
             matches = [c for c in children if (c.name or "").strip().casefold() == ref.casefold()]
             if not matches:
-                raise ServiceValidationError(f"Unknown child {ref!r}. Valid children: {valid}")
+                raise TaskMateError("service_unknown_child", ref=repr(ref), valid=valid)
             if len(matches) > 1:
                 ids = ", ".join(c.id for c in matches)
-                raise ServiceValidationError(f"More than one child is called {ref!r}; use the child id instead ({ids})")
+                raise TaskMateError("service_ambiguous_child", ref=repr(ref), ids=ids)
             child_id = matches[0].id
         if child_id not in resolved:
             resolved.append(child_id)
@@ -199,9 +199,9 @@ async def async_update_chore_from_call(coordinator, data: dict) -> None:
     # set on it below reaches storage unless async_update_chore accepts it.
     chore = coordinator.storage.get_chore(chore_id)
     if chore is None:
-        raise ServiceValidationError(f"Chore {chore_id} not found")
+        raise TaskMateError("chore_not_found", chore_id=chore_id)
     if not changes:
-        raise ServiceValidationError("Nothing to update: name at least one field to change")
+        raise TaskMateError("service_nothing_to_update")
     if "assigned_to" in changes:
         changes["assigned_to"] = resolve_children(coordinator, changes["assigned_to"])
     if "recurrence_day" in changes:
@@ -222,9 +222,9 @@ async def async_delete_chore_from_call(coordinator, data: dict) -> None:
     """Delete a chore the same way the panel does (it goes to Recently deleted)."""
     chore_id = data["chore_id"]
     if not data.get("confirm"):
-        raise ServiceValidationError("Set confirm: true to delete the chore")
+        raise TaskMateError("service_confirm_delete")
     if coordinator.storage.get_chore(chore_id) is None:
-        raise ServiceValidationError(f"Chore {chore_id} not found")
+        raise TaskMateError("chore_not_found", chore_id=chore_id)
     await coordinator.async_remove_chore(chore_id)
 
 

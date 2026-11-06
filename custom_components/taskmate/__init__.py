@@ -137,6 +137,7 @@ from .const import (
     TIME_CATEGORIES,
 )
 from .coordinator import TaskMateCoordinator
+from .errors import TaskMateError
 from .frontend import async_register_cards, async_register_frontend
 from .models import PRAISE_NOTE_MAX, REJECT_REASON_MAX, Badge, BadgeCriterion, validate_chore_times
 from .panel import async_register_panel
@@ -462,6 +463,9 @@ def _safe(handler):
         try:
             await handler(call)
         except ValueError as err:
+            # A TaskMateError is already a translated ServiceValidationError.
+            if isinstance(err, ServiceValidationError):
+                raise
             raise ServiceValidationError(str(err)) from err
 
     return wrapped
@@ -536,7 +540,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if await authz.async_context_is_parent(hass, _get_coordinator(hass), call.context):
             return
         await _async_record_service_audit(hass, call, denied=True)
-        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="rate_limited")
+        raise TaskMateError("rate_limited")
 
     def _audited(handler):
         """Wrap a child-facing handler so its mutation is recorded too.
@@ -595,6 +599,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             try:
                 await coordinator.async_complete_chore_on_date(chore_id, child_id, completed_date)
             except ValueError as err:
+                if isinstance(err, ServiceValidationError):
+                    raise
                 raise ServiceValidationError(str(err)) from err
             return
         if as_parent:
@@ -622,6 +628,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             # soft rejections (daily limit, race lost, not-your-turn) are silent
             # no-ops inside the coordinator. Surface real errors as a clean
             # validation error rather than an unhandled 500 + traceback.
+            if isinstance(err, ServiceValidationError):
+                raise
             raise ServiceValidationError(str(err)) from err
 
     async def handle_complete_next_chore(call: ServiceCall) -> None:
@@ -643,7 +651,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         # The same gate as a child completing a chore for themselves.
         await _async_require_linked_child(hass, call, coordinator, child_id)
         if coordinator.get_child(child_id) is None:
-            raise ServiceValidationError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         chore = next_chore_for_child(coordinator, child_id)
         if chore is None:
             _LOGGER.debug("complete_next_chore: nothing left to complete for %s", child_id)
@@ -819,7 +827,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         completion_id = call.data["completion_id"]
         completion = next((c for c in coordinator.storage.get_completions() if c.id == completion_id), None)
         if completion is None:
-            raise ValueError("This chore has already been undone. Refresh the card.")
+            raise TaskMateError("undo_already_undone")
         await _async_require_linked_child(hass, call, coordinator, completion.child_id)
         await coordinator.async_undo_chore(completion_id)
 
@@ -935,6 +943,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
                 context=call.context,
             )
         except ValueError as err:
+            if isinstance(err, ServiceValidationError):
+                raise
             raise ServiceValidationError(str(err)) from err
 
     async def handle_spin_roulette(call: ServiceCall) -> None:
@@ -950,6 +960,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         except ValueError as err:
             # Roulette off, no spins left, nothing to spin for — all normal
             # states the child should be told about, not server errors.
+            if isinstance(err, ServiceValidationError):
+                raise
             raise ServiceValidationError(str(err)) from err
 
     async def handle_choose_avatar(call: ServiceCall) -> None:
@@ -1232,6 +1244,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         try:
             times = validate_chore_times(call.data.get("times"), team_size=call.data.get("team_size", 0))
         except ValueError as err:
+            if isinstance(err, ServiceValidationError):
+                raise
             raise ServiceValidationError(str(err)) from err
         # Scheduling and assignment (#1156): only the fields the call names,
         # so everything else keeps the coordinator's defaults.

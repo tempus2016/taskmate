@@ -68,6 +68,29 @@ async def _prepare_reply(intent_obj) -> None:
     await notify_strings.async_load(intent_obj.hass, language)
 
 
+async def _error_speech(hass, err: BaseException) -> str:
+    """A refusal spoken in the reply language: HA's translation of a
+    ``TaskMateError``'s key, else its English text."""
+    key = getattr(err, "translation_key", None)
+    if not key or hass is None:
+        return str(err)
+    language = _reply_language.get() or getattr(getattr(hass, "config", None), "language", None) or "en"
+    try:
+        from homeassistant.helpers.translation import async_get_translations
+
+        strings = await async_get_translations(hass, language, "exceptions", [DOMAIN])
+    except Exception:  # noqa: BLE001 - a spoken reply must never fail on the lookup
+        _LOGGER.debug("Could not load TaskMate exception strings for %s", language, exc_info=True)
+        return str(err)
+    template = strings.get(f"component.{DOMAIN}.exceptions.{key}.message")
+    if not template:
+        return str(err)
+    try:
+        return template.format(**(getattr(err, "translation_placeholders", None) or {}))
+    except (KeyError, IndexError, ValueError):
+        return str(err)
+
+
 def _norm(text: str) -> str:
     return " ".join(str(text or "").lower().replace("'", "").replace("’", "").split())
 
@@ -199,7 +222,7 @@ async def async_complete_by_voice(hass, coordinator, name: str, chore_said: str,
     try:
         completion = await coordinator.async_complete_chore(chore.id, child.id)
     except ValueError as err:
-        return str(err)
+        return await _error_speech(hass, err)
     if completion is None:
         return _say(coordinator, "already_done", child_name=child.name, chore_name=chore.name)
     if completion.approved:

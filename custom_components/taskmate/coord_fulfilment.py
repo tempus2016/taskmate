@@ -27,6 +27,7 @@ from .const import (
     NOTIF_TYPE_REWARD_OWED,
     REWARD_FULFILMENT_REMINDER_MAX_DAYS,
 )
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -109,13 +110,13 @@ class FulfilmentMixin:
         """Hand-over done. ``by`` is "parent" or "child"; a child may only confirm their own."""
         claim = next((c for c in self.storage.get_reward_claims() if c.id == claim_id), None)
         if claim is None or not claim.approved or not getattr(claim, "needs_delivery", False):
-            raise ValueError("That reward is not waiting to be handed over.")
+            raise TaskMateError("fulfilment_not_waiting")
         if claim.delivered_at is not None:
-            raise ValueError("That reward has already been marked as delivered.")
+            raise TaskMateError("fulfilment_already_delivered")
         if by == "child" and child_id != claim.holder_id:
             child = self.get_child(claim.holder_id)
             name = child.name if child else "someone else"
-            raise ValueError(f"That reward belongs to {name}.")
+            raise TaskMateError("fulfilment_wrong_child", child=name)
         now = dt_util.now()
         claim.delivered_at = now
         claim.delivered_by = "child" if by == "child" else "parent"

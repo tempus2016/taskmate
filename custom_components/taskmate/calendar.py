@@ -31,7 +31,7 @@ from typing import Any
 from homeassistant.components.calendar import CalendarEntity, CalendarEntityFeature, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ServiceValidationError, Unauthorized
+from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -41,6 +41,7 @@ from . import authz
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
+from .errors import TaskMateError
 from .models import Child, Chore
 
 try:  # The websocket connection a calendar-panel edit arrived on (see _acting_user_ids).
@@ -338,16 +339,16 @@ class TaskMateCalendar(CoordinatorEntity, CalendarEntity):
     @staticmethod
     def _refuse_series(recurrence_range: str | None, rrule: str | None = None) -> None:
         if (recurrence_range or "").upper() == "THISANDFUTURE" or rrule:
-            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="calendar_series_not_supported")
+            raise TaskMateError("calendar_series_not_supported")
 
     async def async_create_event(self, **kwargs: Any) -> None:
         """Add a one-off chore for this child on the event's date."""
         user_id = await self._async_require_parent()
         description = str(kwargs.get("description") or "")
         if _PUBLISHED_MARKER in description:
-            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="calendar_own_event")
+            raise TaskMateError("calendar_own_event")
         if kwargs.get("rrule"):
-            raise ServiceValidationError(translation_domain=DOMAIN, translation_key="calendar_repeating_create")
+            raise TaskMateError("calendar_repeating_create")
         day, start_time = _local_date_time(kwargs["dtstart"])
         chore = await self.coordinator.async_calendar_add_chore(
             self._child_id,

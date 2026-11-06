@@ -209,6 +209,13 @@ class TaskMateStickerChartCard extends LitElement {
           && (!c.for_child_id || String(c.for_child_id) === String(childId)))));
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -747,10 +754,12 @@ class TaskMateStickerChartCard extends LitElement {
    * means nothing to whoever is standing at the fridge.
    */
   _failed(err, child) {
+    // Matched on HA's English text (its Unauthorized error carries no
+    // translation key); shown in the user's language.
     const msg = String(err?.message || err || "");
     this._toast(/unauthori|not authorized|admin|permission|forbidden/i.test(msg)
       ? this._t("sticker_chart.not_allowed", { name: child?.name || "" })
-      : this._t("sticker_chart.complete_failed", { error: msg }));
+      : this._t("sticker_chart.complete_failed", { error: this._errText(err) || msg }));
   }
 
   async _undo(row) {
@@ -772,7 +781,7 @@ class TaskMateStickerChartCard extends LitElement {
       const msg = String(err?.message || err || "");
       this._toast(/admin|parent|unauthori|permission/i.test(msg)
         ? this._t("sticker_chart.undo_denied")
-        : this._t("sticker_chart.complete_failed", { error: msg }));
+        : this._t("sticker_chart.complete_failed", { error: this._errText(err) || msg }));
     }
   }
 

@@ -30,6 +30,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from . import notify_strings
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -117,9 +118,9 @@ class KidTourMixin:
     def _tour_child(self, child_id: str):
         child = self.storage.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if getattr(child, "is_adult", False):
-            raise ValueError("Grown-up profiles don't get the tour")
+            raise TaskMateError("tour_adult")
         return child
 
     async def async_tour_mark(self, child_id: str, status: str, step: int = 0) -> dict[str, Any]:
@@ -130,7 +131,7 @@ class KidTourMixin:
         """
         self._tour_child(child_id)
         if status not in ("done", "skipped"):
-            raise ValueError("status must be 'done' or 'skipped'")
+            raise TaskMateError("tour_bad_status")
         states = self._tour_states()
         existing = states.get(child_id)
         if isinstance(existing, dict) and (existing.get("done") or existing.get("skipped")):
@@ -157,7 +158,7 @@ class KidTourMixin:
         """The words for one tour step, from the locale catalogue."""
         child = self._tour_child(child_id)
         if step not in TOUR_SPEAKABLE:
-            raise ValueError(f"Unknown tour step {step}")
+            raise TaskMateError("tour_unknown_step", step=step)
         points_name = self.storage.data.get("points_name") or "Stars"
         params = {"name": child.name, "points_name": points_name}
         title = notify_strings.render(self.hass, f"tour_{step}_title", params, language)
@@ -182,6 +183,6 @@ class KidTourMixin:
             self._tour_last_spoken = last
         now = time.monotonic()
         if now - last.get(child_id, -SPEAK_MIN_INTERVAL) < SPEAK_MIN_INTERVAL:
-            raise ValueError("Already speaking; try again in a moment")
+            raise TaskMateError("tour_already_speaking")
         last[child_id] = now
         return await self.async_read_aloud(child_id=child_id, message=message, context=context)

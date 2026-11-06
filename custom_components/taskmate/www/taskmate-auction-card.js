@@ -126,6 +126,13 @@ class TaskMateAuctionCard extends LitElement {
     }
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -234,7 +241,7 @@ class TaskMateAuctionCard extends LitElement {
       this._auctions = Array.isArray(res?.auctions) ? res.auctions : [];
       this._error = "";
     } catch (err) {
-      this._error = String(err?.message || err?.code || err);
+      this._error = String(this._errText(err) || err?.code || err);
     }
   }
 
@@ -247,7 +254,7 @@ class TaskMateAuctionCard extends LitElement {
       return true;
     } catch (err) {
       this.dispatchEvent(new CustomEvent("hass-notification", {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
       return false;
     } finally {

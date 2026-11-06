@@ -15,6 +15,8 @@ from datetime import date
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -102,13 +104,13 @@ class GuestsMixin:
         """Mark a child as a guest (or back to a family member)."""
         child = self.storage.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         if expires_on:
             try:
                 date.fromisoformat(expires_on)
             except (TypeError, ValueError) as err:
-                raise ValueError("expires_on must be an ISO date, e.g. 2026-08-31") from err
+                raise TaskMateError("guest_expires_invalid") from err
 
         child.is_guest = bool(is_guest)
         child.guest_expires_on = expires_on if is_guest else ""

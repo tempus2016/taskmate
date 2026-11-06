@@ -1,6 +1,8 @@
 {
   "da.json": [
     "activity.reason_bonus",
+    "avatar.label_ninja",
+    "avatar.label_robot",
     "badge.source_auto",
     "badge.tier_bronze",
     "badges.card_name",
@@ -98,6 +100,9 @@
   ],
   "de.json": [
     "activity.reason_bonus",
+    "avatar.label_ninja",
+    "avatar.label_starter",
+    "avatar.label_trophy",
     "badge.source_auto",
     "badge.tier_bronze",
     "badge.tier_gold",
@@ -203,6 +208,9 @@
   ],
   "fr.json": [
     "approvals.timed_duration",
+    "avatar.label_ninja",
+    "avatar.label_robot",
+    "avatar.label_trophy",
     "badge.source_auto",
     "badge.tier_bronze",
     "badges.default_title",
@@ -234,6 +242,7 @@
     "inspection.tag_open",
     "kiosk.boost_strip",
     "notify.celebration",
+    "notify.fallback_parent",
     "notify.month_year",
     "notify.period_range",
     "notify.pet_evolved",
@@ -333,6 +342,8 @@
   "nb.json": [
     "activity.reason_bonus",
     "approvals.timed_duration",
+    "avatar.label_ninja",
+    "avatar.label_robot",
     "badge.source_auto",
     "bounty.ok",
     "child.bonus_label",
@@ -417,6 +428,9 @@
     "auction.gauge_max",
     "auction.open_count",
     "auction.range_high",
+    "avatar.label_ninja",
+    "avatar.label_robot",
+    "avatar.label_starter",
     "bounty.dur_minutes",
     "bounty.open_count",
     "child.bonus_label",
@@ -524,6 +538,8 @@
   "nn.json": [
     "activity.reason_bonus",
     "approvals.timed_duration",
+    "avatar.label_ninja",
+    "avatar.label_robot",
     "badge.source_auto",
     "bounty.ok",
     "child.bonus_label",
@@ -607,6 +623,8 @@
   ],
   "pl.json": [
     "approvals.timed_duration",
+    "avatar.label_ninja",
+    "avatar.label_robot",
     "badge.source_auto",
     "child.boost_takeover_title",
     "child.boost_title",
@@ -659,6 +677,7 @@
   ],
   "pt-BR.json": [
     "approvals.timed_duration",
+    "avatar.label_ninja",
     "badge.source_auto",
     "badge.source_manual",
     "badge.tier_bronze",
@@ -730,6 +749,7 @@
   ],
   "pt.json": [
     "approvals.timed_duration",
+    "avatar.label_ninja",
     "badge.source_auto",
     "badge.source_manual",
     "badge.tier_bronze",

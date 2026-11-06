@@ -19,6 +19,7 @@ from typing import Any
 
 from homeassistant.helpers import issue_registry as ir
 
+from . import notify_strings
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,7 +76,9 @@ class RepairsMixin:
             targets.append(("TaskMate", legacy))
         for parent in storage.get_parent_recipients():
             if getattr(parent, "enabled", True) and (parent.notify_service or "").strip():
-                targets.append((parent.name or "Parent", parent.notify_service.strip()))
+                targets.append(
+                    (parent.name or notify_strings.text(self.hass, "fallback_parent"), parent.notify_service.strip())
+                )
         for child in children:
             if (child.notify_service or "").strip():
                 targets.append((child.name, child.notify_service.strip()))

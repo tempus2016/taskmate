@@ -143,7 +143,7 @@ def test_team_size_out_of_range_is_refused(size):
 
 
 def test_first_come_is_refused():
-    assert "first-come" in teamwork_config_error(2, assignment_mode="first_come")
+    assert "first-come" in str(teamwork_config_error(2, assignment_mode="first_come"))
 
 
 @pytest.mark.parametrize("mode", ["alternating", "random", "balanced"])
@@ -152,7 +152,7 @@ def test_rotation_modes_are_refused(mode):
 
 
 def test_open_ended_is_refused():
-    assert "open-ended" in teamwork_config_error(2, open_ended=True)
+    assert "open-ended" in str(teamwork_config_error(2, open_ended=True))
 
 
 def test_timed_task_is_refused():

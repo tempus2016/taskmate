@@ -28,6 +28,7 @@ from homeassistant.components import websocket_api
 
 from . import authz
 from .const import AUCTION_POINTS_MAX
+from .errors import error_translation, send_translated_error
 from .websocket import _admin_only, _get_coordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,15 +54,15 @@ def _signed_in(handler):
     async def wrapper(hass, connection, msg):
         coordinator = _get_coordinator(hass)
         if not coordinator:
-            connection.send_error(msg["id"], "no_coordinator", "TaskMate not initialised")
+            send_translated_error(connection, msg["id"], "no_coordinator", "taskmate_not_initialised")
             return
         try:
             await handler(hass, connection, msg, coordinator)
         except ValueError as err:
-            connection.send_error(msg["id"], "invalid", str(err))
+            connection.send_error(msg["id"], "invalid", str(err), **error_translation(err))
         except Exception:  # noqa: BLE001
             _LOGGER.exception("WS handler %s failed", msg.get("type"))
-            connection.send_error(msg["id"], "handler_failed", "Something went wrong; see the Home Assistant log")
+            send_translated_error(connection, msg["id"], "handler_failed", "handler_failed")
 
     return wrapper
 
@@ -74,7 +75,7 @@ async def _may_act_for(hass, connection, coordinator, child_id: str) -> bool:
 
 
 def _unauthorized(connection, msg) -> None:
-    connection.send_error(msg["id"], websocket_api.const.ERR_UNAUTHORIZED, "Not allowed")
+    send_translated_error(connection, msg["id"], websocket_api.const.ERR_UNAUTHORIZED, "not_allowed")
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_AUCTIONS_LIST, vol.Optional("child_id"): str})
@@ -85,7 +86,7 @@ async def ws_auctions_list(hass, connection, msg, coordinator):
     child_id = msg.get("child_id")
     if child_id:
         if coordinator.get_child(child_id) is None:
-            connection.send_error(msg["id"], "not_found", f"Child {child_id} not found")
+            send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=child_id)
             return
         if not await _may_act_for(hass, connection, coordinator, child_id):
             _unauthorized(connection, msg)
@@ -196,7 +197,7 @@ async def ws_auctions_occurrences(hass, connection, msg, coordinator):
     """The chore's next occurrences a parent may auction (and why not, if none)."""
     chore = coordinator.get_chore(msg["chore_id"])
     if chore is None:
-        connection.send_error(msg["id"], "not_found", f"Chore {msg['chore_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "chore_not_found", chore_id=msg["chore_id"])
         return
     connection.send_result(
         msg["id"],

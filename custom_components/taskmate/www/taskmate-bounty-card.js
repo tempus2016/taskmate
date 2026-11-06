@@ -102,6 +102,21 @@ class TaskMateBountyCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /** A refused upload as an error: the server's JSON body (translation_key, message) when it sent one. */
+  async _uploadError(resp) {
+    let body = null;
+    try { body = await resp.json(); } catch (_e) { /* not JSON */ }
+    const err = new Error((body && body.message) || `upload failed (${resp.status})`);
+    return body && typeof body === "object" ? Object.assign(err, body) : err;
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -218,7 +233,7 @@ class TaskMateBountyCard extends LitElement {
       return true;
     } catch (err) {
       this.dispatchEvent(new CustomEvent("hass-notification", {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
       return false;
     } finally {
@@ -268,8 +283,11 @@ class TaskMateBountyCard extends LitElement {
         bounty_id: b.id, child_id: this.config.child_id, photo_url: photoUrl,
       });
       if (ok) this._dialog = { kind: "yay", id: b.id };
-    } catch (_err) {
-      this._dialog = { kind: "photo", id: b.id, error: this._t("child.photo_upload_failed") };
+    } catch (err) {
+      // A refusal the server explains (storage full, too large, ...) in the
+      // user's language; anything else keeps the generic wording.
+      const error = err && err.translation_key ? this._errText(err) : this._t("child.photo_upload_failed");
+      this._dialog = { kind: "photo", id: b.id, error };
     }
   }
 
@@ -316,7 +334,7 @@ class TaskMateBountyCard extends LitElement {
       await this.hass.auth.refreshAccessToken();
       resp = await post();
     }
-    if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+    if (!resp.ok) throw await this._uploadError(resp);
     const { photo_url: photoUrl } = await resp.json();
     if (!photoUrl) throw new Error("no photo_url");
     return photoUrl;

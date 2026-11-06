@@ -86,7 +86,7 @@ def test_refuses_a_day_the_job_was_not_due():
 
 def test_refuses_someone_elses_job():
     coord, _ = _setup(_bed(assigned_to=["evie"]))
-    with pytest.raises(ValueError, match="isn't one of Millie's jobs"):
+    with pytest.raises(ValueError, match="isn't one of Millie’s jobs"):
         _run(coord)
 
 

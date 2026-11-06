@@ -112,6 +112,13 @@ class TaskMateRaffleCard extends LitElement {
     this._maybeReveal();
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -211,7 +218,7 @@ class TaskMateRaffleCard extends LitElement {
       await this.hass.callService("taskmate", "buy_raffle_tickets", { raffle_id: r.id, child_id: child.id, tickets });
       this._qty = { ...this._qty, [r.id]: 1 };
     } catch (err) {
-      this._error = String(err?.message || err);
+      this._error = this._errText(err) || String(err);
     } finally {
       this._busy = false;
     }

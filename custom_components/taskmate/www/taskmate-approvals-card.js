@@ -75,6 +75,13 @@ class TaskMateApprovalsCard extends LitElement {
     this._inflight = new Set();
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -1349,7 +1356,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed', { message: error.message }),
+          message: this._t('approvals.error_failed', { message: this._errText(error) }),
           notification_id: `taskmate_error_${claimId}`,
         });
       }
@@ -1517,7 +1524,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed', { message: error.message }),
+          message: this._t('approvals.error_failed', { message: this._errText(error) }),
           notification_id: `taskmate_error_${missId}`,
         });
       }
@@ -1961,7 +1968,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed', { message: error.message }),
+          message: this._t('approvals.error_failed', { message: this._errText(error) }),
           notification_id: 'taskmate_error_approve_all',
         });
       }
@@ -2108,7 +2115,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed', { message: error.message }),
+          message: this._t('approvals.error_failed', { message: this._errText(error) }),
           notification_id: `taskmate_error_${completionId}`,
         });
       }

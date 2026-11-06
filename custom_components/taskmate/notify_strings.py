@@ -32,6 +32,9 @@ _LOCALES_DIR = Path(__file__).parent / "www" / "locales"
 # English source text, keyed without the ``notify.`` prefix. en.json carries
 # the same strings (a test keeps the two in step).
 DEFAULTS: dict[str, str] = {
+    # Stand-ins when the real name is gone (a deleted chore, an unnamed parent).
+    "fallback_chore": "chore",
+    "fallback_parent": "Parent",
     "bedtime_reminder": "{child_name}, you still have chores to do before bedtime.",
     "streak_at_risk": "{child_name}, complete a chore today to keep your {streak}-day streak!",
     "all_chores_done": "{child_name} finished every chore today!",

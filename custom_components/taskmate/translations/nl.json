@@ -128,6 +128,102 @@
         "save": "Wijzigingen opslaan",
         "delete": "Groep verwijderen"
       }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Geen geluid",
+        "coin": "Munt",
+        "levelup": "Level omhoog",
+        "fanfare": "Fanfare",
+        "chime": "Belletje",
+        "powerup": "Power-up",
+        "undo": "Ongedaan maken",
+        "fart1": "Scheet 1",
+        "fart2": "Scheet 2",
+        "fart3": "Scheet 3",
+        "fart4": "Scheet 4",
+        "fart5": "Scheet 5",
+        "fart6": "Scheet 6",
+        "fart7": "Scheet 7",
+        "fart8": "Scheet 8",
+        "fart9": "Scheet 9",
+        "fart10": "Scheet 10",
+        "fart_random": "Willekeurige scheet"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Makkelijk",
+        "medium": "Gemiddeld",
+        "hard": "Moeilijk"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Iedereen krijgt alle punten",
+        "split": "Punten eerlijk verdelen (naar beneden afgerond)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Elke keer dat hij aan de beurt is",
+        "week": "Wekelijks",
+        "month": "Maandelijks"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Brons",
+        "silver": "Zilver",
+        "gold": "Goud",
+        "platinum": "Platina"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Alles nodig (EN)",
+        "or": "Eén is genoeg (OF)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 uur",
+        "2h": "2 uur",
+        "4h": "4 uur",
+        "bed": "Tot bedtijd"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Super",
+        "good": "Goed",
+        "ok": "Oké",
+        "sad": "Verdrietig",
+        "upset": "Boos"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Taak",
+        "reward": "Beloning",
+        "penalty": "Puntenaftrek"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Draak",
+        "cat": "Kat",
+        "dog": "Hond",
+        "bunny": "Konijn",
+        "dino": "Dino",
+        "unicorn": "Eenhoorn"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Lijkt klaar",
+        "not_yet": "Nog niet"
+      }
     }
   },
   "services": {
@@ -2096,6 +2192,1278 @@
     },
     "rate_limited": {
       "message": "Te veel verzoeken vanaf dit account. Probeer het over een minuut opnieuw."
+    },
+    "child_not_found": {
+      "message": "Kind {child_id} niet gevonden"
+    },
+    "chore_not_found": {
+      "message": "Taak {chore_id} niet gevonden"
+    },
+    "reward_not_found": {
+      "message": "Beloning {reward_id} niet gevonden"
+    },
+    "teamwork_size_not_number": {
+      "message": "De teamgrootte moet een heel getal zijn."
+    },
+    "teamwork_size_range": {
+      "message": "Een teamtaak heeft 2 tot {max} kinderen nodig (of 0 voor een gewone taak)."
+    },
+    "teamwork_points_mode": {
+      "message": "Teampunten moeten 'each' of 'split' zijn."
+    },
+    "teamwork_open_ended": {
+      "message": "Een teamtaak kan niet ook open zijn."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Een teamtaak moet aan iedereen toegewezen zijn — niet wie-eerst-komt of om de beurt."
+    },
+    "teamwork_timed": {
+      "message": "Een taak met timer kan geen teamtaak zijn."
+    },
+    "teamwork_not_team_chore": {
+      "message": "Taak {name} is geen teamtaak"
+    },
+    "swap_only_rotation": {
+      "message": "Alleen beurtelingse taken kunnen geruild worden"
+    },
+    "swap_won_at_auction": {
+      "message": "Deze taak is vandaag op de veiling gewonnen, dus je kunt hem niet ruilen"
+    },
+    "swap_already_assigned": {
+      "message": "De taak is vandaag al aan dat kind toegewezen"
+    },
+    "swap_already_pending": {
+      "message": "Er staat al een ruilverzoek voor deze taak open"
+    },
+    "swap_too_many_pending": {
+      "message": "Te veel openstaande ruilverzoeken"
+    },
+    "swap_request_not_found": {
+      "message": "Ruilverzoek {request_id} niet gevonden"
+    },
+    "bulk_unknown_action": {
+      "message": "Onbekende bulkactie {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "{fields} kan niet in bulk bewerkt worden"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Onbekend kind {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Onbekend dagdeel {period}"
+    },
+    "chore_unknown": {
+      "message": "Onbekende taak: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Overslaan kan niet als de taak aan iedereen is toegewezen"
+    },
+    "skip_sticky_follower": {
+      "message": "Een taak die zijn groep volgt kan niet overgeslagen worden; sla in plaats daarvan de leidende taak over"
+    },
+    "skip_pool_too_small": {
+      "message": "Overslaan kan pas met 2 of meer kinderen in de beurtrol"
+    },
+    "manual_start_everyone_mode": {
+      "message": "Handmatig starten kan niet als de taak aan iedereen is toegewezen"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Kind {child_id} zit niet in de beurtrol van deze taak"
+    },
+    "chore_photo_required": {
+      "message": "Voor deze taak is een foto als bewijs nodig."
+    },
+    "chore_note_required": {
+      "message": "Vertel wat je gedaan hebt om deze in te sturen."
+    },
+    "chore_quantity_required": {
+      "message": "Geef aan hoeveel {unit} je gedaan hebt."
+    },
+    "backdate_day_range": {
+      "message": "Kies een dag in de afgelopen {days} dagen, vóór vandaag."
+    },
+    "backdate_switched_off": {
+      "message": "{name} staat uit."
+    },
+    "backdate_not_assigned": {
+      "message": "{name} hoort niet bij de taken van {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "{name} gaat om de beurt of heeft een team nodig, dus je kunt hem niet voor een eerdere dag invullen."
+    },
+    "backdate_open_ended": {
+      "message": "{name} is open, dus er zijn een notitie van het kind en een prijs nodig. Gebruik de kaart van het kind."
+    },
+    "backdate_set_times": {
+      "message": "{name} heeft vaste tijden, dus je kunt hem niet voor een eerdere dag invullen."
+    },
+    "backdate_holiday": {
+      "message": "Het was vakantie {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}}, dus er waren geen taken."
+    },
+    "backdate_sick_day": {
+      "message": "{child} was ziek {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}}, dus er waren geen taken."
+    },
+    "backdate_birthday": {
+      "message": "{child} was jarig {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}}, een dag zonder taken."
+    },
+    "backdate_auction": {
+      "message": "{name} is die dag op de veiling gewonnen, dus je kunt hem achteraf niet invullen."
+    },
+    "backdate_weekly_target_met": {
+      "message": "{name} had die week zijn {target} al gehaald."
+    },
+    "backdate_not_due": {
+      "message": "{name} stond {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} niet gepland."
+    },
+    "backdate_daily_limit": {
+      "message": "{name} is {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} al {done}/{limit} keer gedaan."
+    },
+    "chore_disabled": {
+      "message": "Taak {name} staat uit"
+    },
+    "parent_complete_one_shot": {
+      "message": "Taak {name} is een eenmalige taak en kan niet door een ouder afgerond worden"
+    },
+    "parent_complete_no_children": {
+      "message": "Taak {name} heeft geen kinderen om hem voor te verbergen"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "Taak {name} wordt om de beurt gedeeld en kan alleen voor iedereen afgerond worden"
+    },
+    "parent_complete_not_assigned": {
+      "message": "Taak {name} is niet aan dat kind toegewezen"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Bonusdeeltaak {subtask_id} niet gevonden in taak {name}"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "Bonusdeeltaak {subtask} is niet aan {child} toegewezen."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Bonusdeeltaak {subtask} kan niet afgerond worden — de hoofdtaak {name} moet vandaag eerst gedaan zijn."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Bonusdeeltaak {subtask} is vandaag al gedaan."
+    },
+    "undo_window_passed": {
+      "message": "Deze taak kan niet meer ongedaan gemaakt worden. Vraag een ouder om het te doen."
+    },
+    "undo_points_spent": {
+      "message": "Deze taak kan nu niet ongedaan gemaakt worden: de punten zijn al uitgegeven. Vraag het een ouder."
+    },
+    "completion_not_found": {
+      "message": "Afronding {completion_id} niet gevonden"
+    },
+    "completion_not_approved": {
+      "message": "De afronding is niet goedgekeurd; er valt niets ongedaan te maken"
+    },
+    "chore_sort_unknown": {
+      "message": "Onbekende sortering {sort}"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Dubbele taak in groep: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "Taak {name} is aan iedereen toegewezen en kan niet bij een groep"
+    },
+    "task_group_already_member": {
+      "message": "Taak {name} hoort al bij groep {group}"
+    },
+    "task_group_unknown_policy": {
+      "message": "Onbekende regel voor taakgroep: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Onbekende taakgroep: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "Het aantal mag niet 0 zijn"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Reeksjokers staan uit (streak_freeze_max is 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} heeft al het maximum van {cap} reeksjokers"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} heeft al het maximum van {cap} reeksjokers"
+    },
+    "streak_freeze_off": {
+      "message": "Reeksjokers staan uit"
+    },
+    "points_non_negative": {
+      "message": "Punten mogen niet negatief zijn"
+    },
+    "transaction_not_found": {
+      "message": "Transactie {transaction_id} niet gevonden"
+    },
+    "undo_not_undoable": {
+      "message": "Deze actie kan niet ongedaan gemaakt worden"
+    },
+    "gift_undo_too_old": {
+      "message": "Dit cadeau is ouder dan de functie om ongedaan te maken en kan niet automatisch teruggedraaid worden."
+    },
+    "gift_undo_spent": {
+      "message": "{child} heeft al een deel van dit cadeau uitgegeven, dus het kan niet ongedaan gemaakt worden."
+    },
+    "gift_amount_positive": {
+      "message": "Het cadeaubedrag moet positief zijn"
+    },
+    "gift_same_child": {
+      "message": "Je kunt geen cadeau aan jezelf geven"
+    },
+    "gift_child_not_found": {
+      "message": "Afzender of ontvanger niet gevonden"
+    },
+    "gift_not_enough_points": {
+      "message": "Niet genoeg punten: {child} heeft {points}, cadeau {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "{name} is een gezamenlijke jackpot en de pot is niet vol. Nodig: {cost}, gespaard: {saved}"
+    },
+    "reward_not_available_to": {
+      "message": "Beloning {name} is niet beschikbaar voor {child}"
+    },
+    "reward_sold_out": {
+      "message": "Beloning {name} is uitverkocht"
+    },
+    "reward_expired": {
+      "message": "Beloning {name} is verlopen"
+    },
+    "reward_not_available_now": {
+      "message": "Beloning {name} is nu niet beschikbaar"
+    },
+    "reward_claim_already_waiting": {
+      "message": "Een aanvraag voor {name} wacht al op goedkeuring"
+    },
+    "reward_claims_too_many": {
+      "message": "Er wachten al te veel beloningsaanvragen op goedkeuring"
+    },
+    "reward_not_enough_points": {
+      "message": "Niet genoeg punten. Nodig: {cost}, beschikbaar: {available}"
+    },
+    "reward_spending_cap": {
+      "message": "Bestedingslimiet bereikt: {cap} per periode al gebruikt"
+    },
+    "reward_claim_target_missing": {
+      "message": "Beloning of kind niet gevonden voor aanvraag {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Niet genoeg punten om goed te keuren. Nodig: {cost}, aanwezig: {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "{name} is al goedgekeurd en kan niet meer afgewezen worden"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "Deze beloning is al goedgekeurd en kan niet meer afgewezen worden"
+    },
+    "pool_allocate_min": {
+      "message": "Je moet minstens 1 punt toewijzen"
+    },
+    "pool_no_spendable": {
+      "message": "{child} heeft geen punten om uit te geven"
+    },
+    "pool_full": {
+      "message": "De pot voor beloning {name} is al vol"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} kan {name} één keer per dag krijgen. Weer beschikbaar op {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} kan {name} één keer per week krijgen. Weer beschikbaar op {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} kan {name} één keer per maand krijgen. Weer beschikbaar op {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} kan {name} {count} keer per dag krijgen. Weer beschikbaar op {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} kan {name} {count} keer per week krijgen. Weer beschikbaar op {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} kan {name} {count} keer per maand krijgen. Weer beschikbaar op {date}"
+    },
+    "reward_gift_off": {
+      "message": "Beloningen voor elkaar kopen staat uit"
+    },
+    "reward_gift_children_only": {
+      "message": "Beloningen kunnen alleen voor kinderen gekocht worden"
+    },
+    "reward_gift_not_giftable": {
+      "message": "{name} kan niet voor iemand anders gekocht worden"
+    },
+    "reward_rating_stars": {
+      "message": "Kies 1 tot 3 sterren"
+    },
+    "reward_rating_not_yet": {
+      "message": "Die beloning kan nog niet beoordeeld worden"
+    },
+    "reward_rating_not_holder": {
+      "message": "Alleen het kind dat de beloning kreeg kan hem beoordelen"
+    },
+    "reward_rating_already": {
+      "message": "Die beloning is al beoordeeld"
+    },
+    "service_unknown_child": {
+      "message": "Onbekend kind {ref}. Geldige kinderen: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Meer dan één kind heet {ref}; gebruik in plaats daarvan de id van het kind ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Niets bij te werken: noem minstens één veld om te wijzigen"
+    },
+    "service_confirm_delete": {
+      "message": "Zet confirm: true om de taak te verwijderen"
+    },
+    "penalty_already_earned_back": {
+      "message": "Die puntenaftrek is al goedgemaakt."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Die beloning wacht niet op overhandiging."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Die beloning is al als overhandigd gemarkeerd."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Die beloning is van {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "{field} kan niet gepland gewijzigd worden"
+    },
+    "scheduled_expects_bool": {
+      "message": "{field} verwacht true of false"
+    },
+    "scheduled_expects_int": {
+      "message": "{field} verwacht een heel getal"
+    },
+    "scheduled_negative": {
+      "message": "{field} mag niet negatief zijn"
+    },
+    "scheduled_expects_list": {
+      "message": "{field} verwacht een lijst"
+    },
+    "scheduled_expects_text": {
+      "message": "{field} verwacht tekst"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on moet een ISO-datum zijn, bijv. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on moet een datum in de toekomst zijn"
+    },
+    "scheduled_no_fields": {
+      "message": "Een geplande wijziging moet minstens één veld wijzigen"
+    },
+    "scheduled_change_not_found": {
+      "message": "Geplande wijziging {change_id} niet gevonden"
+    },
+    "timed_not_timed": {
+      "message": "Taak {name} is geen taak met timer"
+    },
+    "timed_already_running": {
+      "message": "De timer loopt al"
+    },
+    "timed_daily_cap": {
+      "message": "Daglimiet bereikt ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "{name} is nu niet beschikbaar voor {child}"
+    },
+    "timed_no_running": {
+      "message": "Geen lopende timer om te pauzeren"
+    },
+    "timed_no_active": {
+      "message": "Geen actieve timer om te stoppen"
+    },
+    "set_time_unknown": {
+      "message": "Die tijd hoort niet bij de vaste tijden van deze taak."
+    },
+    "sick_day_range": {
+      "message": "Kies een dag van een week geleden tot een maand vooruit."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Niets te herstellen: het is nooit verwijderd of al definitief opgeruimd"
+    },
+    "trash_id_exists": {
+      "message": "Er bestaat al iets met id {item_id}"
+    },
+    "wish_not_found": {
+      "message": "Wens niet gevonden"
+    },
+    "wish_target_not_whole": {
+      "message": "Het doel moet een heel getal zijn"
+    },
+    "wish_target_range": {
+      "message": "Het doel moet tussen 1 en {max} liggen"
+    },
+    "wish_name_required": {
+      "message": "Geef de wens een naam"
+    },
+    "wish_link_invalid": {
+      "message": "Links moeten een webadres zijn dat begint met http:// of https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} heeft al {max} lopende wensen"
+    },
+    "wish_picture_unusable": {
+      "message": "Die afbeelding kan niet worden gebruikt"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Alleen een wens die wacht of is afgewezen kan worden ingetrokken"
+    },
+    "wish_not_open_for_saving": {
+      "message": "Voor {name} kan nu niet gespaard worden"
+    },
+    "wish_move_min": {
+      "message": "Je moet minstens 1 punt verplaatsen"
+    },
+    "wish_fully_funded": {
+      "message": "{name} is al volledig gespaard"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} heeft geen punten om uit te geven"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Er kunnen nu geen punten uit {name} worden gehaald"
+    },
+    "wish_take_back_min": {
+      "message": "Je moet minstens 1 punt terugnemen"
+    },
+    "wish_nothing_saved": {
+      "message": "Er is niets gespaard in {name} om terug te nemen"
+    },
+    "wish_cannot_redeem": {
+      "message": "{name} kan nu niet worden ingewisseld"
+    },
+    "wish_needs_more_points": {
+      "message": "{name} heeft eerst nog {points} punten nodig"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Er wachten al te veel beloningsaanvragen op goedkeuring"
+    },
+    "wish_not_waiting_approval": {
+      "message": "{name} wacht niet op goedkeuring"
+    },
+    "wish_cannot_decline": {
+      "message": "{name} kan niet meer worden afgewezen"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "Voor {name} kan nu niets worden toegezegd"
+    },
+    "wish_pledge_name_required": {
+      "message": "Zeg van wie de toezegging is"
+    },
+    "wish_pledge_min": {
+      "message": "Een toezegging moet minstens 1 punt zijn"
+    },
+    "wish_too_many_pledges": {
+      "message": "{name} heeft al {max} toezeggingen"
+    },
+    "wish_pledges_locked": {
+      "message": "Toezeggingen voor {name} kunnen niet meer worden gewijzigd"
+    },
+    "wish_pledge_not_found": {
+      "message": "Toezegging niet gevonden"
+    },
+    "wish_claim_missing": {
+      "message": "Wens of kind niet gevonden voor aanvraag {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "{name} wacht niet meer op inwisselen"
+    },
+    "wish_not_funded": {
+      "message": "{name} is niet meer volledig gespaard"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "De afbeelding moet een emoji zijn (maximaal {max} tekens)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Een kleur moet eruitzien als #ff8800, of “rainbow” zijn."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Dat artikel staat niet in de winkel."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Houd de naam op maximaal {max} tekens."
+    },
+    "pet_shop_name_required": {
+      "message": "Geef het artikel een naam."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Onbekende plek {slot}"
+    },
+    "pet_shop_not_whole": {
+      "message": "Prijs en niveau moeten hele getallen zijn."
+    },
+    "pet_shop_cost_range": {
+      "message": "De prijs moet tussen 1 en {max} liggen."
+    },
+    "pet_shop_level_range": {
+      "message": "Het niveau moet tussen 0 en {max} liggen."
+    },
+    "pet_shop_full": {
+      "message": "De winkel heeft plaats voor maximaal {max} artikelen."
+    },
+    "pets_switched_off": {
+      "message": "Huisdieren staan uit."
+    },
+    "pet_adopt_first": {
+      "message": "Adopteer eerst een huisdier."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Dat is nog niet ontgrendeld."
+    },
+    "pet_shop_closed": {
+      "message": "De dierenwinkel is gesloten."
+    },
+    "pet_shop_buy_first": {
+      "message": "Koop het eerst."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Dat artikel is niet te koop."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Dat wordt ontgrendeld op niveau {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Dat heb je al."
+    },
+    "pet_shop_already_pending": {
+      "message": "Dat wacht al op een ouder."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Nog niet genoeg punten daarvoor."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Die aankoop wacht niet meer."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Dat kind of artikel bestaat niet meer; wijs het in plaats daarvan af."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} heeft er nu niet genoeg punten voor."
+    },
+    "pet_unknown_species": {
+      "message": "Onbekend huisdier {species}"
+    },
+    "pet_name_required": {
+      "message": "Geef je huisdier een naam."
+    },
+    "pet_no_egg": {
+      "message": "Er is nog geen ei om uit te broeden."
+    },
+    "auction_not_found": {
+      "message": "Die veiling bestaat niet meer. Vernieuw de kaart."
+    },
+    "auction_refuse_off": {
+      "message": "Die taak staat uit."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Een niet-toegewezen taak kan aan niemand worden gegeven, dus kan ze niet worden geveild."
+    },
+    "auction_refuse_team": {
+      "message": "Een teamtaak wordt door een team gedeeld, dus kan ze niet worden geveild."
+    },
+    "auction_refuse_timed": {
+      "message": "Een getimede taak wordt per minuut betaald, dus kan ze niet worden geveild."
+    },
+    "auction_refuse_open_ended": {
+      "message": "De prijs van een open taak wordt door de ouder bepaald, dus kan ze niet worden geveild."
+    },
+    "auction_invalid_date": {
+      "message": "Ongeldige datum: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Kies een keer vanaf morgen."
+    },
+    "auction_not_scheduled": {
+      "message": "{chore} staat niet gepland op {date}."
+    },
+    "auction_already_exists": {
+      "message": "Voor die keer is er al een veiling."
+    },
+    "auction_points_not_whole": {
+      "message": "Punten moeten hele getallen zijn."
+    },
+    "auction_max_range": {
+      "message": "Het maximumbod ligt tussen 1 en {max} punten."
+    },
+    "auction_min_range": {
+      "message": "Het minimumbod moet tussen 1 en het maximum liggen."
+    },
+    "auction_needs_close": {
+      "message": "Een veiling heeft een sluitingstijd nodig."
+    },
+    "auction_close_in_past": {
+      "message": "De sluitingstijd ligt al in het verleden."
+    },
+    "auction_close_before_day": {
+      "message": "Het bieden moet sluiten vóór de dag van de taak."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Alleen kinderen die deze taak kunnen doen, kunnen erop bieden."
+    },
+    "auction_no_bidders": {
+      "message": "Kies minstens één kind dat mag bieden."
+    },
+    "auction_already_closed": {
+      "message": "Deze veiling is al gesloten."
+    },
+    "auction_already_cancelled": {
+      "message": "Deze veiling is al geannuleerd."
+    },
+    "auction_occurrence_passed": {
+      "message": "Die keer is al voorbij."
+    },
+    "auction_still_live": {
+      "message": "Deze veiling loopt nog. Annuleer haar in plaats daarvan."
+    },
+    "auction_not_for_you": {
+      "message": "Deze veiling is niet voor jou."
+    },
+    "auction_bidding_closed": {
+      "message": "Het bieden op deze veiling is gesloten."
+    },
+    "auction_bid_not_whole": {
+      "message": "Een bod is een heel aantal punten."
+    },
+    "auction_bid_range": {
+      "message": "Bied tussen {min} en {max} punten."
+    },
+    "auction_no_bid": {
+      "message": "Je hebt hier niet op geboden."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Ongeldige verlooptijd: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Die klus bestaat niet meer. Vernieuw de kaart."
+    },
+    "bounty_title_required": {
+      "message": "Een klus heeft een titel nodig."
+    },
+    "bounty_points_not_whole": {
+      "message": "Punten moeten een heel getal zijn."
+    },
+    "bounty_points_range": {
+      "message": "Een klus is tussen 1 en {max} punten waard."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "De claimtijd moet een heel aantal uren zijn."
+    },
+    "bounty_claim_hours_range": {
+      "message": "De claimtijd ligt tussen 1 en {max} uur."
+    },
+    "bounty_expiry_in_past": {
+      "message": "De verlooptijd ligt al in het verleden."
+    },
+    "bounty_finished_locked": {
+      "message": "Een afgeronde klus kan niet worden bewerkt."
+    },
+    "bounty_claimed_locked": {
+      "message": "Zodra een klus is geclaimd, kunnen alleen de punten en de verlooptijd nog veranderen."
+    },
+    "bounty_review_before_remove": {
+      "message": "Keur de afgeronde klus goed of af voordat je deze klus verwijdert."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Alleen een geclaimde klus kan worden vrijgegeven."
+    },
+    "bounty_not_for_you": {
+      "message": "Deze klus is niet voor jou."
+    },
+    "bounty_taken": {
+      "message": "Iemand anders was je voor — deze klus staat er niet meer."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Maak eerst {title} af — je kunt maar één klus tegelijk hebben."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Je hebt deze klus niet geclaimd."
+    },
+    "bounty_claim_expired": {
+      "message": "Je claim op deze klus is verlopen."
+    },
+    "bounty_photo_required": {
+      "message": "Deze klus heeft een foto van het afgeronde werk nodig."
+    },
+    "raffle_name_required": {
+      "message": "Geef de loterij een naam."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Een lot kost 1 tot {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Kies wanneer de loterij wordt getrokken."
+    },
+    "raffle_field_required": {
+      "message": "{field} is verplicht"
+    },
+    "raffle_draw_in_past": {
+      "message": "De trekking moet in de toekomst liggen."
+    },
+    "raffle_not_found": {
+      "message": "Loterij niet gevonden"
+    },
+    "raffle_not_open_edit": {
+      "message": "Alleen een open loterij kan worden gewijzigd."
+    },
+    "raffle_price_locked": {
+      "message": "Er zijn al loten gekocht, dus de prijs kan niet meer veranderen."
+    },
+    "raffle_closed": {
+      "message": "Deze loterij is gesloten."
+    },
+    "raffle_drawing": {
+      "message": "Deze loterij wordt nu getrokken."
+    },
+    "raffle_not_open_to": {
+      "message": "Deze loterij staat niet open voor {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Koop minstens één lot."
+    },
+    "raffle_max_tickets": {
+      "message": "Je kunt maximaal {max} loten hebben."
+    },
+    "raffle_not_enough_points": {
+      "message": "Niet genoeg punten voor zoveel loten."
+    },
+    "raffle_already_closed": {
+      "message": "Deze loterij is al gesloten."
+    },
+    "roulette_off": {
+      "message": "De takenroulette staat uit"
+    },
+    "roulette_no_spins": {
+      "message": "Vandaag geen draaibeurten meer"
+    },
+    "roulette_nothing_left": {
+      "message": "Niets meer om voor te draaien"
+    },
+    "unlock_not_allowed": {
+      "message": "{entity_id} staat niet op de lijst met toegestane ontgrendelingen. Voeg het toe in Instellingen voordat je het als beloning gebruikt."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Ontgrendelminuten moeten een heel getal zijn"
+    },
+    "unlock_minutes_negative": {
+      "message": "Ontgrendelminuten kunnen niet negatief zijn"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Ontgrendelminuten kunnen niet hoger zijn dan {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Die avatar staat niet in de catalogus"
+    },
+    "avatar_locked": {
+      "message": "Die avatar is nog niet ontgrendeld"
+    },
+    "weekly_goals_off": {
+      "message": "Weekdoelen staan uit."
+    },
+    "weekly_goal_range": {
+      "message": "Kies een doel van 0 tot {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Een doel moet minstens {bonus} zijn, de bonus die het oplevert."
+    },
+    "weekly_goal_locked": {
+      "message": "Het doel van deze week is al gehaald en uitbetaald, dus het kan pas maandag weer veranderen."
+    },
+    "challenge_name_required": {
+      "message": "Een naam voor de uitdaging is verplicht"
+    },
+    "challenge_target_min": {
+      "message": "Het doel moet minstens 1 zijn"
+    },
+    "challenge_not_found": {
+      "message": "Uitdaging {challenge_id} niet gevonden"
+    },
+    "quest_name_required": {
+      "message": "Een naam voor de zoektocht is verplicht"
+    },
+    "quest_needs_step": {
+      "message": "Een zoektocht heeft minstens één stap nodig"
+    },
+    "quest_not_found": {
+      "message": "Zoektocht {quest_id} niet gevonden"
+    },
+    "admin_only": {
+      "message": "Alleen voor beheerders"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate is nog niet klaar"
+    },
+    "not_allowed": {
+      "message": "Niet toegestaan"
+    },
+    "handler_failed": {
+      "message": "Er ging iets mis; bekijk het Home Assistant-logboek"
+    },
+    "chore_one_off_past_day": {
+      "message": "Een eenmalige taak kan niet op een dag staan die al voorbij is"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start moet een ISO-datum zijn"
+    },
+    "penalty_not_found": {
+      "message": "Straf {penalty_id} niet gevonden"
+    },
+    "bonus_not_found": {
+      "message": "Bonus {bonus_id} niet gevonden"
+    },
+    "group_not_found": {
+      "message": "Groep {group_id} niet gevonden"
+    },
+    "chores_bulk_no_names": {
+      "message": "Er is minstens één taaknaam nodig"
+    },
+    "notif_child_not_found": {
+      "message": "Kind niet gevonden"
+    },
+    "notif_parent_not_found": {
+      "message": "Ouder niet gevonden"
+    },
+    "recap_not_found": {
+      "message": "Overzicht niet gevonden"
+    },
+    "voucher_not_approved": {
+      "message": "Alleen een goedgekeurde beloning kan worden afgedrukt"
+    },
+    "voucher_missing": {
+      "message": "Die beloning of dat kind bestaat niet meer"
+    },
+    "setup_invalid_birthday": {
+      "message": "Verjaardag {value} is geen geldige datum"
+    },
+    "kiosk_pin_invalid": {
+      "message": "Een kiosk-pincode moet precies 4 cijfers hebben"
+    },
+    "time_periods_empty": {
+      "message": "Er moet minstens één dagdeel zijn"
+    },
+    "time_periods_too_many": {
+      "message": "te veel dagdelen (max. {max})"
+    },
+    "time_periods_not_object": {
+      "message": "elk dagdeel moet een object zijn"
+    },
+    "time_periods_duplicate_id": {
+      "message": "dubbele dagdeel-id: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "elk eigen dagdeel heeft een naam nodig"
+    },
+    "time_periods_invalid_time": {
+      "message": "ongeldige tijd voor dagdeel {name} (gebruik UU:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "dagdeel {name} moet beginnen voordat het eindigt"
+    },
+    "time_periods_overlap": {
+      "message": "{name} overlapt {other} — dagdelen mogen niet overlappen"
+    },
+    "time_periods_in_use": {
+      "message": "een dagdeel dat nog door taken wordt gebruikt, kan niet worden verwijderd: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "de vakantieperiodes moeten een lijst zijn"
+    },
+    "vacation_periods_too_many": {
+      "message": "te veel vakantieperiodes (max. {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "elke vakantieperiode moet een object zijn"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "elke vakantieperiode heeft een geldige begin- en einddatum nodig (JJJJ-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Een sjabloon zonder taken kan niet worden toegepast"
+    },
+    "template_none_selected": {
+      "message": "Kies minstens één taak"
+    },
+    "template_no_valid_chores": {
+      "message": "Geen geldige taken gevonden voor de gekozen id’s"
+    },
+    "template_needs_chore": {
+      "message": "Een sjabloon moet minstens één taak hebben"
+    },
+    "template_builtin_modify": {
+      "message": "Het ingebouwde sjabloon {template_id} kan niet worden gewijzigd"
+    },
+    "template_builtin_delete": {
+      "message": "Het ingebouwde sjabloon {template_id} kan niet worden verwijderd"
+    },
+    "template_pack_not_pack": {
+      "message": "Dat lijkt niet op een TaskMate-pakket"
+    },
+    "template_pack_wrong_format": {
+      "message": "Geen TaskMate-sjabloonpakket"
+    },
+    "template_pack_version_nan": {
+      "message": "De pakketversie is geen getal"
+    },
+    "template_pack_too_new": {
+      "message": "Dit pakket heeft een nieuwere TaskMate nodig (pakketversie {version}, deze begrijpt {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Het pakket bevat geen sjablonen"
+    },
+    "template_pack_too_many": {
+      "message": "Het pakket heeft te veel sjablonen (max. {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Het pakket bevat een ongeldig sjabloon"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Een sjabloon in het pakket heeft geen naam"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Sjabloon {name} heeft geen taken"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Sjabloon {name} heeft te veel taken"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Sjabloon {name} bevat een ongeldige taak"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "Een taak in {name} heeft geen naam"
+    },
+    "boost_bad_time": {
+      "message": "{value} is geen tijd zoals 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "De vermenigvuldiger moet een getal zijn."
+    },
+    "boost_multiplier_range": {
+      "message": "Kies een vermenigvuldiger van ×{min} tot ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Taak {chore_id} niet gevonden."
+    },
+    "boost_child_not_found": {
+      "message": "Kind {child_id} niet gevonden."
+    },
+    "boost_start_past": {
+      "message": "Een boost kan niet in het verleden beginnen."
+    },
+    "boost_too_far_ahead": {
+      "message": "Een boost kan tot een week vooruit worden ingepland."
+    },
+    "boost_minutes_nan": {
+      "message": "Het aantal minuten moet een heel getal zijn."
+    },
+    "boost_minutes_range": {
+      "message": "Kies van 1 tot {max} minuten."
+    },
+    "boost_already_ended": {
+      "message": "Die boost is al afgelopen."
+    },
+    "boost_rule_no_days": {
+      "message": "Kies minstens één dag."
+    },
+    "boost_rule_end_before_start": {
+      "message": "De eindtijd moet na de begintijd liggen."
+    },
+    "boost_rules_max": {
+      "message": "Maximaal {max} terugkerende boosts."
+    },
+    "boost_rule_gone": {
+      "message": "Die terugkerende boost bestaat niet meer."
+    },
+    "season_pack_unknown": {
+      "message": "Onbekend seizoenspakket: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Onbekend kind: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Deze taak is al ongedaan gemaakt. Vernieuw de kaart."
+    },
+    "import_invalid_payload": {
+      "message": "Ongeldige TaskMate-export"
+    },
+    "import_data_not_object": {
+      "message": "Importgegevens moeten een object zijn"
+    },
+    "allowance_points_min": {
+      "message": "Punten moeten minstens 1 zijn"
+    },
+    "allowance_not_enabled": {
+      "message": "Zakgeld staat niet aan"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} heeft maar {points} punten om uit te betalen."
+    },
+    "appeals_off": {
+      "message": "Bezwaar maken staat uit."
+    },
+    "appeals_already_appealed": {
+      "message": "Daar is al bezwaar tegen gemaakt."
+    },
+    "appeals_not_appealable": {
+      "message": "Daar kan geen bezwaar tegen gemaakt worden."
+    },
+    "appeals_not_found": {
+      "message": "Dat bezwaar bestaat niet meer."
+    },
+    "appeals_already_decided": {
+      "message": "Over dat bezwaar is al beslist."
+    },
+    "appeals_child_gone": {
+      "message": "Het kind is er niet meer."
+    },
+    "appeals_reward_gone": {
+      "message": "Die beloning bestaat niet meer."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Die straf is al teruggedraaid."
+    },
+    "appeals_unknown_kind": {
+      "message": "Onbekend soort bezwaar {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Verjaardag moet JJJJ-MM-DD of MM-DD zijn, kreeg {value}"
+    },
+    "birthday_in_future": {
+      "message": "Verjaardag kan niet in de toekomst liggen"
+    },
+    "chore_reminders_off": {
+      "message": "Herinneringen staan uit"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} hoort niet bij de taken van {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "Kies een tijd zoals 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Kies een tijd tussen {earliest} en {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on moet een ISO-datum zijn, bijv. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Die controle bestaat niet meer. Vernieuw en probeer het opnieuw."
+    },
+    "inspection_already_decided": {
+      "message": "Over die controle is al beslist of hij is gesloten."
+    },
+    "inspections_off": {
+      "message": "Verrassingscontroles staan uit in Instellingen."
+    },
+    "inspection_chore_gone": {
+      "message": "Die taak bestaat niet meer."
+    },
+    "inspection_not_approved": {
+      "message": "Alleen goedgekeurde taken kunnen gecontroleerd worden."
+    },
+    "inspection_not_child_chore": {
+      "message": "Alleen een eigen taak van een kind kan gecontroleerd worden."
+    },
+    "inspection_child_gone": {
+      "message": "Dat kind bestaat niet meer."
+    },
+    "inspection_too_old": {
+      "message": "Alleen taken die in de afgelopen {hours} uur zijn goedgekeurd, kunnen gecontroleerd worden."
+    },
+    "inspection_already_inspected": {
+      "message": "Die taak is al gecontroleerd."
+    },
+    "inspection_redo_today_only": {
+      "message": "Alleen een taak die vandaag is afgerond, kan teruggestuurd worden om opnieuw te doen."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url moet een /pad, een http(s)-URL of noAction zijn"
+    },
+    "notification_group_spaces": {
+      "message": "group mag geen spaties bevatten (probeer family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group mag geen stuurtekens bevatten"
+    },
+    "notification_group_too_long": {
+      "message": "group mag hoogstens 64 tekens lang zijn"
+    },
+    "notification_unknown_type": {
+      "message": "Onbekend meldingstype {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Onbekende ontvanger van meldingen {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Minuten moeten een heel getal zijn"
+    },
+    "screen_time_minutes_max": {
+      "message": "Minuten mogen niet hoger zijn dan {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "De schermtijdpot staat uit"
+    },
+    "screen_time_jar_full": {
+      "message": "De pot is vol"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Geen minuten om te sparen"
+    },
+    "setup_unknown_age_group": {
+      "message": "Onbekende leeftijdsgroep {value}"
+    },
+    "setup_child_needs_ref": {
+      "message": "Elk nieuw kind heeft een eigen ref nodig"
+    },
+    "setup_child_needs_name": {
+      "message": "Een kind heeft een naam nodig"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Taak toegewezen aan een onbekend kind {who}"
+    },
+    "setup_chore_needs_name": {
+      "message": "Een taak heeft een naam nodig"
+    },
+    "setup_reward_needs_name": {
+      "message": "Een beloning heeft een naam nodig"
+    },
+    "sibling_checks_off": {
+      "message": "Broer-en-zuscontroles staan uit"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Onbekend oordeel {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Die taak is al gecontroleerd. Vernieuw de kaart."
+    },
+    "sibling_check_own_chore": {
+      "message": "Je kunt je eigen taak niet controleren"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} kan de taken van dit kind niet controleren"
+    },
+    "sound_invalid_file_name": {
+      "message": "Geen geldige naam voor een geluidsbestand: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Geluid {file} is al geregistreerd"
+    },
+    "sound_unknown_custom": {
+      "message": "Onbekend eigen geluid: {file}"
+    },
+    "tour_adult": {
+      "message": "Volwassenenprofielen krijgen de rondleiding niet"
+    },
+    "tour_bad_status": {
+      "message": "status moet 'done' of 'skipped' zijn"
+    },
+    "tour_unknown_step": {
+      "message": "Onbekende stap in de rondleiding {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Er wordt al gesproken; probeer het zo opnieuw"
+    },
+    "tts_no_media_player": {
+      "message": "Geen mediaspeler opgegeven en geen standaard ingesteld in Instellingen"
+    },
+    "tts_no_entity": {
+      "message": "Geen tekst-naar-spraak-entiteit gevonden. Stel er een in bij Instellingen of geef tts_entity op."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} hoort vandaag niet bij de taken van {child}."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Onbekende stemming {mood}"
+    },
+    "set_times_not_list": {
+      "message": "Vaste tijden moeten een lijst zijn."
+    },
+    "set_times_too_many": {
+      "message": "Een taak kan hoogstens {max} vaste tijden hebben."
+    },
+    "set_times_timed": {
+      "message": "Een taak met timer kan geen vaste tijden hebben."
+    },
+    "set_times_open_ended": {
+      "message": "Een open taak kan geen vaste tijden hebben."
+    },
+    "set_times_quantity": {
+      "message": "Een hoeveelheidstaak kan geen vaste tijden hebben."
+    },
+    "set_times_teamwork": {
+      "message": "Een teamtaak kan geen vaste tijden hebben."
+    },
+    "set_times_need_start_end": {
+      "message": "Elke vaste tijd heeft een begin en een eind nodig."
+    },
+    "set_times_bad_format": {
+      "message": "Vaste tijden hebben een begin en een eind nodig, zoals 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "Een vaste tijd moet na het openen sluiten, op dezelfde dag."
+    },
+    "set_times_overlap": {
+      "message": "Twee vaste tijden overlappen. Verschuif er een."
+    },
+    "template_not_found": {
+      "message": "Sjabloon {template_id} niet gevonden"
+    },
+    "upload_admin_required": {
+      "message": "Beheerder vereist"
+    },
+    "upload_file_too_large": {
+      "message": "Bestand te groot"
+    },
+    "upload_expected_multipart": {
+      "message": "Multipart-formulier verwacht"
+    },
+    "upload_too_many_parts": {
+      "message": "Te veel formulierdelen"
+    },
+    "upload_no_file": {
+      "message": "Geen bestand meegegeven"
+    },
+    "upload_image_unsupported": {
+      "message": "Geen ondersteunde afbeelding (JPEG, PNG of WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Opslag voor afbeeldingen is vol"
+    },
+    "upload_image_store_failed": {
+      "message": "Kon de afbeelding niet opslaan"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Te veel uploads, probeer het zo opnieuw"
+    },
+    "upload_photo_busy": {
+      "message": "Te veel uploads tegelijk, probeer het zo opnieuw"
+    },
+    "upload_photo_storage_full": {
+      "message": "Opslag voor foto’s is vol"
+    },
+    "upload_photo_timeout": {
+      "message": "Uploaden duurde te lang"
+    },
+    "upload_photo_invalid": {
+      "message": "Geen geldige afbeelding"
+    },
+    "upload_photo_store_failed": {
+      "message": "Kon de foto niet opslaan"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Je hebt te veel foto’s die nog aan een taak gekoppeld moeten worden. Verstuur of verwijder die eerst."
+    },
+    "upload_sound_unsupported": {
+      "message": "Geen ondersteund geluid (MP3, OGG, WAV of M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Opslag voor geluiden is vol"
+    },
+    "upload_sound_store_failed": {
+      "message": "Kon het geluid niet opslaan"
     }
   },
   "issues": {

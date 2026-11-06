@@ -469,6 +469,7 @@ preview_sound:
       required: true
       selector:
         select:
+          translation_key: completion_sound
           options:
             - "none"
             - "coin"
@@ -765,6 +766,7 @@ add_chore:
       default: anytime
       selector:
         select:
+          translation_key: time_category
           options:
             - morning
             - afternoon
@@ -778,6 +780,7 @@ add_chore:
       default: medium
       selector:
         select:
+          translation_key: difficulty
           options:
             - easy
             - medium
@@ -842,6 +845,7 @@ add_chore:
       default: each
       selector:
         select:
+          translation_key: team_points_mode
           options:
             - each
             - split
@@ -883,6 +887,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: assignment_mode
           options:
             - everyone
             - alternating
@@ -898,6 +903,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: assignment_rotation_period
           options:
             - each_time
             - week
@@ -919,6 +925,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: due_days_option
           options:
             - monday
             - tuesday
@@ -946,6 +953,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: schedule_mode
           options:
             - specific_days
             - recurring
@@ -956,6 +964,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: due_days_option
           multiple: true
           options:
             - monday
@@ -973,6 +982,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: recurrence
           custom_value: true
           options:
             - every_2_days
@@ -987,6 +997,7 @@ add_chore:
       required: false
       selector:
         select:
+          translation_key: due_days_option
           options:
             - monday
             - tuesday
@@ -1064,6 +1075,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: time_category
           options:
             - morning
             - afternoon
@@ -1076,6 +1088,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: difficulty
           options:
             - easy
             - medium
@@ -1120,6 +1133,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: team_points_mode
           options:
             - each
             - split
@@ -1157,6 +1171,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: assignment_mode
           options:
             - everyone
             - alternating
@@ -1172,6 +1187,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: assignment_rotation_period
           options:
             - each_time
             - week
@@ -1193,6 +1209,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: due_days_option
           options:
             - monday
             - tuesday
@@ -1220,6 +1237,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: schedule_mode
           options:
             - specific_days
             - recurring
@@ -1230,6 +1248,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: due_days_option
           multiple: true
           options:
             - monday
@@ -1247,6 +1266,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: recurrence
           custom_value: true
           options:
             - every_2_days
@@ -1261,6 +1281,7 @@ update_chore:
       required: false
       selector:
         select:
+          translation_key: due_days_option
           options:
             - monday
             - tuesday
@@ -1401,6 +1422,7 @@ add_task_group:
       default: sticky
       selector:
         select:
+          translation_key: task_group_policy
           options:
             - sticky
             - spread
@@ -1433,6 +1455,7 @@ update_task_group:
       required: false
       selector:
         select:
+          translation_key: task_group_policy
           options:
             - sticky
             - spread
@@ -1776,6 +1799,7 @@ add_badge:
       default: bronze
       selector:
         select:
+          translation_key: badge_tier
           options:
             - bronze
             - silver
@@ -1798,12 +1822,13 @@ add_badge:
     combinator:
       name: Combinator
       description: "How multiple criteria combine: AND (all must pass) or OR (any). Default AND."
-      default: AND
+      default: and
       selector:
         select:
+          translation_key: badge_combinator
           options:
-            - AND
-            - OR
+            - and
+            - or
     assigned_to:
       name: Assigned to
       description: "List of child IDs (empty = all)"
@@ -1836,6 +1861,7 @@ update_badge:
     tier:
       selector:
         select:
+          translation_key: badge_tier
           options:
             - bronze
             - silver
@@ -1854,9 +1880,10 @@ update_badge:
     combinator:
       selector:
         select:
+          translation_key: badge_combinator
           options:
-            - AND
-            - OR
+            - and
+            - or
     assigned_to:
       selector:
         object:
@@ -2156,6 +2183,7 @@ start_inspection:
       required: false
       selector:
         select:
+          translation_key: inspection_window
           options:
             - "1h"
             - "2h"
@@ -2278,6 +2306,7 @@ log_mood:
       required: true
       selector:
         select:
+          translation_key: mood
           options:
             - "great"
             - "good"
@@ -2474,6 +2503,7 @@ appeal:
       required: true
       selector:
         select:
+          translation_key: appeal_kind
           options:
             - chore
             - reward
@@ -2567,6 +2597,7 @@ adopt_pet:
       required: true
       selector:
         select:
+          translation_key: pet_species
           options:
             - "dragon"
             - "cat"
@@ -2677,6 +2708,7 @@ sibling_check:
       required: true
       selector:
         select:
+          translation_key: sibling_check_verdict
           options:
             - done
             - not_yet

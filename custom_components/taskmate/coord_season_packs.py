@@ -26,6 +26,7 @@ from homeassistant.util import dt as dt_util
 
 from . import notify_strings
 from .const import SEASON_ORDER, SEASON_PACK_CHILDREN_KEY, SEASON_PACK_KEYS
+from .errors import TaskMateError
 from .models import Badge, Challenge, Chore, Quest, Reward
 from .season_packs import PACKS, async_load_strings, name_of, pack_contents
 from .seasons import current_window, next_window
@@ -332,7 +333,7 @@ class SeasonPacksMixin:
         criteria, so nothing awards it again).
         """
         if season not in PACKS:
-            raise ValueError(f"Unknown season pack: {season}")
+            raise TaskMateError("season_pack_unknown", season=season)
         async with self._season_lock():
             registry = self._season_registry()
             rec = registry.pop(season, None)

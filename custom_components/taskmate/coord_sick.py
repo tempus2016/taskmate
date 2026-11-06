@@ -13,6 +13,8 @@ from datetime import date, timedelta
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
+
 SICK_KEEP_DAYS = 120
 
 
@@ -35,11 +37,11 @@ class SickDaysMixin:
         """Mark (or unmark) ``day`` (default today) as a sick day. Returns the new state."""
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         today = dt_util.as_local(dt_util.now()).date()
         day = day or today
         if day < today - timedelta(days=7) or day > today + timedelta(days=30):
-            raise ValueError("Pick a day from a week ago to a month ahead.")
+            raise TaskMateError("sick_day_range")
         days = set(self._sick_days().get(child_id) or [])
         key = day.isoformat()
         if sick:

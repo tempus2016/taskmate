@@ -16,6 +16,7 @@ from homeassistant.components import websocket_api
 
 from .const import AGE_GROUPS, SCHEDULE_MODES
 from .coord_birthdays import normalize_birthday, parse_birthday
+from .errors import TaskMateError, error_translation
 from .setup_catalogue import setup_catalogue
 from .websocket import WS_LIBRARY_ADD, WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only, validate_child_color
 
@@ -71,8 +72,8 @@ _REWARD_SCHEMA = {
 }
 
 
-def _birthday_error(msg) -> tuple[str, str] | None:
-    """(code, message) for the first birthday that can't be stored, or None.
+def _birthday_error(msg) -> tuple[str, TaskMateError] | None:
+    """(code, translated error) for the first birthday that can't be stored, or None.
 
     Checked here so the panel gets a code it can show in the parent's own
     language, rather than Python's "month must be in 1..12".
@@ -84,11 +85,11 @@ def _birthday_error(msg) -> tuple[str, str] | None:
         try:
             parse_birthday(value)
         except ValueError:
-            return "invalid_birthday", f"Birthday {value!r} is not a valid date"
+            return "invalid_birthday", TaskMateError("setup_invalid_birthday", value=repr(value))
         try:
             normalize_birthday(value)
         except ValueError:
-            return "future_birthday", "Birthday can't be in the future"
+            return "future_birthday", TaskMateError("birthday_in_future")
     return None
 
 
@@ -113,7 +114,8 @@ async def ws_setup_catalogue(hass, connection, msg, coordinator):
 async def ws_setup_apply(hass, connection, msg, coordinator):
     error = _birthday_error(msg)
     if error:
-        connection.send_error(msg["id"], *error)
+        code, err = error
+        connection.send_error(msg["id"], code, str(err), **error_translation(err))
         return
     result = await coordinator.async_apply_setup_wizard(
         children=msg.get("children"),

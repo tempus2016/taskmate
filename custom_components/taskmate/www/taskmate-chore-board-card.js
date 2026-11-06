@@ -103,6 +103,13 @@ class TaskMateChoreBoardCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -238,7 +245,7 @@ class TaskMateChoreBoardCard extends LitElement {
       const next = { ...this._optimistic };
       delete next[key];
       this._optimistic = next;
-      this._showToast(this._t("chore_board.error", { message: String(err?.message || err) }));
+      this._showToast(this._t("chore_board.error", { message: this._errText(err) || String(err) }));
     } finally {
       this._busy = { ...this._busy, [key]: false };
     }
@@ -277,7 +284,7 @@ class TaskMateChoreBoardCard extends LitElement {
       this._optimistic = next;
       this._playSound("undo");
     } catch (err) {
-      this._showToast(this._t("chore_board.error", { message: String(err?.message || err) }));
+      this._showToast(this._t("chore_board.error", { message: this._errText(err) || String(err) }));
     }
   }
 

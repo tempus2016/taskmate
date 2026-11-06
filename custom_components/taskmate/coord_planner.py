@@ -23,6 +23,8 @@ from typing import Any
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
+from .errors import error_translation
+
 _LOGGER = logging.getLogger(__name__)
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -89,11 +91,14 @@ class PlannerMixin:
                         "ok": False,
                         "code": _CALENDAR_CODES.get(key, "invalid"),
                         "error": str(err) or key,
+                        **error_translation(err),
                     }
                 )
                 continue
             except ValueError as err:
-                results.append({"chore_id": chore_id, "ok": False, "code": "invalid", "error": str(err)})
+                results.append(
+                    {"chore_id": chore_id, "ok": False, "code": "invalid", "error": str(err), **error_translation(err)}
+                )
                 continue
             applied += 1
             results.append({"chore_id": chore_id, "ok": True})

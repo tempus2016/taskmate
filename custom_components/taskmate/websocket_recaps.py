@@ -18,6 +18,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 
 from . import authz
+from .errors import send_translated_error
 from .websocket import _admin_only, _get_coordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,25 +37,25 @@ def _reader(check_child: bool):
         async def wrapper(hass, connection, msg):
             coordinator = _get_coordinator(hass)
             if not coordinator:
-                connection.send_error(msg["id"], "no_coordinator", "TaskMate not initialised")
+                send_translated_error(connection, msg["id"], "no_coordinator", "taskmate_not_initialised")
                 return
             if check_child:
                 child_id = msg["child_id"]
                 if coordinator.get_child(child_id) is None:
-                    connection.send_error(msg["id"], "not_found", f"Child {child_id} not found")
+                    send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=child_id)
                     return
                 user = connection.user
                 context = SimpleNamespace(user_id=getattr(user, "id", "") or "")
                 if not getattr(user, "is_admin", False) and not await authz.async_context_allows_child(
                     hass, coordinator, context, child_id
                 ):
-                    connection.send_error(msg["id"], websocket_api.const.ERR_UNAUTHORIZED, "Not allowed")
+                    send_translated_error(connection, msg["id"], websocket_api.const.ERR_UNAUTHORIZED, "not_allowed")
                     return
             try:
                 await handler(hass, connection, msg, coordinator)
             except Exception:  # noqa: BLE001
                 _LOGGER.exception("WS handler %s failed", msg.get("type"))
-                connection.send_error(msg["id"], "handler_failed", "Something went wrong; see the Home Assistant log")
+                send_translated_error(connection, msg["id"], "handler_failed", "handler_failed")
 
         return wrapper
 
@@ -93,7 +94,7 @@ async def ws_recaps_list(hass, connection, msg, coordinator):
 async def ws_recaps_get(hass, connection, msg, coordinator):
     recap = next((r for r in coordinator.recaps_for_child(msg["child_id"]) if r.get("id") == msg["recap_id"]), None)
     if recap is None:
-        connection.send_error(msg["id"], "not_found", "Recap not found")
+        send_translated_error(connection, msg["id"], "not_found", "recap_not_found")
         return
     connection.send_result(msg["id"], {"recap": _for_display(coordinator, recap)})
 

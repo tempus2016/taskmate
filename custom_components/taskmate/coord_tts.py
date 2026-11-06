@@ -15,6 +15,7 @@ import logging
 from typing import Any
 
 from . import notify_strings
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class ReadAloudMixin:
         """The sentence to speak for a child. Raises ValueError if unknown."""
         child = self.storage.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         chores = self.get_due_chores_for_child(child_id)
         names = [c.name for c in chores]
@@ -105,11 +106,11 @@ class ReadAloudMixin:
         """Speak a child's outstanding chores. Returns what was said."""
         target = media_player or self._tts_setting("read_aloud_media_player", "")
         if not target:
-            raise ValueError("No media player given, and no default set in Settings")
+            raise TaskMateError("tts_no_media_player")
 
         speaker = self._resolve_tts_entity(tts_entity)
         if not speaker:
-            raise ValueError("No text-to-speech entity found. Set one in Settings or pass tts_entity.")
+            raise TaskMateError("tts_no_entity")
 
         text = message.strip() or self.build_read_aloud_message(child_id)
 

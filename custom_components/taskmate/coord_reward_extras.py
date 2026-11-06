@@ -29,6 +29,8 @@ from typing import Any
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
+
 _LOGGER = logging.getLogger(__name__)
 
 REWARD_RATING_DAYS = 3
@@ -61,16 +63,16 @@ class RewardExtrasMixin:
     def validate_reward_gift(self, reward, buyer, recipient_id: str):
         """Check a gift may go to ``recipient_id``; returns the recipient."""
         if not self.reward_gifting_enabled():
-            raise ValueError("Buying rewards for each other is switched off")
+            raise TaskMateError("reward_gift_off")
         recipient = self.get_child(recipient_id)
         if recipient is None:
-            raise ValueError(f"Child {recipient_id} not found")
+            raise TaskMateError("child_not_found", child_id=recipient_id)
         if getattr(recipient, "is_adult", False):
-            raise ValueError("Rewards can only be bought for children")
+            raise TaskMateError("reward_gift_children_only")
         if not self._reward_is_for_child(reward, recipient.id):
-            raise ValueError(f"Reward '{reward.name}' is not available to {recipient.name}")
+            raise TaskMateError("reward_not_available_to", name=f"'{reward.name}'", child=recipient.name)
         if reward.is_jackpot or reward.pool_enabled or getattr(reward, "streak_freeze", False):
-            raise ValueError(f"'{reward.name}' can't be bought for someone else")
+            raise TaskMateError("reward_gift_not_giftable", name=f"'{reward.name}'")
         return recipient
 
     def incoming_gifts(self, child_id: str) -> list[dict[str, Any]]:
@@ -120,9 +122,13 @@ class RewardExtrasMixin:
         if nxt is None:
             return
         period = {"day": "day", "month": "month"}.get(reward.limit_period, "week")
-        times = "once" if reward.limit_count == 1 else f"{reward.limit_count} times"
-        raise ValueError(
-            f"{holder.name} can have '{reward.name}' {times} a {period}. It's available again on {nxt.isoformat()}"
+        times = "once" if reward.limit_count == 1 else "times"
+        raise TaskMateError(
+            f"reward_limit_{times}_{period}",
+            child=holder.name,
+            name=f"'{reward.name}'",
+            count=reward.limit_count,
+            date=nxt.isoformat(),
         )
 
     def reward_limit_blocks(self, reward, claims: list) -> dict[str, str]:
@@ -175,14 +181,14 @@ class RewardExtrasMixin:
         """The child gives a reward they've had 1-3 stars. Once only."""
         stars = int(stars)
         if not 1 <= stars <= 3:
-            raise ValueError("Pick 1 to 3 stars")
+            raise TaskMateError("reward_rating_stars")
         claim = next((c for c in self.storage.get_reward_claims() if c.id == claim_id), None)
         if claim is None or self._rating_opened_at(claim) is None:
-            raise ValueError("That reward can't be rated yet")
+            raise TaskMateError("reward_rating_not_yet")
         if claim.holder_id != child_id:
-            raise ValueError("Only the child who had the reward can rate it")
+            raise TaskMateError("reward_rating_not_holder")
         if claim.rating:
-            raise ValueError("That reward has already been rated")
+            raise TaskMateError("reward_rating_already")
         claim.rating = stars
         self.storage.update_reward_claim(claim)
         await self.storage.async_save()

@@ -172,6 +172,21 @@ class TaskMateChildCard extends LitElement {
     }
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /** A refused upload as an error: the server's JSON body (translation_key, message) when it sent one. */
+  async _uploadError(resp) {
+    let body = null;
+    try { body = await resp.json(); } catch (_e) { /* not JSON */ }
+    const err = new Error((body && body.message) || `upload failed (${resp.status})`);
+    return body && typeof body === "object" ? Object.assign(err, body) : err;
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -256,7 +271,14 @@ class TaskMateChildCard extends LitElement {
   // The server words an unlock requirement in English ("Level 5", "120 earned",
   // "7-day streak"; coord_avatars.py); say it in the child's language, as the
   // kiosk does.
-  _avatarReq(req) {
+  _avatarReq(req, opt) {
+    // Newer backends send the rule as data; older ones only the English text.
+    const t = opt && opt.unlock_type, v = opt && Number(opt.unlock_value);
+    if (t && Number.isFinite(v)) {
+      if (t === "level") return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, v) });
+      if (t === "points") return this._t("kiosk.avatar_req_points", { value: __tmNum(this.hass, v), pointsName: this._pointsNameFor() });
+      if (t === "streak") return this._t(v === 1 ? "kiosk.avatar_req_streak_one" : "kiosk.avatar_req_streak", { value: __tmNum(this.hass, v) });
+    }
     const s = String(req || "");
     let m = /^Level (\d+)$/.exec(s);
     if (m) return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, Number(m[1])) });
@@ -273,10 +295,10 @@ class TaskMateChildCard extends LitElement {
         ${options.map(o => html`
           <button class="avatar-opt ${o.unlocked ? '' : 'locked'} ${o.icon === child.avatar ? 'current' : ''}"
                   ?disabled=${!o.unlocked}
-                  title="${o.unlocked ? (o.label || '') : (o.requirement ? this._t('kiosk.avatar_locked_req', { requirement: this._avatarReq(o.requirement) }) : this._t('child.avatar_locked'))}"
+                  title="${o.unlocked ? (window.__taskmate_avatar_label ? window.__taskmate_avatar_label(this.hass, o) : (o.label || '')) : (o.requirement ? this._t('kiosk.avatar_locked_req', { requirement: this._avatarReq(o.requirement, o) }) : this._t('child.avatar_locked'))}"
                   @click=${o.unlocked ? () => this._chooseAvatar(child, o.icon) : null}>
             <ha-icon icon="${o.unlocked ? o.icon : 'mdi:lock'}"></ha-icon>
-            ${o.label ? html`<span>${o.label}</span>` : ''}
+            ${o.label ? html`<span>${window.__taskmate_avatar_label ? window.__taskmate_avatar_label(this.hass, o) : o.label}</span>` : ''}
           </button>
         `)}
       </div>
@@ -4547,7 +4569,7 @@ class TaskMateChildCard extends LitElement {
       // "No spins left" / "Nothing left to spin for" arrive here as
       // ServiceValidationError — show them rather than failing silently.
       this.dispatchEvent(new CustomEvent('hass-notification', {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
     } finally {
       this._spinning = null;
@@ -5294,7 +5316,7 @@ class TaskMateChildCard extends LitElement {
       console.error("Failed to undo bonus sub-task completion:", error);
       const message = this._isUnauthorized(error)
         ? this._t("child.undo_not_allowed")
-        : this._t("child.error_undo", { message: error?.message || "" });
+        : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [bonusKey]: false };
@@ -5531,7 +5553,7 @@ class TaskMateChildCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('child.error_title'),
-          message: this._t('child.error_complete', { message: error.message }),
+          message: this._t('child.error_complete', { message: this._errText(error) }),
           notification_id: `taskmate_error_${chore.id}`,
         });
       }
@@ -5644,7 +5666,7 @@ class TaskMateChildCard extends LitElement {
         await this.hass.auth.refreshAccessToken();
         resp = await postPhoto();
       }
-      if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+      if (!resp.ok) throw await this._uploadError(resp);
       const { photo_url: photoUrl } = await resp.json();
       if (!photoUrl) throw new Error("no photo_url in response");
 
@@ -5653,9 +5675,11 @@ class TaskMateChildCard extends LitElement {
       await this._handleComplete(chore, child, photoUrl, extra);
     } catch (err) {
       // Keep the overlay open on the preview so the child can retry.
+      // A refusal the server explains (storage full, too large, ...) shows
+      // in the user's language; anything else keeps the generic wording.
       if (this._photoCapture) {
         this._photoCapture = { ...this._photoCapture, step: "preview",
-          error: this._t("child.photo_upload_failed") };
+          error: err && err.translation_key ? this._errText(err) : this._t("child.photo_upload_failed") };
         this.requestUpdate();
       }
     }
@@ -6270,7 +6294,7 @@ class TaskMateChildCard extends LitElement {
     } catch (err) {
       console.error("set_chore_reminder failed", err);
       sheet.saving = false;
-      sheet.error = String(err?.message || err);
+      sheet.error = this._errText(err) || String(err);
     }
     this.requestUpdate();
   }
@@ -6867,7 +6891,7 @@ class TaskMateChildCard extends LitElement {
       console.error("Failed to undo chore completion:", error);
       const message = this._isUnauthorized(error)
         ? this._t("child.undo_not_allowed")
-        : this._t("child.error_undo", { message: error?.message || "" });
+        : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [key]: false, ...(rowKey ? { [rowKey]: false } : {}) };
@@ -6947,7 +6971,7 @@ class TaskMateChildCard extends LitElement {
       // pre-check above.
       const message = this._isUnauthorized(error)
         ? this._t("child.undo_not_allowed")
-        : this._t("child.error_undo", { message: error?.message || "" });
+        : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [chore.id]: false };

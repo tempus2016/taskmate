@@ -14,6 +14,7 @@ from datetime import timedelta
 from homeassistant.util import dt as dt_util
 
 from . import notify_strings
+from .errors import TaskMateError
 from .models import Challenge, PointsTransaction
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,9 +27,9 @@ class ChallengesMixin:
     async def async_create_challenge(self, **fields) -> str:
         challenge = Challenge.from_dict(fields)
         if not challenge.name.strip():
-            raise ValueError("Challenge name is required")
+            raise TaskMateError("challenge_name_required")
         if challenge.target <= 0:
-            raise ValueError("Target must be at least 1")
+            raise TaskMateError("challenge_target_min")
         self.storage.add_challenge(challenge)
         await self.storage.async_save()
         await self.async_refresh()
@@ -37,20 +38,20 @@ class ChallengesMixin:
     async def async_update_challenge(self, challenge_id: str, **fields) -> None:
         existing = self.storage.get_challenge(challenge_id)
         if not existing:
-            raise ValueError(f"Challenge {challenge_id} not found")
+            raise TaskMateError("challenge_not_found", challenge_id=challenge_id)
         data = existing.to_dict()
         data.update(fields)
         data["id"] = challenge_id
         updated = Challenge.from_dict(data)
         if updated.target <= 0:
-            raise ValueError("Target must be at least 1")
+            raise TaskMateError("challenge_target_min")
         self.storage.update_challenge(updated)
         await self.storage.async_save()
         await self.async_refresh()
 
     async def async_delete_challenge(self, challenge_id: str) -> None:
         if not self.storage.get_challenge(challenge_id):
-            raise ValueError(f"Challenge {challenge_id} not found")
+            raise TaskMateError("challenge_not_found", challenge_id=challenge_id)
         self.storage.remove_challenge(challenge_id)
         await self.storage.async_save()
         await self.async_refresh()

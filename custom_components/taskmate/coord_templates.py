@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from .const import ASSIGNMENT_MODES, SCHEDULE_MODES, TIME_CATEGORIES
+from .errors import TaskMateError
 from .models import Chore, clean_template_id, generate_id, optional_float
 from .templates import BUILT_IN_IDS, BUILT_IN_TEMPLATES, TEMPLATE_CHORE_FIELDS
 
@@ -73,7 +74,7 @@ class TemplatesMixin:
         ``refresh=False`` defers the refresh to a batch (the setup wizard, #980).
         """
         if not chores:
-            raise ValueError("Cannot apply template with no chores")
+            raise TaskMateError("template_apply_empty")
         created_ids = []
         for chore_def in chores:
             chore = Chore(
@@ -123,7 +124,7 @@ class TemplatesMixin:
     async def async_save_template_from_chores(self, chore_ids: list[str], name: str, icon: str) -> str:
         """Save existing chores as a custom template pack."""
         if not chore_ids:
-            raise ValueError("At least one chore must be selected")
+            raise TaskMateError("template_none_selected")
         chores_data = []
         for cid in chore_ids:
             chore = self.storage.get_chore(cid)
@@ -132,7 +133,7 @@ class TemplatesMixin:
             chore_dict = {k: v for k, v in chore.to_dict().items() if k in TEMPLATE_CHORE_FIELDS}
             chores_data.append(chore_dict)
         if not chores_data:
-            raise ValueError("No valid chores found for selected IDs")
+            raise TaskMateError("template_no_valid_chores")
         tpl_id = generate_id()
         template = {
             "id": tpl_id,
@@ -148,7 +149,7 @@ class TemplatesMixin:
     async def async_create_template(self, name: str, icon: str, chores: list[dict]) -> str:
         """Create a new custom template from scratch."""
         if not chores:
-            raise ValueError("Template must have at least one chore")
+            raise TaskMateError("template_needs_chore")
         tpl_id = generate_id()
         template = {
             "id": tpl_id,
@@ -166,7 +167,7 @@ class TemplatesMixin:
     ) -> None:
         """Update a custom template. Raises for built-in templates."""
         if template_id in BUILT_IN_IDS:
-            raise ValueError(f"Cannot modify built-in template '{template_id}'")
+            raise TaskMateError("template_builtin_modify", template_id=f"'{template_id}'")
         updates = {}
         if name is not None:
             updates["name"] = name.strip()
@@ -180,7 +181,7 @@ class TemplatesMixin:
     async def async_delete_template(self, template_id: str) -> None:
         """Delete a custom template. Raises for built-in templates."""
         if template_id in BUILT_IN_IDS:
-            raise ValueError(f"Cannot delete built-in template '{template_id}'")
+            raise TaskMateError("template_builtin_delete", template_id=f"'{template_id}'")
         self.storage.remove_custom_template(template_id)
         await self.storage.async_save()
 
@@ -231,45 +232,43 @@ class TemplatesMixin:
         wouldn't let you set by hand.
         """
         if not isinstance(pack, dict):
-            raise ValueError("That doesn't look like a TaskMate pack")
+            raise TaskMateError("template_pack_not_pack")
         if pack.get("format") != self.PACK_FORMAT:
-            raise ValueError("Not a TaskMate template pack")
+            raise TaskMateError("template_pack_wrong_format")
         try:
             version = int(pack.get("version", 0))
         except (TypeError, ValueError) as err:
-            raise ValueError("Pack version is not a number") from err
+            raise TaskMateError("template_pack_version_nan") from err
         if version > self.PACK_VERSION:
-            raise ValueError(
-                f"This pack needs a newer TaskMate (pack version {version}, this one understands {self.PACK_VERSION})"
-            )
+            raise TaskMateError("template_pack_too_new", version=version, supported=self.PACK_VERSION)
 
         templates = pack.get("templates")
         if not isinstance(templates, list) or not templates:
-            raise ValueError("Pack contains no templates")
+            raise TaskMateError("template_pack_empty")
         if len(templates) > self.MAX_PACK_TEMPLATES:
-            raise ValueError(f"Pack has too many templates (max {self.MAX_PACK_TEMPLATES})")
+            raise TaskMateError("template_pack_too_many", max=self.MAX_PACK_TEMPLATES)
 
         clean: list[dict] = []
         for entry in templates:
             if not isinstance(entry, dict):
-                raise ValueError("Pack contains a malformed template")
+                raise TaskMateError("template_pack_malformed_template")
             name = str(entry.get("name", "")).strip()
             if not name:
-                raise ValueError("A template in the pack has no name")
+                raise TaskMateError("template_pack_unnamed_template")
 
             raw_chores = entry.get("chores")
             if not isinstance(raw_chores, list) or not raw_chores:
-                raise ValueError(f"Template '{name}' has no chores")
+                raise TaskMateError("template_pack_template_no_chores", name=f"'{name}'")
             if len(raw_chores) > self.MAX_PACK_CHORES:
-                raise ValueError(f"Template '{name}' has too many chores")
+                raise TaskMateError("template_pack_template_too_many_chores", name=f"'{name}'")
 
             chores = []
             for raw in raw_chores:
                 if not isinstance(raw, dict):
-                    raise ValueError(f"Template '{name}' has a malformed chore")
+                    raise TaskMateError("template_pack_malformed_chore", name=f"'{name}'")
                 chore_name = str(raw.get("name", "")).strip()
                 if not chore_name:
-                    raise ValueError(f"A chore in '{name}' has no name")
+                    raise TaskMateError("template_pack_unnamed_chore", name=f"'{name}'")
                 # Whitelist: unknown keys are dropped, never carried through.
                 cleaned = {k: v for k, v in raw.items() if k in TEMPLATE_CHORE_FIELDS}
                 cleaned["name"] = chore_name[:200]

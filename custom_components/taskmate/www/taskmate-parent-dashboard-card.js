@@ -67,6 +67,13 @@ class TaskMateParentDashboardCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -1501,7 +1508,7 @@ class TaskMateParentDashboardCard extends LitElement {
       this.hass.callService("persistent_notification", "create", {
         title: this._t('approvals.error_title'),
         message: this._t('approvals.error_failed', {
-          message: error && error.message ? error.message : String(error),
+          message: this._errText(error) || String(error),
         }),
         notification_id: notificationId,
       });

@@ -24,6 +24,7 @@ from datetime import datetime, timedelta
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
 from .models import Chore, PointsTransaction, PoolAllocation, Quest, Reward
 
 _LOGGER = logging.getLogger(__name__)
@@ -136,14 +137,14 @@ class RecentlyDeletedMixin:
         trash = self._trash()
         entry = next((e for e in trash if e.get("kind") == kind and e.get("id") == item_id), None)
         if entry is None:
-            raise ValueError("Nothing to restore: it was never deleted or has been purged")
+            raise TaskMateError("trash_nothing_to_restore")
         exists = {
             "chore": self.storage.get_chore,
             "reward": self.storage.get_reward,
             "quest": self.storage.get_quest,
         }[kind]
         if exists(item_id) is not None:
-            raise ValueError(f"Something with id {item_id} already exists")
+            raise TaskMateError("trash_id_exists", item_id=item_id)
         item = dict(entry.get("item") or {})
         extra = entry.get("extra") or {}
         children = {c.id: c for c in self.storage.get_children()}

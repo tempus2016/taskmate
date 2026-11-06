@@ -127,6 +127,13 @@ class TaskMateRecapCard extends LitElement {
     clearTimeout(this._toastTimer);
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -193,7 +200,7 @@ class TaskMateRecapCard extends LitElement {
         else this._recap = null;
       }
     } catch (err) {
-      this._error = (err && (err.message || err.code)) || String(err);
+      this._error = this._errText(err) || (err && err.code) || String(err);
     }
   }
 
@@ -220,7 +227,7 @@ class TaskMateRecapCard extends LitElement {
         recap = res.recap;
         this._cache.set(id, recap);
       } catch (err) {
-        this._error = (err && (err.message || err.code)) || String(err);
+        this._error = this._errText(err) || (err && err.code) || String(err);
         return;
       }
     }

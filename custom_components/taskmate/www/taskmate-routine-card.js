@@ -143,7 +143,7 @@ class TaskMateRoutineCard extends LitElement {
       this._runCompleted.delete(String(chore.id));
     } catch (err) {
       this.dispatchEvent(new CustomEvent("hass-notification", {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
     } finally {
       this._busy = false;
@@ -158,6 +158,13 @@ class TaskMateRoutineCard extends LitElement {
         : true;
     }
     return true;
+  }
+
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
   }
 
   _t(key, params) {
@@ -280,7 +287,7 @@ class TaskMateRoutineCard extends LitElement {
     } catch (err) {
       // Surface rather than silently stalling the routine on a failed call.
       this.dispatchEvent(new CustomEvent("hass-notification", {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
     } finally {
       this._busy = false;

@@ -691,6 +691,13 @@ class TaskMatePetCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -730,7 +737,7 @@ class TaskMatePetCard extends LitElement {
       await this.hass.callService("taskmate", "adopt_pet", data);
       this._hatching = false;
     } catch (err) {
-      this._error = String(err?.message || err);
+      this._error = this._errText(err) || String(err);
     } finally {
       this._busy = false;
     }
@@ -854,7 +861,7 @@ class TaskMatePetCard extends LitElement {
       const child = this._child();
       this._shop = { ...res, points_at: child ? Number(child.points) || 0 : 0 };
     } catch (err) {
-      this._shopMsg = String(err?.message || err);
+      this._shopMsg = this._errText(err) || String(err);
     }
   }
 
@@ -994,7 +1001,7 @@ class TaskMatePetCard extends LitElement {
       this._shopMsg = this._t(pending ? "pet.shop_asked" : "pet.shop_bought", { name: this._itemName(item) });
     } catch (err) {
       this._confirm = null;
-      this._shopMsg = String(err?.message || err);
+      this._shopMsg = this._errText(err) || String(err);
     } finally {
       this._shopBusy = false;
     }
@@ -1006,7 +1013,7 @@ class TaskMatePetCard extends LitElement {
     try {
       await this.hass.callService("taskmate", "equip_pet_item", { child_id: this.config.child_id, item_id: itemId, wear: on });
     } catch (err) {
-      this._shopMsg = String(err?.message || err);
+      this._shopMsg = this._errText(err) || String(err);
     } finally {
       this._shopBusy = false;
     }

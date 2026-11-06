@@ -20,6 +20,7 @@ from .const import (
     TIME_CATEGORY_ICONS,
     recurrence_interval_days,
 )
+from .errors import TaskMateError
 from .models import Chore
 
 if TYPE_CHECKING:
@@ -524,7 +525,7 @@ class CalendarMixin:
         if day < today:
             raise self._calendar_error("calendar_past_date")
         if not self.storage.get_child(child_id):
-            raise ValueError(f"Unknown child: {child_id}")
+            raise TaskMateError("calendar_unknown_child", child_id=child_id)
         return await self.async_add_chore(
             name=name,
             description=(description or "").strip(),

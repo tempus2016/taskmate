@@ -31,6 +31,7 @@ from homeassistant.util import dt as dt_util
 
 from . import notify_strings
 from .const import NOTIF_TYPE_BOOST_STARTED
+from .errors import TaskMateError
 from .models import generate_id
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ _FKB_SCREEN_SUFFIX = "-screenOn"
 def _parse_time(value: Any) -> time:
     m = _TIME_RE.match(str(value or ""))
     if not m:
-        raise ValueError(f"'{value}' is not a time like 09:30.")
+        raise TaskMateError("boost_bad_time", value=f"'{value}'")
     return time(int(m.group(1)), int(m.group(2)))
 
 
@@ -110,17 +111,19 @@ class BoostsMixin:
         try:
             mult = round(float(multiplier), 2)
         except (TypeError, ValueError):
-            raise ValueError("The multiplier must be a number.") from None
+            raise TaskMateError("boost_multiplier_nan") from None
         if not BOOST_MIN_MULTIPLIER <= mult <= BOOST_MAX_MULTIPLIER:
-            raise ValueError(f"Pick a multiplier from ×{BOOST_MIN_MULTIPLIER:g} to ×{BOOST_MAX_MULTIPLIER:g}.")
+            raise TaskMateError(
+                "boost_multiplier_range", min=f"{BOOST_MIN_MULTIPLIER:g}", max=f"{BOOST_MAX_MULTIPLIER:g}"
+            )
         chores = list(dict.fromkeys(str(c) for c in (chore_ids or [])))
         for cid in chores:
             if self.get_chore(cid) is None:
-                raise ValueError(f"Chore {cid} not found.")
+                raise TaskMateError("boost_chore_not_found", chore_id=cid)
         kids = list(dict.fromkeys(str(c) for c in (child_ids or [])))
         for cid in kids:
             if self.get_child(cid) is None:
-                raise ValueError(f"Child {cid} not found.")
+                raise TaskMateError("boost_child_not_found", child_id=cid)
         return mult, chores, kids
 
     # ── start / end ──────────────────────────────────────────────────────
@@ -147,16 +150,16 @@ class BoostsMixin:
         # A recurring rule's window can already be under way when the tick
         # (or a rule saved mid-window) picks it up; it runs for what's left.
         if start < now - _PAST_GRACE and not rule_id:
-            raise ValueError("A boost can't start in the past.")
+            raise TaskMateError("boost_start_past")
         if start > now + BOOST_MAX_LEAD:
-            raise ValueError("A boost can be scheduled up to a week ahead.")
+            raise TaskMateError("boost_too_far_ahead")
         if ends_at is None:
             try:
                 minutes = int(minutes)
             except (TypeError, ValueError):
-                raise ValueError("The minutes must be a whole number.") from None
+                raise TaskMateError("boost_minutes_nan") from None
             if not 1 <= minutes <= BOOST_MAX_MINUTES:
-                raise ValueError(f"Pick from 1 to {BOOST_MAX_MINUTES} minutes.")
+                raise TaskMateError("boost_minutes_range", max=BOOST_MAX_MINUTES)
             end = start + timedelta(minutes=minutes)
         else:
             end = ends_at
@@ -196,7 +199,7 @@ class BoostsMixin:
         if boost_id.startswith("rule:"):
             row = next((b for s, b in self._boost_rows(now) if b.get("id") == boost_id), None)
             if row is None:
-                raise ValueError("That boost has already ended.")
+                raise TaskMateError("boost_already_ended")
             day = boost_id.rsplit(":", 1)[-1]
             self._boosts().append(
                 {
@@ -220,7 +223,7 @@ class BoostsMixin:
             return
         boost = next((b for b in self._boosts() if b.get("id") == boost_id), None)
         if boost is None or self._boost_status(boost, now) == "ended":
-            raise ValueError("That boost has already ended.")
+            raise TaskMateError("boost_already_ended")
         was_active = self._boost_status(boost, now) == "active"
         boost["ended_early"] = True
         boost["ended"] = True
@@ -357,10 +360,10 @@ class BoostsMixin:
         """Add or replace a recurring boost rule (matched on ``id``)."""
         days = sorted({int(d) for d in (rule.get("days") or []) if str(d).lstrip("-").isdigit() and 0 <= int(d) <= 6})
         if not days:
-            raise ValueError("Pick at least one day.")
+            raise TaskMateError("boost_rule_no_days")
         start, end = _parse_time(rule.get("start")), _parse_time(rule.get("end"))
         if end <= start:
-            raise ValueError("The end time must be after the start time.")
+            raise TaskMateError("boost_rule_end_before_start")
         mult, chores, kids = self._check_boost_fields(
             rule.get("multiplier"), rule.get("chore_ids"), rule.get("child_ids")
         )
@@ -368,7 +371,7 @@ class BoostsMixin:
         rule_id = str(rule.get("id") or "")
         existing = next((r for r in rules if r.get("id") == rule_id), None) if rule_id else None
         if existing is None and len(rules) >= BOOST_MAX_RULES:
-            raise ValueError(f"Up to {BOOST_MAX_RULES} recurring boosts.")
+            raise TaskMateError("boost_rules_max", max=BOOST_MAX_RULES)
         clean = {
             "id": rule_id if existing else generate_id(),
             "name": str(rule.get("name") or "").strip()[:BOOST_NAME_MAX],
@@ -393,7 +396,7 @@ class BoostsMixin:
     async def async_delete_boost_rule(self, rule_id: str) -> None:
         rules = self.boost_rules()
         if not any(r.get("id") == rule_id for r in rules):
-            raise ValueError("That recurring boost no longer exists.")
+            raise TaskMateError("boost_rule_gone")
         rules[:] = [r for r in rules if r.get("id") != rule_id]
         await self.storage.async_save()
         await self.async_refresh()

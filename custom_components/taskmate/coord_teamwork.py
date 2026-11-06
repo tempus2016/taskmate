@@ -16,6 +16,7 @@ import logging
 from homeassistant.util import dt as dt_util
 
 from .const import TEAM_POINTS_MODES, TEAM_SIZE_MAX
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def teamwork_config_error(
     open_ended: bool = False,
     task_type: str = "standard",
     team_points_mode: str = "each",
-) -> str | None:
+) -> TaskMateError | None:
     """Why a chore's teamwork settings can't be saved, or None when they can.
 
     Shared by the panel's WebSocket commands, the add_chore service and the
@@ -41,19 +42,19 @@ def teamwork_config_error(
     try:
         size = int(team_size or 0)
     except (TypeError, ValueError):
-        return "Team size must be a whole number."
+        return TaskMateError("teamwork_size_not_number")
     if size == 0:
         return None
     if size < 2 or size > TEAM_SIZE_MAX:
-        return f"A teamwork chore needs between 2 and {TEAM_SIZE_MAX} children (or 0 for a normal chore)."
+        return TaskMateError("teamwork_size_range", max=TEAM_SIZE_MAX)
     if team_points_mode not in TEAM_POINTS_MODES:
-        return "Team points must be 'each' or 'split'."
+        return TaskMateError("teamwork_points_mode")
     if open_ended:
-        return "A teamwork chore can't also be open-ended."
+        return TaskMateError("teamwork_open_ended")
     if assignment_mode not in _TEAM_ASSIGNMENT_MODES:
-        return "A teamwork chore must be assigned to everyone — not first-come or a rotation."
+        return TaskMateError("teamwork_assignment_mode")
     if task_type != "standard":
-        return "A timed task can't be a teamwork chore."
+        return TaskMateError("teamwork_timed")
     return None
 
 
@@ -199,11 +200,11 @@ class TeamworkMixin:
         """
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
         if not self.get_child(child_id):
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.teamwork_size(chore):
-            raise ValueError(f"Chore '{chore.name}' is not a teamwork chore")
+            raise TaskMateError("teamwork_not_team_chore", name=f"'{chore.name}'")
 
         day = dt_util.as_local(dt_util.now()).date().isoformat()
         joined = self.storage.get_team_joins(chore_id, day)

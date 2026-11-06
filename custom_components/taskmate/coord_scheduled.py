@@ -17,6 +17,7 @@ from typing import Any
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
 from .models import SCHEDULED_CHANGE_FIELDS, ScheduledChange
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,31 +32,31 @@ def coerce_scheduled_value(field: str, value: Any) -> Any:
     """
     expected = SCHEDULED_CHANGE_FIELDS.get(field)
     if expected is None:
-        raise ValueError(f"'{field}' cannot be changed on a schedule")
+        raise TaskMateError("scheduled_field_not_allowed", field=f"'{field}'")
 
     if expected is bool:
         if isinstance(value, bool):
             return value
         if isinstance(value, str) and value.lower() in ("true", "false"):
             return value.lower() == "true"
-        raise ValueError(f"'{field}' expects true or false")
+        raise TaskMateError("scheduled_expects_bool", field=f"'{field}'")
 
     if expected is int:
         try:
             coerced = int(value)
         except (TypeError, ValueError) as err:
-            raise ValueError(f"'{field}' expects a whole number") from err
+            raise TaskMateError("scheduled_expects_int", field=f"'{field}'") from err
         if coerced < 0:
-            raise ValueError(f"'{field}' cannot be negative")
+            raise TaskMateError("scheduled_negative", field=f"'{field}'")
         return coerced
 
     if expected is list:
         if not isinstance(value, list):
-            raise ValueError(f"'{field}' expects a list")
+            raise TaskMateError("scheduled_expects_list", field=f"'{field}'")
         return [str(v) for v in value]
 
     if value is None:
-        raise ValueError(f"'{field}' expects text")
+        raise TaskMateError("scheduled_expects_text", field=f"'{field}'")
     return str(value)
 
 
@@ -78,17 +79,17 @@ class ScheduledChangesMixin:
     ) -> ScheduledChange:
         """Queue a change. Validates the chore, the date and every field now."""
         if not self.storage.get_chore(chore_id):
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         try:
             target = date.fromisoformat(apply_on)
         except (TypeError, ValueError) as err:
-            raise ValueError("apply_on must be an ISO date, e.g. 2026-09-01") from err
+            raise TaskMateError("scheduled_apply_on_format") from err
         if target <= dt_util.as_local(dt_util.now()).date():
-            raise ValueError("apply_on must be a future date")
+            raise TaskMateError("scheduled_apply_on_future")
 
         if not changes:
-            raise ValueError("A scheduled change must change at least one field")
+            raise TaskMateError("scheduled_no_fields")
         coerced = {f: coerce_scheduled_value(f, v) for f, v in changes.items()}
 
         change = ScheduledChange(
@@ -104,7 +105,7 @@ class ScheduledChangesMixin:
 
     async def async_remove_scheduled_change(self, change_id: str) -> None:
         if not self.storage.get_scheduled_change(change_id):
-            raise ValueError(f"Scheduled change {change_id} not found")
+            raise TaskMateError("scheduled_change_not_found", change_id=change_id)
         self.storage.remove_scheduled_change(change_id)
         await self.storage.async_save()
         await self.async_refresh()

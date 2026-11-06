@@ -23,6 +23,7 @@ from datetime import date
 from homeassistant.util import dt as dt_util
 
 from . import notify_strings
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def parse_birthday(value: str) -> tuple[int | None, int, int]:
     """
     m = _BIRTHDAY_RE.match((value or "").strip())
     if not m:
-        raise ValueError(f"Birthday must be YYYY-MM-DD or MM-DD, got {value!r}")
+        raise TaskMateError("birthday_invalid_format", value=repr(value))
     year = int(m.group(1)) if m.group(1) else None
     month, day = int(m.group(2)), int(m.group(3))
     # 2000 is a leap year, so a year-less 02-29 validates.
@@ -56,7 +57,7 @@ def normalize_birthday(value: str) -> str:
     year, month, day = parse_birthday(value)
     if year is not None:
         if date(year, month, day) > dt_util.as_local(dt_util.now()).date():
-            raise ValueError("Birthday can't be in the future")
+            raise TaskMateError("birthday_in_future")
         return f"{year:04d}-{month:02d}-{day:02d}"
     return f"{month:02d}-{day:02d}"
 

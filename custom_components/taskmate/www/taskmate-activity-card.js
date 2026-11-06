@@ -92,6 +92,13 @@ class TaskMateActivityCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -1142,7 +1149,7 @@ class TaskMateActivityCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('activity.undo_error_title'),
-          message: this._t('activity.undo_error_body', { message: error.message }),
+          message: this._t('activity.undo_error_body', { message: this._errText(error) }),
           notification_id: `taskmate_undo_error_${id}`,
         });
       }

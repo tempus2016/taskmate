@@ -15,6 +15,7 @@ from datetime import datetime
 from homeassistant.util import dt as dt_util
 
 from . import notify_strings
+from .errors import TaskMateError
 from .models import PointsTransaction, Quest
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,9 +39,9 @@ class QuestsMixin:
     async def async_create_quest(self, **fields) -> str:
         quest = Quest.from_dict(fields)
         if not quest.name.strip():
-            raise ValueError("Quest name is required")
+            raise TaskMateError("quest_name_required")
         if not quest.steps:
-            raise ValueError("A quest needs at least one step")
+            raise TaskMateError("quest_needs_step")
         self.storage.add_quest(quest)
         await self.storage.async_save()
         await self.async_refresh()
@@ -49,20 +50,20 @@ class QuestsMixin:
     async def async_update_quest(self, quest_id: str, **fields) -> None:
         existing = self.storage.get_quest(quest_id)
         if not existing:
-            raise ValueError(f"Quest {quest_id} not found")
+            raise TaskMateError("quest_not_found", quest_id=quest_id)
         data = existing.to_dict()
         data.update(fields)
         data["id"] = quest_id
         updated = Quest.from_dict(data)
         if not updated.steps:
-            raise ValueError("A quest needs at least one step")
+            raise TaskMateError("quest_needs_step")
         self.storage.update_quest(updated)
         await self.storage.async_save()
         await self.async_refresh()
 
     async def async_delete_quest(self, quest_id: str) -> None:
         if not self.storage.get_quest(quest_id):
-            raise ValueError(f"Quest {quest_id} not found")
+            raise TaskMateError("quest_not_found", quest_id=quest_id)
         # Kept for 7 days so it can be restored with everyone's progress.
         self._snapshot_quest(quest_id)
         self.storage.remove_quest(quest_id)

@@ -22,6 +22,7 @@ from .const import (
 from .coord_rejections import clean_reject_reason
 from .coord_set_times import chore_has_times, set_time_label
 from .coord_teamwork import teamwork_config_error
+from .errors import TaskMateError
 from .models import (
     MAX_QUANTITY,
     PRAISE_NOTE_MAX,
@@ -114,7 +115,7 @@ class ChoresMixin:
             team_size, assignment_mode=assignment_mode, team_points_mode=team_points_mode
         )
         if team_error:
-            raise ValueError(team_error)
+            raise team_error if isinstance(team_error, Exception) else ValueError(team_error)
         # One-shot chores: force daily_limit=1, set created_date to today
         if schedule_mode == "one_shot":
             daily_limit = 1
@@ -200,26 +201,26 @@ class ChoresMixin:
 
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
         if getattr(chore, "assignment_mode", "everyone") in ("everyone", "unassigned"):
-            raise ValueError("Only rotation chores can be swapped")
+            raise TaskMateError("swap_only_rotation")
         # A chore won at auction (#982) is the winner's by their own bid.
         if self.auction_winner(chore):
-            raise ValueError("This chore was won at auction today, so it can't be swapped")
+            raise TaskMateError("swap_won_at_auction")
         requester = self.get_child(requester_id)
         if not requester:
-            raise ValueError(f"Child {requester_id} not found")
+            raise TaskMateError("child_not_found", child_id=requester_id)
         current = getattr(chore, "assignment_current_child_id", "") or ""
         if current == requester_id:
-            raise ValueError("Chore is already assigned to that child today")
+            raise TaskMateError("swap_already_assigned")
         # Reject a duplicate pending request for the same chore+requester, and
         # cap the pending queue, so a scripted caller can't flood storage or the
         # parent's approval list with identical swap requests.
         pending = [r for r in self.storage.get_swap_requests() if r.get("status") == "pending"]
         if any(r.get("chore_id") == chore_id and r.get("requester_id") == requester_id for r in pending):
-            raise ValueError("A swap request for this chore is already pending")
+            raise TaskMateError("swap_already_pending")
         if len(pending) >= _MAX_PENDING_SWAP_REQUESTS:
-            raise ValueError("Too many pending swap requests")
+            raise TaskMateError("swap_too_many_pending")
         req = {
             "id": generate_id(),
             "chore_id": chore_id,
@@ -240,7 +241,7 @@ class ChoresMixin:
             None,
         )
         if not req:
-            raise ValueError(f"Swap request {req_id} not found")
+            raise TaskMateError("swap_request_not_found", request_id=req_id)
         chore = self.get_chore(req["chore_id"])
         if chore:
             # Stamp the dated override *and* the cached current child. The
@@ -377,7 +378,7 @@ class ChoresMixin:
         """
         source = self.get_chore(chore_id)
         if not source:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         data = source.to_dict()
         data.pop("id", None)
@@ -422,7 +423,7 @@ class ChoresMixin:
         if not ids:
             return 0
         if action not in ("delete", "enable", "disable", "reassign"):
-            raise ValueError(f"Unknown bulk action {action}")
+            raise TaskMateError("bulk_unknown_action", action=action)
         count = 0
         for cid in ids:
             chore = self.storage.get_chore(cid)
@@ -474,18 +475,18 @@ class ChoresMixin:
         """
         unknown = set(changes) - set(self.BULK_EDIT_FIELDS)
         if unknown:
-            raise ValueError(f"Can't bulk edit {', '.join(sorted(unknown))}")
+            raise TaskMateError("bulk_edit_unknown_fields", fields=", ".join(sorted(unknown)))
         if not changes:
             return {"count": 0, "skipped": []}
         if "assigned_to" in changes:
             known = {c.id for c in self.storage.get_children()}
             missing = [cid for cid in changes["assigned_to"] if cid not in known]
             if missing:
-                raise ValueError(f"Unknown child {missing[0]}")
+                raise TaskMateError("bulk_edit_unknown_child", child_id=missing[0])
         if "time_category" in changes:
             periods = {"anytime", *(p["id"] for p in self.get_time_periods())}
             if changes["time_category"] not in periods:
-                raise ValueError(f"Unknown time period {changes['time_category']}")
+                raise TaskMateError("bulk_edit_unknown_period", period=changes["time_category"])
         count = 0
         skipped: list[str] = []
         for cid in dict.fromkeys(chore_ids or []):
@@ -604,7 +605,7 @@ class ChoresMixin:
             team_points_mode=getattr(chore, "team_points_mode", "each"),
         )
         if team_error:
-            raise ValueError(team_error)
+            raise team_error if isinstance(team_error, Exception) else ValueError(team_error)
         # Set times (several times a day): checked here so every way of
         # editing a chore (panel, services, import) gets the same rules.
         stored = self.storage.get_chore(chore.id)
@@ -761,19 +762,19 @@ class ChoresMixin:
         """
         chore = self.storage.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Unknown chore: {chore_id}")
+            raise TaskMateError("chore_unknown", chore_id=chore_id)
         mode = getattr(chore, "assignment_mode", "everyone")
         if mode == "everyone":
-            raise ValueError("Skip is not supported for 'everyone' assignment mode")
+            raise TaskMateError("skip_everyone_mode")
 
         # Reject skipping a sticky group follower — the group would drift.
         group = self.storage.get_task_group_for_chore(chore_id)
         if group and group.policy == "sticky" and group.chore_ids and group.chore_ids[0] != chore_id:
-            raise ValueError("Cannot skip a sticky group follower; skip the leader chore instead")
+            raise TaskMateError("skip_sticky_follower")
 
         pool = self._chore_assignment_pool(chore)
         if len(pool) <= 1:
-            raise ValueError("Skip requires a rotation pool of 2 or more children")
+            raise TaskMateError("skip_pool_too_small")
 
         today = dt_util.as_local(dt_util.now()).date()
         today_iso = today.isoformat()
@@ -834,14 +835,14 @@ class ChoresMixin:
         """
         chore = self.storage.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Unknown chore: {chore_id}")
+            raise TaskMateError("chore_unknown", chore_id=chore_id)
         mode = getattr(chore, "assignment_mode", "everyone")
         if mode == "everyone":
-            raise ValueError("Manual start is not supported for 'everyone' assignment mode")
+            raise TaskMateError("manual_start_everyone_mode")
 
         pool = self._chore_assignment_pool(chore)
         if child_id not in pool:
-            raise ValueError(f"Child {child_id} is not in this chore's pool")
+            raise TaskMateError("manual_start_not_in_pool", child_id=child_id)
 
         today = dt_util.as_local(dt_util.now()).date()
 
@@ -896,11 +897,11 @@ class ChoresMixin:
         """
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         # Security: photo_url must be one of OUR upload URLs
         # (/api/taskmate/photo/<uuid>.<ext>). The service accepts it as a free
@@ -1068,14 +1069,14 @@ class ChoresMixin:
         # — they are the reviewer. ValueError is surfaced as a clean
         # ServiceValidationError by the service layer.
         if requires_photo and not as_parent and not (photo_url or "").strip():
-            raise ValueError("This chore requires a photo as evidence.")
+            raise TaskMateError("chore_photo_required")
         # An open-ended chore is a placeholder for unlisted work, so the note IS
         # the chore — without it the parent has nothing to review. Same shape as
         # the photo gate above: enforced here rather than only in the card, so
         # the button entity, automations and Dev Tools can't bypass it.
         is_open_ended = bool(getattr(chore, "open_ended", False))
         if is_open_ended and not as_parent and not note:
-            raise ValueError("Say what you did to submit this one.")
+            raise TaskMateError("chore_note_required")
         # Quantity chores ("read 20 pages"): the child says how many, and the
         # chore's points are per unit. A parent ticking it without a number
         # counts one; a child has to say.
@@ -1200,7 +1201,7 @@ class ChoresMixin:
             units = 0
         if units < 1:
             if not as_parent:
-                raise ValueError(f"Say how many {chore.quantity_unit} you did.")
+                raise TaskMateError("chore_quantity_required", unit=chore.quantity_unit)
             units = 1
         cap = int(getattr(chore, "quantity_max", 0) or 0)
         if cap:
@@ -1406,18 +1407,18 @@ class ChoresMixin:
         """
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         today = dt_util.as_local(dt_util.now()).date()
         if not (today - timedelta(days=self.BACKDATE_MAX_DAYS) <= day < today):
-            raise ValueError(f"Pick a day in the last {self.BACKDATE_MAX_DAYS} days, before today.")
+            raise TaskMateError("backdate_day_range", days=self.BACKDATE_MAX_DAYS)
 
         refusal = self._backdate_refusal(chore, child, day)
         if refusal:
-            raise ValueError(refusal)
+            raise refusal
 
         points = self.effective_chore_points(chore)
         completed_at = datetime.combine(day, time(12, 0), tzinfo=dt_util.DEFAULT_TIME_ZONE)
@@ -1451,7 +1452,7 @@ class ChoresMixin:
             if not comp.bonus_subtask_id and dt_util.as_local(comp.completed_at).date() == day
         ]
 
-    def _backdate_refusal(self, chore, child, day: date, *, quota: bool = True) -> str | None:
+    def _backdate_refusal(self, chore, child, day: date, *, quota: bool = True) -> TaskMateError | None:
         """Why ``chore`` can't be logged for ``child`` on ``day``, or None if it can.
 
         The one place the past-day rules live: logging a job refuses with this
@@ -1464,35 +1465,35 @@ class ChoresMixin:
         """
         child_id = child.id
         if not getattr(chore, "enabled", True):
-            return f"'{chore.name}' is switched off."
+            return TaskMateError("backdate_switched_off", name=f"'{chore.name}'")
         assigned = chore.assigned_to or []
         if (assigned and child_id not in assigned) or child_id in (getattr(chore, "disabled_for", None) or []):
-            return f"'{chore.name}' isn't one of {child.name}'s jobs."
+            return TaskMateError("backdate_not_assigned", name=f"'{chore.name}'", child=child.name)
         if (getattr(chore, "assignment_mode", "everyone") or "everyone") != "everyone" or self.teamwork_size(chore):
-            return f"'{chore.name}' rotates or needs a team, so it can't be logged for a past day."
+            return TaskMateError("backdate_rotation_team", name=f"'{chore.name}'")
         if getattr(chore, "open_ended", False):
-            return f"'{chore.name}' is open-ended, so it needs the child's note and a price. Use the child's card."
+            return TaskMateError("backdate_open_ended", name=f"'{chore.name}'")
         if chore_has_times(chore):
-            return f"'{chore.name}' has set times, so it can't be logged for a past day."
+            return TaskMateError("backdate_set_times", name=f"'{chore.name}'")
         if self.is_vacation_day(day):
-            return f"{day.strftime('%A')} was a holiday, so no jobs were due."
+            return TaskMateError("backdate_holiday", weekday=day.strftime("%A"))
         if self.is_sick_day(child.id, day):
-            return f"{day.strftime('%A')} was {child.name}'s sick day, so no jobs were due."
+            return TaskMateError("backdate_sick_day", weekday=day.strftime("%A"), child=child.name)
         # A birthday with "chores off" is a day off for everything but mandatory
         # chores, the same rule today's chore list follows.
         if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(child, day):
-            return f"{day.strftime('%A')} was {child.name}'s birthday, a day off from jobs."
+            return TaskMateError("backdate_birthday", weekday=day.strftime("%A"), child=child.name)
         if self.auction_winner(chore, day):
-            return f"'{chore.name}' was won at auction that day, so it can't be logged afterwards."
+            return TaskMateError("backdate_auction", name=f"'{chore.name}'")
 
         # A weekly-target chore (#883) has no fixed days — the child picks them —
         # so it isn't "due" on any one day; its quota is the gate instead.
         weekly_target = int(getattr(chore, "weekly_target", 0) or 0)
         if weekly_target:
             if quota and self.weekly_target_met(chore, child_id, on=day):
-                return f"'{chore.name}' already reached its {weekly_target} for that week."
+                return TaskMateError("backdate_weekly_target_met", name=f"'{chore.name}'", target=weekly_target)
         elif not self._is_chore_scheduled_for_date(chore, day):
-            return f"'{chore.name}' wasn't due on {day.strftime('%A')}."
+            return TaskMateError("backdate_not_due", name=f"'{chore.name}'", weekday=day.strftime("%A"))
 
         if not quota:
             return None
@@ -1508,7 +1509,13 @@ class ChoresMixin:
         )
         daily_limit = max(1, int(getattr(chore, "daily_limit", 1) or 1))
         if done_that_day >= daily_limit:
-            return f"'{chore.name}' was already done {done_that_day}/{daily_limit} times on {day.strftime('%A')}."
+            return TaskMateError(
+                "backdate_daily_limit",
+                name=f"'{chore.name}'",
+                done=done_that_day,
+                limit=daily_limit,
+                weekday=day.strftime("%A"),
+            )
         return None
 
     def loggable_on(self, day: date) -> dict[str, list[str]]:
@@ -1555,14 +1562,14 @@ class ChoresMixin:
         """
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         if not getattr(chore, "enabled", True):
-            raise ValueError(f"Chore '{chore.name}' is disabled")
+            raise TaskMateError("chore_disabled", name=f"'{chore.name}'")
 
         schedule_mode = getattr(chore, "schedule_mode", "specific_days")
         if schedule_mode == "one_shot":
-            raise ValueError(f"Chore '{chore.name}' is a one-shot chore and cannot be parent-completed")
+            raise TaskMateError("parent_complete_one_shot", name=f"'{chore.name}'")
 
         now = dt_util.now()
 
@@ -1571,16 +1578,16 @@ class ChoresMixin:
         child_ids = list(assigned) if assigned else [c.id for c in self.storage.get_children()]
 
         if not child_ids:
-            raise ValueError(f"Chore '{chore.name}' has no children to suppress")
+            raise TaskMateError("parent_complete_no_children", name=f"'{chore.name}'")
 
         if child_id:
             # Only an everyone-mode chore gives each child their own copy; a
             # rotation or race has one shared slot, so "done for one child"
             # means nothing there.
             if getattr(chore, "assignment_mode", "everyone") != "everyone":
-                raise ValueError(f"Chore '{chore.name}' is shared by a rotation and can only be done for everyone")
+                raise TaskMateError("parent_complete_rotation_shared", name=f"'{chore.name}'")
             if child_id not in child_ids:
-                raise ValueError(f"Chore '{chore.name}' is not assigned to that child")
+                raise TaskMateError("parent_complete_not_assigned", name=f"'{chore.name}'")
             child_ids = [child_id]
 
         completion = ChoreCompletion(
@@ -1629,15 +1636,15 @@ class ChoresMixin:
         """
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         subtask = next((b for b in chore.bonus_subtasks if b.id == bonus_subtask_id), None)
         if not subtask:
-            raise ValueError(f"Bonus sub-task {bonus_subtask_id} not found on chore '{chore.name}'")
+            raise TaskMateError("bonus_subtask_not_found", subtask_id=bonus_subtask_id, name=f"'{chore.name}'")
 
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         now = dt_util.now()
         today = dt_util.as_local(now).date()
@@ -1648,7 +1655,7 @@ class ChoresMixin:
         # that same completion closes the availability window.
         assigned = getattr(chore, "assigned_to", []) or []
         if assigned and child_id not in assigned:
-            raise ValueError(f"Bonus sub-task '{subtask.name}' is not assigned to {child.name}.")
+            raise TaskMateError("bonus_subtask_not_assigned", subtask=f"'{subtask.name}'", child=child.name)
 
         # Gate check: parent chore must be completed today
         all_completions = self.storage.get_completions()
@@ -1660,10 +1667,7 @@ class ChoresMixin:
             for c in all_completions
         )
         if not parent_done_today:
-            raise ValueError(
-                f"Cannot complete bonus sub-task '{subtask.name}' — "
-                f"parent chore '{chore.name}' must be completed first today."
-            )
+            raise TaskMateError("bonus_subtask_parent_first", subtask=f"'{subtask.name}'", name=f"'{chore.name}'")
 
         # Duplicate check: bonus sub-task not already completed today
         already_done = any(
@@ -1674,7 +1678,7 @@ class ChoresMixin:
             for c in all_completions
         )
         if already_done:
-            raise ValueError(f"Bonus sub-task '{subtask.name}' already completed today.")
+            raise TaskMateError("bonus_subtask_already_done", subtask=f"'{subtask.name}'")
 
         # A grown-up's own sub-task never waits for approval (#1061). A chore
         # whose main completion must be reviewed (approval, a photo, or an
@@ -2121,16 +2125,16 @@ class ChoresMixin:
         completions = self.storage.get_completions()
         completion = next((c for c in completions if c.id == completion_id), None)
         if completion is None:
-            raise ValueError("This chore has already been undone. Refresh the card.")
+            raise TaskMateError("undo_already_undone")
         if not child_can_undo(completion, completions, undo_window_seconds(self.storage)):
-            raise ValueError("This chore can't be undone any more. Ask a parent to undo it.")
+            raise TaskMateError("undo_window_passed")
         # The reversal floors the balance at zero, so points already moved on
         # (into a wish, a pool, a claim) would never come back. An undo is only
         # the child's to take while every point it would reverse is still there.
         owed = self._undo_points_owed(completion, completions)
         child = self.get_child(completion.child_id)
         if child and owed > 0 and child.points < owed:
-            raise ValueError("This chore can't be undone now: its points have already been spent. Ask a parent.")
+            raise TaskMateError("undo_points_spent")
         await self.async_reject_chore(completion_id, event="taskmate_chore_undone")
 
     def _undo_points_owed(self, completion, completions) -> int:
@@ -2277,9 +2281,9 @@ class ChoresMixin:
         completions = self.storage.get_completions()
         target = next((c for c in completions if c.id == completion_id), None)
         if not target:
-            raise ValueError(f"Completion {completion_id} not found")
+            raise TaskMateError("completion_not_found", completion_id=completion_id)
         if not target.approved:
-            raise ValueError("Completion is not approved; nothing to undo")
+            raise TaskMateError("completion_not_approved")
 
         bonus_completions = self._reverse_completion_awards(target, completions)
         for bc in bonus_completions:
@@ -3042,7 +3046,7 @@ class ChoresMixin:
         """Set the chore order for a child."""
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         child.chore_order = chore_order
         self.storage.update_child(child)
@@ -3057,7 +3061,7 @@ class ChoresMixin:
         fine-tune it afterwards. Returns how many children were updated.
         """
         if sort_by not in CHORE_SORT_PRESETS:
-            raise ValueError(f"Unknown sort {sort_by!r}")
+            raise TaskMateError("chore_sort_unknown", sort=repr(sort_by))
         chores = self.storage.get_chores()
         periods = self.get_time_periods() if sort_by == "time" else None
         wanted = set(child_ids) if child_ids else None
@@ -3104,23 +3108,25 @@ class ChoresMixin:
         seen: set[str] = set()
         for chore_id in chore_ids:
             if chore_id in seen:
-                raise ValueError(f"Duplicate chore in group: {chore_id}")
+                raise TaskMateError("task_group_duplicate_chore", chore_id=chore_id)
             seen.add(chore_id)
             chore = self.storage.get_chore(chore_id)
             if not chore:
-                raise ValueError(f"Unknown chore: {chore_id}")
+                raise TaskMateError("chore_unknown", chore_id=chore_id)
             if getattr(chore, "assignment_mode", "everyone") == "everyone":
-                raise ValueError(f"Chore '{chore.name}' uses 'everyone' mode and cannot join a group")
+                raise TaskMateError("task_group_everyone_mode", name=f"'{chore.name}'")
             existing_group = self.storage.get_task_group_for_chore(chore_id)
             if existing_group and existing_group.id != exclude_group_id:
-                raise ValueError(f"Chore '{chore.name}' already belongs to group '{existing_group.name}'")
+                raise TaskMateError(
+                    "task_group_already_member", name=f"'{chore.name}'", group=f"'{existing_group.name}'"
+                )
 
     async def async_add_task_group(self, name: str, policy: str, chore_ids: list[str] | None = None):
         """Create a task group."""
         from .models import TaskGroup
 
         if policy not in ("sticky", "spread"):
-            raise ValueError(f"Unknown task group policy: {policy}")
+            raise TaskMateError("task_group_unknown_policy", policy=policy)
         chore_ids = list(chore_ids or [])
         self._validate_task_group_members(chore_ids)
         group = TaskGroup(name=name, policy=policy, chore_ids=chore_ids)
@@ -3139,10 +3145,10 @@ class ChoresMixin:
         """Update an existing task group."""
         group = self.storage.get_task_group(group_id)
         if not group:
-            raise ValueError(f"Unknown task group: {group_id}")
+            raise TaskMateError("task_group_unknown", group_id=group_id)
         if policy is not None:
             if policy not in ("sticky", "spread"):
-                raise ValueError(f"Unknown task group policy: {policy}")
+                raise TaskMateError("task_group_unknown_policy", policy=policy)
             group.policy = policy
         if name is not None:
             group.name = name

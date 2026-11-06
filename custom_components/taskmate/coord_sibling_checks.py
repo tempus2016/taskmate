@@ -20,6 +20,7 @@ from typing import Any
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
 from .models import PRAISE_NOTE_MAX, clean_label, generate_id
 
 _LOGGER = logging.getLogger(__name__)
@@ -95,22 +96,22 @@ class SiblingChecksMixin:
     async def async_sibling_check(self, checker_id: str, completion_id: str, verdict: str, note: str = "") -> None:
         """Record a sibling's verdict; "done" approves, "not_yet" leaves it waiting."""
         if not self.sibling_checks_enabled():
-            raise ValueError("Sibling checks are turned off")
+            raise TaskMateError("sibling_checks_off")
         if verdict not in SIBLING_CHECK_VERDICTS:
-            raise ValueError(f"Unknown verdict {verdict}")
+            raise TaskMateError("sibling_check_unknown_verdict", verdict=verdict)
         checker = self.get_child(checker_id)
         if checker is None:
-            raise ValueError(f"Child {checker_id} not found")
+            raise TaskMateError("child_not_found", child_id=checker_id)
         completion = next((c for c in self.storage.get_completions() if c.id == completion_id), None)
         if completion is None:
-            raise ValueError("That chore has already been checked. Refresh the card.")
+            raise TaskMateError("sibling_check_already_checked")
         if completion.child_id == checker_id:
-            raise ValueError("You can't check your own chore")
+            raise TaskMateError("sibling_check_own_chore")
         if completion.child_id not in self.sibling_checkees(checker_id):
-            raise ValueError(f"{checker.name} can't check this child's chores")
+            raise TaskMateError("sibling_check_not_allowed", name=checker.name)
         chore = self.get_chore(completion.chore_id)
         if not self._sibling_checkable(completion, chore):
-            raise ValueError("That chore has already been checked. Refresh the card.")
+            raise TaskMateError("sibling_check_already_checked")
         note = clean_label(note, PRAISE_NOTE_MAX)
         completion.checked_by = checker_id
         completion.check_note = note if verdict == "not_yet" else ""

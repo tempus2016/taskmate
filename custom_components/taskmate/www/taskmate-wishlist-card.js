@@ -117,6 +117,21 @@ class TaskMateWishlistCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /** A refused upload as an error: the server's JSON body (translation_key, message) when it sent one. */
+  async _uploadError(resp) {
+    let body = null;
+    try { body = await resp.json(); } catch (_e) { /* not JSON */ }
+    const err = new Error((body && body.message) || `upload failed (${resp.status})`);
+    return body && typeof body === "object" ? Object.assign(err, body) : err;
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -212,7 +227,7 @@ class TaskMateWishlistCard extends LitElement {
       this._closeSheet();
       return true;
     } catch (err) {
-      const message = (err && err.message) || String(err);
+      const message = this._errText(err) || String(err);
       if (this._sheet) {
         this._sheet = { ...this._sheet, busy: false, error: this._t("wishlist.error", { error: message }) };
       } else {
@@ -324,7 +339,7 @@ class TaskMateWishlistCard extends LitElement {
       await this.hass.auth.refreshAccessToken();
       resp = await post();
     }
-    if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+    if (!resp.ok) throw await this._uploadError(resp);
     const body = await resp.json();
     if (!body || !body.photo_url) throw new Error("no photo_url");
     return body.photo_url;
@@ -345,8 +360,11 @@ class TaskMateWishlistCard extends LitElement {
       this._sheet = { ...s, busy: true, error: "" };
       try {
         data.photo_url = await this._uploadPicture(s.blob);
-      } catch (_e) {
-        this._sheet = { ...this._sheet, busy: false, error: this._t("wishlist.picture_failed") };
+      } catch (err) {
+        // A refusal the server explains (storage full, too large, ...) in the
+        // user's language; anything else keeps the generic wording.
+        const error = err && err.translation_key ? this._errText(err) : this._t("wishlist.picture_failed");
+        this._sheet = { ...this._sheet, busy: false, error };
         return;
       }
     }

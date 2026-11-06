@@ -42,6 +42,13 @@ class TaskMatePointsCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -1100,7 +1107,7 @@ class TaskMatePointsCard extends LitElement {
       const sign = action === 'add' ? '+' : '−';
       this._showNotification(this._t('points_card.notification_quick', { sign, amount: __tmNum(this.hass, amount), pointsName, childName: child.name }), 'success');
     } catch (error) {
-      this._showNotification(this._t('points_card.notification_failed', { message: error.message }), 'error');
+      this._showNotification(this._t('points_card.notification_failed', { message: this._errText(error) }), 'error');
     } finally {
       this._loading = { ...this._loading, [key]: false };
       this.requestUpdate();
@@ -1204,7 +1211,7 @@ class TaskMatePointsCard extends LitElement {
     } catch (error) {
       console.error(`Failed to ${action} points:`, error);
       this._showNotification(
-        this._t(action === 'add' ? 'points_card.notification_failed_add' : 'points_card.notification_failed_remove', { message: error.message }),
+        this._t(action === 'add' ? 'points_card.notification_failed_add' : 'points_card.notification_failed_remove', { message: this._errText(error) }),
         "error"
       );
     } finally {

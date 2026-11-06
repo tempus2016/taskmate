@@ -31,6 +31,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_PET_ITEM_REQUESTED
+from .errors import TaskMateError
 from .models import PointsTransaction, generate_id
 
 PET_SHOP_SLOTS = ("hat", "face", "neck", "held", "back", "body", "colour", "home")
@@ -83,7 +84,7 @@ def _default_catalogue() -> list[dict[str, Any]]:
 def _clean_emoji(value: Any) -> str:
     text = str(value or "").strip()
     if not text or len(text) > PET_SHOP_EMOJI_MAX or _EMOJI_BAD.search(text):
-        raise ValueError(f"The picture must be an emoji (up to {PET_SHOP_EMOJI_MAX} characters).")
+        raise TaskMateError("pet_shop_emoji_invalid", max=PET_SHOP_EMOJI_MAX)
     return text
 
 
@@ -91,7 +92,7 @@ def _clean_tint(value: Any) -> str:
     text = str(value or "").strip()
     if text in ("", "rainbow") or _TINT_RE.match(text):
         return text.lower() if text.startswith("#") else text
-    raise ValueError("A colour must look like #ff8800, or be 'rainbow'.")
+    raise TaskMateError("pet_shop_colour_invalid")
 
 
 class PetShopMixin:
@@ -140,23 +141,23 @@ class PetShopMixin:
         items = self.pet_shop_items()
         existing = next((i for i in items if i.get("id") == item_id), None) if item_id else None
         if item_id and existing is None:
-            raise ValueError("That item isn't in the shop.")
+            raise TaskMateError("pet_shop_item_not_found")
         name = (name or "").strip()
         if len(name) > PET_SHOP_NAME_MAX:
-            raise ValueError(f"Keep the name to {PET_SHOP_NAME_MAX} characters.")
+            raise TaskMateError("pet_shop_name_too_long", max=PET_SHOP_NAME_MAX)
         if not name and not (existing and existing["id"] in _DEFAULT_IDS):
-            raise ValueError("Give the item a name.")
+            raise TaskMateError("pet_shop_name_required")
         if slot not in PET_SHOP_SLOTS:
-            raise ValueError(f"Unknown slot {slot!r}")
+            raise TaskMateError("pet_shop_unknown_slot", slot=repr(slot))
         try:
             cost = int(cost)
             level = int(level or 0)
         except (TypeError, ValueError) as err:
-            raise ValueError("Cost and level must be whole numbers.") from err
+            raise TaskMateError("pet_shop_not_whole") from err
         if not 1 <= cost <= PET_SHOP_COST_MAX:
-            raise ValueError(f"The cost must be between 1 and {PET_SHOP_COST_MAX}.")
+            raise TaskMateError("pet_shop_cost_range", max=PET_SHOP_COST_MAX)
         if not 0 <= level <= PET_SHOP_LEVEL_MAX:
-            raise ValueError(f"The level must be between 0 and {PET_SHOP_LEVEL_MAX}.")
+            raise TaskMateError("pet_shop_level_range", max=PET_SHOP_LEVEL_MAX)
         fields = {
             "name": name,
             "emoji": _clean_emoji(emoji),
@@ -170,7 +171,7 @@ class PetShopMixin:
             existing.update(fields)
         else:
             if len(items) >= PET_SHOP_MAX_ITEMS:
-                raise ValueError(f"The shop holds at most {PET_SHOP_MAX_ITEMS} items.")
+                raise TaskMateError("pet_shop_full", max=PET_SHOP_MAX_ITEMS)
             existing = {"id": generate_id(), **fields}
             items.append(existing)
         self.storage.data["pet_shop_items"] = items
@@ -182,7 +183,7 @@ class PetShopMixin:
         items = self.pet_shop_items()
         item = next((i for i in items if i.get("id") == item_id), None)
         if item is None:
-            raise ValueError("That item isn't in the shop.")
+            raise TaskMateError("pet_shop_item_not_found")
         item["shown"] = bool(shown)
         self.storage.data["pet_shop_items"] = items
         await self.storage.async_save()
@@ -192,7 +193,7 @@ class PetShopMixin:
         """Take an item out of the shop. Children who bought it simply stop wearing it."""
         items = self.pet_shop_items()
         if not any(i.get("id") == item_id for i in items):
-            raise ValueError("That item isn't in the shop.")
+            raise TaskMateError("pet_shop_item_not_found")
         self.storage.data["pet_shop_items"] = [i for i in items if i.get("id") != item_id]
         self._drop_orphan_pet_purchases()
         await self.storage.async_save()
@@ -293,7 +294,7 @@ class PetShopMixin:
         """What the card's Shop tab needs, fetched over the WebSocket."""
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         owned = self.pet_owned(child_id)
         items = [
             {
@@ -329,23 +330,23 @@ class PetShopMixin:
         """Put an item on (replacing whatever is in its slot) or take it off."""
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.pets_enabled():
-            raise ValueError("Pets are switched off.")
+            raise TaskMateError("pets_switched_off")
         if not self._pets().get(child_id):
-            raise ValueError("Adopt a pet first.")
+            raise TaskMateError("pet_adopt_first")
         if item_id in PET_ACCESSORY_SLOTS:
             if item_id not in self._earned_accessories(child):
-                raise ValueError("That isn't unlocked yet.")
+                raise TaskMateError("pet_shop_not_unlocked")
             slot = PET_ACCESSORY_SLOTS[item_id]
         else:
             if not self.pet_shop_enabled():
-                raise ValueError("The pet shop is closed.")
+                raise TaskMateError("pet_shop_closed")
             item = self._pet_shop_item(item_id)
             if item is None:
-                raise ValueError("That item isn't in the shop.")
+                raise TaskMateError("pet_shop_item_not_found")
             if item_id not in self.pet_owned(child_id):
-                raise ValueError("Buy it first.")
+                raise TaskMateError("pet_shop_buy_first")
             slot = item["slot"]
         worn_now = self.pet_worn(child).get(slot, {}).get("id")
         wardrobe = self._pet_wardrobe(child_id, create=True)
@@ -386,27 +387,27 @@ class PetShopMixin:
         """
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.pets_enabled():
-            raise ValueError("Pets are switched off.")
+            raise TaskMateError("pets_switched_off")
         if not self.pet_shop_enabled():
-            raise ValueError("The pet shop is closed.")
+            raise TaskMateError("pet_shop_closed")
         pet = self._pets().get(child_id)
         if not pet:
-            raise ValueError("Adopt a pet first.")
+            raise TaskMateError("pet_adopt_first")
         item = self._pet_shop_item(item_id)
         if item is None or not item.get("shown"):
-            raise ValueError("That item isn't for sale.")
+            raise TaskMateError("pet_shop_not_for_sale")
         level = int(getattr(child, "level", 1) or 1)
         if int(item.get("level", 0) or 0) > level:
-            raise ValueError(f"That unlocks at level {item['level']}.")
+            raise TaskMateError("pet_shop_unlocks_at_level", level=item["level"])
         if item_id in self.pet_owned(child_id):
-            raise ValueError("You already have that.")
+            raise TaskMateError("pet_shop_already_owned")
         if any(p.get("child_id") == child_id and p.get("item_id") == item_id for p in self._pet_purchases()):
-            raise ValueError("That's already waiting for a parent.")
+            raise TaskMateError("pet_shop_already_pending")
         cost = int(item["cost"])
         if self._pet_shop_spendable(child) < cost:
-            raise ValueError("Not enough points for that yet.")
+            raise TaskMateError("pet_shop_not_enough_points")
         name = self.pet_item_name(item)
         over = self.pet_shop_approve_over()
         if over > 0 and cost > over:
@@ -486,16 +487,16 @@ class PetShopMixin:
         purchases = self._pet_purchases()
         purchase = next((p for p in purchases if p.get("id") == purchase_id), None)
         if purchase is None:
-            raise ValueError("That purchase isn't waiting any more.")
+            raise TaskMateError("pet_shop_purchase_gone")
         if approve:
             child = self.get_child(purchase.get("child_id", ""))
             item = self._pet_shop_item(purchase.get("item_id", ""))
             if child is None or item is None:
-                raise ValueError("That child or item is gone; decline it instead.")
+                raise TaskMateError("pet_shop_purchase_orphaned")
             cost = int(purchase.get("cost", 0) or 0)
             if purchase["item_id"] not in self.pet_owned(child.id):
                 if self._pet_shop_spendable(child, skip_purchase=purchase_id) < cost:
-                    raise ValueError(f"{child.name} doesn't have enough points for it now.")
+                    raise TaskMateError("pet_shop_child_cannot_afford", child_name=child.name)
                 self._pet_shop_pay(child, item["id"], self.pet_item_name(item), cost)
         self.storage.data["pet_shop_pending"] = [p for p in purchases if p.get("id") != purchase_id]
         await self.storage.async_save()

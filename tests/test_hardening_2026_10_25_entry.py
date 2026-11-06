@@ -213,7 +213,9 @@ def test_one_users_unattached_uploads_do_not_spend_another_users_budget(tmp_path
         assert (first.status, second.status) == (200, 200)
         third = await view.post(_request("uid-kid"))
         assert third.status == 413
-        assert isinstance(third.body, str) and third.body and "{" not in third.body
+        message = third.body["message"]
+        assert isinstance(message, str) and message and "{" not in message
+        assert third.body["translation_key"] == "upload_photo_pending_limit"
         # A sibling (a different HA user) is unaffected by the first child's pile.
         other = await view.post(_request("uid-sibling"))
         assert other.status == 200

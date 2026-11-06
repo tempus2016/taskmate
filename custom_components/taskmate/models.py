@@ -10,6 +10,7 @@ from datetime import date, datetime, timezone
 from typing import Any
 
 from .const import AGE_GROUPS, AUCTION_STATUSES, BOUNTY_STATUSES, CELEBRATION_STYLES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -310,19 +311,19 @@ def validate_chore_times(
     if raw in (None, ""):
         return []
     if not isinstance(raw, list):
-        raise ValueError("Set times must be a list.")
+        raise TaskMateError("set_times_not_list")
     if not raw:
         return []
     if len(raw) > MAX_CHORE_TIMES:
-        raise ValueError(f"A chore can have at most {MAX_CHORE_TIMES} set times.")
+        raise TaskMateError("set_times_too_many", max=MAX_CHORE_TIMES)
     if task_type == "timed":
-        raise ValueError("A timed chore can't have set times.")
+        raise TaskMateError("set_times_timed")
     if open_ended:
-        raise ValueError("An open-ended chore can't have set times.")
+        raise TaskMateError("set_times_open_ended")
     if (quantity_unit or "").strip():
-        raise ValueError("A quantity chore can't have set times.")
+        raise TaskMateError("set_times_quantity")
     if int(team_size or 0) > 0:
-        raise ValueError("A teamwork chore can't have set times.")
+        raise TaskMateError("set_times_teamwork")
     times: list[ChoreTime] = []
     seen: set[str] = set()
     # A time sent without an id keeps the id of the stored time it replaces
@@ -332,7 +333,7 @@ def validate_chore_times(
     free = [t for t in previous if t.id not in sent_ids]
     for item in raw:
         if not isinstance(item, dict):
-            raise ValueError("Each set time needs a start and an end.")
+            raise TaskMateError("set_times_need_start_end")
         t = ChoreTime.from_dict(item)
         if not item.get("id") and free:
             name = t.name.strip().casefold()
@@ -345,9 +346,9 @@ def validate_chore_times(
                 free.remove(match)
         start, end = _hhmm_minutes(t.start), _hhmm_minutes(t.end)
         if start is None or end is None:
-            raise ValueError("Set times need a start and an end like 07:30.")
+            raise TaskMateError("set_times_bad_format")
         if end <= start:
-            raise ValueError("A set time must close after it opens, on the same day.")
+            raise TaskMateError("set_times_end_before_start")
         if t.id in seen:
             t.id = generate_id()
         seen.add(t.id)
@@ -357,7 +358,7 @@ def validate_chore_times(
     times.sort(key=lambda t: _hhmm_minutes(t.start) or 0)
     for prev, nxt in zip(times, times[1:], strict=False):
         if (_hhmm_minutes(nxt.start) or 0) < (_hhmm_minutes(prev.end) or 0):
-            raise ValueError("Two set times overlap. Move one so they don't.")
+            raise TaskMateError("set_times_overlap")
     return times
 
 

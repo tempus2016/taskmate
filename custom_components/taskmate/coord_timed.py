@@ -6,11 +6,10 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
 from .chore_undo import undo_window_seconds
-from .const import DOMAIN
+from .errors import TaskMateError
 from .models import ChoreCompletion, TimedSession
 
 if TYPE_CHECKING:
@@ -26,13 +25,13 @@ class TimedMixin:
         """Start or resume a timed task session."""
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
         if chore.task_type != "timed":
-            raise ValueError(f"Chore '{chore.name}' is not a timed task")
+            raise TaskMateError("timed_not_timed", name=f"'{chore.name}'")
 
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         now = dt_util.now()
         today = dt_util.as_local(now).date().isoformat()
@@ -40,7 +39,7 @@ class TimedMixin:
 
         existing = self.storage.get_active_timed_session(chore_id, child_id)
         if existing and existing.state == "running":
-            raise ValueError("Timer is already running")
+            raise TaskMateError("timed_already_running")
 
         # Seconds already credited today survive a stop (which removes the live
         # session); count them so the cap is a true daily budget rather than a
@@ -49,7 +48,7 @@ class TimedMixin:
 
         if existing and existing.state == "paused":
             if cap_seconds and (credited_today + existing.total_seconds_today) >= cap_seconds:
-                raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
+                raise TaskMateError("timed_daily_cap", minutes=chore.timed_max_daily_minutes)
             existing.state = "running"
             existing.segments.append({"start": now.isoformat(), "end": None})
             self.storage.save_timed_session(existing)
@@ -58,20 +57,16 @@ class TimedMixin:
             # eligibility the child card uses, so a disabled, off-day, or
             # not-yours timed chore can't be farmed via a crafted start call.
             if not self._timed_start_allowed(chore, child_id):
-                raise ValueError(f"'{chore.name}' is not available for {child.name} right now")
+                raise TaskMateError("timed_not_available", name=f"'{chore.name}'", child=child.name)
             # A prerequisite not done yet (#771): completing the chore is refused
             # until then, so starting its timer is too — otherwise the session
             # runs on a row the card hides under dependency_mode: hide.
             unmet = self.unmet_dependencies(chore, child_id)
             if unmet:
                 names = ", ".join((self.get_chore(d).name if self.get_chore(d) else d) for d in unmet)
-                raise ServiceValidationError(
-                    translation_domain=DOMAIN,
-                    translation_key="timed_start_dependency",
-                    translation_placeholders={"chore": chore.name, "chores": names},
-                )
+                raise TaskMateError("timed_start_dependency", chore=chore.name, chores=names)
             if cap_seconds and credited_today >= cap_seconds:
-                raise ValueError(f"Daily cap reached ({chore.timed_max_daily_minutes} min)")
+                raise TaskMateError("timed_daily_cap", minutes=chore.timed_max_daily_minutes)
             session = TimedSession(
                 chore_id=chore_id,
                 child_id=child_id,
@@ -89,7 +84,7 @@ class TimedMixin:
         """Pause a running timed task session."""
         session = self.storage.get_active_timed_session(chore_id, child_id)
         if not session or session.state != "running":
-            raise ValueError("No running timer to pause")
+            raise TaskMateError("timed_no_running")
 
         now = dt_util.now()
         if session.segments and session.segments[-1].get("end") is None:
@@ -111,15 +106,15 @@ class TimedMixin:
         """
         session = self.storage.get_active_timed_session(chore_id, child_id)
         if not session:
-            raise ValueError("No active timer to stop")
+            raise TaskMateError("timed_no_active")
 
         chore = self.get_chore(chore_id)
         if not chore:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         now = dt_util.now()
 
