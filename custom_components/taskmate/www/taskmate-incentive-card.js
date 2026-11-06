@@ -779,7 +779,7 @@ export function createIncentiveCard(P) {
           </div>
           <div class="form-actions">
             <button class="btn-cancel" @click=${() => this._showNewForm = false}>${this._t('common.cancel')}</button>
-            <button class="btn-save" @click=${this._saveNew}>${this._tp('add_bonus')}</button>
+            <button class="btn-save" @click=${this._saveNew}>${this._tp(P.addKey)}</button>
           </div>
         </div>
       `;
@@ -837,7 +837,7 @@ export function createIncentiveCard(P) {
                 : html`
                   <button class="add-bonus-btn" @click=${this._openNewForm}>
                     <ha-icon icon="mdi:plus"></ha-icon>
-                    ${this._tp('new_bonus')}
+                    ${this._tp(P.newKey)}
                   </button>
                 `}
             ` : ""}
@@ -1046,10 +1046,10 @@ export function createIncentiveCard(P) {
                   (k, v) => { this._newForm = { ...this._newForm, [k]: v }; },
                   () => { this._showNewForm = false; },
                   () => this._saveNew(),
-                  this._tp('add_bonus'))
+                  this._tp(P.addKey))
               : html`<button class="btn ghost sm d-add" style="margin-top:11px"
                             @click=${this._openNewForm}>
-                  <ha-icon icon="mdi:plus"></ha-icon> ${this._tp('new_bonus')}
+                  <ha-icon icon="mdi:plus"></ha-icon> ${this._tp(P.newKey)}
                 </button>`)
           : ""}
         ${child && !this._editMode && this._canApply()

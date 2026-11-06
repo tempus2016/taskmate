@@ -2204,6 +2204,7 @@
   "penalties.toast_apply_failed": "Kunne ikkje bruke straff",
   "penalties.toast_delete_failed": "Kunne ikkje slette straff",
   "penalties.toast_save_failed": "Kunne ikkje lagre endringar",
+  "penalties.toast_saved": "Straff lagra",
   "points_card.card_description": "Eit foreldrevenleg kort for å leggje til eller fjerne poeng",
   "points_card.card_name": "TaskMate Poengkort",
   "points_card.default_title": "Administrer poeng",

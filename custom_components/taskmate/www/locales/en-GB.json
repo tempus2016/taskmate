@@ -2272,6 +2272,7 @@
   "penalties.toast_apply_failed": "Failed to apply penalty",
   "penalties.toast_delete_failed": "Failed to delete penalty",
   "penalties.toast_save_failed": "Failed to save changes",
+  "penalties.toast_saved": "Penalty saved",
   "points_card.card_description": "A parent-friendly card to add or remove points from children",
   "points_card.card_name": "TaskMate Points Card",
   "points_card.default_title": "Manage Points",

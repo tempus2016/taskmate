@@ -2272,6 +2272,7 @@
   "penalties.toast_apply_failed": "Kunne ikke give straf",
   "penalties.toast_delete_failed": "Kunne ikke slette straf",
   "penalties.toast_save_failed": "Kunne ikke gemme ændringerne",
+  "penalties.toast_saved": "Straf gemt",
   "points_card.card_description": "Et forældrevenligt kort til at give og fjerne point",
   "points_card.card_name": "TaskMate Pointkort",
   "points_card.default_title": "Håndter point",

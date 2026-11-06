@@ -2204,6 +2204,7 @@
   "penalties.toast_apply_failed": "Échec de l'application de la pénalité",
   "penalties.toast_delete_failed": "Échec de la suppression de la pénalité",
   "penalties.toast_save_failed": "Échec de l'enregistrement des modifications",
+  "penalties.toast_saved": "Pénalité enregistrée",
   "points_card.card_description": "Une carte conviviale pour les parents pour ajouter ou retirer des points aux enfants",
   "points_card.card_name": "Carte de points TaskMate",
   "points_card.default_title": "Gérer les points",

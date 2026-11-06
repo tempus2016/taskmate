@@ -10,6 +10,9 @@ createIncentiveCard({
   kind: "penalty",
   idKey: "penalty_id",
   i18n: "penalties",
+  // The card's own "Add …" / "New …" button labels (#1234).
+  addKey: "add_penalty",
+  newKey: "new_penalty",
   attr: "penalties",
   icon: "mdi:alert-circle-outline",
   headerIcon: "mdi:alert-circle-outline",

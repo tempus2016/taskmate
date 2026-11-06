@@ -2272,6 +2272,7 @@
   "penalties.toast_apply_failed": "Nie udało się nałożyć kary",
   "penalties.toast_delete_failed": "Nie udało się usunąć kary",
   "penalties.toast_save_failed": "Nie udało się zapisać zmian",
+  "penalties.toast_saved": "Kara zapisana",
   "points_card.card_description": "Przyjazna rodzicom karta do dodawania i odejmowania punktów dzieciom",
   "points_card.card_name": "TaskMate – Karta punktów",
   "points_card.default_title": "Zarządzaj punktami",
