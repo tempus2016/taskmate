@@ -128,6 +128,102 @@
         "save": "Gem ændringer",
         "delete": "Slet gruppe"
       }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Ingen lyd",
+        "coin": "Mønt",
+        "levelup": "Nyt niveau",
+        "fanfare": "Fanfare",
+        "chime": "Klokkespil",
+        "powerup": "Power-up",
+        "undo": "Fortryd",
+        "fart1": "Prut 1",
+        "fart2": "Prut 2",
+        "fart3": "Prut 3",
+        "fart4": "Prut 4",
+        "fart5": "Prut 5",
+        "fart6": "Prut 6",
+        "fart7": "Prut 7",
+        "fart8": "Prut 8",
+        "fart9": "Prut 9",
+        "fart10": "Prut 10",
+        "fart_random": "Tilfældig prut"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Let",
+        "medium": "Middel",
+        "hard": "Svær"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Alle får de fulde point",
+        "split": "Del pointene ligeligt (rundet ned)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Hver gang den skal laves",
+        "week": "Ugentligt",
+        "month": "Månedligt"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronze",
+        "silver": "Sølv",
+        "gold": "Guld",
+        "platinum": "Platin"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Kræv alle (OG)",
+        "or": "Kræv ét af dem (ELLER)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 time",
+        "2h": "2 timer",
+        "4h": "4 timer",
+        "bed": "Indtil sengetid"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Super",
+        "good": "God",
+        "ok": "Okay",
+        "sad": "Ked af det",
+        "upset": "Sur"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Pligt",
+        "reward": "Belønning",
+        "penalty": "Straf"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Drage",
+        "cat": "Kat",
+        "dog": "Hund",
+        "bunny": "Kanin",
+        "dino": "Dino",
+        "unicorn": "Enhjørning"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Ser færdig ud",
+        "not_yet": "Ikke endnu"
+      }
     }
   },
   "services": {
@@ -158,6 +254,18 @@
         "time_id": {
           "name": "Fast tidspunkt",
           "description": "For en opgave med faste tidspunkter: hvilket tidspunkt der krydses af. Lad stå tomt for det, der er åbent nu."
+        },
+        "as_parent": {
+          "name": "Som forælder",
+          "description": "Fuldfør på barnets vegne og giv point med det samme uden godkendelse."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Valgfri URL eller sti til et foto, der sendes som bevis (f.eks. et kamerabillede). Vises for forælderen ved godkendelse."
+        },
+        "completed_date": {
+          "name": "Udført den",
+          "description": "Registrér pligten på en tidligere dag (op til 7 dage tilbage, ikke i dag), hvor den blev lavet men ikke krydset af. Kun forældre; godkendes med det samme. Dagens grænse gælder stadig."
         }
       }
     },
@@ -638,6 +746,18 @@
         "daily_limit": {
           "name": "Daglig grænse",
           "description": "Hvor mange gange om dagen pligten kan laves. Engangspligter er altid 1."
+        },
+        "difficulty": {
+          "name": "Sværhedsgrad",
+          "description": "Sværhedsgrad; ganger de tildelte point med niveauets multiplikator (medium = ×1,0 som udgangspunkt)"
+        },
+        "expires_in_minutes": {
+          "name": "Udløber om (minutter)",
+          "description": "Gør pligten reaktiv med en frist så mange minutter fra nu, f.eks. vaskemaskinen er færdig, tøm den inden for 30 minutter. Pligten forsvinder og slås fra, når fristen er gået. 0 = ingen frist."
+        },
+        "speed_bonus_points": {
+          "name": "Fartbonus-point",
+          "description": "Ekstra point, hvis pligten fuldføres inden fristen. Kræver expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1208,10 @@
         "notify_on_earn": {
           "name": "Giv besked ved optjening",
           "description": "Send en notifikation, når badget optjenes"
+        },
+        "combinator": {
+          "name": "Kombination",
+          "description": "Hvordan flere kriterier kombineres: AND (alle skal opfyldes) eller OR (et af dem). Standard er AND."
         }
       }
     },
@@ -1134,6 +1258,10 @@
         "notify_on_earn": {
           "name": "Giv besked ved optjening",
           "description": "Send en notifikation, når badget optjenes"
+        },
+        "combinator": {
+          "name": "Kombination",
+          "description": "Hvordan flere kriterier kombineres: AND (alle skal opfyldes) eller OR (et af dem). Standard er AND."
         }
       }
     },
@@ -1864,22 +1992,93 @@
           "description": "TT:MM, f.eks. 17:30. Tomt fjerner påmindelsen."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Læs pligter højt",
+      "description": "Læs et barns resterende pligter op på en medieafspiller, f.eks. \"Ella, du har tre ting tilbage…\". Bruger oplæsningsteksten på Home Assistants sprog, medmindre der er sat egne skabeloner.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, hvis pligter læses op"
+        },
+        "media_player": {
+          "name": "Medieafspiller",
+          "description": "Hvor der skal læses op. Bruger standarden fra Indstillinger, hvis tom."
+        },
+        "tts_entity": {
+          "name": "Tekst-til-tale-entitet",
+          "description": "Hvilken TTS-tjeneste der bruges. Ellers den fra Indstillinger, og ellers den eneste installerede."
+        },
+        "message": {
+          "name": "Egen besked",
+          "description": "Sig dette i stedet for den automatiske opsummering."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Drej pligt-ruletten",
+      "description": "Vælg en tilfældig resterende pligt til et barn med en pointmultiplikator. Skal slås til: aktivér den, og angiv multiplikator og antal daglige drej i TaskMate-panelets indstillinger.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der drejer"
+        }
+      }
     }
   },
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "pligter"
+        "unit_of_measurement": "pligter",
+        "name": "{child}s statistik"
       },
       "child_badges": {
-        "unit_of_measurement": "badges"
+        "unit_of_measurement": "badges",
+        "name": "{child}s badges"
       },
       "child_watch": {
         "state": {
           "left": "# tilbage",
           "all_done": "Alt klaret",
           "no_chores": "Ingen pligter"
-        }
+        },
+        "name": "{child}s smartwatch"
+      },
+      "overview": {
+        "name": "TaskMate-oversigt"
+      },
+      "chores": {
+        "name": "TaskMate-pligter"
+      },
+      "chore_availability": {
+        "name": "TaskMate-tilgængelighed af pligter"
+      },
+      "rewards": {
+        "name": "TaskMate-belønninger"
+      },
+      "activity": {
+        "name": "TaskMate-aktivitet"
+      },
+      "incentives": {
+        "name": "TaskMate-bonusser og straffe"
+      },
+      "bounties": {
+        "name": "TaskMate-dusører"
+      },
+      "auctions": {
+        "name": "TaskMate-auktioner"
+      },
+      "chore_board": {
+        "name": "TaskMate-pligttavle"
+      },
+      "child_points": {
+        "name": "{child}s point"
+      },
+      "child_wishlist": {
+        "name": "{child}s ønskeliste"
+      },
+      "pending_approvals": {
+        "name": "Afventende godkendelser"
       }
     },
     "number": {
@@ -1892,15 +2091,27 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Nulstilling af streak"
+        "name": "Nulstilling af streak",
+        "state": {
+          "reset": "Nulstil — streak går til 0 ved en misset dag",
+          "pause": "Pause — streak bevares indtil næste fuldførelse"
+        }
       },
       "card_design": {
-        "name": "Kortdesign"
+        "name": "Kortdesign",
+        "state": {
+          "classic": "Klassisk",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Tilgængelig",
+          "graphite": "Grafit"
+        }
       }
     },
     "event": {
       "child_activity": {
-        "name": "TaskMate-aktivitet",
+        "name": "{child}s aktivitet",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1953,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "TaskMate-familieaktivitet",
+        "name": "Familieaktivitet",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1969,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Har afventende godkendelser"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Fuldfør {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Indløs {reward}"
       }
     }
   },
@@ -2011,6 +2235,1287 @@
     },
     "help_chore_not_available": {
       "message": "{chore} kan ikke gøres lige nu, så der er ikke noget at bede om hjælp til endnu."
+    },
+    "help_already_on_its_way": {
+      "message": "Hjælpen med {chore} er allerede på vej."
+    },
+    "help_cooldown": {
+      "message": "Vent et minut, før du beder om hjælp igen."
+    },
+    "rate_limited": {
+      "message": "For mange forespørgsler fra denne konto. Prøv igen om et minut."
+    },
+    "child_not_found": {
+      "message": "Barnet {child_id} blev ikke fundet"
+    },
+    "chore_not_found": {
+      "message": "Opgaven {chore_id} blev ikke fundet"
+    },
+    "reward_not_found": {
+      "message": "Belønningen {reward_id} blev ikke fundet"
+    },
+    "teamwork_size_not_number": {
+      "message": "Holdstørrelsen skal være et helt tal."
+    },
+    "teamwork_size_range": {
+      "message": "En holdopgave skal have mellem 2 og {max} børn (eller 0 for en almindelig opgave)."
+    },
+    "teamwork_points_mode": {
+      "message": "Holdpoint skal være 'each' eller 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "En holdopgave kan ikke også være åben."
+    },
+    "teamwork_assignment_mode": {
+      "message": "En holdopgave skal tildeles alle — ikke først-til-mølle eller på skift."
+    },
+    "teamwork_timed": {
+      "message": "En tidsopgave kan ikke være en holdopgave."
+    },
+    "teamwork_not_team_chore": {
+      "message": "Opgaven »{name}« er ikke en holdopgave"
+    },
+    "swap_only_rotation": {
+      "message": "Kun skiftende opgaver kan byttes"
+    },
+    "swap_won_at_auction": {
+      "message": "Denne opgave blev vundet på auktion i dag, så den kan ikke byttes"
+    },
+    "swap_already_assigned": {
+      "message": "Opgaven er allerede tildelt det barn i dag"
+    },
+    "swap_already_pending": {
+      "message": "Der venter allerede en bytteanmodning for denne opgave"
+    },
+    "swap_too_many_pending": {
+      "message": "For mange ventende bytteanmodninger"
+    },
+    "swap_request_not_found": {
+      "message": "Bytteanmodningen {request_id} blev ikke fundet"
+    },
+    "bulk_unknown_action": {
+      "message": "Ukendt massehandling {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Kan ikke masseredigere {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Ukendt barn {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Ukendt tidsperiode {period}"
+    },
+    "chore_unknown": {
+      "message": "Ukendt opgave: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Spring over virker ikke, når opgaven er tildelt alle"
+    },
+    "skip_sticky_follower": {
+      "message": "En opgave, der følger sin gruppe, kan ikke springes over; spring gruppens første opgave over i stedet"
+    },
+    "skip_pool_too_small": {
+      "message": "Spring over kræver, at mindst 2 børn deles om opgaven"
+    },
+    "manual_start_everyone_mode": {
+      "message": "Manuel start virker ikke, når opgaven er tildelt alle"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Barnet {child_id} er ikke med i denne opgaves skiftehold"
+    },
+    "chore_photo_required": {
+      "message": "Denne opgave kræver et foto som bevis."
+    },
+    "chore_note_required": {
+      "message": "Skriv, hvad du har lavet, for at sende denne."
+    },
+    "chore_quantity_required": {
+      "message": "Skriv, hvor mange {unit} du har lavet."
+    },
+    "backdate_day_range": {
+      "message": "Vælg en dag inden for de sidste {days} dage, før i dag."
+    },
+    "backdate_switched_off": {
+      "message": "»{name}« er slået fra."
+    },
+    "backdate_not_assigned": {
+      "message": "»{name}« er ikke en af {child}s opgaver."
+    },
+    "backdate_rotation_team": {
+      "message": "»{name}« går på skift eller kræver et hold, så den kan ikke registreres for en tidligere dag."
+    },
+    "backdate_open_ended": {
+      "message": "»{name}« er åben, så den kræver barnets note og en pris. Brug barnets kort."
+    },
+    "backdate_set_times": {
+      "message": "»{name}« har faste tidspunkter, så den kan ikke registreres for en tidligere dag."
+    },
+    "backdate_holiday": {
+      "message": "Der var ferie {weekday, select, Monday {i mandags} Tuesday {i tirsdags} Wednesday {i onsdags} Thursday {i torsdags} Friday {i fredags} Saturday {i lørdags} Sunday {i søndags} other {om {weekday}}}, så ingen opgaver skulle laves."
+    },
+    "backdate_sick_day": {
+      "message": "{child} var syg {weekday, select, Monday {i mandags} Tuesday {i tirsdags} Wednesday {i onsdags} Thursday {i torsdags} Friday {i fredags} Saturday {i lørdags} Sunday {i søndags} other {om {weekday}}}, så ingen opgaver skulle laves."
+    },
+    "backdate_birthday": {
+      "message": "{child} havde fødselsdag {weekday, select, Monday {i mandags} Tuesday {i tirsdags} Wednesday {i onsdags} Thursday {i torsdags} Friday {i fredags} Saturday {i lørdags} Sunday {i søndags} other {om {weekday}}}, en fridag fra opgaver."
+    },
+    "backdate_auction": {
+      "message": "»{name}« blev vundet på auktion den dag, så den kan ikke registreres bagefter."
+    },
+    "backdate_weekly_target_met": {
+      "message": "»{name}« nåede allerede sine {target} den uge."
+    },
+    "backdate_not_due": {
+      "message": "»{name}« skulle ikke laves {weekday, select, Monday {i mandags} Tuesday {i tirsdags} Wednesday {i onsdags} Thursday {i torsdags} Friday {i fredags} Saturday {i lørdags} Sunday {i søndags} other {om {weekday}}}."
+    },
+    "backdate_daily_limit": {
+      "message": "»{name}« blev allerede lavet {done}/{limit} gange {weekday, select, Monday {i mandags} Tuesday {i tirsdags} Wednesday {i onsdags} Thursday {i torsdags} Friday {i fredags} Saturday {i lørdags} Sunday {i søndags} other {om {weekday}}}."
+    },
+    "chore_disabled": {
+      "message": "Opgaven »{name}« er slået fra"
+    },
+    "parent_complete_one_shot": {
+      "message": "Opgaven »{name}« er en engangsopgave og kan ikke fuldføres af en forælder"
+    },
+    "parent_complete_no_children": {
+      "message": "Opgaven »{name}« har ingen børn at skjule den for"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "Opgaven »{name}« deles på skift og kan kun fuldføres for alle"
+    },
+    "parent_complete_not_assigned": {
+      "message": "Opgaven »{name}« er ikke tildelt det barn"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Bonus-delopgaven {subtask_id} blev ikke fundet i opgaven »{name}«"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "Bonus-delopgaven »{subtask}« er ikke tildelt {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Bonus-delopgaven »{subtask}« kan ikke fuldføres — hovedopgaven »{name}« skal fuldføres først i dag."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Bonus-delopgaven »{subtask}« er allerede fuldført i dag."
+    },
+    "undo_window_passed": {
+      "message": "Denne opgave kan ikke fortrydes længere. Bed en forælder om at fortryde den."
+    },
+    "undo_points_spent": {
+      "message": "Denne opgave kan ikke fortrydes nu: pointene er allerede brugt. Spørg en forælder."
+    },
+    "completion_not_found": {
+      "message": "Fuldførelsen {completion_id} blev ikke fundet"
+    },
+    "completion_not_approved": {
+      "message": "Fuldførelsen er ikke godkendt; der er intet at fortryde"
+    },
+    "chore_sort_unknown": {
+      "message": "Ukendt sortering »{sort}«"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Opgaven står to gange i gruppen: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "Opgaven »{name}« er tildelt alle og kan ikke komme med i en gruppe"
+    },
+    "task_group_already_member": {
+      "message": "Opgaven »{name}« hører allerede til gruppen »{group}«"
+    },
+    "task_group_unknown_policy": {
+      "message": "Ukendt regel for pligtgruppe: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Ukendt pligtgruppe: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "Antallet må ikke være 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Streak-frys er slået fra (streak_freeze_max er 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} har allerede det maksimale antal på {cap} streak-frys"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} har allerede det maksimale antal på {cap} streak-frys"
+    },
+    "streak_freeze_off": {
+      "message": "Streak-frys er slået fra"
+    },
+    "points_non_negative": {
+      "message": "Point må ikke være negative"
+    },
+    "transaction_not_found": {
+      "message": "Posteringen {transaction_id} blev ikke fundet"
+    },
+    "undo_not_undoable": {
+      "message": "Denne handling kan ikke fortrydes"
+    },
+    "gift_undo_too_old": {
+      "message": "Denne gave er ældre end fortryd-funktionen og kan ikke tilbageføres automatisk."
+    },
+    "gift_undo_spent": {
+      "message": "{child} har allerede brugt noget af denne gave, så den kan ikke fortrydes."
+    },
+    "gift_amount_positive": {
+      "message": "Gavens størrelse skal være positiv"
+    },
+    "gift_same_child": {
+      "message": "Man kan ikke give en gave til sig selv"
+    },
+    "gift_child_not_found": {
+      "message": "Afsender eller modtager blev ikke fundet"
+    },
+    "gift_not_enough_points": {
+      "message": "Ikke nok point: {child} har {points}, gave {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "»{name}« er en fælles jackpot, og puljen er ikke fuld. Kræver {cost}, der er sparet {saved} op"
+    },
+    "reward_not_available_to": {
+      "message": "Belønningen »{name}« er ikke tilgængelig for {child}"
+    },
+    "reward_sold_out": {
+      "message": "Belønningen »{name}« er udsolgt"
+    },
+    "reward_expired": {
+      "message": "Belønningen »{name}« er udløbet"
+    },
+    "reward_not_available_now": {
+      "message": "Belønningen »{name}« er ikke tilgængelig lige nu"
+    },
+    "reward_claim_already_waiting": {
+      "message": "En anmodning om »{name}« venter allerede på godkendelse"
+    },
+    "reward_claims_too_many": {
+      "message": "For mange belønningsanmodninger venter allerede på godkendelse"
+    },
+    "reward_not_enough_points": {
+      "message": "Ikke nok point. Kræver {cost}, der er {available} til rådighed"
+    },
+    "reward_spending_cap": {
+      "message": "Forbrugsloftet er nået: {cap} pr. periode er allerede brugt"
+    },
+    "reward_claim_target_missing": {
+      "message": "Belønning eller barn blev ikke fundet for anmodningen {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Ikke nok point til at godkende. Kræver {cost}, har {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "»{name}« er allerede godkendt og kan ikke længere afvises"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "Denne belønning er allerede godkendt og kan ikke længere afvises"
+    },
+    "pool_allocate_min": {
+      "message": "Der skal sættes mindst 1 point af"
+    },
+    "pool_no_spendable": {
+      "message": "{child} har ingen point at bruge"
+    },
+    "pool_full": {
+      "message": "Puljen til belønningen »{name}« er allerede fuld"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} kan få {name} én gang om dagen. Den kan fås igen den {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} kan få {name} én gang om ugen. Den kan fås igen den {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} kan få {name} én gang om måneden. Den kan fås igen den {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} kan få {name} {count} gange om dagen. Den kan fås igen den {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} kan få {name} {count} gange om ugen. Den kan fås igen den {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} kan få {name} {count} gange om måneden. Den kan fås igen den {date}"
+    },
+    "reward_gift_off": {
+      "message": "At købe belønninger til hinanden er slået fra"
+    },
+    "reward_gift_children_only": {
+      "message": "Belønninger kan kun købes til børn"
+    },
+    "reward_gift_not_giftable": {
+      "message": "»{name}« kan ikke købes til en anden"
+    },
+    "reward_rating_stars": {
+      "message": "Vælg 1 til 3 stjerner"
+    },
+    "reward_rating_not_yet": {
+      "message": "Den belønning kan ikke bedømmes endnu"
+    },
+    "reward_rating_not_holder": {
+      "message": "Kun barnet, der fik belønningen, kan bedømme den"
+    },
+    "reward_rating_already": {
+      "message": "Den belønning er allerede bedømt"
+    },
+    "service_unknown_child": {
+      "message": "Ukendt barn »{ref}«. Gyldige børn: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Mere end ét barn hedder »{ref}«; brug barnets id i stedet ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Intet at opdatere: angiv mindst ét felt, der skal ændres"
+    },
+    "service_confirm_delete": {
+      "message": "Sæt confirm: true for at slette opgaven"
+    },
+    "penalty_already_earned_back": {
+      "message": "Den straf er allerede tjent tilbage."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Den belønning venter ikke på at blive givet."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Den belønning er allerede markeret som givet."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Den belønning tilhører {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "»{field}« kan ikke ændres planlagt"
+    },
+    "scheduled_expects_bool": {
+      "message": "»{field}« skal være true eller false"
+    },
+    "scheduled_expects_int": {
+      "message": "»{field}« skal være et helt tal"
+    },
+    "scheduled_negative": {
+      "message": "»{field}« må ikke være negativ"
+    },
+    "scheduled_expects_list": {
+      "message": "»{field}« skal være en liste"
+    },
+    "scheduled_expects_text": {
+      "message": "»{field}« skal være tekst"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on skal være en ISO-dato, f.eks. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on skal være en fremtidig dato"
+    },
+    "scheduled_no_fields": {
+      "message": "En planlagt ændring skal ændre mindst ét felt"
+    },
+    "scheduled_change_not_found": {
+      "message": "Den planlagte ændring {change_id} blev ikke fundet"
+    },
+    "timed_not_timed": {
+      "message": "Opgaven »{name}« er ikke en tidsopgave"
+    },
+    "timed_already_running": {
+      "message": "Timeren kører allerede"
+    },
+    "timed_daily_cap": {
+      "message": "Dagens grænse er nået ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "»{name}« er ikke tilgængelig for {child} lige nu"
+    },
+    "timed_no_running": {
+      "message": "Ingen kørende timer at sætte på pause"
+    },
+    "timed_no_active": {
+      "message": "Ingen aktiv timer at stoppe"
+    },
+    "set_time_unknown": {
+      "message": "Det tidspunkt er ikke et af denne opgaves faste tidspunkter."
+    },
+    "sick_day_range": {
+      "message": "Vælg en dag fra en uge siden til en måned frem."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Intet at gendanne: det blev aldrig slettet eller er ryddet væk"
+    },
+    "trash_id_exists": {
+      "message": "Der findes allerede noget med id {item_id}"
+    },
+    "wish_not_found": {
+      "message": "Ønsket blev ikke fundet"
+    },
+    "wish_target_not_whole": {
+      "message": "Målet skal være et helt tal"
+    },
+    "wish_target_range": {
+      "message": "Målet skal være mellem 1 og {max}"
+    },
+    "wish_name_required": {
+      "message": "Giv ønsket et navn"
+    },
+    "wish_link_invalid": {
+      "message": "Links skal være en webadresse, der starter med http:// eller https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} har allerede {max} ønsker i gang"
+    },
+    "wish_picture_unusable": {
+      "message": "Det billede kan ikke bruges"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Kun et ønske, der venter eller er afvist, kan trækkes tilbage"
+    },
+    "wish_not_open_for_saving": {
+      "message": "Der kan ikke spares op til »{name}«"
+    },
+    "wish_move_min": {
+      "message": "Du skal flytte mindst 1 point"
+    },
+    "wish_fully_funded": {
+      "message": "»{name}« er allerede fuldt finansieret"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} har ingen point at bruge"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Der kan ikke tages point ud af »{name}« lige nu"
+    },
+    "wish_take_back_min": {
+      "message": "Du skal tage mindst 1 point tilbage"
+    },
+    "wish_nothing_saved": {
+      "message": "Der er ikke sparet noget op i »{name}«, der kan tages tilbage"
+    },
+    "wish_cannot_redeem": {
+      "message": "»{name}« kan ikke indløses lige nu"
+    },
+    "wish_needs_more_points": {
+      "message": "»{name}« mangler først {points} point mere"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "For mange belønningsanmodninger venter allerede på godkendelse"
+    },
+    "wish_not_waiting_approval": {
+      "message": "»{name}« venter ikke på godkendelse"
+    },
+    "wish_cannot_decline": {
+      "message": "»{name}« kan ikke længere afvises"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "»{name}« tager ikke imod tilsagn"
+    },
+    "wish_pledge_name_required": {
+      "message": "Angiv, hvem tilsagnet er fra"
+    },
+    "wish_pledge_min": {
+      "message": "Et tilsagn skal være på mindst 1 point"
+    },
+    "wish_too_many_pledges": {
+      "message": "»{name}« har allerede {max} tilsagn"
+    },
+    "wish_pledges_locked": {
+      "message": "Tilsagn til »{name}« kan ikke længere ændres"
+    },
+    "wish_pledge_not_found": {
+      "message": "Tilsagnet blev ikke fundet"
+    },
+    "wish_claim_missing": {
+      "message": "Ønsket eller barnet blev ikke fundet for anmodning {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "»{name}« venter ikke længere på at blive indløst"
+    },
+    "wish_not_funded": {
+      "message": "»{name}« er ikke længere fuldt finansieret"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "Billedet skal være en emoji (op til {max} tegn)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "En farve skal se ud som #ff8800 eller være “rainbow”."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Den ting findes ikke i butikken."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Navnet må højst have {max} tegn."
+    },
+    "pet_shop_name_required": {
+      "message": "Giv tingen et navn."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Ukendt plads »{slot}«"
+    },
+    "pet_shop_not_whole": {
+      "message": "Pris og niveau skal være hele tal."
+    },
+    "pet_shop_cost_range": {
+      "message": "Prisen skal være mellem 1 og {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "Niveauet skal være mellem 0 og {max}."
+    },
+    "pet_shop_full": {
+      "message": "Butikken kan højst have {max} ting."
+    },
+    "pets_switched_off": {
+      "message": "Kæledyr er slået fra."
+    },
+    "pet_adopt_first": {
+      "message": "Adopter et kæledyr først."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Det er ikke låst op endnu."
+    },
+    "pet_shop_closed": {
+      "message": "Dyrebutikken er lukket."
+    },
+    "pet_shop_buy_first": {
+      "message": "Køb den først."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Den ting er ikke til salg."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Den låses op på niveau {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Du har den allerede."
+    },
+    "pet_shop_already_pending": {
+      "message": "Den venter allerede på en forælder."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Ikke nok point til den endnu."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Det køb venter ikke længere."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Det barn eller den ting findes ikke længere – afvis købet i stedet."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} har ikke nok point til den nu."
+    },
+    "pet_unknown_species": {
+      "message": "Ukendt kæledyr »{species}«"
+    },
+    "pet_name_required": {
+      "message": "Giv dit kæledyr et navn."
+    },
+    "pet_no_egg": {
+      "message": "Der er ikke noget æg at udklække endnu."
+    },
+    "auction_not_found": {
+      "message": "Den auktion findes ikke længere. Opdater kortet."
+    },
+    "auction_refuse_off": {
+      "message": "Den opgave er slået fra."
+    },
+    "auction_refuse_unassigned": {
+      "message": "En opgave uden tildeling kan ikke gives til nogen, så den kan ikke sættes på auktion."
+    },
+    "auction_refuse_team": {
+      "message": "En holdopgave deles af et hold, så den kan ikke sættes på auktion."
+    },
+    "auction_refuse_timed": {
+      "message": "En tidtaget opgave betales pr. minut, så den kan ikke sættes på auktion."
+    },
+    "auction_refuse_open_ended": {
+      "message": "Prisen på en åben opgave sættes af forælderen, så den kan ikke sættes på auktion."
+    },
+    "auction_invalid_date": {
+      "message": "Ugyldig dato: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Vælg en gang fra i morgen og frem."
+    },
+    "auction_not_scheduled": {
+      "message": "»{chore}« er ikke planlagt den {date}."
+    },
+    "auction_already_exists": {
+      "message": "Den gang har allerede en auktion."
+    },
+    "auction_points_not_whole": {
+      "message": "Point skal være hele tal."
+    },
+    "auction_max_range": {
+      "message": "Det højeste bud er mellem 1 og {max} point."
+    },
+    "auction_min_range": {
+      "message": "Det laveste bud skal være mellem 1 og det højeste."
+    },
+    "auction_needs_close": {
+      "message": "En auktion skal have et sluttidspunkt."
+    },
+    "auction_close_in_past": {
+      "message": "Sluttidspunktet er allerede passeret."
+    },
+    "auction_close_before_day": {
+      "message": "Budrunden skal slutte før dagen, opgaven skal laves."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Kun børn, der kan lave denne opgave, kan byde på den."
+    },
+    "auction_no_bidders": {
+      "message": "Vælg mindst ét barn, der kan byde."
+    },
+    "auction_already_closed": {
+      "message": "Denne auktion er allerede afsluttet."
+    },
+    "auction_already_cancelled": {
+      "message": "Denne auktion er allerede aflyst."
+    },
+    "auction_occurrence_passed": {
+      "message": "Den gang er allerede overstået."
+    },
+    "auction_still_live": {
+      "message": "Denne auktion er stadig i gang. Aflys den i stedet."
+    },
+    "auction_not_for_you": {
+      "message": "Denne auktion er ikke til dig."
+    },
+    "auction_bidding_closed": {
+      "message": "Budgivningen på denne auktion er lukket."
+    },
+    "auction_bid_not_whole": {
+      "message": "Et bud er et helt antal point."
+    },
+    "auction_bid_range": {
+      "message": "Byd mellem {min} og {max} point."
+    },
+    "auction_no_bid": {
+      "message": "Du har ikke budt på denne."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Ugyldigt udløbstidspunkt: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Den dusør findes ikke længere. Opdater kortet."
+    },
+    "bounty_title_required": {
+      "message": "En dusør skal have en titel."
+    },
+    "bounty_points_not_whole": {
+      "message": "Point skal være et helt tal."
+    },
+    "bounty_points_range": {
+      "message": "En dusør er værd mellem 1 og {max} point."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Reservationen skal være et helt antal timer."
+    },
+    "bounty_claim_hours_range": {
+      "message": "Reservationen varer mellem 1 og {max} timer."
+    },
+    "bounty_expiry_in_past": {
+      "message": "Udløbstidspunktet er allerede passeret."
+    },
+    "bounty_finished_locked": {
+      "message": "En færdig dusør kan ikke redigeres."
+    },
+    "bounty_claimed_locked": {
+      "message": "Når en dusør er taget, kan kun point og udløbstidspunkt ændres."
+    },
+    "bounty_review_before_remove": {
+      "message": "Godkend eller afvis det færdige job, før du fjerner denne dusør."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Kun en dusør, der er taget, kan frigives."
+    },
+    "bounty_not_for_you": {
+      "message": "Denne dusør er ikke til dig."
+    },
+    "bounty_taken": {
+      "message": "En anden kom først – denne dusør er ikke på tavlen længere."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Gør »{title}« færdig først – du kan kun have én dusør ad gangen."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Du har ikke taget denne dusør."
+    },
+    "bounty_claim_expired": {
+      "message": "Din reservation af denne dusør er udløbet."
+    },
+    "bounty_photo_required": {
+      "message": "Denne dusør kræver et billede af det færdige job."
+    },
+    "raffle_name_required": {
+      "message": "Giv lodtrækningen et navn."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Et lod koster 1 til {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Vælg, hvornår lodtrækningen skal ske."
+    },
+    "raffle_field_required": {
+      "message": "{field} er påkrævet"
+    },
+    "raffle_draw_in_past": {
+      "message": "Trækningen skal ligge i fremtiden."
+    },
+    "raffle_not_found": {
+      "message": "Lodtrækningen blev ikke fundet"
+    },
+    "raffle_not_open_edit": {
+      "message": "Kun en åben lodtrækning kan ændres."
+    },
+    "raffle_price_locked": {
+      "message": "Der er købt lodder, så prisen kan ikke ændres."
+    },
+    "raffle_closed": {
+      "message": "Denne lodtrækning er lukket."
+    },
+    "raffle_drawing": {
+      "message": "Denne lodtrækning trækkes nu."
+    },
+    "raffle_not_open_to": {
+      "message": "Denne lodtrækning er ikke åben for {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Køb mindst ét lod."
+    },
+    "raffle_max_tickets": {
+      "message": "Du kan højst have {max} lodder."
+    },
+    "raffle_not_enough_points": {
+      "message": "Ikke nok point til så mange lodder."
+    },
+    "raffle_already_closed": {
+      "message": "Denne lodtrækning er allerede lukket."
+    },
+    "roulette_off": {
+      "message": "Opgaveroulette er slået fra"
+    },
+    "roulette_no_spins": {
+      "message": "Ikke flere drej i dag"
+    },
+    "roulette_nothing_left": {
+      "message": "Intet tilbage at dreje om"
+    },
+    "unlock_not_allowed": {
+      "message": "»{entity_id}« er ikke på listen over tilladte oplåsninger. Tilføj den under Indstillinger, før du bruger den som belønning."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Oplåsningsminutter skal være et helt tal"
+    },
+    "unlock_minutes_negative": {
+      "message": "Oplåsningsminutter kan ikke være negative"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Oplåsningsminutter kan ikke være mere end {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Den avatar findes ikke i kataloget"
+    },
+    "avatar_locked": {
+      "message": "Den avatar er ikke låst op endnu"
+    },
+    "weekly_goals_off": {
+      "message": "Ugemål er slået fra."
+    },
+    "weekly_goal_range": {
+      "message": "Vælg et mål fra 0 til {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Et mål skal være mindst {bonus}, den bonus det giver."
+    },
+    "weekly_goal_locked": {
+      "message": "Ugens mål er allerede nået og betalt, så det kan ikke ændres før mandag."
+    },
+    "challenge_name_required": {
+      "message": "Udfordringen skal have et navn"
+    },
+    "challenge_target_min": {
+      "message": "Målet skal være mindst 1"
+    },
+    "challenge_not_found": {
+      "message": "Udfordringen {challenge_id} blev ikke fundet"
+    },
+    "quest_name_required": {
+      "message": "Missionen skal have et navn"
+    },
+    "quest_needs_step": {
+      "message": "En mission skal have mindst ét trin"
+    },
+    "quest_not_found": {
+      "message": "Missionen {quest_id} blev ikke fundet"
+    },
+    "admin_only": {
+      "message": "Kun for administratorer"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate er ikke klar endnu"
+    },
+    "not_allowed": {
+      "message": "Ikke tilladt"
+    },
+    "handler_failed": {
+      "message": "Noget gik galt; se Home Assistant-loggen"
+    },
+    "chore_one_off_past_day": {
+      "message": "En engangsopgave kan ikke sættes til en dag, der allerede er gået"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start skal være en ISO-dato"
+    },
+    "penalty_not_found": {
+      "message": "Straffen {penalty_id} blev ikke fundet"
+    },
+    "bonus_not_found": {
+      "message": "Bonussen {bonus_id} blev ikke fundet"
+    },
+    "group_not_found": {
+      "message": "Gruppen {group_id} blev ikke fundet"
+    },
+    "chores_bulk_no_names": {
+      "message": "Der skal mindst være ét opgavenavn"
+    },
+    "notif_child_not_found": {
+      "message": "Barnet blev ikke fundet"
+    },
+    "notif_parent_not_found": {
+      "message": "Forælderen blev ikke fundet"
+    },
+    "recap_not_found": {
+      "message": "Opsummeringen blev ikke fundet"
+    },
+    "voucher_not_approved": {
+      "message": "Kun en godkendt belønning kan udskrives"
+    },
+    "voucher_missing": {
+      "message": "Den belønning eller det barn findes ikke længere"
+    },
+    "setup_invalid_birthday": {
+      "message": "Fødselsdagen »{value}« er ikke en gyldig dato"
+    },
+    "kiosk_pin_invalid": {
+      "message": "En kiosk-PIN skal være præcis 4 cifre"
+    },
+    "time_periods_empty": {
+      "message": "Der skal være mindst én tidsperiode"
+    },
+    "time_periods_too_many": {
+      "message": "for mange perioder (højst {max})"
+    },
+    "time_periods_not_object": {
+      "message": "hver periode skal være et objekt"
+    },
+    "time_periods_duplicate_id": {
+      "message": "periode-id findes to gange: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "hver egen periode skal have et navn"
+    },
+    "time_periods_invalid_time": {
+      "message": "ugyldigt tidspunkt for perioden »{name}« (brug TT:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "perioden »{name}« skal starte, før den slutter"
+    },
+    "time_periods_overlap": {
+      "message": "»{name}« overlapper »{other}« — perioder må ikke overlappe"
+    },
+    "time_periods_in_use": {
+      "message": "en periode, som stadig bruges af opgaver, kan ikke slettes: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "ferieperioderne skal være en liste"
+    },
+    "vacation_periods_too_many": {
+      "message": "for mange ferieperioder (højst {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "hver ferieperiode skal være et objekt"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "hver ferieperiode skal have gyldige start- og slutdatoer (ÅÅÅÅ-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "En skabelon uden opgaver kan ikke bruges"
+    },
+    "template_none_selected": {
+      "message": "Vælg mindst én opgave"
+    },
+    "template_no_valid_chores": {
+      "message": "Ingen gyldige opgaver fundet for de valgte id’er"
+    },
+    "template_needs_chore": {
+      "message": "En skabelon skal have mindst én opgave"
+    },
+    "template_builtin_modify": {
+      "message": "Den indbyggede skabelon »{template_id}« kan ikke ændres"
+    },
+    "template_builtin_delete": {
+      "message": "Den indbyggede skabelon »{template_id}« kan ikke slettes"
+    },
+    "template_pack_not_pack": {
+      "message": "Det ligner ikke en TaskMate-pakke"
+    },
+    "template_pack_wrong_format": {
+      "message": "Ikke en TaskMate-skabelonpakke"
+    },
+    "template_pack_version_nan": {
+      "message": "Pakkens version er ikke et tal"
+    },
+    "template_pack_too_new": {
+      "message": "Denne pakke kræver en nyere TaskMate (pakkeversion {version}, denne forstår {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Pakken indeholder ingen skabeloner"
+    },
+    "template_pack_too_many": {
+      "message": "Pakken har for mange skabeloner (højst {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Pakken indeholder en ugyldig skabelon"
+    },
+    "template_pack_unnamed_template": {
+      "message": "En skabelon i pakken har intet navn"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Skabelonen »{name}« har ingen opgaver"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Skabelonen »{name}« har for mange opgaver"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Skabelonen »{name}« har en ugyldig opgave"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "En opgave i »{name}« har intet navn"
+    },
+    "boost_bad_time": {
+      "message": "»{value}« er ikke et tidspunkt som 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "Multiplikatoren skal være et tal."
+    },
+    "boost_multiplier_range": {
+      "message": "Vælg en multiplikator fra ×{min} til ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Opgaven {chore_id} blev ikke fundet."
+    },
+    "boost_child_not_found": {
+      "message": "Barnet {child_id} blev ikke fundet."
+    },
+    "boost_start_past": {
+      "message": "En boost kan ikke starte i fortiden."
+    },
+    "boost_too_far_ahead": {
+      "message": "En boost kan planlægges op til en uge frem."
+    },
+    "boost_minutes_nan": {
+      "message": "Minutterne skal være et helt tal."
+    },
+    "boost_minutes_range": {
+      "message": "Vælg fra 1 til {max} minutter."
+    },
+    "boost_already_ended": {
+      "message": "Den boost er allerede slut."
+    },
+    "boost_rule_no_days": {
+      "message": "Vælg mindst én dag."
+    },
+    "boost_rule_end_before_start": {
+      "message": "Sluttidspunktet skal være efter starttidspunktet."
+    },
+    "boost_rules_max": {
+      "message": "Højst {max} gentagne boosts."
+    },
+    "boost_rule_gone": {
+      "message": "Den gentagne boost findes ikke længere."
+    },
+    "season_pack_unknown": {
+      "message": "Ukendt sæsonpakke: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Ukendt barn: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Denne opgave er allerede fortrudt. Genindlæs kortet."
+    },
+    "import_invalid_payload": {
+      "message": "Ugyldig TaskMate-eksport"
+    },
+    "import_data_not_object": {
+      "message": "Importdata skal være et objekt"
+    },
+    "allowance_points_min": {
+      "message": "Point skal være mindst 1"
+    },
+    "allowance_not_enabled": {
+      "message": "Lommepenge er ikke slået til"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} har kun {points} {points_name} at udbetale."
+    },
+    "appeals_off": {
+      "message": "Klager er slået fra."
+    },
+    "appeals_already_appealed": {
+      "message": "Der er allerede klaget over det."
+    },
+    "appeals_not_appealable": {
+      "message": "Det kan der ikke klages over."
+    },
+    "appeals_not_found": {
+      "message": "Den klage findes ikke længere."
+    },
+    "appeals_already_decided": {
+      "message": "Den klage er allerede afgjort."
+    },
+    "appeals_child_gone": {
+      "message": "Barnet er her ikke længere."
+    },
+    "appeals_reward_gone": {
+      "message": "Den belønning findes ikke længere."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Den straf er allerede trukket tilbage."
+    },
+    "appeals_unknown_kind": {
+      "message": "Ukendt klagetype {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Fødselsdagen skal være ÅÅÅÅ-MM-DD eller MM-DD, fik »{value}«"
+    },
+    "birthday_in_future": {
+      "message": "Fødselsdagen kan ikke ligge i fremtiden"
+    },
+    "chore_reminders_off": {
+      "message": "Påmindelser er slået fra"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} er ikke en af {child}s opgaver"
+    },
+    "chore_reminder_time_format": {
+      "message": "Vælg et tidspunkt som 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Vælg et tidspunkt mellem {earliest} og {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on skal være en ISO-dato, f.eks. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Den inspektion findes ikke længere. Genindlæs og prøv igen."
+    },
+    "inspection_already_decided": {
+      "message": "Den inspektion er allerede afgjort eller lukket."
+    },
+    "inspections_off": {
+      "message": "Overraskelsesinspektioner er slået fra i Indstillinger."
+    },
+    "inspection_chore_gone": {
+      "message": "Den opgave findes ikke længere."
+    },
+    "inspection_not_approved": {
+      "message": "Kun godkendte opgaver kan inspiceres."
+    },
+    "inspection_not_child_chore": {
+      "message": "Kun et barns egen opgave kan inspiceres."
+    },
+    "inspection_child_gone": {
+      "message": "Det barn findes ikke længere."
+    },
+    "inspection_too_old": {
+      "message": "Kun opgaver godkendt inden for de sidste {hours} timer kan inspiceres."
+    },
+    "inspection_already_inspected": {
+      "message": "Den opgave er allerede inspiceret."
+    },
+    "inspection_redo_today_only": {
+      "message": "Kun en opgave, der er lavet i dag, kan sendes tilbage til at blive lavet om."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url skal være en /sti, en http(s)-URL eller noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group må ikke indeholde mellemrum (prøv family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group må ikke indeholde kontroltegn"
+    },
+    "notification_group_too_long": {
+      "message": "group må højst være 64 tegn"
+    },
+    "notification_unknown_type": {
+      "message": "Ukendt notifikationstype {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Ukendt modtager af notifikationer {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Minutter skal være et helt tal"
+    },
+    "screen_time_minutes_max": {
+      "message": "Minutter kan ikke være over {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "Skærmtidskrukken er slået fra"
+    },
+    "screen_time_jar_full": {
+      "message": "Krukken er fuld"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Ingen minutter at gemme"
+    },
+    "setup_unknown_age_group": {
+      "message": "Ukendt aldersgruppe »{value}«"
+    },
+    "setup_child_needs_ref": {
+      "message": "Hvert nyt barn skal have sin egen ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Et barn skal have et navn"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Opgaven er tildelt et ukendt barn »{who}«"
+    },
+    "setup_chore_needs_name": {
+      "message": "En opgave skal have et navn"
+    },
+    "setup_reward_needs_name": {
+      "message": "En belønning skal have et navn"
+    },
+    "sibling_checks_off": {
+      "message": "Søskendetjek er slået fra"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Ukendt vurdering {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Den opgave er allerede tjekket. Genindlæs kortet."
+    },
+    "sibling_check_own_chore": {
+      "message": "Du kan ikke tjekke din egen opgave"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} kan ikke tjekke dette barns opgaver"
+    },
+    "sound_invalid_file_name": {
+      "message": "Ikke et gyldigt lydfilnavn: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Lyden {file} er allerede tilføjet"
+    },
+    "sound_unknown_custom": {
+      "message": "Ukendt egen lyd: {file}"
+    },
+    "tour_adult": {
+      "message": "Voksenprofiler får ikke rundvisningen"
+    },
+    "tour_bad_status": {
+      "message": "status skal være 'done' eller 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Ukendt trin i rundvisningen {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Taler allerede; prøv igen om lidt"
+    },
+    "tts_no_media_player": {
+      "message": "Ingen medieafspiller angivet, og ingen standard valgt i Indstillinger"
+    },
+    "tts_no_entity": {
+      "message": "Ingen tekst-til-tale-enhed fundet. Vælg en i Indstillinger, eller angiv tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} er ikke en af {child}s opgaver i dag."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Ukendt humør »{mood}«"
+    },
+    "set_times_not_list": {
+      "message": "Faste tider skal være en liste."
+    },
+    "set_times_too_many": {
+      "message": "En opgave kan højst have {max} faste tider."
+    },
+    "set_times_timed": {
+      "message": "En opgave med tidtagning kan ikke have faste tider."
+    },
+    "set_times_open_ended": {
+      "message": "En åben opgave kan ikke have faste tider."
+    },
+    "set_times_quantity": {
+      "message": "En mængdeopgave kan ikke have faste tider."
+    },
+    "set_times_teamwork": {
+      "message": "En holdopgave kan ikke have faste tider."
+    },
+    "set_times_need_start_end": {
+      "message": "Hver fast tid skal have en start og en slutning."
+    },
+    "set_times_bad_format": {
+      "message": "Faste tider skal have en start og en slutning som 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "En fast tid skal lukke, efter den åbner, samme dag."
+    },
+    "set_times_overlap": {
+      "message": "To faste tider overlapper. Flyt den ene, så de ikke gør."
+    },
+    "template_not_found": {
+      "message": "Skabelonen {template_id} blev ikke fundet"
+    },
+    "upload_admin_required": {
+      "message": "Kræver administrator"
+    },
+    "upload_file_too_large": {
+      "message": "Filen er for stor"
+    },
+    "upload_expected_multipart": {
+      "message": "Forventede en multipart-formular"
+    },
+    "upload_too_many_parts": {
+      "message": "For mange dele i formularen"
+    },
+    "upload_no_file": {
+      "message": "Ingen fil sendt"
+    },
+    "upload_image_unsupported": {
+      "message": "Ikke et understøttet billede (JPEG, PNG eller WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Billedlageret er fuldt"
+    },
+    "upload_image_store_failed": {
+      "message": "Kunne ikke gemme billedet"
+    },
+    "upload_photo_rate_limited": {
+      "message": "For mange uploads, prøv igen om lidt"
+    },
+    "upload_photo_busy": {
+      "message": "For mange uploads på én gang, prøv igen om et øjeblik"
+    },
+    "upload_photo_storage_full": {
+      "message": "Fotolageret er fuldt"
+    },
+    "upload_photo_timeout": {
+      "message": "Uploaden tog for lang tid"
+    },
+    "upload_photo_invalid": {
+      "message": "Ikke et gyldigt billede"
+    },
+    "upload_photo_store_failed": {
+      "message": "Kunne ikke gemme fotoet"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Du har for mange fotos, der venter på at blive knyttet til en opgave. Send eller fjern dem først."
+    },
+    "upload_sound_unsupported": {
+      "message": "Ikke en understøttet lyd (MP3, OGG, WAV eller M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Lydlageret er fuldt"
+    },
+    "upload_sound_store_failed": {
+      "message": "Kunne ikke gemme lyden"
     }
   },
   "issues": {

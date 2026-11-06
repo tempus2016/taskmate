@@ -21,6 +21,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_PENALTY_REDEEMED
 from .coord_raffles import _trim_finished
+from .errors import TaskMateError
 from .models import PointsTransaction, generate_id, parse_datetime
 
 REDEMPTIONS_KEEP = 200
@@ -136,7 +137,7 @@ class RedemptionsMixin:
         if offer is None:
             return
         if offer.get("status") == "redeemed":
-            raise ValueError("That penalty was already earned back.")
+            raise TaskMateError("penalty_already_earned_back")
         if offer.get("status") == "open":
             offer["status"] = "cancelled"
 

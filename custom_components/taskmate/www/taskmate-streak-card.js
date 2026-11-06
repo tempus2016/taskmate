@@ -540,7 +540,7 @@ class TaskMateStreakCard extends LitElement {
         <span class="ic">🔥</span>
         <span class="tt">${title}${sub ? html`<small>${sub}</small>` : ""}</span>
         ${design === "console" && onFire
-          ? html`<span class="pill">${this._t('common.d_streak', { count: onFire })}</span>` : ""}
+          ? html`<span class="pill">🔥 ${this._t(onFire === 1 ? 'streak.on_fire_count_one' : 'streak.on_fire_count', { count: onFire })}</span>` : ""}
       </div>`;
   }
 

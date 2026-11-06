@@ -83,7 +83,7 @@ class TaskMateWishlistCard extends LitElement {
 
   setConfig(config) {
     if (!config || !config.entity) {
-      throw new Error("A TaskMate overview entity is required");
+      throw new Error(this._t("wishlist.entity_required"));
     }
     this.config = config;
   }
@@ -115,6 +115,21 @@ class TaskMateWishlistCard extends LitElement {
         : true;
     }
     return true;
+  }
+
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /** A refused upload as an error: the server's JSON body (translation_key, message) when it sent one. */
+  async _uploadError(resp) {
+    let body = null;
+    try { body = await resp.json(); } catch (_e) { /* not JSON */ }
+    const err = new Error((body && body.message) || `upload failed (${resp.status})`);
+    return body && typeof body === "object" ? Object.assign(err, body) : err;
   }
 
   _t(key, params) {
@@ -212,7 +227,7 @@ class TaskMateWishlistCard extends LitElement {
       this._closeSheet();
       return true;
     } catch (err) {
-      const message = (err && err.message) || String(err);
+      const message = this._errText(err) || String(err);
       if (this._sheet) {
         this._sheet = { ...this._sheet, busy: false, error: this._t("wishlist.error", { error: message }) };
       } else {
@@ -324,7 +339,7 @@ class TaskMateWishlistCard extends LitElement {
       await this.hass.auth.refreshAccessToken();
       resp = await post();
     }
-    if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+    if (!resp.ok) throw await this._uploadError(resp);
     const body = await resp.json();
     if (!body || !body.photo_url) throw new Error("no photo_url");
     return body.photo_url;
@@ -345,8 +360,11 @@ class TaskMateWishlistCard extends LitElement {
       this._sheet = { ...s, busy: true, error: "" };
       try {
         data.photo_url = await this._uploadPicture(s.blob);
-      } catch (_e) {
-        this._sheet = { ...this._sheet, busy: false, error: this._t("wishlist.picture_failed") };
+      } catch (err) {
+        // A refusal the server explains (storage full, too large, ...) in the
+        // user's language; anything else keeps the generic wording.
+        const error = err && err.translation_key ? this._errText(err) : this._t("wishlist.picture_failed");
+        this._sheet = { ...this._sheet, busy: false, error };
         return;
       }
     }
@@ -446,7 +464,7 @@ class TaskMateWishlistCard extends LitElement {
           </div>
         </div>
         ${showProgress ? html`
-          <div class="wl-split" role="img" aria-label="${this._t("wishlist.progress_label", { total: Math.min(target, saved + pledged), target })}">
+          <div class="wl-split" role="img" aria-label="${this._t("wishlist.progress_label", { total: __tmNum(this.hass, Math.min(target, saved + pledged)), target: __tmNum(this.hass, target) })}">
             <i class="wl-me" style="width:${pct(saved)}%"></i>
             <i class="wl-fam" style="width:${pct(Math.min(pledged, Math.max(0, target - saved)))}%"></i>
           </div>
@@ -529,10 +547,10 @@ class TaskMateWishlistCard extends LitElement {
         <span class="wl-label">${this._t("wishlist.field_target")}</span>
         <div class="wl-row">
           <div class="wl-stepper">
-            <button aria-label="−" @click=${() => this._stepTarget(-TARGET_STEP)}>−</button>
+            <button aria-label="${this._t("wishlist.target_lower")}" @click=${() => this._stepTarget(-TARGET_STEP)}>−</button>
             <input type="number" min="1" max="${MAX_TARGET}" .value=${String(s.target)}
               @input=${(e) => this._setSheet({ target: Math.max(1, Math.min(MAX_TARGET, parseInt(e.target.value, 10) || 1)) })}>
-            <button aria-label="+" @click=${() => this._stepTarget(TARGET_STEP)}>+</button>
+            <button aria-label="${this._t("wishlist.target_raise")}" @click=${() => this._stepTarget(TARGET_STEP)}>+</button>
           </div>
           <span class="wl-hint">${this._t("wishlist.target_hint")}</span>
         </div>
@@ -571,7 +589,7 @@ class TaskMateWishlistCard extends LitElement {
         <span>0</span>
         <span>${isMove
           ? this._t("wishlist.move_info", { balance: __tmNum(this.hass, spendable), needed: __tmNum(this.hass, this._remaining(wish)) })
-          : this._t("wishlist.take_info", { saved: Number(wish.saved) || 0 })}</span>
+          : this._t("wishlist.take_info", { saved: __tmNum(this.hass, Number(wish.saved) || 0) })}</span>
         <span>${__tmNum(this.hass, max)}</span>
       </div>
       <div class="wl-chips">

@@ -128,6 +128,102 @@
         "save": "Save Changes",
         "delete": "Delete Group"
       }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "No sound",
+        "coin": "Coin",
+        "levelup": "Level up",
+        "fanfare": "Fanfare",
+        "chime": "Chime",
+        "powerup": "Power-up",
+        "undo": "Undo",
+        "fart1": "Fart 1",
+        "fart2": "Fart 2",
+        "fart3": "Fart 3",
+        "fart4": "Fart 4",
+        "fart5": "Fart 5",
+        "fart6": "Fart 6",
+        "fart7": "Fart 7",
+        "fart8": "Fart 8",
+        "fart9": "Fart 9",
+        "fart10": "Fart 10",
+        "fart_random": "Random fart"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Everyone gets the full points",
+        "split": "Split the points evenly (rounded down)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Each time it's due",
+        "week": "Weekly",
+        "month": "Monthly"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold",
+        "platinum": "Platinum"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Require all (AND)",
+        "or": "Require any (OR)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 hour",
+        "2h": "2 hours",
+        "4h": "4 hours",
+        "bed": "Until bedtime"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Great",
+        "good": "Good",
+        "ok": "OK",
+        "sad": "Sad",
+        "upset": "Cross"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Chore",
+        "reward": "Reward",
+        "penalty": "Penalty"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Dragon",
+        "cat": "Cat",
+        "dog": "Dog",
+        "bunny": "Bunny",
+        "dino": "Dino",
+        "unicorn": "Unicorn"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Looks done",
+        "not_yet": "Not yet"
+      }
     }
   },
   "services": {
@@ -158,6 +254,18 @@
         "time_id": {
           "name": "Set time",
           "description": "For a chore with set times, which time this ticks off. Leave blank for the one open now."
+        },
+        "as_parent": {
+          "name": "As parent",
+          "description": "Complete on behalf of the child and award points immediately, bypassing approval."
+        },
+        "photo_url": {
+          "name": "Photo URL",
+          "description": "Optional URL or path to a photo submitted as evidence for the completion (e.g. a camera snapshot). Shown to the parent during approval."
+        },
+        "completed_date": {
+          "name": "Done on",
+          "description": "Log the job for an earlier day (up to 7 days back, not today) that was done but not ticked. Parents only; approved straight away. The day's daily limit still applies."
         }
       }
     },
@@ -638,6 +746,18 @@
         "daily_limit": {
           "name": "Daily limit",
           "description": "How many times a day the chore can be completed. One-shot chores are always 1."
+        },
+        "difficulty": {
+          "name": "Difficulty",
+          "description": "Difficulty tier; scales awarded points by the tier multiplier (medium = ×1.0 baseline)"
+        },
+        "expires_in_minutes": {
+          "name": "Expires in (minutes)",
+          "description": "Make this a reactive chore with a deadline this many minutes from now, e.g. the washing machine finished, empty it within 30 minutes. The chore disappears and is disabled once the deadline passes. 0 = no deadline."
+        },
+        "speed_bonus_points": {
+          "name": "Speed bonus points",
+          "description": "Extra points awarded if the chore is completed before the deadline. Needs expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1208,10 @@
         "notify_on_earn": {
           "name": "Notify on earn",
           "description": "Send a notification when the badge is earned"
+        },
+        "combinator": {
+          "name": "Combinator",
+          "description": "How multiple criteria combine: AND (all must pass) or OR (any). Default AND."
         }
       }
     },
@@ -1134,6 +1258,10 @@
         "notify_on_earn": {
           "name": "Notify on earn",
           "description": "Send a notification when the badge is earned"
+        },
+        "combinator": {
+          "name": "Combinator",
+          "description": "How multiple criteria combine: AND (all must pass) or OR (any). Default AND."
         }
       }
     },
@@ -1864,22 +1992,93 @@
           "description": "HH:MM, e.g. 17:30. Empty clears the reminder."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Read Chores Aloud",
+      "description": "Speak a child's outstanding chores on a media player, for example \"Ella, you have three things left…\". Uses the read-aloud wording in Home Assistant's language unless custom read-aloud templates are set.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose chores are read out"
+        },
+        "media_player": {
+          "name": "Media player",
+          "description": "Where to speak. Falls back to the default set in Settings."
+        },
+        "tts_entity": {
+          "name": "Text-to-speech entity",
+          "description": "Which TTS service to use. Falls back to Settings, then to the only one installed."
+        },
+        "message": {
+          "name": "Message override",
+          "description": "Say this instead of the generated summary."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Spin Chore Roulette",
+      "description": "Pick a random outstanding chore for a child at a points multiplier. Opt-in: turn it on and set the multiplier and daily spin allowance in the TaskMate panel settings.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child spinning"
+        }
+      }
     }
   },
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "chores"
+        "unit_of_measurement": "chores",
+        "name": "{child} Stats"
       },
       "child_badges": {
-        "unit_of_measurement": "badges"
+        "unit_of_measurement": "badges",
+        "name": "{child} Badges"
       },
       "child_watch": {
         "state": {
           "left": "# left",
           "all_done": "All done",
           "no_chores": "No chores"
-        }
+        },
+        "name": "{child} Watch"
+      },
+      "overview": {
+        "name": "TaskMate Overview"
+      },
+      "chores": {
+        "name": "TaskMate Chores"
+      },
+      "chore_availability": {
+        "name": "TaskMate Chore Availability"
+      },
+      "rewards": {
+        "name": "TaskMate Rewards"
+      },
+      "activity": {
+        "name": "TaskMate Activity"
+      },
+      "incentives": {
+        "name": "TaskMate Incentives"
+      },
+      "bounties": {
+        "name": "TaskMate Bounties"
+      },
+      "auctions": {
+        "name": "TaskMate Auctions"
+      },
+      "chore_board": {
+        "name": "TaskMate Chore Board"
+      },
+      "child_points": {
+        "name": "{child} Points"
+      },
+      "child_wishlist": {
+        "name": "{child} Wishlist"
+      },
+      "pending_approvals": {
+        "name": "Pending Approvals"
       }
     },
     "number": {
@@ -1892,15 +2091,27 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Streak reset mode"
+        "name": "Streak reset mode",
+        "state": {
+          "reset": "Reset — streak goes to 0 on missed day",
+          "pause": "Pause — streak preserved until next completion"
+        }
       },
       "card_design": {
-        "name": "Card design"
+        "name": "Card design",
+        "state": {
+          "classic": "Classic",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Accessible",
+          "graphite": "Graphite"
+        }
       }
     },
     "event": {
       "child_activity": {
-        "name": "TaskMate activity",
+        "name": "{child} activity",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1953,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "TaskMate family activity",
+        "name": "Family activity",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1969,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Has Pending Approvals"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Complete {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Claim {reward}"
       }
     }
   },
@@ -2011,6 +2235,1287 @@
     },
     "help_chore_not_available": {
       "message": "{chore} can't be done right now, so there's nothing to ask for help with yet."
+    },
+    "help_already_on_its_way": {
+      "message": "Help with {chore} is already on its way."
+    },
+    "help_cooldown": {
+      "message": "Give it a minute before asking for help again."
+    },
+    "rate_limited": {
+      "message": "Too many requests from this account. Try again in a minute."
+    },
+    "child_not_found": {
+      "message": "Child {child_id} not found"
+    },
+    "chore_not_found": {
+      "message": "Chore {chore_id} not found"
+    },
+    "reward_not_found": {
+      "message": "Reward {reward_id} not found"
+    },
+    "teamwork_size_not_number": {
+      "message": "Team size must be a whole number."
+    },
+    "teamwork_size_range": {
+      "message": "A teamwork chore needs between 2 and {max} children (or 0 for a normal chore)."
+    },
+    "teamwork_points_mode": {
+      "message": "Team points must be 'each' or 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "A teamwork chore can't also be open-ended."
+    },
+    "teamwork_assignment_mode": {
+      "message": "A teamwork chore must be assigned to everyone — not first-come or a rotation."
+    },
+    "teamwork_timed": {
+      "message": "A timed task can't be a teamwork chore."
+    },
+    "teamwork_not_team_chore": {
+      "message": "Chore “{name}” is not a teamwork chore"
+    },
+    "swap_only_rotation": {
+      "message": "Only rotation chores can be swapped"
+    },
+    "swap_won_at_auction": {
+      "message": "This chore was won at auction today, so it can't be swapped"
+    },
+    "swap_already_assigned": {
+      "message": "Chore is already assigned to that child today"
+    },
+    "swap_already_pending": {
+      "message": "A swap request for this chore is already pending"
+    },
+    "swap_too_many_pending": {
+      "message": "Too many pending swap requests"
+    },
+    "swap_request_not_found": {
+      "message": "Swap request {request_id} not found"
+    },
+    "bulk_unknown_action": {
+      "message": "Unknown bulk action {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Can't bulk edit {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Unknown child {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Unknown time period {period}"
+    },
+    "chore_unknown": {
+      "message": "Unknown chore: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Skip is not supported for 'everyone' assignment mode"
+    },
+    "skip_sticky_follower": {
+      "message": "Cannot skip a sticky group follower; skip the leader chore instead"
+    },
+    "skip_pool_too_small": {
+      "message": "Skip requires a rotation pool of 2 or more children"
+    },
+    "manual_start_everyone_mode": {
+      "message": "Manual start is not supported for 'everyone' assignment mode"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Child {child_id} is not in this chore's pool"
+    },
+    "chore_photo_required": {
+      "message": "This chore requires a photo as evidence."
+    },
+    "chore_note_required": {
+      "message": "Say what you did to submit this one."
+    },
+    "chore_quantity_required": {
+      "message": "Say how many {unit} you did."
+    },
+    "backdate_day_range": {
+      "message": "Pick a day in the last {days} days, before today."
+    },
+    "backdate_switched_off": {
+      "message": "“{name}” is switched off."
+    },
+    "backdate_not_assigned": {
+      "message": "“{name}” isn't one of {child}’s jobs."
+    },
+    "backdate_rotation_team": {
+      "message": "“{name}” rotates or needs a team, so it can't be logged for a past day."
+    },
+    "backdate_open_ended": {
+      "message": "“{name}” is open-ended, so it needs the child's note and a price. Use the child's card."
+    },
+    "backdate_set_times": {
+      "message": "“{name}” has set times, so it can't be logged for a past day."
+    },
+    "backdate_holiday": {
+      "message": "{weekday} was a holiday, so no jobs were due."
+    },
+    "backdate_sick_day": {
+      "message": "{weekday} was {child}’s sick day, so no jobs were due."
+    },
+    "backdate_birthday": {
+      "message": "{weekday} was {child}’s birthday, a day off from jobs."
+    },
+    "backdate_auction": {
+      "message": "“{name}” was won at auction that day, so it can't be logged afterwards."
+    },
+    "backdate_weekly_target_met": {
+      "message": "“{name}” already reached its {target} for that week."
+    },
+    "backdate_not_due": {
+      "message": "“{name}” wasn't due on {weekday}."
+    },
+    "backdate_daily_limit": {
+      "message": "“{name}” was already done {done}/{limit} times on {weekday}."
+    },
+    "chore_disabled": {
+      "message": "Chore “{name}” is disabled"
+    },
+    "parent_complete_one_shot": {
+      "message": "Chore “{name}” is a one-shot chore and cannot be parent-completed"
+    },
+    "parent_complete_no_children": {
+      "message": "Chore “{name}” has no children to suppress"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "Chore “{name}” is shared by a rotation and can only be done for everyone"
+    },
+    "parent_complete_not_assigned": {
+      "message": "Chore “{name}” is not assigned to that child"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Bonus sub-task {subtask_id} not found on chore “{name}”"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "Bonus sub-task “{subtask}” is not assigned to {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Cannot complete bonus sub-task “{subtask}” — parent chore “{name}” must be completed first today."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Bonus sub-task “{subtask}” already completed today."
+    },
+    "undo_window_passed": {
+      "message": "This chore can't be undone any more. Ask a parent to undo it."
+    },
+    "undo_points_spent": {
+      "message": "This chore can't be undone now: its points have already been spent. Ask a parent."
+    },
+    "completion_not_found": {
+      "message": "Completion {completion_id} not found"
+    },
+    "completion_not_approved": {
+      "message": "Completion is not approved; nothing to undo"
+    },
+    "chore_sort_unknown": {
+      "message": "Unknown sort “{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Duplicate chore in group: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "Chore “{name}” uses 'everyone' mode and cannot join a group"
+    },
+    "task_group_already_member": {
+      "message": "Chore “{name}” already belongs to group “{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "Unknown task group policy: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Unknown task group: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "amount must not be 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Streak freezes are turned off (streak_freeze_max is 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} already holds the maximum of {cap} streak freezes"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} already has the maximum of {cap} streak freezes"
+    },
+    "streak_freeze_off": {
+      "message": "Streak freezes are turned off"
+    },
+    "points_non_negative": {
+      "message": "points must be non-negative"
+    },
+    "transaction_not_found": {
+      "message": "Transaction {transaction_id} not found"
+    },
+    "undo_not_undoable": {
+      "message": "This action can't be undone"
+    },
+    "gift_undo_too_old": {
+      "message": "This gift predates undo support and can't be reversed automatically."
+    },
+    "gift_undo_spent": {
+      "message": "{child} has already spent some of this gift, so it can't be undone."
+    },
+    "gift_amount_positive": {
+      "message": "Gift amount must be positive"
+    },
+    "gift_same_child": {
+      "message": "Cannot gift to the same child"
+    },
+    "gift_child_not_found": {
+      "message": "Sender or recipient not found"
+    },
+    "gift_not_enough_points": {
+      "message": "Not enough points: {child} has {points}, gift {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "“{name}” is a shared jackpot and its pool is not full. Need {cost}, have {saved} saved up"
+    },
+    "reward_not_available_to": {
+      "message": "Reward “{name}” is not available to {child}"
+    },
+    "reward_sold_out": {
+      "message": "Reward “{name}” is sold out"
+    },
+    "reward_expired": {
+      "message": "Reward “{name}” has expired"
+    },
+    "reward_not_available_now": {
+      "message": "Reward “{name}” is not available right now"
+    },
+    "reward_claim_already_waiting": {
+      "message": "A claim for “{name}” is already waiting for approval"
+    },
+    "reward_claims_too_many": {
+      "message": "Too many reward claims are already waiting for approval"
+    },
+    "reward_not_enough_points": {
+      "message": "Not enough points. Need {cost}, have {available} available"
+    },
+    "reward_spending_cap": {
+      "message": "Spending cap reached: {cap} per period already used"
+    },
+    "reward_claim_target_missing": {
+      "message": "Reward or child not found for claim {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Not enough points to approve. Need {cost}, have {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "“{name}” has already been approved and can no longer be rejected"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "'This reward' has already been approved and can no longer be rejected"
+    },
+    "pool_allocate_min": {
+      "message": "Points to allocate must be at least 1"
+    },
+    "pool_no_spendable": {
+      "message": "No spendable points available for {child}"
+    },
+    "pool_full": {
+      "message": "Pool for reward “{name}” is already full"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} can have {name} once a day. It's available again on {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} can have {name} once a week. It's available again on {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} can have {name} once a month. It's available again on {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} can have {name} {count} times a day. It's available again on {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} can have {name} {count} times a week. It's available again on {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} can have {name} {count} times a month. It's available again on {date}"
+    },
+    "reward_gift_off": {
+      "message": "Buying rewards for each other is switched off"
+    },
+    "reward_gift_children_only": {
+      "message": "Rewards can only be bought for children"
+    },
+    "reward_gift_not_giftable": {
+      "message": "“{name}” can't be bought for someone else"
+    },
+    "reward_rating_stars": {
+      "message": "Pick 1 to 3 stars"
+    },
+    "reward_rating_not_yet": {
+      "message": "That reward can't be rated yet"
+    },
+    "reward_rating_not_holder": {
+      "message": "Only the child who had the reward can rate it"
+    },
+    "reward_rating_already": {
+      "message": "That reward has already been rated"
+    },
+    "service_unknown_child": {
+      "message": "Unknown child “{ref}”. Valid children: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "More than one child is called “{ref}”; use the child id instead ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Nothing to update: name at least one field to change"
+    },
+    "service_confirm_delete": {
+      "message": "Set confirm: true to delete the chore"
+    },
+    "penalty_already_earned_back": {
+      "message": "That penalty was already earned back."
+    },
+    "fulfilment_not_waiting": {
+      "message": "That reward is not waiting to be handed over."
+    },
+    "fulfilment_already_delivered": {
+      "message": "That reward has already been marked as delivered."
+    },
+    "fulfilment_wrong_child": {
+      "message": "That reward belongs to {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "“{field}” cannot be changed on a schedule"
+    },
+    "scheduled_expects_bool": {
+      "message": "“{field}” expects true or false"
+    },
+    "scheduled_expects_int": {
+      "message": "“{field}” expects a whole number"
+    },
+    "scheduled_negative": {
+      "message": "“{field}” cannot be negative"
+    },
+    "scheduled_expects_list": {
+      "message": "“{field}” expects a list"
+    },
+    "scheduled_expects_text": {
+      "message": "“{field}” expects text"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on must be an ISO date, e.g. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on must be a future date"
+    },
+    "scheduled_no_fields": {
+      "message": "A scheduled change must change at least one field"
+    },
+    "scheduled_change_not_found": {
+      "message": "Scheduled change {change_id} not found"
+    },
+    "timed_not_timed": {
+      "message": "Chore “{name}” is not a timed task"
+    },
+    "timed_already_running": {
+      "message": "Timer is already running"
+    },
+    "timed_daily_cap": {
+      "message": "Daily cap reached ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "“{name}” is not available for {child} right now"
+    },
+    "timed_no_running": {
+      "message": "No running timer to pause"
+    },
+    "timed_no_active": {
+      "message": "No active timer to stop"
+    },
+    "set_time_unknown": {
+      "message": "That time isn't one of this chore's set times."
+    },
+    "sick_day_range": {
+      "message": "Pick a day from a week ago to a month ahead."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Nothing to restore: it was never deleted or has been purged"
+    },
+    "trash_id_exists": {
+      "message": "Something with id {item_id} already exists"
+    },
+    "wish_not_found": {
+      "message": "Wish not found"
+    },
+    "wish_target_not_whole": {
+      "message": "The target must be a whole number"
+    },
+    "wish_target_range": {
+      "message": "The target must be between 1 and {max}"
+    },
+    "wish_name_required": {
+      "message": "Give the wish a name"
+    },
+    "wish_link_invalid": {
+      "message": "Links must be a web address starting with http:// or https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} already has {max} wishes on the go"
+    },
+    "wish_picture_unusable": {
+      "message": "That picture can't be used"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Only a wish that is waiting or was declined can be withdrawn"
+    },
+    "wish_not_open_for_saving": {
+      "message": "“{name}” isn't open for saving"
+    },
+    "wish_move_min": {
+      "message": "Points to move must be at least 1"
+    },
+    "wish_fully_funded": {
+      "message": "“{name}” is already fully funded"
+    },
+    "wish_no_spendable": {
+      "message": "No spendable points available for {child_name}"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Points can't be taken out of “{name}” right now"
+    },
+    "wish_take_back_min": {
+      "message": "Points to take back must be at least 1"
+    },
+    "wish_nothing_saved": {
+      "message": "Nothing saved in “{name}” to take back"
+    },
+    "wish_cannot_redeem": {
+      "message": "“{name}” can't be redeemed right now"
+    },
+    "wish_needs_more_points": {
+      "message": "“{name}” needs {points} more points first"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Too many reward claims are already waiting for approval"
+    },
+    "wish_not_waiting_approval": {
+      "message": "“{name}” isn't waiting for approval"
+    },
+    "wish_cannot_decline": {
+      "message": "“{name}” can no longer be declined"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "“{name}” isn't open for pledges"
+    },
+    "wish_pledge_name_required": {
+      "message": "Say who the pledge is from"
+    },
+    "wish_pledge_min": {
+      "message": "A pledge must be at least 1 point"
+    },
+    "wish_too_many_pledges": {
+      "message": "“{name}” already has {max} pledges"
+    },
+    "wish_pledges_locked": {
+      "message": "Pledges on “{name}” can no longer be changed"
+    },
+    "wish_pledge_not_found": {
+      "message": "Pledge not found"
+    },
+    "wish_claim_missing": {
+      "message": "Wish or child not found for claim {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "“{name}” is no longer waiting to be redeemed"
+    },
+    "wish_not_funded": {
+      "message": "“{name}” is not fully funded any more"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "The picture must be an emoji (up to {max} characters)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "A colour must look like #ff8800, or be 'rainbow'."
+    },
+    "pet_shop_item_not_found": {
+      "message": "That item isn't in the shop."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Keep the name to {max} characters."
+    },
+    "pet_shop_name_required": {
+      "message": "Give the item a name."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Unknown slot “{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "Cost and level must be whole numbers."
+    },
+    "pet_shop_cost_range": {
+      "message": "The cost must be between 1 and {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "The level must be between 0 and {max}."
+    },
+    "pet_shop_full": {
+      "message": "The shop holds at most {max} items."
+    },
+    "pets_switched_off": {
+      "message": "Pets are switched off."
+    },
+    "pet_adopt_first": {
+      "message": "Adopt a pet first."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "That isn't unlocked yet."
+    },
+    "pet_shop_closed": {
+      "message": "The pet shop is closed."
+    },
+    "pet_shop_buy_first": {
+      "message": "Buy it first."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "That item isn't for sale."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "That unlocks at level {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "You already have that."
+    },
+    "pet_shop_already_pending": {
+      "message": "That's already waiting for a parent."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Not enough points for that yet."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "That purchase isn't waiting any more."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "That child or item is gone; decline it instead."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} doesn't have enough points for it now."
+    },
+    "pet_unknown_species": {
+      "message": "Unknown pet “{species}”"
+    },
+    "pet_name_required": {
+      "message": "Give your pet a name."
+    },
+    "pet_no_egg": {
+      "message": "There's no egg to hatch yet."
+    },
+    "auction_not_found": {
+      "message": "That auction no longer exists. Refresh the card."
+    },
+    "auction_refuse_off": {
+      "message": "That chore is switched off."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Nobody can be given an unassigned chore, so it can't be auctioned."
+    },
+    "auction_refuse_team": {
+      "message": "A teamwork chore is shared by a team, so it can't be auctioned."
+    },
+    "auction_refuse_timed": {
+      "message": "A timed chore is paid by the minute, so it can't be auctioned."
+    },
+    "auction_refuse_open_ended": {
+      "message": "An open-ended chore is priced by the parent, so it can't be auctioned."
+    },
+    "auction_invalid_date": {
+      "message": "Invalid date: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Pick an occurrence from tomorrow onwards."
+    },
+    "auction_not_scheduled": {
+      "message": "“{chore}” isn't scheduled on {date}."
+    },
+    "auction_already_exists": {
+      "message": "That occurrence already has an auction."
+    },
+    "auction_points_not_whole": {
+      "message": "Points must be whole numbers."
+    },
+    "auction_max_range": {
+      "message": "The maximum bid is between 1 and {max} points."
+    },
+    "auction_min_range": {
+      "message": "The minimum bid must be between 1 and the maximum."
+    },
+    "auction_needs_close": {
+      "message": "An auction needs a closing time."
+    },
+    "auction_close_in_past": {
+      "message": "The closing time is already in the past."
+    },
+    "auction_close_before_day": {
+      "message": "Bidding must close before the day of the chore."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Only children who can do this chore can bid on it."
+    },
+    "auction_no_bidders": {
+      "message": "Pick at least one child who can bid."
+    },
+    "auction_already_closed": {
+      "message": "This auction has already closed."
+    },
+    "auction_already_cancelled": {
+      "message": "This auction was already cancelled."
+    },
+    "auction_occurrence_passed": {
+      "message": "That occurrence has already happened."
+    },
+    "auction_still_live": {
+      "message": "This auction is still live. Cancel it instead."
+    },
+    "auction_not_for_you": {
+      "message": "This auction isn't for you."
+    },
+    "auction_bidding_closed": {
+      "message": "Bidding on this auction has closed."
+    },
+    "auction_bid_not_whole": {
+      "message": "A bid is a whole number of points."
+    },
+    "auction_bid_range": {
+      "message": "Bid between {min} and {max} points."
+    },
+    "auction_no_bid": {
+      "message": "You haven't bid on this one."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Invalid expiry time: {value}"
+    },
+    "bounty_not_found": {
+      "message": "That bounty no longer exists. Refresh the card."
+    },
+    "bounty_title_required": {
+      "message": "A bounty needs a title."
+    },
+    "bounty_points_not_whole": {
+      "message": "Points must be a whole number."
+    },
+    "bounty_points_range": {
+      "message": "A bounty is worth between 1 and {max} points."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Claim lock must be a whole number of hours."
+    },
+    "bounty_claim_hours_range": {
+      "message": "The claim lock is between 1 and {max} hours."
+    },
+    "bounty_expiry_in_past": {
+      "message": "The expiry is already in the past."
+    },
+    "bounty_finished_locked": {
+      "message": "A finished bounty can't be edited."
+    },
+    "bounty_claimed_locked": {
+      "message": "Once a bounty is claimed, only its points and expiry can change."
+    },
+    "bounty_review_before_remove": {
+      "message": "Approve or reject the finished job before removing this bounty."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Only a claimed bounty can be released."
+    },
+    "bounty_not_for_you": {
+      "message": "This bounty isn't for you."
+    },
+    "bounty_taken": {
+      "message": "Someone else got there first — this bounty isn't on the board any more."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Finish “{title}” first — you can only hold one bounty at a time."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "You don't have this bounty claimed."
+    },
+    "bounty_claim_expired": {
+      "message": "Your claim on this bounty ran out."
+    },
+    "bounty_photo_required": {
+      "message": "This bounty needs a photo of the finished job."
+    },
+    "raffle_name_required": {
+      "message": "Give the raffle a name."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "A ticket costs 1 to {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Pick when the raffle is drawn."
+    },
+    "raffle_field_required": {
+      "message": "{field} is required"
+    },
+    "raffle_draw_in_past": {
+      "message": "The draw has to be in the future."
+    },
+    "raffle_not_found": {
+      "message": "Raffle not found"
+    },
+    "raffle_not_open_edit": {
+      "message": "Only an open raffle can be changed."
+    },
+    "raffle_price_locked": {
+      "message": "Tickets have been bought, so the price can't change."
+    },
+    "raffle_closed": {
+      "message": "This raffle has closed."
+    },
+    "raffle_drawing": {
+      "message": "This raffle is being drawn."
+    },
+    "raffle_not_open_to": {
+      "message": "This raffle isn't open to {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Buy at least one ticket."
+    },
+    "raffle_max_tickets": {
+      "message": "You can hold at most {max} tickets."
+    },
+    "raffle_not_enough_points": {
+      "message": "Not enough points for that many tickets."
+    },
+    "raffle_already_closed": {
+      "message": "This raffle has already closed."
+    },
+    "roulette_off": {
+      "message": "Chore roulette is switched off"
+    },
+    "roulette_no_spins": {
+      "message": "No spins left today"
+    },
+    "roulette_nothing_left": {
+      "message": "Nothing left to spin for"
+    },
+    "unlock_not_allowed": {
+      "message": "“{entity_id}” is not on the unlock allowlist. Add it in Settings before using it as a reward."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Unlock minutes must be a whole number"
+    },
+    "unlock_minutes_negative": {
+      "message": "Unlock minutes cannot be negative"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Unlock minutes cannot exceed {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "That avatar is not in the catalogue"
+    },
+    "avatar_locked": {
+      "message": "That avatar is not unlocked yet"
+    },
+    "weekly_goals_off": {
+      "message": "Weekly goals are switched off."
+    },
+    "weekly_goal_range": {
+      "message": "Pick a goal from 0 to {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "A goal has to be at least {bonus}, the bonus it pays."
+    },
+    "weekly_goal_locked": {
+      "message": "This week's goal has already been reached and paid, so it can't change until Monday."
+    },
+    "challenge_name_required": {
+      "message": "Challenge name is required"
+    },
+    "challenge_target_min": {
+      "message": "Target must be at least 1"
+    },
+    "challenge_not_found": {
+      "message": "Challenge {challenge_id} not found"
+    },
+    "quest_name_required": {
+      "message": "Quest name is required"
+    },
+    "quest_needs_step": {
+      "message": "A quest needs at least one step"
+    },
+    "quest_not_found": {
+      "message": "Quest {quest_id} not found"
+    },
+    "admin_only": {
+      "message": "Admin only"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate not initialised"
+    },
+    "not_allowed": {
+      "message": "Not allowed"
+    },
+    "handler_failed": {
+      "message": "Something went wrong; see the Home Assistant log"
+    },
+    "chore_one_off_past_day": {
+      "message": "A one-off chore can't be set for a day that has already gone"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start must be an ISO date"
+    },
+    "penalty_not_found": {
+      "message": "Penalty {penalty_id} not found"
+    },
+    "bonus_not_found": {
+      "message": "Bonus {bonus_id} not found"
+    },
+    "group_not_found": {
+      "message": "Group {group_id} not found"
+    },
+    "chores_bulk_no_names": {
+      "message": "At least one chore name is required"
+    },
+    "notif_child_not_found": {
+      "message": "Child not found"
+    },
+    "notif_parent_not_found": {
+      "message": "Parent not found"
+    },
+    "recap_not_found": {
+      "message": "Recap not found"
+    },
+    "voucher_not_approved": {
+      "message": "Only an approved reward can be printed"
+    },
+    "voucher_missing": {
+      "message": "That reward or child no longer exists"
+    },
+    "setup_invalid_birthday": {
+      "message": "Birthday “{value}” is not a valid date"
+    },
+    "kiosk_pin_invalid": {
+      "message": "A kiosk PIN must be exactly 4 digits"
+    },
+    "time_periods_empty": {
+      "message": "time_periods must be a non-empty list"
+    },
+    "time_periods_too_many": {
+      "message": "too many periods (max {max})"
+    },
+    "time_periods_not_object": {
+      "message": "each period must be an object"
+    },
+    "time_periods_duplicate_id": {
+      "message": "duplicate period id: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "every custom period needs a name"
+    },
+    "time_periods_invalid_time": {
+      "message": "invalid time for period “{name}” (use HH:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "period “{name}” must start before it ends"
+    },
+    "time_periods_overlap": {
+      "message": "“{name}” overlaps “{other}” — periods cannot overlap"
+    },
+    "time_periods_in_use": {
+      "message": "cannot delete a period still used by chores: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods must be a list"
+    },
+    "vacation_periods_too_many": {
+      "message": "too many vacation periods (max {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "each vacation period must be an object"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "each vacation period needs valid start and end dates (YYYY-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Cannot apply template with no chores"
+    },
+    "template_none_selected": {
+      "message": "At least one chore must be selected"
+    },
+    "template_no_valid_chores": {
+      "message": "No valid chores found for selected IDs"
+    },
+    "template_needs_chore": {
+      "message": "Template must have at least one chore"
+    },
+    "template_builtin_modify": {
+      "message": "Cannot modify built-in template “{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "Cannot delete built-in template “{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "That doesn't look like a TaskMate pack"
+    },
+    "template_pack_wrong_format": {
+      "message": "Not a TaskMate template pack"
+    },
+    "template_pack_version_nan": {
+      "message": "Pack version is not a number"
+    },
+    "template_pack_too_new": {
+      "message": "This pack needs a newer TaskMate (pack version {version}, this one understands {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Pack contains no templates"
+    },
+    "template_pack_too_many": {
+      "message": "Pack has too many templates (max {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Pack contains a malformed template"
+    },
+    "template_pack_unnamed_template": {
+      "message": "A template in the pack has no name"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Template “{name}” has no chores"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Template “{name}” has too many chores"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Template “{name}” has a malformed chore"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "A chore in “{name}” has no name"
+    },
+    "boost_bad_time": {
+      "message": "“{value}” is not a time like 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "The multiplier must be a number."
+    },
+    "boost_multiplier_range": {
+      "message": "Pick a multiplier from ×{min} to ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Chore {chore_id} not found."
+    },
+    "boost_child_not_found": {
+      "message": "Child {child_id} not found."
+    },
+    "boost_start_past": {
+      "message": "A boost can't start in the past."
+    },
+    "boost_too_far_ahead": {
+      "message": "A boost can be scheduled up to a week ahead."
+    },
+    "boost_minutes_nan": {
+      "message": "The minutes must be a whole number."
+    },
+    "boost_minutes_range": {
+      "message": "Pick from 1 to {max} minutes."
+    },
+    "boost_already_ended": {
+      "message": "That boost has already ended."
+    },
+    "boost_rule_no_days": {
+      "message": "Pick at least one day."
+    },
+    "boost_rule_end_before_start": {
+      "message": "The end time must be after the start time."
+    },
+    "boost_rules_max": {
+      "message": "Up to {max} recurring boosts."
+    },
+    "boost_rule_gone": {
+      "message": "That recurring boost no longer exists."
+    },
+    "season_pack_unknown": {
+      "message": "Unknown season pack: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Unknown child: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "This chore has already been undone. Refresh the card."
+    },
+    "import_invalid_payload": {
+      "message": "Invalid TaskMate export payload"
+    },
+    "import_data_not_object": {
+      "message": "import data must be an object"
+    },
+    "allowance_points_min": {
+      "message": "points must be >= 1"
+    },
+    "allowance_not_enabled": {
+      "message": "Allowance is not enabled"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} only has {points} {points_name} to pay out."
+    },
+    "appeals_off": {
+      "message": "Appeals are switched off."
+    },
+    "appeals_already_appealed": {
+      "message": "That has already been appealed."
+    },
+    "appeals_not_appealable": {
+      "message": "That can't be appealed."
+    },
+    "appeals_not_found": {
+      "message": "That appeal no longer exists."
+    },
+    "appeals_already_decided": {
+      "message": "That appeal has already been decided."
+    },
+    "appeals_child_gone": {
+      "message": "The child is no longer here."
+    },
+    "appeals_reward_gone": {
+      "message": "That reward no longer exists."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "That penalty has already been taken back."
+    },
+    "appeals_unknown_kind": {
+      "message": "Unknown appeal kind {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Birthday must be YYYY-MM-DD or MM-DD, got “{value}”"
+    },
+    "birthday_in_future": {
+      "message": "Birthday can't be in the future"
+    },
+    "chore_reminders_off": {
+      "message": "Reminders are turned off"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} isn't one of {child}'s chores"
+    },
+    "chore_reminder_time_format": {
+      "message": "Pick a time like 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Pick a time between {earliest} and {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on must be an ISO date, e.g. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "That inspection no longer exists. Refresh and try again."
+    },
+    "inspection_already_decided": {
+      "message": "That inspection has already been decided or has closed."
+    },
+    "inspections_off": {
+      "message": "Surprise inspections are switched off in Settings."
+    },
+    "inspection_chore_gone": {
+      "message": "That chore no longer exists."
+    },
+    "inspection_not_approved": {
+      "message": "Only approved chores can be inspected."
+    },
+    "inspection_not_child_chore": {
+      "message": "Only a child's own chore can be inspected."
+    },
+    "inspection_child_gone": {
+      "message": "That child no longer exists."
+    },
+    "inspection_too_old": {
+      "message": "Only chores approved in the last {hours} hours can be inspected."
+    },
+    "inspection_already_inspected": {
+      "message": "That chore has already been inspected."
+    },
+    "inspection_redo_today_only": {
+      "message": "Only a chore finished today can be sent back to redo."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url must be a /path, an http(s) URL, or noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group must not contain spaces (try family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group must not contain control characters"
+    },
+    "notification_group_too_long": {
+      "message": "group must be 64 characters or fewer"
+    },
+    "notification_unknown_type": {
+      "message": "Unknown notification type {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Unknown notification recipient {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Minutes must be a whole number"
+    },
+    "screen_time_minutes_max": {
+      "message": "Minutes cannot exceed {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "The screen-time jar is switched off"
+    },
+    "screen_time_jar_full": {
+      "message": "The jar is full"
+    },
+    "screen_time_jar_nothing": {
+      "message": "No minutes to save"
+    },
+    "setup_unknown_age_group": {
+      "message": "Unknown age group “{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Every new child needs its own ref"
+    },
+    "setup_child_needs_name": {
+      "message": "A child needs a name"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Chore assigned to an unknown child “{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "A chore needs a name"
+    },
+    "setup_reward_needs_name": {
+      "message": "A reward needs a name"
+    },
+    "sibling_checks_off": {
+      "message": "Sibling checks are turned off"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Unknown verdict {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "That chore has already been checked. Refresh the card."
+    },
+    "sibling_check_own_chore": {
+      "message": "You can't check your own chore"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} can't check this child's chores"
+    },
+    "sound_invalid_file_name": {
+      "message": "Not a valid sound file name: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Sound {file} is already registered"
+    },
+    "sound_unknown_custom": {
+      "message": "Unknown custom sound: {file}"
+    },
+    "tour_adult": {
+      "message": "Grown-up profiles don't get the tour"
+    },
+    "tour_bad_status": {
+      "message": "status must be 'done' or 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Unknown tour step {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Already speaking; try again in a moment"
+    },
+    "tts_no_media_player": {
+      "message": "No media player given, and no default set in Settings"
+    },
+    "tts_no_entity": {
+      "message": "No text-to-speech entity found. Set one in Settings or pass tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} is not one of {child}'s chores today."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Unknown mood “{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Set times must be a list."
+    },
+    "set_times_too_many": {
+      "message": "A chore can have at most {max} set times."
+    },
+    "set_times_timed": {
+      "message": "A timed chore can't have set times."
+    },
+    "set_times_open_ended": {
+      "message": "An open-ended chore can't have set times."
+    },
+    "set_times_quantity": {
+      "message": "A quantity chore can't have set times."
+    },
+    "set_times_teamwork": {
+      "message": "A teamwork chore can't have set times."
+    },
+    "set_times_need_start_end": {
+      "message": "Each set time needs a start and an end."
+    },
+    "set_times_bad_format": {
+      "message": "Set times need a start and an end like 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "A set time must close after it opens, on the same day."
+    },
+    "set_times_overlap": {
+      "message": "Two set times overlap. Move one so they don't."
+    },
+    "template_not_found": {
+      "message": "Template {template_id} not found"
+    },
+    "upload_admin_required": {
+      "message": "Admin required"
+    },
+    "upload_file_too_large": {
+      "message": "File too large"
+    },
+    "upload_expected_multipart": {
+      "message": "Expected multipart form"
+    },
+    "upload_too_many_parts": {
+      "message": "Too many form parts"
+    },
+    "upload_no_file": {
+      "message": "No file provided"
+    },
+    "upload_image_unsupported": {
+      "message": "Not a supported image (JPEG, PNG or WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Image storage full"
+    },
+    "upload_image_store_failed": {
+      "message": "Could not store image"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Too many uploads, try again shortly"
+    },
+    "upload_photo_busy": {
+      "message": "Too many uploads at once, try again in a moment"
+    },
+    "upload_photo_storage_full": {
+      "message": "Photo storage full"
+    },
+    "upload_photo_timeout": {
+      "message": "Upload took too long"
+    },
+    "upload_photo_invalid": {
+      "message": "Not a valid image"
+    },
+    "upload_photo_store_failed": {
+      "message": "Could not store photo"
+    },
+    "upload_photo_pending_limit": {
+      "message": "You have too many photos waiting to be attached to a chore. Submit or remove those first."
+    },
+    "upload_sound_unsupported": {
+      "message": "Not a supported sound (MP3, OGG, WAV or M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Sound storage full"
+    },
+    "upload_sound_store_failed": {
+      "message": "Could not store sound"
     }
   },
   "issues": {

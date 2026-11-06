@@ -18,6 +18,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_CHORE_SELF_REMINDER
+from .errors import TaskMateError
 from .timewindow import parse_hhmm
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,26 +65,26 @@ class ChoreRemindersMixin:
     async def async_set_chore_reminder(self, child_id: str, chore_id: str, time: str = "") -> None:
         """Set (or, with no time, clear) a child's reminder for one chore."""
         if not self.chore_reminders_enabled():
-            raise ValueError("Reminders are turned off")
+            raise TaskMateError("chore_reminders_off")
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         chore = self.get_chore(chore_id)
         if chore is None:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
         assigned = chore.assigned_to or []
         if assigned and child_id not in assigned:
-            raise ValueError(f"{chore.name} isn't one of {child.name}'s chores")
+            raise TaskMateError("chore_reminders_not_assigned", chore=chore.name, child=child.name)
         section = self.storage.get_section("chore_reminders", dict)
         mine = section.setdefault(child_id, {})
         time = (time or "").strip()
         if time:
             at = _minutes(time)
             if at is None:
-                raise ValueError("Pick a time like 17:30")
+                raise TaskMateError("chore_reminder_time_format")
             earliest, latest = self.chore_reminder_bounds()
             if not _minutes(earliest) <= at <= _minutes(latest):
-                raise ValueError(f"Pick a time between {earliest} and {latest}")
+                raise TaskMateError("chore_reminder_time_range", earliest=earliest, latest=latest)
             mine[chore_id] = f"{at // 60:02d}:{at % 60:02d}"
         else:
             mine.pop(chore_id, None)

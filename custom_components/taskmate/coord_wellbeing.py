@@ -17,11 +17,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, NOTIF_TYPE_HELP_REQUESTED, NOTIF_TYPE_MOOD_LOW
+from .const import NOTIF_TYPE_HELP_REQUESTED, NOTIF_TYPE_MOOD_LOW
 from .coord_set_times import chore_has_times
+from .errors import TaskMateError
 from .models import generate_id
 
 MOODS = ("great", "good", "ok", "sad", "upset")
@@ -62,10 +62,10 @@ class WellbeingMixin:
     async def async_request_help(self, child_id: str, chore_id: str, message: str = "") -> dict[str, Any]:
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         chore = self.get_chore(chore_id)
         if chore is None:
-            raise ValueError(f"Chore {chore_id} not found")
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
         # Only a chore that is the child's to do today. The card only offers
         # those, but the service takes any chore id, and a sibling's chore
         # name in a parent's push is not this child's to send.
@@ -75,12 +75,8 @@ class WellbeingMixin:
             # say so, rather than "not one of your chores".
             assigned = getattr(chore, "assigned_to", []) or []
             if (not assigned or child_id in assigned) and not self.is_chore_available_for_child(chore, child_id):
-                raise ServiceValidationError(
-                    translation_domain=DOMAIN,
-                    translation_key="help_chore_not_available",
-                    translation_placeholders={"chore": chore.name},
-                )
-            raise ValueError(f"{chore.name} is not one of {child.name}'s chores today.")
+                raise TaskMateError("help_chore_not_available", chore=chore.name)
+            raise TaskMateError("help_chore_not_assigned_today", chore=chore.name, child=child.name)
         now = dt_util.now()
         # Not one the child can do right now (#771): a recurring chore still
         # in its window, a spent one-off, a set time that isn't open, or a
@@ -89,11 +85,7 @@ class WellbeingMixin:
         # chore that can't be done yet would only confuse.
         reason = self._help_unavailable_reason(chore, child_id, now)
         if reason:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key=reason,
-                translation_placeholders={"chore": chore.name},
-            )
+            raise TaskMateError(reason, chore=chore.name)
         repeat_cutoff = now - timedelta(minutes=HELP_REPEAT_MINUTES)
         cooldown_cutoff = now - timedelta(seconds=HELP_COOLDOWN_SECONDS)
         for req in self._help_requests():
@@ -104,11 +96,11 @@ class WellbeingMixin:
             except (TypeError, ValueError):
                 continue
             if req.get("chore_id") == chore_id and at >= repeat_cutoff:
-                raise ValueError("Help is already on its way.")
+                raise TaskMateError("help_already_on_its_way", chore=chore.name)
             # One open request a minute across every chore: each one is a push
             # to every parent, and a different chore each tap is still a burst.
             if at >= cooldown_cutoff:
-                raise ValueError("Give it a minute before asking for help again.")
+                raise TaskMateError("help_cooldown")
         record = {
             "id": generate_id(),
             "child_id": child_id,
@@ -202,9 +194,9 @@ class WellbeingMixin:
     async def async_log_mood(self, child_id: str, mood: str) -> None:
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if mood not in MOODS:
-            raise ValueError(f"Unknown mood {mood!r}")
+            raise TaskMateError("wellbeing_unknown_mood", mood=mood)
         today = dt_util.as_local(dt_util.now()).date()
         per_child = self._moods().setdefault(child_id, {})
         per_child[today.isoformat()] = mood

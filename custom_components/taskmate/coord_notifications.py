@@ -74,6 +74,7 @@ from .const import (
     NOTIF_TYPE_WISH_REQUESTED,
     QUALITY_RATINGS,
 )
+from .errors import TaskMateError
 from .models import NotificationRoute
 from .timewindow import is_within_window, parse_hhmm
 
@@ -273,7 +274,7 @@ def _validate_nav_url(value: str) -> str:
         return value
     if value.startswith("/") and not value.startswith("//") and not any(ord(c) <= 32 or ord(c) == 127 for c in value):
         return value
-    raise ValueError("nav_url must be a /path, an http(s) URL, or noAction")
+    raise TaskMateError("notification_nav_url_invalid")
 
 
 def _validate_group(value: str) -> str:
@@ -287,11 +288,11 @@ def _validate_group(value: str) -> str:
     if not value:
         return ""
     if " " in value:
-        raise ValueError("group must not contain spaces (try family-chores)")
+        raise TaskMateError("notification_group_spaces")
     if any(ord(c) <= 32 or ord(c) == 127 for c in value):
-        raise ValueError("group must not contain control characters")
+        raise TaskMateError("notification_group_control")
     if len(value) > 64:
-        raise ValueError("group must be 64 characters or fewer")
+        raise TaskMateError("notification_group_too_long")
     return value
 
 
@@ -483,7 +484,7 @@ class NotificationCoordinator:
         """
         meta = NOTIFICATION_TYPES_BY_ID.get(type_id)
         if meta is None:
-            raise ValueError(f"Unknown notification type {type_id}")
+            raise TaskMateError("notification_unknown_type", type_id=type_id)
         await notify_strings.async_load(self.hass)
         points_name = self.storage.get_points_name()
         sample_month = date(2026, 1, 1)
@@ -1322,9 +1323,9 @@ class NotificationCoordinator:
         # Reject unknown types/recipients (#947) — a stored route for an id
         # that resolves to nobody is silently dead weight in the config.
         if type_id not in NOTIFICATION_TYPES_BY_ID:
-            raise ValueError(f"Unknown notification type {type_id}")
+            raise TaskMateError("notification_unknown_type", type_id=type_id)
         if not self._recipient_exists(recipient_id):
-            raise ValueError(f"Unknown notification recipient {recipient_id}")
+            raise TaskMateError("notification_unknown_recipient", recipient_id=recipient_id)
         self.storage.set_notification_route(type_id, recipient_id, route)
         await self.storage.async_save()
         if NOTIFICATION_TYPES_BY_ID.get(type_id) and NOTIFICATION_TYPES_BY_ID[type_id].time_gated:
@@ -1346,7 +1347,7 @@ class NotificationCoordinator:
         nav_url = _validate_nav_url(nav_url)
         if type_id:
             if type_id not in NOTIFICATION_TYPES_BY_ID:
-                raise ValueError(f"Unknown notification type {type_id}")
+                raise TaskMateError("notification_unknown_type", type_id=type_id)
             self.storage.set_notification_nav_url(type_id, nav_url)
         else:
             self.storage.set_setting("notification_nav_url", nav_url)
@@ -1357,7 +1358,7 @@ class NotificationCoordinator:
         group = _validate_group(group)
         if type_id:
             if type_id not in NOTIFICATION_TYPES_BY_ID:
-                raise ValueError(f"Unknown notification type {type_id}")
+                raise TaskMateError("notification_unknown_type", type_id=type_id)
             self.storage.set_notification_group(type_id, group)
         else:
             self.storage.set_setting("notification_group", group)

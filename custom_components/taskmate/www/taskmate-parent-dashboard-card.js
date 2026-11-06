@@ -67,6 +67,13 @@ class TaskMateParentDashboardCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -704,7 +711,7 @@ class TaskMateParentDashboardCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("common.please_define_entity"));
     this.config = {
       title: "",
       quick_points_amount: 5,
@@ -1017,7 +1024,7 @@ class TaskMateParentDashboardCard extends LitElement {
             <div style="flex:1;min-width:0">
               <div class="row" style="justify-content:space-between">
                 <span class="pd-name-cp">${child.name}</span>
-                <span class="muted" style="font-size:12px">${approved}/${total} · ${__tmNum(this.hass, child.points)} ${this._t('common.points')}</span>
+                <span class="muted" style="font-size:12px">${approved}/${total} · ${__tmNum(this.hass, child.points)} ${attrs.points_name || this._t('common.points')}</span>
               </div>
               <div class="bar" style="margin-top:7px;height:8px"><i style="width:${pct}%"></i></div>
             </div>
@@ -1138,7 +1145,7 @@ class TaskMateParentDashboardCard extends LitElement {
           ${this._av(currentChild?.name || '?', currentChild?.avatar ? currentChild : 'mdi:rotate-3d-variant', tone, 36)}
           <div style="flex:1;min-width:0">
             <div class="pd-item-title">${chore.name}</div>
-            <div class="muted pd-item-sub">${currentChild?.name || unknown} · ${chore.assignment_mode}${group ? ` · ${group.policy === 'sticky' ? '🔗' : '🔀'} ${group.name}` : ""}</div>
+            <div class="muted pd-item-sub">${currentChild?.name || unknown} · ${this._t(`dashboard.mode_${chore.assignment_mode}`)}${group ? ` · ${group.policy === 'sticky' ? '🔗' : '🔀'} ${group.name}` : ""}</div>
           </div>
           <div class="pd-acts">
             <button class="btn ghost sm round" ?disabled="${skipDisabled}"
@@ -1347,7 +1354,7 @@ class TaskMateParentDashboardCard extends LitElement {
               <span class="approval-meta">
                 <ha-icon icon="mdi:account" style="--mdc-icon-size: 14px;"></ha-icon>
                 ${currentChild?.name || unknown}
-                · <span>${chore.assignment_mode}</span>
+                · <span>${this._t(`dashboard.mode_${chore.assignment_mode}`)}</span>
                 ${group ? html`· <span>${group.policy === 'sticky' ? '🔗' : '🔀'} ${group.name}</span>` : ''}
               </span>
             </div>
@@ -1500,9 +1507,8 @@ class TaskMateParentDashboardCard extends LitElement {
     if (this.hass && this.hass.callService) {
       this.hass.callService("persistent_notification", "create", {
         title: this._t('approvals.error_title'),
-        message: this._t('approvals.error_failed_service', {
-          service: service.replace(/_/g, " "),
-          message: error && error.message ? error.message : String(error),
+        message: this._t('approvals.error_failed', {
+          message: this._errText(error) || String(error),
         }),
         notification_id: notificationId,
       });

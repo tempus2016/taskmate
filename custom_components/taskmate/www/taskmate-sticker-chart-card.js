@@ -209,6 +209,13 @@ class TaskMateStickerChartCard extends LitElement {
           && (!c.for_child_id || String(c.for_child_id) === String(childId)))));
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -747,10 +754,12 @@ class TaskMateStickerChartCard extends LitElement {
    * means nothing to whoever is standing at the fridge.
    */
   _failed(err, child) {
+    // Matched on HA's English text (its Unauthorized error carries no
+    // translation key); shown in the user's language.
     const msg = String(err?.message || err || "");
     this._toast(/unauthori|not authorized|admin|permission|forbidden/i.test(msg)
       ? this._t("sticker_chart.not_allowed", { name: child?.name || "" })
-      : this._t("sticker_chart.complete_failed", { error: msg }));
+      : this._t("sticker_chart.complete_failed", { error: this._errText(err) || msg }));
   }
 
   async _undo(row) {
@@ -772,7 +781,7 @@ class TaskMateStickerChartCard extends LitElement {
       const msg = String(err?.message || err || "");
       this._toast(/admin|parent|unauthori|permission/i.test(msg)
         ? this._t("sticker_chart.undo_denied")
-        : this._t("sticker_chart.complete_failed", { error: msg }));
+        : this._t("sticker_chart.complete_failed", { error: this._errText(err) || msg }));
     }
   }
 
@@ -970,7 +979,7 @@ class TaskMateStickerChartCard extends LitElement {
     const on = points >= goal ? total : Math.floor(Math.max(0, points) / per);
     return html`<div class="blocks" role="img" aria-label="${_ltrNums(`${Math.min(points, goal)} / ${goal}`)}">${
       Array.from({ length: total }, (_, i) => html`<i class="${i < on ? "on" : ""}"></i>`)}</div>
-      ${per > 1 ? html`<div class="blocks-key">${this._t("sticker_chart.block_key", { count: per, unit })}</div>` : ""}`;
+      ${per > 1 ? html`<div class="blocks-key">${this._t("sticker_chart.block_key", { count: __tmNum(this.hass, per), unit })}</div>` : ""}`;
   }
 
   _renderChild(child, index, attrs) {
@@ -1045,7 +1054,7 @@ class TaskMateStickerChartCard extends LitElement {
                   ${allDone ? html` 🏆 ${this._t("sticker_chart.all_done", { name: child.name })}` : ""}
                 </div>`}
               <div class="stickers" role="img"
-                   aria-label="${this._t("sticker_chart.stickers_alt", { count: earned, points: __tmNum(this.hass, unit) })}">
+                   aria-label="${this._t("sticker_chart.stickers_alt", { count: __tmNum(this.hass, earned), points: unit })}">
                 ${earned === 0
                   ? html`<span class="stickers-none">${this._t("sticker_chart.no_stickers")}</span>`
                   : html`${Array.from({ length: shown }, (_, i) => STICKERS[i % STICKERS.length]).join("")}${
@@ -1056,11 +1065,11 @@ class TaskMateStickerChartCard extends LitElement {
           </div>
 
           ${weekly ? (target > 0 ? html`
-            <div class="goal-line">${_ltrNums(this._t("sticker_chart.week_goal", { points: __tmNum(this.hass, earned), goal: target, unit }))}</div>
+            <div class="goal-line">${_ltrNums(this._t("sticker_chart.week_goal", { points: __tmNum(this.hass, earned), goal: __tmNum(this.hass, target), unit }))}</div>
             ${this._renderBlocks(progress, target, unit)}
             ${full ? html`<div class="reached">🌟 ${this._t("sticker_chart.week_perfect")} 🌟</div>` : ""}
           ` : "") : goal > 0 ? html`
-            <div class="goal-line">${_ltrNums(this._t("sticker_chart.goal", { points: __tmNum(this.hass, earned), goal, unit }))}</div>
+            <div class="goal-line">${_ltrNums(this._t("sticker_chart.goal", { points: __tmNum(this.hass, earned), goal: __tmNum(this.hass, goal), unit }))}</div>
             ${this._renderBlocks(points, goal, unit)}
             ${reached ? html`<div class="reached">🎉 ${this._t("sticker_chart.goal_reached")} 🎉</div>` : ""}
           ` : html`<div class="goal-line muted">${this._t("sticker_chart.no_reward")}</div>`}
@@ -1077,7 +1086,7 @@ class TaskMateStickerChartCard extends LitElement {
             <ha-icon icon="mdi:trophy"></ha-icon>
             <div>
               <div class="gt-title">${this._t("sticker_chart.goal_tile")}</div>
-              <div class="gt-sub">${reward.name} · ${goal} ${unit}</div>
+              <div class="gt-sub">${reward.name} · ${__tmNum(this.hass, goal)} ${unit}</div>
             </div>
           </div>
 
@@ -1089,7 +1098,7 @@ class TaskMateStickerChartCard extends LitElement {
               <span>${pendingClaim
                 ? this._t("sticker_chart.claim_pending")
                 : !reached
-                  ? this._t("sticker_chart.claim_short", { count: goal - points, unit })
+                  ? this._t("sticker_chart.claim_short", { count: __tmNum(this.hass, goal - points), unit })
                   : this._confirming === child.id
                     ? this._t("sticker_chart.claim_confirm", { reward: reward.name })
                     : html`🎁 ${this._t("sticker_chart.claim", { reward: reward.name })}`}</span>

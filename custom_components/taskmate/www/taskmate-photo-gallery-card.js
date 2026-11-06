@@ -40,7 +40,7 @@ class TaskMatePhotoGalleryCard extends LitElement {
 
   setConfig(config) {
     if (!config || !config.entity) {
-      throw new Error("A TaskMate activity entity is required");
+      throw new Error(this._t("common.please_define_entity"));
     }
     this.config = config;
   }

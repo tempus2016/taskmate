@@ -128,6 +128,102 @@
         "save": "Zapisz zmiany",
         "delete": "Usuń grupę"
       }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Bez dźwięku",
+        "coin": "Moneta",
+        "levelup": "Nowy poziom",
+        "fanfare": "Fanfara",
+        "chime": "Dzwonek",
+        "powerup": "Wzmocnienie",
+        "undo": "Cofnij",
+        "fart1": "Bąk 1",
+        "fart2": "Bąk 2",
+        "fart3": "Bąk 3",
+        "fart4": "Bąk 4",
+        "fart5": "Bąk 5",
+        "fart6": "Bąk 6",
+        "fart7": "Bąk 7",
+        "fart8": "Bąk 8",
+        "fart9": "Bąk 9",
+        "fart10": "Bąk 10",
+        "fart_random": "Losowy bąk"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Łatwe",
+        "medium": "Średnie",
+        "hard": "Trudne"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Każdy dostaje pełne punkty",
+        "split": "Podziel punkty równo (z zaokrągleniem w dół)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Za każdym razem, gdy przypada",
+        "week": "Co tydzień",
+        "month": "Co miesiąc"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Brązowa",
+        "silver": "Srebrna",
+        "gold": "Złota",
+        "platinum": "Platynowa"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Wymagaj wszystkich (ORAZ)",
+        "or": "Wymagaj dowolnego (LUB)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 godzina",
+        "2h": "2 godziny",
+        "4h": "4 godziny",
+        "bed": "Do pory snu"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Super",
+        "good": "Dobrze",
+        "ok": "Tak sobie",
+        "sad": "Smutno",
+        "upset": "Zły"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Obowiązek",
+        "reward": "Nagroda",
+        "penalty": "Kara"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Smok",
+        "cat": "Kot",
+        "dog": "Pies",
+        "bunny": "Królik",
+        "dino": "Dinozaur",
+        "unicorn": "Jednorożec"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Wygląda na zrobione",
+        "not_yet": "Jeszcze nie"
+      }
     }
   },
   "services": {
@@ -158,6 +254,18 @@
         "time_id": {
           "name": "Stała pora",
           "description": "Przy obowiązku o stałych porach: którą porę odhaczyć. Zostaw puste dla otwartej teraz."
+        },
+        "as_parent": {
+          "name": "Jako rodzic",
+          "description": "Wykonaj w imieniu dziecka i przyznaj punkty od razu, bez zatwierdzania."
+        },
+        "photo_url": {
+          "name": "URL zdjęcia",
+          "description": "Opcjonalny URL lub ścieżka do zdjęcia jako dowodu wykonania (np. zrzut z kamery). Widoczne dla rodzica podczas zatwierdzania."
+        },
+        "completed_date": {
+          "name": "Wykonano dnia",
+          "description": "Zapisz obowiązek z wcześniejszego dnia (do 7 dni wstecz, nie dziś), który był zrobiony, ale nie odhaczony. Tylko rodzice; zatwierdzany od razu. Dzienny limit tego dnia nadal obowiązuje."
         }
       }
     },
@@ -638,6 +746,18 @@
         "daily_limit": {
           "name": "Dzienny limit",
           "description": "Ile razy dziennie można wykonać obowiązek. Obowiązki jednorazowe zawsze 1."
+        },
+        "difficulty": {
+          "name": "Trudność",
+          "description": "Poziom trudności; mnoży przyznane punkty przez mnożnik poziomu (średni = ×1,0 bazowo)"
+        },
+        "expires_in_minutes": {
+          "name": "Wygasa za (minuty)",
+          "description": "Uczyń z tego obowiązek z terminem za tyle minut od teraz, np. pralka skończyła, opróżnij ją w ciągu 30 minut. Po terminie obowiązek znika i zostaje wyłączony. 0 = bez terminu."
+        },
+        "speed_bonus_points": {
+          "name": "Punkty premii za szybkość",
+          "description": "Dodatkowe punkty, jeśli obowiązek zostanie wykonany przed terminem. Wymaga expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1208,10 @@
         "notify_on_earn": {
           "name": "Powiadom po zdobyciu",
           "description": "Wyślij powiadomienie, gdy odznaka zostanie zdobyta"
+        },
+        "combinator": {
+          "name": "Łączenie",
+          "description": "Jak łączą się kryteria: AND (wszystkie muszą być spełnione) lub OR (wystarczy jedno). Domyślnie AND."
         }
       }
     },
@@ -1134,6 +1258,10 @@
         "notify_on_earn": {
           "name": "Powiadom po zdobyciu",
           "description": "Wyślij powiadomienie, gdy odznaka zostanie zdobyta"
+        },
+        "combinator": {
+          "name": "Łączenie",
+          "description": "Jak łączą się kryteria: AND (wszystkie muszą być spełnione) lub OR (wystarczy jedno). Domyślnie AND."
         }
       }
     },
@@ -1864,22 +1992,93 @@
           "description": "GG:MM, np. 17:30. Puste usuwa przypomnienie."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Przeczytaj obowiązki na głos",
+      "description": "Odczytuje pozostałe obowiązki dziecka na odtwarzaczu multimediów, np. „Ella, zostały ci trzy rzeczy…”. Używa tekstu w języku Home Assistant, chyba że ustawiono własne szablony.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "ID dziecka, którego obowiązki są odczytywane"
+        },
+        "media_player": {
+          "name": "Odtwarzacz multimediów",
+          "description": "Gdzie odczytać. Domyślnie ten ustawiony w Ustawieniach."
+        },
+        "tts_entity": {
+          "name": "Encja zamiany tekstu na mowę",
+          "description": "Której usługi TTS użyć. Domyślnie tej z Ustawień, a potem jedynej zainstalowanej."
+        },
+        "message": {
+          "name": "Własna wiadomość",
+          "description": "Powiedz to zamiast wygenerowanego podsumowania."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Zakręć ruletką obowiązków",
+      "description": "Losuje pozostały obowiązek dla dziecka z mnożnikiem punktów. Trzeba włączyć: włącz ją i ustaw mnożnik oraz dzienny limit zakręceń w ustawieniach panelu TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "ID dziecka, które kręci ruletką"
+        }
+      }
     }
   },
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "obowiązków"
+        "unit_of_measurement": "obowiązków",
+        "name": "Statystyki: {child}"
       },
       "child_badges": {
-        "unit_of_measurement": "odznak"
+        "unit_of_measurement": "odznak",
+        "name": "Odznaki: {child}"
       },
       "child_watch": {
         "state": {
           "left": "Zostało: #",
           "all_done": "Wszystko zrobione",
           "no_chores": "Brak obowiązków"
-        }
+        },
+        "name": "Smartwatch: {child}"
+      },
+      "overview": {
+        "name": "Przegląd TaskMate"
+      },
+      "chores": {
+        "name": "Obowiązki TaskMate"
+      },
+      "chore_availability": {
+        "name": "Dostępność obowiązków TaskMate"
+      },
+      "rewards": {
+        "name": "Nagrody TaskMate"
+      },
+      "activity": {
+        "name": "Aktywność TaskMate"
+      },
+      "incentives": {
+        "name": "Premie i kary TaskMate"
+      },
+      "bounties": {
+        "name": "Zlecenia TaskMate"
+      },
+      "auctions": {
+        "name": "Licytacje TaskMate"
+      },
+      "chore_board": {
+        "name": "Tablica obowiązków TaskMate"
+      },
+      "child_points": {
+        "name": "Punkty: {child}"
+      },
+      "child_wishlist": {
+        "name": "Lista marzeń: {child}"
+      },
+      "pending_approvals": {
+        "name": "Oczekujące zatwierdzenia"
       }
     },
     "number": {
@@ -1892,15 +2091,27 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Tryb resetu serii"
+        "name": "Tryb resetu serii",
+        "state": {
+          "reset": "Zeruj — seria spada do 0 po pominiętym dniu",
+          "pause": "Wstrzymaj — seria zostaje zachowana do następnego wykonania"
+        }
       },
       "card_design": {
-        "name": "Wygląd karty"
+        "name": "Wygląd karty",
+        "state": {
+          "classic": "Klasyczny",
+          "playroom": "Bawialnia",
+          "console": "Konsola",
+          "cleanpro": "Clean Pro",
+          "accessible": "Dostępny",
+          "graphite": "Grafit"
+        }
       }
     },
     "event": {
       "child_activity": {
-        "name": "Aktywność TaskMate",
+        "name": "Aktywność: {child}",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1953,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "Aktywność rodziny TaskMate",
+        "name": "Aktywność rodziny",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1969,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Są oczekujące zatwierdzenia"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Wykonaj {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Odbierz {reward}"
       }
     }
   },
@@ -2011,6 +2235,1287 @@
     },
     "help_chore_not_available": {
       "message": "{chore} nie da się teraz zrobić, więc nie ma jeszcze z czym prosić o pomoc."
+    },
+    "help_already_on_its_way": {
+      "message": "Pomoc przy „{chore}” jest już w drodze."
+    },
+    "help_cooldown": {
+      "message": "Odczekaj minutę, zanim znowu poprosisz o pomoc."
+    },
+    "rate_limited": {
+      "message": "Zbyt wiele żądań z tego konta. Spróbuj ponownie za minutę."
+    },
+    "child_not_found": {
+      "message": "Nie znaleziono dziecka {child_id}"
+    },
+    "chore_not_found": {
+      "message": "Nie znaleziono obowiązku {chore_id}"
+    },
+    "reward_not_found": {
+      "message": "Nie znaleziono nagrody {reward_id}"
+    },
+    "teamwork_size_not_number": {
+      "message": "Wielkość zespołu musi być liczbą całkowitą."
+    },
+    "teamwork_size_range": {
+      "message": "Obowiązek zespołowy wymaga od 2 do {max} dzieci (lub 0 dla zwykłego obowiązku)."
+    },
+    "teamwork_points_mode": {
+      "message": "Punkty zespołowe muszą mieć wartość „each” lub „split”."
+    },
+    "teamwork_open_ended": {
+      "message": "Obowiązek zespołowy nie może być jednocześnie otwarty."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Obowiązek zespołowy musi być przypisany wszystkim — nie „kto pierwszy” ani rotacyjnie."
+    },
+    "teamwork_timed": {
+      "message": "Obowiązek z licznikiem czasu nie może być obowiązkiem zespołowym."
+    },
+    "teamwork_not_team_chore": {
+      "message": "Obowiązek „{name}” nie jest obowiązkiem zespołowym"
+    },
+    "swap_only_rotation": {
+      "message": "Zamieniać można tylko obowiązki rotacyjne"
+    },
+    "swap_won_at_auction": {
+      "message": "Ten obowiązek został dziś wygrany na licytacji, więc nie można go zamienić"
+    },
+    "swap_already_assigned": {
+      "message": "Ten obowiązek jest już dziś przypisany temu dziecku"
+    },
+    "swap_already_pending": {
+      "message": "Prośba o zamianę tego obowiązku już czeka"
+    },
+    "swap_too_many_pending": {
+      "message": "Za dużo oczekujących próśb o zamianę"
+    },
+    "swap_request_not_found": {
+      "message": "Nie znaleziono prośby o zamianę {request_id}"
+    },
+    "bulk_unknown_action": {
+      "message": "Nieznana akcja zbiorcza {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Nie można zbiorczo edytować: {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Nieznane dziecko {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Nieznana pora dnia {period}"
+    },
+    "chore_unknown": {
+      "message": "Nieznany obowiązek: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Pominięcie nie działa, gdy obowiązek jest przypisany wszystkim"
+    },
+    "skip_sticky_follower": {
+      "message": "Nie można pominąć obowiązku, który podąża za grupą; pomiń zamiast tego obowiązek prowadzący"
+    },
+    "skip_pool_too_small": {
+      "message": "Pominięcie wymaga co najmniej 2 dzieci w rotacji"
+    },
+    "manual_start_everyone_mode": {
+      "message": "Ręczny start nie działa, gdy obowiązek jest przypisany wszystkim"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Dziecka {child_id} nie ma w rotacji tego obowiązku"
+    },
+    "chore_photo_required": {
+      "message": "Ten obowiązek wymaga zdjęcia jako dowodu."
+    },
+    "chore_note_required": {
+      "message": "Napisz, co zrobiłeś, żeby to wysłać."
+    },
+    "chore_quantity_required": {
+      "message": "Podaj, ile {unit} zrobiłeś."
+    },
+    "backdate_day_range": {
+      "message": "Wybierz dzień z ostatnich {days} dni, przed dzisiejszym."
+    },
+    "backdate_switched_off": {
+      "message": "„{name}” jest wyłączony."
+    },
+    "backdate_not_assigned": {
+      "message": "„{name}” nie należy do obowiązków dziecka {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "„{name}” jest rotacyjny lub wymaga zespołu, więc nie można go wpisać za miniony dzień."
+    },
+    "backdate_open_ended": {
+      "message": "„{name}” jest otwarty, więc wymaga notatki dziecka i ceny. Użyj karty dziecka."
+    },
+    "backdate_set_times": {
+      "message": "„{name}” ma ustalone godziny, więc nie można go wpisać za miniony dzień."
+    },
+    "backdate_holiday": {
+      "message": "Były wolne {weekday, select, Monday {w poniedziałek} Tuesday {we wtorek} Wednesday {w środę} Thursday {w czwartek} Friday {w piątek} Saturday {w sobotę} Sunday {w niedzielę} other {w dniu {weekday}}}, więc nie było żadnych obowiązków."
+    },
+    "backdate_sick_day": {
+      "message": "{child} chorował(a) {weekday, select, Monday {w poniedziałek} Tuesday {we wtorek} Wednesday {w środę} Thursday {w czwartek} Friday {w piątek} Saturday {w sobotę} Sunday {w niedzielę} other {w dniu {weekday}}}, więc nie było żadnych obowiązków."
+    },
+    "backdate_birthday": {
+      "message": "{child} miał(a) urodziny {weekday, select, Monday {w poniedziałek} Tuesday {we wtorek} Wednesday {w środę} Thursday {w czwartek} Friday {w piątek} Saturday {w sobotę} Sunday {w niedzielę} other {w dniu {weekday}}}, dzień wolny od obowiązków."
+    },
+    "backdate_auction": {
+      "message": "„{name}” został tego dnia wygrany na licytacji, więc nie można go wpisać później."
+    },
+    "backdate_weekly_target_met": {
+      "message": "„{name}” osiągnął już w tamtym tygodniu swoje {target}."
+    },
+    "backdate_not_due": {
+      "message": "„{name}” nie był zaplanowany {weekday, select, Monday {w poniedziałek} Tuesday {we wtorek} Wednesday {w środę} Thursday {w czwartek} Friday {w piątek} Saturday {w sobotę} Sunday {w niedzielę} other {w dniu {weekday}}}."
+    },
+    "backdate_daily_limit": {
+      "message": "„{name}” został już wykonany {done}/{limit} razy {weekday, select, Monday {w poniedziałek} Tuesday {we wtorek} Wednesday {w środę} Thursday {w czwartek} Friday {w piątek} Saturday {w sobotę} Sunday {w niedzielę} other {w dniu {weekday}}}."
+    },
+    "chore_disabled": {
+      "message": "Obowiązek „{name}” jest wyłączony"
+    },
+    "parent_complete_one_shot": {
+      "message": "Obowiązek „{name}” jest jednorazowy i rodzic nie może go wykonać"
+    },
+    "parent_complete_no_children": {
+      "message": "Obowiązek „{name}” nie ma dzieci, przed którymi można go ukryć"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "Obowiązek „{name}” jest dzielony rotacyjnie i można go wykonać tylko dla wszystkich"
+    },
+    "parent_complete_not_assigned": {
+      "message": "Obowiązek „{name}” nie jest przypisany temu dziecku"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Nie znaleziono dodatkowego podzadania {subtask_id} w obowiązku „{name}”"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "Dodatkowe podzadanie „{subtask}” nie jest przypisane do: {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Nie można wykonać dodatkowego podzadania „{subtask}” — najpierw trzeba dziś wykonać obowiązek główny „{name}”."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Dodatkowe podzadanie „{subtask}” zostało już dziś wykonane."
+    },
+    "undo_window_passed": {
+      "message": "Tego obowiązku nie można już cofnąć. Poproś rodzica, żeby go cofnął."
+    },
+    "undo_points_spent": {
+      "message": "Tego obowiązku nie można teraz cofnąć: jego punkty zostały już wydane. Poproś rodzica."
+    },
+    "completion_not_found": {
+      "message": "Nie znaleziono wykonania {completion_id}"
+    },
+    "completion_not_approved": {
+      "message": "Wykonanie nie jest zatwierdzone; nie ma czego cofać"
+    },
+    "chore_sort_unknown": {
+      "message": "Nieznane sortowanie „{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Zduplikowany obowiązek w grupie: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "Obowiązek „{name}” jest przypisany wszystkim i nie może dołączyć do grupy"
+    },
+    "task_group_already_member": {
+      "message": "Obowiązek „{name}” należy już do grupy „{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "Nieznana zasada grupy zadań: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Nieznana grupa zadań: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "Liczba nie może wynosić 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Zamrożenia serii są wyłączone (streak_freeze_max wynosi 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} ma już maksymalną liczbę zamrożeń serii: {cap}"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} ma już maksymalną liczbę zamrożeń serii: {cap}"
+    },
+    "streak_freeze_off": {
+      "message": "Zamrożenia serii są wyłączone"
+    },
+    "points_non_negative": {
+      "message": "Punkty nie mogą być ujemne"
+    },
+    "transaction_not_found": {
+      "message": "Nie znaleziono transakcji {transaction_id}"
+    },
+    "undo_not_undoable": {
+      "message": "Tej czynności nie można cofnąć"
+    },
+    "gift_undo_too_old": {
+      "message": "Ten prezent pochodzi sprzed funkcji cofania i nie można go cofnąć automatycznie."
+    },
+    "gift_undo_spent": {
+      "message": "{child} wydał(a) już część tego prezentu, więc nie można go cofnąć."
+    },
+    "gift_amount_positive": {
+      "message": "Wartość prezentu musi być dodatnia"
+    },
+    "gift_same_child": {
+      "message": "Nie można podarować punktów temu samemu dziecku"
+    },
+    "gift_child_not_found": {
+      "message": "Nie znaleziono nadawcy lub odbiorcy"
+    },
+    "gift_not_enough_points": {
+      "message": "Za mało punktów: {child} ma {points}, prezent {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "„{name}” to wspólna pula, która nie jest jeszcze pełna. Potrzeba {cost}, odłożono {saved}"
+    },
+    "reward_not_available_to": {
+      "message": "Nagroda „{name}” nie jest dostępna dla: {child}"
+    },
+    "reward_sold_out": {
+      "message": "Nagroda „{name}” jest wyprzedana"
+    },
+    "reward_expired": {
+      "message": "Nagroda „{name}” wygasła"
+    },
+    "reward_not_available_now": {
+      "message": "Nagroda „{name}” nie jest teraz dostępna"
+    },
+    "reward_claim_already_waiting": {
+      "message": "Prośba o „{name}” już czeka na zatwierdzenie"
+    },
+    "reward_claims_too_many": {
+      "message": "Za dużo próśb o nagrody czeka już na zatwierdzenie"
+    },
+    "reward_not_enough_points": {
+      "message": "Za mało punktów. Potrzeba {cost}, dostępne: {available}"
+    },
+    "reward_spending_cap": {
+      "message": "Osiągnięto limit wydatków: wykorzystano już {cap} na okres"
+    },
+    "reward_claim_target_missing": {
+      "message": "Nie znaleziono nagrody lub dziecka dla prośby {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Za mało punktów, by zatwierdzić. Potrzeba {cost}, jest {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "„{name}” zostało już zatwierdzone i nie można tego odrzucić"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "Ta nagroda została już zatwierdzona i nie można jej odrzucić"
+    },
+    "pool_allocate_min": {
+      "message": "Trzeba przydzielić co najmniej 1 punkt"
+    },
+    "pool_no_spendable": {
+      "message": "{child} nie ma punktów do wydania"
+    },
+    "pool_full": {
+      "message": "Pula na nagrodę „{name}” jest już pełna"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} może dostać {name} raz dziennie. Znów dostępne od {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} może dostać {name} raz w tygodniu. Znów dostępne od {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} może dostać {name} raz w miesiącu. Znów dostępne od {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} może dostać {name} {count} razy dziennie. Znów dostępne od {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} może dostać {name} {count} razy w tygodniu. Znów dostępne od {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} może dostać {name} {count} razy w miesiącu. Znów dostępne od {date}"
+    },
+    "reward_gift_off": {
+      "message": "Kupowanie nagród dla siebie nawzajem jest wyłączone"
+    },
+    "reward_gift_children_only": {
+      "message": "Nagrody można kupować tylko dla dzieci"
+    },
+    "reward_gift_not_giftable": {
+      "message": "„{name}” nie można kupić dla kogoś innego"
+    },
+    "reward_rating_stars": {
+      "message": "Wybierz od 1 do 3 gwiazdek"
+    },
+    "reward_rating_not_yet": {
+      "message": "Tej nagrody nie można jeszcze ocenić"
+    },
+    "reward_rating_not_holder": {
+      "message": "Tylko dziecko, które dostało nagrodę, może ją ocenić"
+    },
+    "reward_rating_already": {
+      "message": "Ta nagroda została już oceniona"
+    },
+    "service_unknown_child": {
+      "message": "Nieznane dziecko „{ref}”. Dostępne dzieci: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Więcej niż jedno dziecko nazywa się „{ref}”; użyj zamiast tego id dziecka ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Nie ma czego aktualizować: podaj co najmniej jedno pole do zmiany"
+    },
+    "service_confirm_delete": {
+      "message": "Ustaw confirm: true, aby usunąć obowiązek"
+    },
+    "penalty_already_earned_back": {
+      "message": "Ta kara została już odrobiona."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Ta nagroda nie czeka na wręczenie."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Ta nagroda jest już oznaczona jako wręczona."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Ta nagroda należy do: {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "Pola „{field}” nie można zmienić według harmonogramu"
+    },
+    "scheduled_expects_bool": {
+      "message": "Pole „{field}” wymaga wartości true lub false"
+    },
+    "scheduled_expects_int": {
+      "message": "Pole „{field}” wymaga liczby całkowitej"
+    },
+    "scheduled_negative": {
+      "message": "Pole „{field}” nie może być ujemne"
+    },
+    "scheduled_expects_list": {
+      "message": "Pole „{field}” wymaga listy"
+    },
+    "scheduled_expects_text": {
+      "message": "Pole „{field}” wymaga tekstu"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on musi być datą ISO, np. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on musi być datą w przyszłości"
+    },
+    "scheduled_no_fields": {
+      "message": "Zaplanowana zmiana musi zmieniać co najmniej jedno pole"
+    },
+    "scheduled_change_not_found": {
+      "message": "Nie znaleziono zaplanowanej zmiany {change_id}"
+    },
+    "timed_not_timed": {
+      "message": "Obowiązek „{name}” nie jest obowiązkiem z licznikiem czasu"
+    },
+    "timed_already_running": {
+      "message": "Licznik czasu już działa"
+    },
+    "timed_daily_cap": {
+      "message": "Osiągnięto dzienny limit ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "„{name}” nie jest teraz dostępny dla: {child}"
+    },
+    "timed_no_running": {
+      "message": "Brak działającego licznika do wstrzymania"
+    },
+    "timed_no_active": {
+      "message": "Brak aktywnego licznika do zatrzymania"
+    },
+    "set_time_unknown": {
+      "message": "Ta godzina nie należy do ustalonych godzin tego obowiązku."
+    },
+    "sick_day_range": {
+      "message": "Wybierz dzień od tygodnia wstecz do miesiąca naprzód."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Nie ma czego przywracać: element nigdy nie został usunięty albo został trwale wyczyszczony"
+    },
+    "trash_id_exists": {
+      "message": "Element o id {item_id} już istnieje"
+    },
+    "wish_not_found": {
+      "message": "Nie znaleziono życzenia"
+    },
+    "wish_target_not_whole": {
+      "message": "Cel musi być liczbą całkowitą"
+    },
+    "wish_target_range": {
+      "message": "Cel musi wynosić od 1 do {max}"
+    },
+    "wish_name_required": {
+      "message": "Nadaj życzeniu nazwę"
+    },
+    "wish_link_invalid": {
+      "message": "Link musi być adresem internetowym zaczynającym się od http:// lub https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} ma już {max} aktywnych życzeń"
+    },
+    "wish_picture_unusable": {
+      "message": "Nie można użyć tego obrazu"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Wycofać można tylko życzenie oczekujące lub odrzucone"
+    },
+    "wish_not_open_for_saving": {
+      "message": "Na „{name}” nie można teraz oszczędzać"
+    },
+    "wish_move_min": {
+      "message": "Trzeba przenieść co najmniej 1 punkt"
+    },
+    "wish_fully_funded": {
+      "message": "„{name}” jest już w pełni opłacone"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} nie ma punktów do wydania"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Nie można teraz zabrać punktów z „{name}”"
+    },
+    "wish_take_back_min": {
+      "message": "Trzeba zabrać co najmniej 1 punkt"
+    },
+    "wish_nothing_saved": {
+      "message": "W „{name}” nie ma zaoszczędzonych punktów do zabrania"
+    },
+    "wish_cannot_redeem": {
+      "message": "„{name}” nie można teraz zrealizować"
+    },
+    "wish_needs_more_points": {
+      "message": "„{name}” potrzebuje jeszcze {points} pkt"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Zbyt wiele próśb o nagrody czeka już na zatwierdzenie"
+    },
+    "wish_not_waiting_approval": {
+      "message": "„{name}” nie czeka na zatwierdzenie"
+    },
+    "wish_cannot_decline": {
+      "message": "Nie można już odrzucić: „{name}”"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "Do „{name}” nie można teraz nic dołożyć"
+    },
+    "wish_pledge_name_required": {
+      "message": "Podaj, od kogo jest wkład"
+    },
+    "wish_pledge_min": {
+      "message": "Wkład musi wynosić co najmniej 1 punkt"
+    },
+    "wish_too_many_pledges": {
+      "message": "„{name}” ma już {max} wkładów"
+    },
+    "wish_pledges_locked": {
+      "message": "Wkładów do „{name}” nie można już zmienić"
+    },
+    "wish_pledge_not_found": {
+      "message": "Nie znaleziono wkładu"
+    },
+    "wish_claim_missing": {
+      "message": "Nie znaleziono życzenia lub dziecka dla prośby {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "„{name}” nie czeka już na realizację"
+    },
+    "wish_not_funded": {
+      "message": "„{name}” nie jest już w pełni opłacone"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "Obrazek musi być emoji (do {max} znaków)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Kolor musi wyglądać jak #ff8800 albo być „rainbow”."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Tego przedmiotu nie ma w sklepie."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Nazwa może mieć najwyżej {max} znaków."
+    },
+    "pet_shop_name_required": {
+      "message": "Nadaj przedmiotowi nazwę."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Nieznane miejsce „{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "Cena i poziom muszą być liczbami całkowitymi."
+    },
+    "pet_shop_cost_range": {
+      "message": "Cena musi wynosić od 1 do {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "Poziom musi wynosić od 0 do {max}."
+    },
+    "pet_shop_full": {
+      "message": "Sklep mieści najwyżej {max} przedmiotów."
+    },
+    "pets_switched_off": {
+      "message": "Zwierzątka są wyłączone."
+    },
+    "pet_adopt_first": {
+      "message": "Najpierw przygarnij zwierzątko."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "To nie jest jeszcze odblokowane."
+    },
+    "pet_shop_closed": {
+      "message": "Sklep zoologiczny jest zamknięty."
+    },
+    "pet_shop_buy_first": {
+      "message": "Najpierw to kup."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Ten przedmiot nie jest na sprzedaż."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Odblokowuje się na poziomie {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Już to masz."
+    },
+    "pet_shop_already_pending": {
+      "message": "To już czeka na rodzica."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Jeszcze za mało punktów na to."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Ten zakup już nie czeka."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Tego dziecka lub przedmiotu już nie ma – zamiast tego odrzuć zakup."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} nie ma teraz na to dość punktów."
+    },
+    "pet_unknown_species": {
+      "message": "Nieznane zwierzątko „{species}”"
+    },
+    "pet_name_required": {
+      "message": "Nadaj swojemu zwierzątku imię."
+    },
+    "pet_no_egg": {
+      "message": "Nie ma jeszcze jajka do wyklucia."
+    },
+    "auction_not_found": {
+      "message": "Ta licytacja już nie istnieje. Odśwież kartę."
+    },
+    "auction_refuse_off": {
+      "message": "Ten obowiązek jest wyłączony."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Nieprzypisanego obowiązku nie można nikomu dać, więc nie można go wystawić na licytację."
+    },
+    "auction_refuse_team": {
+      "message": "Obowiązek zespołowy dzieli zespół, więc nie można go wystawić na licytację."
+    },
+    "auction_refuse_timed": {
+      "message": "Obowiązek na czas jest płatny za minutę, więc nie można go wystawić na licytację."
+    },
+    "auction_refuse_open_ended": {
+      "message": "Cenę otwartego obowiązku ustala rodzic, więc nie można go wystawić na licytację."
+    },
+    "auction_invalid_date": {
+      "message": "Nieprawidłowa data: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Wybierz termin od jutra."
+    },
+    "auction_not_scheduled": {
+      "message": "„{chore}” nie jest zaplanowany na {date}."
+    },
+    "auction_already_exists": {
+      "message": "Ten termin ma już licytację."
+    },
+    "auction_points_not_whole": {
+      "message": "Punkty muszą być liczbami całkowitymi."
+    },
+    "auction_max_range": {
+      "message": "Najwyższa oferta wynosi od 1 do {max} pkt."
+    },
+    "auction_min_range": {
+      "message": "Najniższa oferta musi wynosić od 1 do wartości najwyższej."
+    },
+    "auction_needs_close": {
+      "message": "Licytacja musi mieć godzinę zakończenia."
+    },
+    "auction_close_in_past": {
+      "message": "Godzina zakończenia już minęła."
+    },
+    "auction_close_before_day": {
+      "message": "Licytacja musi się zakończyć przed dniem obowiązku."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Licytować mogą tylko dzieci, które mogą wykonać ten obowiązek."
+    },
+    "auction_no_bidders": {
+      "message": "Wybierz co najmniej jedno dziecko, które może licytować."
+    },
+    "auction_already_closed": {
+      "message": "Ta licytacja już się zakończyła."
+    },
+    "auction_already_cancelled": {
+      "message": "Ta licytacja została już anulowana."
+    },
+    "auction_occurrence_passed": {
+      "message": "Ten termin już minął."
+    },
+    "auction_still_live": {
+      "message": "Ta licytacja wciąż trwa. Zamiast tego ją anuluj."
+    },
+    "auction_not_for_you": {
+      "message": "Ta licytacja nie jest dla ciebie."
+    },
+    "auction_bidding_closed": {
+      "message": "Licytowanie w tej licytacji jest zamknięte."
+    },
+    "auction_bid_not_whole": {
+      "message": "Oferta to całkowita liczba punktów."
+    },
+    "auction_bid_range": {
+      "message": "Zaoferuj od {min} do {max} pkt."
+    },
+    "auction_no_bid": {
+      "message": "Nie licytujesz w tej licytacji."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Nieprawidłowy czas wygaśnięcia: {value}"
+    },
+    "bounty_not_found": {
+      "message": "To zlecenie już nie istnieje. Odśwież kartę."
+    },
+    "bounty_title_required": {
+      "message": "Zlecenie musi mieć tytuł."
+    },
+    "bounty_points_not_whole": {
+      "message": "Punkty muszą być liczbą całkowitą."
+    },
+    "bounty_points_range": {
+      "message": "Zlecenie jest warte od 1 do {max} pkt."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Blokada musi trwać pełną liczbę godzin."
+    },
+    "bounty_claim_hours_range": {
+      "message": "Blokada trwa od 1 do {max} godz."
+    },
+    "bounty_expiry_in_past": {
+      "message": "Termin wygaśnięcia już minął."
+    },
+    "bounty_finished_locked": {
+      "message": "Zakończonego zlecenia nie można edytować."
+    },
+    "bounty_claimed_locked": {
+      "message": "Po zajęciu zlecenia można zmienić tylko jego punkty i termin wygaśnięcia."
+    },
+    "bounty_review_before_remove": {
+      "message": "Zatwierdź lub odrzuć wykonaną pracę, zanim usuniesz to zlecenie."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Zwolnić można tylko zajęte zlecenie."
+    },
+    "bounty_not_for_you": {
+      "message": "To zlecenie nie jest dla ciebie."
+    },
+    "bounty_taken": {
+      "message": "Ktoś był szybszy — tego zlecenia już nie ma na tablicy."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Najpierw dokończ „{title}” — możesz mieć tylko jedno zlecenie naraz."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Nie zająłeś tego zlecenia."
+    },
+    "bounty_claim_expired": {
+      "message": "Twoja rezerwacja tego zlecenia wygasła."
+    },
+    "bounty_photo_required": {
+      "message": "To zlecenie wymaga zdjęcia wykonanej pracy."
+    },
+    "raffle_name_required": {
+      "message": "Nadaj losowaniu nazwę."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Los kosztuje od 1 do {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Wybierz, kiedy odbędzie się losowanie."
+    },
+    "raffle_field_required": {
+      "message": "{field} jest wymagane"
+    },
+    "raffle_draw_in_past": {
+      "message": "Losowanie musi być w przyszłości."
+    },
+    "raffle_not_found": {
+      "message": "Nie znaleziono losowania"
+    },
+    "raffle_not_open_edit": {
+      "message": "Zmienić można tylko otwarte losowanie."
+    },
+    "raffle_price_locked": {
+      "message": "Kupiono już losy, więc cena nie może się zmienić."
+    },
+    "raffle_closed": {
+      "message": "To losowanie jest zamknięte."
+    },
+    "raffle_drawing": {
+      "message": "To losowanie właśnie trwa."
+    },
+    "raffle_not_open_to": {
+      "message": "To losowanie nie jest dostępne dla: {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Kup co najmniej jeden los."
+    },
+    "raffle_max_tickets": {
+      "message": "Możesz mieć najwyżej {max} losów."
+    },
+    "raffle_not_enough_points": {
+      "message": "Za mało punktów na tyle losów."
+    },
+    "raffle_already_closed": {
+      "message": "To losowanie już się zakończyło."
+    },
+    "roulette_off": {
+      "message": "Ruletka obowiązków jest wyłączona"
+    },
+    "roulette_no_spins": {
+      "message": "Na dziś nie zostały żadne zakręcenia"
+    },
+    "roulette_nothing_left": {
+      "message": "Nie zostało nic do wylosowania"
+    },
+    "unlock_not_allowed": {
+      "message": "„{entity_id}” nie jest na liście dozwolonych odblokowań. Dodaj go w Ustawieniach, zanim użyjesz go jako nagrody."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Minuty odblokowania muszą być liczbą całkowitą"
+    },
+    "unlock_minutes_negative": {
+      "message": "Minuty odblokowania nie mogą być ujemne"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Minuty odblokowania nie mogą przekroczyć {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Tego awatara nie ma w katalogu"
+    },
+    "avatar_locked": {
+      "message": "Ten awatar nie jest jeszcze odblokowany"
+    },
+    "weekly_goals_off": {
+      "message": "Cele tygodniowe są wyłączone."
+    },
+    "weekly_goal_range": {
+      "message": "Wybierz cel od 0 do {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Cel musi wynosić co najmniej {bonus} — tyle wynosi premia."
+    },
+    "weekly_goal_locked": {
+      "message": "Cel na ten tydzień został już osiągnięty i wypłacony, więc nie można go zmienić do poniedziałku."
+    },
+    "challenge_name_required": {
+      "message": "Nazwa wyzwania jest wymagana"
+    },
+    "challenge_target_min": {
+      "message": "Cel musi wynosić co najmniej 1"
+    },
+    "challenge_not_found": {
+      "message": "Nie znaleziono wyzwania {challenge_id}"
+    },
+    "quest_name_required": {
+      "message": "Nazwa misji jest wymagana"
+    },
+    "quest_needs_step": {
+      "message": "Misja musi mieć co najmniej jeden krok"
+    },
+    "quest_not_found": {
+      "message": "Nie znaleziono misji {quest_id}"
+    },
+    "admin_only": {
+      "message": "Tylko dla administratorów"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate nie jest jeszcze gotowy"
+    },
+    "not_allowed": {
+      "message": "Brak uprawnień"
+    },
+    "handler_failed": {
+      "message": "Coś poszło nie tak; sprawdź dziennik Home Assistant"
+    },
+    "chore_one_off_past_day": {
+      "message": "Jednorazowego obowiązku nie można ustawić na dzień, który już minął"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start musi być datą ISO"
+    },
+    "penalty_not_found": {
+      "message": "Nie znaleziono kary {penalty_id}"
+    },
+    "bonus_not_found": {
+      "message": "Nie znaleziono bonusu {bonus_id}"
+    },
+    "group_not_found": {
+      "message": "Nie znaleziono grupy {group_id}"
+    },
+    "chores_bulk_no_names": {
+      "message": "Wymagana jest co najmniej jedna nazwa obowiązku"
+    },
+    "notif_child_not_found": {
+      "message": "Nie znaleziono dziecka"
+    },
+    "notif_parent_not_found": {
+      "message": "Nie znaleziono rodzica"
+    },
+    "recap_not_found": {
+      "message": "Nie znaleziono podsumowania"
+    },
+    "voucher_not_approved": {
+      "message": "Można wydrukować tylko zatwierdzoną nagrodę"
+    },
+    "voucher_missing": {
+      "message": "Ta nagroda lub to dziecko już nie istnieje"
+    },
+    "setup_invalid_birthday": {
+      "message": "Urodziny „{value}” to nieprawidłowa data"
+    },
+    "kiosk_pin_invalid": {
+      "message": "PIN kiosku musi mieć dokładnie 4 cyfry"
+    },
+    "time_periods_empty": {
+      "message": "Musi być co najmniej jedna pora dnia"
+    },
+    "time_periods_too_many": {
+      "message": "za dużo pór dnia (maks. {max})"
+    },
+    "time_periods_not_object": {
+      "message": "każda pora dnia musi być obiektem"
+    },
+    "time_periods_duplicate_id": {
+      "message": "zduplikowany identyfikator pory dnia: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "każda własna pora dnia musi mieć nazwę"
+    },
+    "time_periods_invalid_time": {
+      "message": "nieprawidłowa godzina dla pory dnia „{name}” (użyj GG:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "pora dnia „{name}” musi zaczynać się przed końcem"
+    },
+    "time_periods_overlap": {
+      "message": "„{name}” nachodzi na „{other}” — pory dnia nie mogą się nakładać"
+    },
+    "time_periods_in_use": {
+      "message": "nie można usunąć pory dnia, której wciąż używają obowiązki: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "okresy wakacji muszą być listą"
+    },
+    "vacation_periods_too_many": {
+      "message": "za dużo okresów wakacji (maks. {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "każdy okres wakacji musi być obiektem"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "każdy okres wakacji wymaga prawidłowej daty początku i końca (RRRR-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Nie można zastosować szablonu bez obowiązków"
+    },
+    "template_none_selected": {
+      "message": "Wybierz co najmniej jeden obowiązek"
+    },
+    "template_no_valid_chores": {
+      "message": "Nie znaleziono prawidłowych obowiązków dla wybranych identyfikatorów"
+    },
+    "template_needs_chore": {
+      "message": "Szablon musi mieć co najmniej jeden obowiązek"
+    },
+    "template_builtin_modify": {
+      "message": "Nie można zmienić wbudowanego szablonu „{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "Nie można usunąć wbudowanego szablonu „{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "To nie wygląda na pakiet TaskMate"
+    },
+    "template_pack_wrong_format": {
+      "message": "To nie jest pakiet szablonów TaskMate"
+    },
+    "template_pack_version_nan": {
+      "message": "Wersja pakietu nie jest liczbą"
+    },
+    "template_pack_too_new": {
+      "message": "Ten pakiet wymaga nowszego TaskMate (wersja pakietu {version}, ta wersja obsługuje {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Pakiet nie zawiera szablonów"
+    },
+    "template_pack_too_many": {
+      "message": "Pakiet ma za dużo szablonów (maks. {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Pakiet zawiera uszkodzony szablon"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Jeden z szablonów w pakiecie nie ma nazwy"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Szablon „{name}” nie ma obowiązków"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Szablon „{name}” ma za dużo obowiązków"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Szablon „{name}” zawiera uszkodzony obowiązek"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "Jeden z obowiązków w „{name}” nie ma nazwy"
+    },
+    "boost_bad_time": {
+      "message": "„{value}” to nie godzina w formacie 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "Mnożnik musi być liczbą."
+    },
+    "boost_multiplier_range": {
+      "message": "Wybierz mnożnik od ×{min} do ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Nie znaleziono obowiązku {chore_id}."
+    },
+    "boost_child_not_found": {
+      "message": "Nie znaleziono dziecka {child_id}."
+    },
+    "boost_start_past": {
+      "message": "Boost nie może zacząć się w przeszłości."
+    },
+    "boost_too_far_ahead": {
+      "message": "Boost można zaplanować maksymalnie tydzień naprzód."
+    },
+    "boost_minutes_nan": {
+      "message": "Liczba minut musi być liczbą całkowitą."
+    },
+    "boost_minutes_range": {
+      "message": "Wybierz od 1 do {max} minut."
+    },
+    "boost_already_ended": {
+      "message": "Ten boost już się skończył."
+    },
+    "boost_rule_no_days": {
+      "message": "Wybierz co najmniej jeden dzień."
+    },
+    "boost_rule_end_before_start": {
+      "message": "Godzina końca musi być po godzinie początku."
+    },
+    "boost_rules_max": {
+      "message": "Maksymalnie {max} cyklicznych boostów."
+    },
+    "boost_rule_gone": {
+      "message": "Ten cykliczny boost już nie istnieje."
+    },
+    "season_pack_unknown": {
+      "message": "Nieznany pakiet sezonowy: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Nieznane dziecko: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Ten obowiązek został już cofnięty. Odśwież kartę."
+    },
+    "import_invalid_payload": {
+      "message": "Nieprawidłowy eksport TaskMate"
+    },
+    "import_data_not_object": {
+      "message": "Dane importu muszą być obiektem"
+    },
+    "allowance_points_min": {
+      "message": "Punkty muszą wynosić co najmniej 1"
+    },
+    "allowance_not_enabled": {
+      "message": "Kieszonkowe nie jest włączone"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} ma tylko {points_name}: {points} do wypłaty."
+    },
+    "appeals_off": {
+      "message": "Odwołania są wyłączone."
+    },
+    "appeals_already_appealed": {
+      "message": "Od tego już się odwołano."
+    },
+    "appeals_not_appealable": {
+      "message": "Od tego nie można się odwołać."
+    },
+    "appeals_not_found": {
+      "message": "To odwołanie już nie istnieje."
+    },
+    "appeals_already_decided": {
+      "message": "To odwołanie zostało już rozpatrzone."
+    },
+    "appeals_child_gone": {
+      "message": "Tego dziecka już tu nie ma."
+    },
+    "appeals_reward_gone": {
+      "message": "Ta nagroda już nie istnieje."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Ta kara została już cofnięta."
+    },
+    "appeals_unknown_kind": {
+      "message": "Nieznany rodzaj odwołania {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Urodziny muszą mieć format RRRR-MM-DD lub MM-DD, otrzymano „{value}”"
+    },
+    "birthday_in_future": {
+      "message": "Data urodzin nie może być w przyszłości"
+    },
+    "chore_reminders_off": {
+      "message": "Przypomnienia są wyłączone"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "„{chore}” nie jest obowiązkiem dziecka {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "Wybierz godzinę, np. 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Wybierz godzinę między {earliest} a {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on musi być datą ISO, np. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Ta kontrola już nie istnieje. Odśwież i spróbuj ponownie."
+    },
+    "inspection_already_decided": {
+      "message": "Ta kontrola została już rozstrzygnięta lub zamknięta."
+    },
+    "inspections_off": {
+      "message": "Niespodziewane kontrole są wyłączone w Ustawieniach."
+    },
+    "inspection_chore_gone": {
+      "message": "Ten obowiązek już nie istnieje."
+    },
+    "inspection_not_approved": {
+      "message": "Kontrolować można tylko zatwierdzone obowiązki."
+    },
+    "inspection_not_child_chore": {
+      "message": "Kontrolować można tylko własny obowiązek dziecka."
+    },
+    "inspection_child_gone": {
+      "message": "To dziecko już nie istnieje."
+    },
+    "inspection_too_old": {
+      "message": "Kontrolować można tylko obowiązki zatwierdzone w ciągu ostatnich {hours} godz."
+    },
+    "inspection_already_inspected": {
+      "message": "Ten obowiązek był już kontrolowany."
+    },
+    "inspection_redo_today_only": {
+      "message": "Do poprawki można odesłać tylko obowiązek wykonany dzisiaj."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url musi być /ścieżką, adresem URL http(s) lub noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group nie może zawierać spacji (spróbuj family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group nie może zawierać znaków sterujących"
+    },
+    "notification_group_too_long": {
+      "message": "group może mieć najwyżej 64 znaki"
+    },
+    "notification_unknown_type": {
+      "message": "Nieznany typ powiadomienia {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Nieznany odbiorca powiadomień {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Minuty muszą być liczbą całkowitą"
+    },
+    "screen_time_minutes_max": {
+      "message": "Liczba minut nie może przekraczać {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "Słoik czasu ekranowego jest wyłączony"
+    },
+    "screen_time_jar_full": {
+      "message": "Słoik jest pełny"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Brak minut do odłożenia"
+    },
+    "setup_unknown_age_group": {
+      "message": "Nieznana grupa wiekowa „{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Każde nowe dziecko potrzebuje własnego ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Dziecko musi mieć imię"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Obowiązek przypisany do nieznanego dziecka „{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "Obowiązek musi mieć nazwę"
+    },
+    "setup_reward_needs_name": {
+      "message": "Nagroda musi mieć nazwę"
+    },
+    "sibling_checks_off": {
+      "message": "Sprawdzanie przez rodzeństwo jest wyłączone"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Nieznana ocena {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Ten obowiązek został już sprawdzony. Odśwież kartę."
+    },
+    "sibling_check_own_chore": {
+      "message": "Nie możesz sprawdzić własnego obowiązku"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} nie może sprawdzać obowiązków tego dziecka"
+    },
+    "sound_invalid_file_name": {
+      "message": "Nieprawidłowa nazwa pliku dźwiękowego: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Dźwięk {file} jest już zarejestrowany"
+    },
+    "sound_unknown_custom": {
+      "message": "Nieznany własny dźwięk: {file}"
+    },
+    "tour_adult": {
+      "message": "Profile dorosłych nie dostają przewodnika"
+    },
+    "tour_bad_status": {
+      "message": "status musi mieć wartość 'done' lub 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Nieznany krok przewodnika {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Już mówię; spróbuj za chwilę"
+    },
+    "tts_no_media_player": {
+      "message": "Nie podano odtwarzacza i nie ustawiono domyślnego w Ustawieniach"
+    },
+    "tts_no_entity": {
+      "message": "Nie znaleziono encji zamiany tekstu na mowę. Ustaw ją w Ustawieniach lub podaj tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "„{chore}” nie jest dziś obowiązkiem dziecka {child}."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Nieznany nastrój „{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Stałe godziny muszą być listą."
+    },
+    "set_times_too_many": {
+      "message": "Obowiązek może mieć najwyżej {max} stałych godzin."
+    },
+    "set_times_timed": {
+      "message": "Obowiązek na czas nie może mieć stałych godzin."
+    },
+    "set_times_open_ended": {
+      "message": "Obowiązek bez limitu nie może mieć stałych godzin."
+    },
+    "set_times_quantity": {
+      "message": "Obowiązek z ilością nie może mieć stałych godzin."
+    },
+    "set_times_teamwork": {
+      "message": "Obowiązek zespołowy nie może mieć stałych godzin."
+    },
+    "set_times_need_start_end": {
+      "message": "Każda stała godzina musi mieć początek i koniec."
+    },
+    "set_times_bad_format": {
+      "message": "Stałe godziny muszą mieć początek i koniec w formacie 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "Stała godzina musi się kończyć po rozpoczęciu, tego samego dnia."
+    },
+    "set_times_overlap": {
+      "message": "Dwie stałe godziny się nakładają. Przesuń jedną."
+    },
+    "template_not_found": {
+      "message": "Nie znaleziono szablonu {template_id}"
+    },
+    "upload_admin_required": {
+      "message": "Wymagany administrator"
+    },
+    "upload_file_too_large": {
+      "message": "Plik jest za duży"
+    },
+    "upload_expected_multipart": {
+      "message": "Oczekiwano formularza multipart"
+    },
+    "upload_too_many_parts": {
+      "message": "Za dużo części formularza"
+    },
+    "upload_no_file": {
+      "message": "Nie przesłano pliku"
+    },
+    "upload_image_unsupported": {
+      "message": "Nieobsługiwany obraz (JPEG, PNG lub WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Miejsce na obrazy jest pełne"
+    },
+    "upload_image_store_failed": {
+      "message": "Nie udało się zapisać obrazu"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Za dużo przesłań, spróbuj za chwilę"
+    },
+    "upload_photo_busy": {
+      "message": "Za dużo przesłań naraz, spróbuj za chwilę"
+    },
+    "upload_photo_storage_full": {
+      "message": "Miejsce na zdjęcia jest pełne"
+    },
+    "upload_photo_timeout": {
+      "message": "Przesyłanie trwało za długo"
+    },
+    "upload_photo_invalid": {
+      "message": "Nieprawidłowy obraz"
+    },
+    "upload_photo_store_failed": {
+      "message": "Nie udało się zapisać zdjęcia"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Masz za dużo zdjęć czekających na dołączenie do obowiązku. Najpierw je wyślij lub usuń."
+    },
+    "upload_sound_unsupported": {
+      "message": "Nieobsługiwany dźwięk (MP3, OGG, WAV lub M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Miejsce na dźwięki jest pełne"
+    },
+    "upload_sound_store_failed": {
+      "message": "Nie udało się zapisać dźwięku"
     }
   },
   "issues": {

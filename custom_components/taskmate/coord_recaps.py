@@ -29,6 +29,7 @@ from homeassistant.helpers.event import async_track_time_change
 from homeassistant.util import dt as dt_util
 
 from . import notify_strings
+from .errors import TaskMateError
 from .models import generate_id
 from .timewindow import parse_hhmm
 
@@ -646,7 +647,7 @@ class RecapsMixin:
         announced, never used as a comparison baseline.
         """
         if self.storage.get_child(child_id) is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         today = self._recap_today()
         self._recap_rollup(today)
         days = dict(self._recap_ledger()["days"].get(child_id, {}))

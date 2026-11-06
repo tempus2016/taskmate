@@ -60,6 +60,7 @@ from .const import (
     NOTIF_TYPE_AUCTION_RESULT,
 )
 from .coord_bounties import parse_bounty_expiry
+from .errors import TaskMateError, english_message
 from .models import Auction, format_datetime
 
 _LOGGER = logging.getLogger(__name__)
@@ -158,26 +159,31 @@ class AuctionsMixin:
     def _require_auction(self, auction_id: str) -> Auction:
         auction = self.storage.get_auction(auction_id)
         if auction is None:
-            raise ValueError("That auction no longer exists. Refresh the card.")
+            raise TaskMateError("auction_not_found")
         return auction
 
     def auction_pool(self, chore) -> list[str]:
         """Children who could be given ``chore``: its pool, or everyone."""
         return list(self._chore_assignment_pool(chore))
 
-    def auction_refusal(self, chore) -> str:
-        """Why ``chore`` can't be auctioned, or "" when it can."""
+    def auction_refusal_key(self, chore) -> str:
+        """The exception key for why ``chore`` can't be auctioned, or ""."""
         if not getattr(chore, "enabled", True):
-            return "That chore is switched off."
+            return "auction_refuse_off"
         if getattr(chore, "assignment_mode", "everyone") == "unassigned":
-            return "Nobody can be given an unassigned chore, so it can't be auctioned."
+            return "auction_refuse_unassigned"
         if self.teamwork_size(chore):
-            return "A teamwork chore is shared by a team, so it can't be auctioned."
+            return "auction_refuse_team"
         if getattr(chore, "task_type", "standard") == "timed":
-            return "A timed chore is paid by the minute, so it can't be auctioned."
+            return "auction_refuse_timed"
         if getattr(chore, "open_ended", False):
-            return "An open-ended chore is priced by the parent, so it can't be auctioned."
+            return "auction_refuse_open_ended"
         return ""
+
+    def auction_refusal(self, chore) -> str:
+        """Why ``chore`` can't be auctioned (English), or "" when it can."""
+        key = self.auction_refusal_key(chore)
+        return english_message(key) if key else ""
 
     def _auction_blocks(self, chore_id: str, occurrence: str, *, ignore_id: str = "") -> bool:
         """True when (chore, occurrence) already has a live or won auction."""
@@ -228,53 +234,53 @@ class AuctionsMixin:
         """
         chore = self.storage.get_chore(chore_id)
         if chore is None:
-            raise ValueError(f"Chore {chore_id} not found")
-        refusal = self.auction_refusal(chore)
+            raise TaskMateError("chore_not_found", chore_id=chore_id)
+        refusal = self.auction_refusal_key(chore)
         if refusal:
-            raise ValueError(refusal)
+            raise TaskMateError(refusal)
         try:
             day = occurrence if isinstance(occurrence, date) else date.fromisoformat(str(occurrence).strip())
         except (TypeError, ValueError) as err:
-            raise ValueError(f"Invalid date: {occurrence}") from err
+            raise TaskMateError("auction_invalid_date", date=occurrence) from err
         now = dt_util.now()
         today = dt_util.as_local(now).date()
         if day <= today:
-            raise ValueError("Pick an occurrence from tomorrow onwards.")
+            raise TaskMateError("auction_pick_future")
         if not self._is_chore_scheduled_for_date(chore, day):
-            raise ValueError(f"'{chore.name}' isn't scheduled on {day.isoformat()}.")
+            raise TaskMateError("auction_not_scheduled", chore=chore.name, date=day.isoformat())
         if self._auction_blocks(chore.id, day.isoformat()):
-            raise ValueError("That occurrence already has an auction.")
+            raise TaskMateError("auction_already_exists")
 
         try:
             max_points = int(max_points)
             min_points = int(min_points)
         except (TypeError, ValueError) as err:
-            raise ValueError("Points must be whole numbers.") from err
+            raise TaskMateError("auction_points_not_whole") from err
         if max_points < 1 or max_points > AUCTION_POINTS_MAX:
-            raise ValueError(f"The maximum bid is between 1 and {AUCTION_POINTS_MAX} points.")
+            raise TaskMateError("auction_max_range", max=AUCTION_POINTS_MAX)
         if min_points < 1 or min_points > max_points:
-            raise ValueError("The minimum bid must be between 1 and the maximum.")
+            raise TaskMateError("auction_min_range")
 
         closes = parse_bounty_expiry(closes_at)
         if closes is None:
-            raise ValueError("An auction needs a closing time.")
+            raise TaskMateError("auction_needs_close")
         day_starts = datetime.combine(day, time(0, 0), tzinfo=dt_util.DEFAULT_TIME_ZONE)
         if closes <= now:
-            raise ValueError("The closing time is already in the past.")
+            raise TaskMateError("auction_close_in_past")
         if closes > day_starts:
-            raise ValueError("Bidding must close before the day of the chore.")
+            raise TaskMateError("auction_close_before_day")
 
         pool = self.auction_pool(chore)
         eligible: list[str] = []
         for child_id in eligible_child_ids or pool:
             if not self.get_child(child_id):
-                raise ValueError(f"Child {child_id} not found")
+                raise TaskMateError("child_not_found", child_id=child_id)
             if child_id not in pool:
-                raise ValueError("Only children who can do this chore can bid on it.")
+                raise TaskMateError("auction_bidder_not_in_pool")
             if child_id not in eligible:
                 eligible.append(child_id)
         if not eligible:
-            raise ValueError("Pick at least one child who can bid.")
+            raise TaskMateError("auction_no_bidders")
 
         auction = Auction(
             chore_id=chore.id,
@@ -310,7 +316,7 @@ class AuctionsMixin:
         """A parent ends bidding now ("Close now") and settles the winner."""
         auction = self._require_auction(auction_id)
         if auction.status != "open":
-            raise ValueError("This auction has already closed.")
+            raise TaskMateError("auction_already_closed")
         self._settle_auction(auction, dt_util.now())
         await self.storage.async_save()
         await self._async_after_auction_closed(auction)
@@ -327,10 +333,10 @@ class AuctionsMixin:
         """
         auction = self._require_auction(auction_id)
         if auction.status == "cancelled":
-            raise ValueError("This auction was already cancelled.")
+            raise TaskMateError("auction_already_cancelled")
         today = dt_util.as_local(dt_util.now()).date()
         if auction.status == "closed" and auction.occurrence < today.isoformat():
-            raise ValueError("That occurrence has already happened.")
+            raise TaskMateError("auction_occurrence_passed")
         bidders = list(auction.bids)
         was_won = auction.status == "closed" and bool(auction.winner_id)
         auction.status = "cancelled"
@@ -380,7 +386,7 @@ class AuctionsMixin:
         """A parent deletes a finished auction from the list (#999)."""
         auction = self._require_auction(auction_id)
         if not self.auction_deletable(auction):
-            raise ValueError("This auction is still live. Cancel it instead.")
+            raise TaskMateError("auction_still_live")
         self.storage.remove_auction(auction.id)
         await self.storage.async_save()
         await self.async_refresh()
@@ -389,11 +395,11 @@ class AuctionsMixin:
 
     def _require_open_for(self, auction: Auction, child_id: str) -> None:
         if not self.get_child(child_id):
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if child_id not in auction.eligible_child_ids:
-            raise ValueError("This auction isn't for you.")
+            raise TaskMateError("auction_not_for_you")
         if auction.status != "open" or (auction.closes_at is not None and auction.closes_at <= dt_util.now()):
-            raise ValueError("Bidding on this auction has closed.")
+            raise TaskMateError("auction_bidding_closed")
 
     async def async_place_bid(self, auction_id: str, child_id: str, points: int) -> Auction:
         """Seal ``child_id``'s bid: the fewest points they'd do it for.
@@ -406,9 +412,9 @@ class AuctionsMixin:
         try:
             points = int(points)
         except (TypeError, ValueError) as err:
-            raise ValueError("A bid is a whole number of points.") from err
+            raise TaskMateError("auction_bid_not_whole") from err
         if points < auction.min_points or points > auction.max_points:
-            raise ValueError(f"Bid between {auction.min_points} and {auction.max_points} points.")
+            raise TaskMateError("auction_bid_range", min=auction.min_points, max=auction.max_points)
         current = auction.bids.get(child_id)
         if current and int(current.get("points", 0)) == points:
             return auction
@@ -425,7 +431,7 @@ class AuctionsMixin:
         auction = self._require_auction(auction_id)
         self._require_open_for(auction, child_id)
         if child_id not in auction.bids:
-            raise ValueError("You haven't bid on this one.")
+            raise TaskMateError("auction_no_bid")
         del auction.bids[child_id]
         self.storage.update_auction(auction)
         await self.storage.async_save()

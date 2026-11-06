@@ -43,6 +43,13 @@ class TaskMateReorderCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -521,10 +528,10 @@ class TaskMateReorderCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("Please define an entity (TaskMate overview sensor)");
+      throw new Error(this._t("reorder.error.entity_required"));
     }
     if (!config.child_id) {
-      throw new Error("Please define a child_id");
+      throw new Error(this._t("reorder.error.child_id_required"));
     }
     this.config = {
       title: "",
@@ -1232,7 +1239,7 @@ class TaskMateReorderCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('reorder.notification.save_error_title'),
-          message: this._t('reorder.notification.save_error_message', { error: error.message }),
+          message: this._t('reorder.notification.save_error_message', { error: this._errText(error) }),
           notification_id: "taskmate_reorder_error",
         });
       }

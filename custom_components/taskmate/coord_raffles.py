@@ -20,6 +20,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_RAFFLE_DRAWN
+from .errors import TaskMateError
 from .models import PointsTransaction, generate_id, parse_datetime
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ class RafflesMixin:
         if "name" in data:
             name = str(data["name"] or "").strip()[:RAFFLE_NAME_MAX]
             if not name:
-                raise ValueError("Give the raffle a name.")
+                raise TaskMateError("raffle_name_required")
             out["name"] = name
         if "prize" in data:
             out["prize"] = str(data["prize"] or "").strip()[:RAFFLE_PRIZE_MAX]
@@ -68,14 +69,14 @@ class RafflesMixin:
         if "ticket_cost" in data:
             cost = int(data["ticket_cost"])
             if not 1 <= cost <= RAFFLE_TICKET_COST_MAX:
-                raise ValueError(f"A ticket costs 1 to {RAFFLE_TICKET_COST_MAX}.")
+                raise TaskMateError("raffle_ticket_cost_range", max=RAFFLE_TICKET_COST_MAX)
             out["ticket_cost"] = cost
         if "max_tickets" in data:
             out["max_tickets"] = max(0, min(RAFFLE_MAX_TICKETS, int(data["max_tickets"] or 0)))
         if "draw_at" in data:
             when = parse_datetime(data["draw_at"])
             if when is None:
-                raise ValueError("Pick when the raffle is drawn.")
+                raise TaskMateError("raffle_draw_required")
             out["draw_at"] = when.isoformat()
         if "assigned_to" in data:
             out["assigned_to"] = [str(c) for c in (data["assigned_to"] or [])]
@@ -87,9 +88,9 @@ class RafflesMixin:
         )
         for key in ("name", "ticket_cost", "draw_at"):
             if key not in fields:
-                raise ValueError(f"{key} is required")
+                raise TaskMateError("raffle_field_required", field=key)
         if parse_datetime(fields["draw_at"]) <= dt_util.now():
-            raise ValueError("The draw has to be in the future.")
+            raise TaskMateError("raffle_draw_in_past")
         raffle = {
             "id": generate_id(),
             **fields,
@@ -107,13 +108,13 @@ class RafflesMixin:
     async def async_update_raffle(self, raffle_id: str, **data: Any) -> dict[str, Any]:
         raffle = self.get_raffle(raffle_id)
         if raffle is None:
-            raise ValueError("Raffle not found")
+            raise TaskMateError("raffle_not_found")
         if raffle.get("status") != "open":
-            raise ValueError("Only an open raffle can be changed.")
+            raise TaskMateError("raffle_not_open_edit")
         fields = self._clean_raffle_fields(data)
         # Fixed prices: once anyone has bought in, the ticket price is set.
         if "ticket_cost" in fields and fields["ticket_cost"] != raffle.get("ticket_cost") and raffle.get("tickets"):
-            raise ValueError("Tickets have been bought, so the price can't change.")
+            raise TaskMateError("raffle_price_locked")
         raffle.update(fields)
         await self.storage.async_save()
         await self.async_refresh()
@@ -123,7 +124,7 @@ class RafflesMixin:
         """Call a raffle off and give every ticket's points back."""
         raffle = self.get_raffle(raffle_id)
         if raffle is None:
-            raise ValueError("Raffle not found")
+            raise TaskMateError("raffle_not_found")
         if raffle.get("status") == "open":
             cost = int(raffle.get("ticket_cost", 0) or 0)
             for child_id, count in list((raffle.get("tickets") or {}).items()):
@@ -151,7 +152,7 @@ class RafflesMixin:
     async def async_remove_raffle(self, raffle_id: str) -> None:
         raffle = self.get_raffle(raffle_id)
         if raffle is None:
-            raise ValueError("Raffle not found")
+            raise TaskMateError("raffle_not_found")
         if raffle.get("status") == "open" and raffle.get("tickets"):
             await self.async_cancel_raffle(raffle_id)
         self.storage.data["raffles"] = [r for r in self._raffles() if r.get("id") != raffle_id]
@@ -168,23 +169,23 @@ class RafflesMixin:
         """Spend points on ``tickets`` tickets. Returns the child's ticket count."""
         raffle = self.get_raffle(raffle_id)
         if raffle is None:
-            raise ValueError("Raffle not found")
+            raise TaskMateError("raffle_not_found")
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if raffle.get("status") != "open":
-            raise ValueError("This raffle has closed.")
+            raise TaskMateError("raffle_closed")
         if parse_datetime(raffle.get("draw_at")) <= dt_util.now():
-            raise ValueError("This raffle is being drawn.")
+            raise TaskMateError("raffle_drawing")
         if not self.raffle_open_to(raffle, child_id):
-            raise ValueError(f"This raffle isn't open to {child.name}.")
+            raise TaskMateError("raffle_not_open_to", child_name=child.name)
         tickets = int(tickets)
         if tickets < 1:
-            raise ValueError("Buy at least one ticket.")
+            raise TaskMateError("raffle_min_tickets")
         held = int((raffle.get("tickets") or {}).get(child_id, 0) or 0)
         cap = int(raffle.get("max_tickets", 0) or 0)
         if cap and held + tickets > cap:
-            raise ValueError(f"You can hold at most {cap} tickets.")
+            raise TaskMateError("raffle_max_tickets", max=cap)
         cost = int(raffle.get("ticket_cost", 0) or 0) * tickets
         # Points already promised to a reward waiting for approval aren't spendable.
         committed = 0
@@ -193,7 +194,7 @@ class RafflesMixin:
                 pending = self.get_reward(claim.reward_id)
                 committed += pending.cost if pending else 0
         if child.points - committed < cost:
-            raise ValueError("Not enough points for that many tickets.")
+            raise TaskMateError("raffle_not_enough_points")
         child.points -= cost
         self.storage.update_child(child)
         self.storage.add_points_transaction(
@@ -217,9 +218,9 @@ class RafflesMixin:
         """Pick the winner now. Returns the winning child id ("" when nobody entered)."""
         raffle = self.get_raffle(raffle_id)
         if raffle is None:
-            raise ValueError("Raffle not found")
+            raise TaskMateError("raffle_not_found")
         if raffle.get("status") != "open":
-            raise ValueError("This raffle has already closed.")
+            raise TaskMateError("raffle_already_closed")
         entries = [(cid, int(n)) for cid, n in (raffle.get("tickets") or {}).items() if int(n or 0) > 0]
         entries = [(cid, n) for cid, n in entries if self.get_child(cid) is not None]
         winner = ""

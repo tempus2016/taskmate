@@ -18,6 +18,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
 from . import images
+from .errors import error_body
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,16 +38,16 @@ class TaskMateImageUploadView(HomeAssistantView):
         # Admin-only: this writes files and is only ever called by the panel.
         user = request.get("hass_user")
         if user is None or not user.is_admin:
-            return self.json_message("Admin required", HTTPStatus.FORBIDDEN)
+            return self.json(error_body("upload_admin_required"), HTTPStatus.FORBIDDEN)
 
         # Cheap pre-check on the declared length before reading the body.
         if request.content_length and request.content_length > images.MAX_UPLOAD_BYTES:
-            return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            return self.json(error_body("upload_file_too_large"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         try:
             reader = await request.multipart()
         except (ValueError, AssertionError):
-            return self.json_message("Expected multipart form", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_expected_multipart"), HTTPStatus.BAD_REQUEST)
 
         # Bound the scan so a stream of endlessly-named non-"file" parts can't
         # hold the handler open indefinitely (mirrors the photo upload).
@@ -55,10 +56,10 @@ class TaskMateImageUploadView(HomeAssistantView):
         while field is not None and field.name != "file":
             parts_scanned += 1
             if parts_scanned > 16:
-                return self.json_message("Too many form parts", HTTPStatus.BAD_REQUEST)
+                return self.json(error_body("upload_too_many_parts"), HTTPStatus.BAD_REQUEST)
             field = await reader.next()
         if field is None:
-            return self.json_message("No file provided", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_no_file"), HTTPStatus.BAD_REQUEST)
 
         # Stream the part, enforcing the size cap as we go.
         data = bytearray()
@@ -68,15 +69,15 @@ class TaskMateImageUploadView(HomeAssistantView):
                 break
             data.extend(chunk)
             if len(data) > images.MAX_UPLOAD_BYTES:
-                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return self.json(error_body("upload_file_too_large"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         ext = images.detect_allowed_ext(bytes(data))
         if ext is None:
-            return self.json_message("Not a supported image (JPEG, PNG or WebP)", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_image_unsupported"), HTTPStatus.BAD_REQUEST)
 
         used = await self.hass.async_add_executor_job(images.total_images_bytes, self.hass)
         if used + len(data) > images.MAX_TOTAL_BYTES:
-            return self.json_message("Image storage full", HTTPStatus.INSUFFICIENT_STORAGE)
+            return self.json(error_body("upload_image_storage_full"), HTTPStatus.INSUFFICIENT_STORAGE)
 
         name = f"{uuid.uuid4().hex}.{ext}"
         directory = images.images_path(self.hass)
@@ -90,7 +91,7 @@ class TaskMateImageUploadView(HomeAssistantView):
             await self.hass.async_add_executor_job(_write)
         except OSError as err:
             _LOGGER.error("Failed to store chore image: %s", err)
-            return self.json_message("Could not store image", HTTPStatus.INTERNAL_SERVER_ERROR)
+            return self.json(error_body("upload_image_store_failed"), HTTPStatus.INTERNAL_SERVER_ERROR)
 
         # Signed, like every image URL the panel gets from state: the editor
         # previews it in an <img>, which can't send the bearer token, so a bare

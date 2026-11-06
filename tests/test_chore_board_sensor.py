@@ -27,7 +27,7 @@ def test_identity_and_unrecorded_board():
         assert sensor._attr_unique_id == "e1_chore_board"
         # "TaskMate Chore Board" -> sensor.taskmate_chore_board, the id the
         # attribute resolver merges.
-        assert sensor._attr_name == "TaskMate Chore Board"
+        assert sensor.suggested_object_id == "TaskMate Chore Board"
         assert "chore_board" in sensor._unrecorded_attributes
 
     asyncio.run(scenario())

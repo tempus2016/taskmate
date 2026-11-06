@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from . import notify_strings, photos
+from .errors import TaskMateError
 from .models import Bonus, Child, Penalty, PointsTransaction, generate_id
 
 if TYPE_CHECKING:
@@ -420,19 +421,19 @@ class PointsMixin:
         """
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if amount == 0:
-            raise ValueError("amount must not be 0")
+            raise TaskMateError("points_amount_zero")
         cap = self.streak_freeze_max()
         if cap <= 0 and amount > 0:
-            raise ValueError("Streak freezes are turned off (streak_freeze_max is 0)")
+            raise TaskMateError("streak_freeze_off_max0")
         before = child.streak_freezes or 0
         after = max(0, before + amount)
         if amount > 0:
             after = min(after, max(cap, before))
         if after == before:
             if amount > 0:
-                raise ValueError(f"{child.name} already holds the maximum of {cap} streak freezes")
+                raise TaskMateError("streak_freeze_holds_max", child=child.name, cap=cap)
             return before
         child.streak_freezes = after
         delta = after - before
@@ -568,10 +569,10 @@ class PointsMixin:
     ) -> None:
         """Add points to a child (bonus)."""
         if points < 0:
-            raise ValueError("points must be non-negative")
+            raise TaskMateError("points_non_negative")
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         child.points += points
         child.total_points_earned += points
         child.career_score = child.total_points_earned - child.total_penalties_received
@@ -601,10 +602,10 @@ class PointsMixin:
     ) -> None:
         """Remove points from a child (penalty)."""
         if points < 0:
-            raise ValueError("points must be non-negative")
+            raise TaskMateError("points_non_negative")
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         # Negative-balance policy (FEAT-7): floor at zero unless opted in.
         if self._setting_enabled("allow_negative_balance"):
             actual_deducted = points
@@ -695,11 +696,11 @@ class PointsMixin:
         txns = self.storage.get_points_transactions()
         target = next((t for t in txns if t.id == transaction_id), None)
         if not target:
-            raise ValueError(f"Transaction {transaction_id} not found")
+            raise TaskMateError("transaction_not_found", transaction_id=transaction_id)
         reason = target.reason or ""
 
         if reason.startswith(self._UNDO_DENY_PREFIXES):
-            raise ValueError("This action can't be undone")
+            raise TaskMateError("undo_not_undoable")
 
         # Gifts move spendable balance between two children — reverse every leg
         # sharing the gift's link_id (neither child's earned/penalty totals
@@ -707,7 +708,7 @@ class PointsMixin:
         if reason.startswith("Gift to ") or reason.startswith("Gift from "):
             link_id = getattr(target, "link_id", "") or ""
             if not link_id:
-                raise ValueError("This gift predates undo support and can't be reversed automatically.")
+                raise TaskMateError("gift_undo_too_old")
             legs = [t for t in txns if (getattr(t, "link_id", "") or "") == link_id]
             # The recipient must still hold what they were given. Flooring
             # their balance at zero while handing the sender the full amount
@@ -715,7 +716,7 @@ class PointsMixin:
             for leg in legs:
                 leg_child = self.get_child(leg.child_id)
                 if leg.points > 0 and leg_child is not None and leg_child.points < leg.points:
-                    raise ValueError(f"{leg_child.name} has already spent some of this gift, so it can't be undone.")
+                    raise TaskMateError("gift_undo_spent", child=leg_child.name)
             for leg in legs:
                 leg_child = self.get_child(leg.child_id)
                 if leg_child:
@@ -728,7 +729,7 @@ class PointsMixin:
 
         child = self.get_child(target.child_id)
         if not child:
-            raise ValueError(f"Child {target.child_id} not found")
+            raise TaskMateError("child_not_found", child_id=target.child_id)
 
         pts = target.points  # signed: removals < 0, additions > 0
         is_penalty = reason.startswith("Penalty: ")
@@ -862,15 +863,15 @@ class PointsMixin:
         """
         points = int(points)
         if points <= 0:
-            raise ValueError("Gift amount must be positive")
+            raise TaskMateError("gift_amount_positive")
         if from_child_id == to_child_id:
-            raise ValueError("Cannot gift to the same child")
+            raise TaskMateError("gift_same_child")
         sender = self.get_child(from_child_id)
         recipient = self.get_child(to_child_id)
         if not sender or not recipient:
-            raise ValueError("Sender or recipient not found")
+            raise TaskMateError("gift_child_not_found")
         if (sender.points or 0) < points:
-            raise ValueError(f"Not enough points: {sender.name} has {sender.points}, gift {points}")
+            raise TaskMateError("gift_not_enough_points", child=sender.name, points=sender.points, gift=points)
         now = dt_util.now()
         sender.points -= points
         recipient.points += points
@@ -1459,10 +1460,10 @@ class PointsMixin:
         """
         penalty = self.storage.get_penalty(penalty_id)
         if not penalty:
-            raise ValueError(f"Penalty {penalty_id} not found")
+            raise TaskMateError("penalty_not_found", penalty_id=penalty_id)
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if getattr(penalty, "warn_first", False):
             warnings = self.storage.get_section("penalty_warnings", dict)
             mine = warnings.setdefault(child_id, {})
@@ -1553,10 +1554,10 @@ class PointsMixin:
         """Apply a bonus — awards the bonus's points to the child."""
         bonus = self.storage.get_bonus(bonus_id)
         if not bonus:
-            raise ValueError(f"Bonus {bonus_id} not found")
+            raise TaskMateError("bonus_not_found", bonus_id=bonus_id)
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         await self.async_add_points(
             child_id,
             bonus.points,

@@ -32,6 +32,7 @@ from .const import (
     BOUNTY_POINTS_MAX,
     BOUNTY_TITLE_MAX_LENGTH,
 )
+from .errors import TaskMateError
 from .models import Bounty, Chore, ChoreCompletion
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def parse_bounty_expiry(value) -> datetime | None:
         try:
             parsed = datetime.fromisoformat(str(value).strip())
         except (TypeError, ValueError) as err:
-            raise ValueError(f"Invalid expiry time: {value}") from err
+            raise TaskMateError("bounty_invalid_expiry", value=value) from err
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
     return parsed
@@ -72,7 +73,7 @@ class BountiesMixin:
     def _require_bounty(self, bounty_id: str) -> Bounty:
         bounty = self.storage.get_bounty(bounty_id)
         if bounty is None:
-            raise ValueError("That bounty no longer exists. Refresh the card.")
+            raise TaskMateError("bounty_not_found")
         return bounty
 
     def active_bounty_claim(self, child_id: str) -> Bounty | None:
@@ -112,7 +113,7 @@ class BountiesMixin:
         if "title" in fields:
             title = str(fields["title"] or "").strip()
             if not title:
-                raise ValueError("A bounty needs a title.")
+                raise TaskMateError("bounty_title_required")
             out["title"] = title[:BOUNTY_TITLE_MAX_LENGTH]
         if "description" in fields:
             out["description"] = str(fields["description"] or "").strip()[:BOUNTY_DESCRIPTION_MAX_LENGTH]
@@ -120,9 +121,9 @@ class BountiesMixin:
             try:
                 points = int(fields["points"])
             except (TypeError, ValueError) as err:
-                raise ValueError("Points must be a whole number.") from err
+                raise TaskMateError("bounty_points_not_whole") from err
             if points < 1 or points > BOUNTY_POINTS_MAX:
-                raise ValueError(f"A bounty is worth between 1 and {BOUNTY_POINTS_MAX} points.")
+                raise TaskMateError("bounty_points_range", max=BOUNTY_POINTS_MAX)
             out["points"] = points
         if "icon" in fields:
             out["icon"] = str(fields["icon"] or "").strip() or "mdi:flag-outline"
@@ -132,7 +133,7 @@ class BountiesMixin:
             ids = []
             for child_id in fields["eligible_child_ids"] or []:
                 if not self.get_child(child_id):
-                    raise ValueError(f"Child {child_id} not found")
+                    raise TaskMateError("child_not_found", child_id=child_id)
                 if child_id not in ids:
                     ids.append(child_id)
             # Every child ticked is the same as "all children" — and keeps a
@@ -144,9 +145,9 @@ class BountiesMixin:
             try:
                 hours = int(fields["claim_hours"])
             except (TypeError, ValueError) as err:
-                raise ValueError("Claim lock must be a whole number of hours.") from err
+                raise TaskMateError("bounty_claim_hours_not_whole") from err
             if hours < 1 or hours > BOUNTY_CLAIM_HOURS_MAX:
-                raise ValueError(f"The claim lock is between 1 and {BOUNTY_CLAIM_HOURS_MAX} hours.")
+                raise TaskMateError("bounty_claim_hours_range", max=BOUNTY_CLAIM_HOURS_MAX)
             out["claim_hours"] = hours
         if "require_photo" in fields:
             out["require_photo"] = bool(fields["require_photo"])
@@ -183,7 +184,7 @@ class BountiesMixin:
         )
         now = dt_util.now()
         if fields["expires_at"] is not None and fields["expires_at"] <= now:
-            raise ValueError("The expiry is already in the past.")
+            raise TaskMateError("bounty_expiry_in_past")
         bounty = Bounty(**fields, created_at=now)
         self.storage.add_bounty(bounty)
         await self.storage.async_save()
@@ -213,16 +214,16 @@ class BountiesMixin:
         """
         bounty = self._require_bounty(bounty_id)
         if bounty.status in ("completed", "expired"):
-            raise ValueError("A finished bounty can't be edited.")
+            raise TaskMateError("bounty_finished_locked")
         fields = self._clean_bounty_fields(changes)
         if bounty.status != "open":
             locked = [k for k, v in fields.items() if k not in _CLAIMED_EDITABLE and getattr(bounty, k) != v]
             if locked:
-                raise ValueError("Once a bounty is claimed, only its points and expiry can change.")
+                raise TaskMateError("bounty_claimed_locked")
         now = dt_util.now()
         if "expires_at" in fields and fields["expires_at"] is not None and fields["expires_at"] <= now:
             if bounty.status == "open" or fields["expires_at"] != bounty.expires_at:
-                raise ValueError("The expiry is already in the past.")
+                raise TaskMateError("bounty_expiry_in_past")
         for key, value in fields.items():
             setattr(bounty, key, value)
         if bounty.status == "claimed" and bounty.claimed_at is not None:
@@ -256,7 +257,7 @@ class BountiesMixin:
         """
         bounty = self._require_bounty(bounty_id)
         if bounty.status == "pending":
-            raise ValueError("Approve or reject the finished job before removing this bounty.")
+            raise TaskMateError("bounty_review_before_remove")
         self.storage.remove_bounty(bounty_id)
         await self.storage.async_save()
         self.hass.bus.async_fire("taskmate_bounty_removed", {"bounty_id": bounty.id, "title": bounty.title})
@@ -266,7 +267,7 @@ class BountiesMixin:
         """A parent puts a claimed bounty back on the board."""
         bounty = self._require_bounty(bounty_id)
         if bounty.status != "claimed":
-            raise ValueError("Only a claimed bounty can be released.")
+            raise TaskMateError("bounty_release_not_claimed")
         child_id = bounty.claimed_by
         bounty.clear_claim()
         bounty.status = "open"
@@ -281,16 +282,16 @@ class BountiesMixin:
         """Lock a bounty to ``child_id`` for its claim period."""
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         bounty = self._require_bounty(bounty_id)
         if not bounty.is_eligible(child_id):
-            raise ValueError("This bounty isn't for you.")
+            raise TaskMateError("bounty_not_for_you")
         now = dt_util.now()
         if bounty.status != "open" or (bounty.expires_at is not None and bounty.expires_at <= now):
-            raise ValueError("Someone else got there first — this bounty isn't on the board any more.")
+            raise TaskMateError("bounty_taken")
         current = self.active_bounty_claim(child_id)
         if current is not None:
-            raise ValueError(f"Finish '{current.title}' first — you can only hold one bounty at a time.")
+            raise TaskMateError("bounty_one_at_a_time", title=current.title)
         bounty.status = "claimed"
         bounty.claimed_by = child_id
         bounty.claimed_at = now
@@ -307,7 +308,7 @@ class BountiesMixin:
         """The claimer hands a bounty back to the board."""
         bounty = self._require_bounty(bounty_id)
         if bounty.status != "claimed" or bounty.claimed_by != child_id:
-            raise ValueError("You don't have this bounty claimed.")
+            raise TaskMateError("bounty_not_claimed_by_you")
         bounty.clear_claim()
         bounty.status = "open"
         self.storage.update_bounty(bounty)
@@ -323,13 +324,13 @@ class BountiesMixin:
         """
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         bounty = self._require_bounty(bounty_id)
         if bounty.status != "claimed" or bounty.claimed_by != child_id:
-            raise ValueError("You don't have this bounty claimed.")
+            raise TaskMateError("bounty_not_claimed_by_you")
         now = dt_util.now()
         if bounty.claim_until is not None and bounty.claim_until <= now:
-            raise ValueError("Your claim on this bounty ran out.")
+            raise TaskMateError("bounty_claim_expired")
         if photo_url and not photos.is_taskmate_photo_url(photo_url):
             _LOGGER.warning("Ignoring invalid photo_url for bounty %s (not a TaskMate photo URL)", bounty_id)
             photo_url = ""
@@ -337,7 +338,7 @@ class BountiesMixin:
             _LOGGER.warning("Ignoring photo_url for bounty %s: that photo is already another submission's", bounty_id)
             photo_url = ""
         if bounty.require_photo and not photo_url:
-            raise ValueError("This bounty needs a photo of the finished job.")
+            raise TaskMateError("bounty_photo_required")
 
         completion = ChoreCompletion(
             chore_id=bounty.id,

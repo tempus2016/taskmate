@@ -10,6 +10,9 @@ createIncentiveCard({
   kind: "bonus",
   idKey: "bonus_id",
   i18n: "bonuses",
+  // The card's own "Add …" / "New …" button labels (#1234).
+  addKey: "add_bonus",
+  newKey: "new_bonus",
   attr: "bonuses",
   icon: "mdi:star-circle-outline",
   headerIcon: "mdi:star-circle",

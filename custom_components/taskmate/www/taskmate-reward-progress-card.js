@@ -13,6 +13,7 @@ const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
   ? window.__taskmate_numbers.format(hass, value, opts)
   : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -651,8 +652,8 @@ class TaskMateRewardProgressCard extends LitElement {
             <span class="progress-have">${_ltrRatio(__tmNum(this.hass, have), __tmNum(this.hass, cost))} ${pointsName}</span>
             ${canAfford
               ? html`<span class="progress-need">${this._t('reward_progress.ready_to_claim_emoji')}</span>`
-              : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - have })}</span>`}
-            <span class="progress-pct ${pctCls}">${pct}%</span>
+              : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, cost - have) })}</span>`}
+            <span class="progress-pct ${pctCls}">${__tmPct(this.hass, pct)}</span>
           </div>
         </div>
 
@@ -717,8 +718,8 @@ class TaskMateRewardProgressCard extends LitElement {
               <span class="progress-have">${_ltrRatio(__tmNum(this.hass, totalHave), __tmNum(this.hass, cost))} ${pointsName}</span>
               ${canAfford
                 ? html`<span class="progress-need">${this._t('reward_progress.ready')}</span>`
-                : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - totalHave })}</span>`}
-              <span class="progress-pct ${pctCls}">${pct}%</span>
+                : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, cost - totalHave) })}</span>`}
+              <span class="progress-pct ${pctCls}">${__tmPct(this.hass, pct)}</span>
             </div>
           </div>
 
@@ -851,14 +852,14 @@ class TaskMateRewardProgressCard extends LitElement {
         <div class="bar rp-bar"><i style="width:${pct}%;${pct >= 100 ? 'background:var(--tmd-good)' : ''}"></i></div>
         ${design === "cleanpro"
           ? html`<div class="row rp-stat">
-              <div class="big rp-pct">${pct}%</div>
+              <div class="big rp-pct">${__tmPct(this.hass, pct)}</div>
               <div class="rp-stat-r">
                 <div class="num rp-frac">${_ltrRatio(__tmNum(this.hass, have), __tmNum(this.hass, cost))}</div>
                 <div class="muted rp-need">${this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, remaining) })}</div>
               </div>
             </div>`
           : html`
-            <div class="big rp-pct rp-pct-c">${pct}%</div>
+            <div class="big rp-pct rp-pct-c">${__tmPct(this.hass, pct)}</div>
             <div class="rp-need rp-need-c">${remaining > 0
               ? this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, remaining) })
               : this._t('reward_progress.ready_to_claim')}</div>`}

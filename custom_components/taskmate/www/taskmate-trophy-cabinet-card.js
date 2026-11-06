@@ -322,7 +322,7 @@ class TaskMateTrophyCabinetCard extends LitElement {
             // Streaks count days and chores count chores; the rest are points.
             const value = UNIT_KEYS[rk]
               ? this._t(UNIT_KEYS[rk], { value: rec.value })
-              : `${rec.value} ${pointsName}`;
+              : `${__tmNum(this.hass, Number(rec.value))} ${pointsName}`;
             items.push({
               id: `best:${kid.id}:${rk}`, emoji: BEST_EMOJI[rk],
               name: label, short: value, value,

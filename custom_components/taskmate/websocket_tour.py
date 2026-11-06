@@ -18,6 +18,7 @@ from homeassistant.components import websocket_api
 
 from . import authz
 from .coord_tour import TOUR_MAX_STEP, TOUR_SPEAKABLE
+from .errors import send_translated_error
 from .websocket_auctions import _context, _may_act_for, _signed_in, _unauthorized
 
 WS_TOUR_MARK = "taskmate/tour/mark"
@@ -38,7 +39,7 @@ WS_TOUR_RESET = "taskmate/tour/reset"
 async def ws_tour_mark(hass, connection, msg, coordinator):
     """A child finished (or skipped) their tour."""
     if coordinator.get_child(msg["child_id"]) is None:
-        connection.send_error(msg["id"], "not_found", f"Child {msg['child_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=msg["child_id"])
         return
     if not await _may_act_for(hass, connection, coordinator, msg["child_id"]):
         _unauthorized(connection, msg)
@@ -60,7 +61,7 @@ async def ws_tour_mark(hass, connection, msg, coordinator):
 async def ws_tour_speak(hass, connection, msg, coordinator):
     """Read one tour step aloud for a child."""
     if coordinator.get_child(msg["child_id"]) is None:
-        connection.send_error(msg["id"], "not_found", f"Child {msg['child_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=msg["child_id"])
         return
     if not await _may_act_for(hass, connection, coordinator, msg["child_id"]):
         _unauthorized(connection, msg)
@@ -83,7 +84,7 @@ async def ws_tour_reset(hass, connection, msg, coordinator):
         _unauthorized(connection, msg)
         return
     if coordinator.get_child(msg["child_id"]) is None:
-        connection.send_error(msg["id"], "not_found", f"Child {msg['child_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=msg["child_id"])
         return
     await coordinator.async_tour_reset(msg["child_id"])
     connection.send_result(msg["id"], {"child_id": msg["child_id"]})

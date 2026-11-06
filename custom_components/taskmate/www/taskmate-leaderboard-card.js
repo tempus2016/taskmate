@@ -304,7 +304,7 @@ class TaskMateLeaderboardCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("leaderboard.error.entity_required"));
     this.config = {
       title: "",
       sort_by: "points",      // "points" | "streak" | "weekly" | "career"
@@ -454,7 +454,7 @@ class TaskMateLeaderboardCard extends LitElement {
       <div class="rank-row ${rankClass}">
         ${rankEmoji
           ? html`<div class="rank-badge">${rankEmoji}</div>`
-          : html`<div class="rank-number">${this._t('leaderboard.ordinal_' + rankNum)}</div>`}
+          : html`<div class="rank-number">${rankNum <= 5 ? this._t('leaderboard.ordinal_' + rankNum) : `#${rankNum}`}</div>`}
 
         <div class="child-avatar" style="background: linear-gradient(135deg, ${avatarColour} 0%, ${avatarColour}cc 100%);">
           ${this._avatarGlyph(child)}
@@ -472,7 +472,7 @@ class TaskMateLeaderboardCard extends LitElement {
             ${this.config.show_weekly !== false && sortBy !== "weekly" ? html`
               <span class="stat-chip">
                 <ha-icon icon="mdi:calendar-week" style="color: #3498db;"></ha-icon>
-                ${weeklyPoints[child.id] || 0} ${this._t('common.this_week')}
+                ${__tmNum(this.hass, weeklyPoints[child.id] || 0)} ${this._t('common.this_week')}
               </span>
             ` : ''}
             ${sortBy !== "points" ? html`
@@ -552,7 +552,7 @@ class TaskMateLeaderboardCard extends LitElement {
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="${pointsIcon}" style="color:#f1c40f;"></ha-icon>
             <span class="pb-label">${this._t('leaderboard.total_points_earned')}</span>
-            <span class="pb-value">${child.total_points_earned || child.points || 0}</span>
+            <span class="pb-value">${__tmNum(this.hass, child.total_points_earned || child.points || 0)}</span>
           </div>
           <div class="personal-best-row">
             <ha-icon class="pb-icon" icon="mdi:trophy-variant" style="color:#27ae60;"></ha-icon>
@@ -634,7 +634,7 @@ class TaskMateLeaderboardCard extends LitElement {
     const weeklyPoints = this._buildWeeklyPoints(attrs, tz);
     const sortBy = this.config.sort_by || "points";
 
-    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week'), career: this._t('leaderboard.sort_career_score') };
+    const sortLabels = { points: this._t('leaderboard.sort_all_time_points'), streak: this._t('leaderboard.sort_current_streak'), weekly: this._t('leaderboard.sort_this_week'), career: this._t('leaderboard.sort_career_score'), season: this._t('leaderboard.sort_this_month') };
     const periodLabel = sortLabels[sortBy] || sortLabels.points;
 
     const header = this._designHeader(hd, periodLabel);
@@ -650,12 +650,14 @@ class TaskMateLeaderboardCard extends LitElement {
       if (sortBy === "streak") return c.current_streak || 0;
       if (sortBy === "weekly") return weeklyPoints[c.id] || 0;
       if (sortBy === "career") return c.career_score || 0;
+      if (sortBy === "season") return c.season_points || 0;
       return c.points || 0;
     };
     const scoreUnit =
       sortBy === "streak" ? this._t('common.day_streak') :
       sortBy === "weekly" ? this._t('common.this_week') :
       sortBy === "career" ? this._t('leaderboard.career_score') :
+      sortBy === "season" ? this._t('leaderboard.sort_this_month') :
       pointsName;
 
     const sorted = [...children].sort((a, b) => scoreOf(b) - scoreOf(a));

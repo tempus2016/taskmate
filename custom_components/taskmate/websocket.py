@@ -117,6 +117,7 @@ from .coord_shopping_jobs import SHOPPING_JOB_MAX_POINTS, SHOPPING_JOB_MODES
 from .coord_sibling_checks import SIBLING_CHECK_MAX_BONUS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
+from .errors import TaskMateError, error_translation, send_translated_error
 from .models import (
     CHORE_TIME_NAME_MAX_LENGTH,
     MAX_CHORE_TIME_POINTS,
@@ -372,21 +373,21 @@ def _admin_only(handler):
     @wraps(handler)
     async def wrapper(hass, connection, msg):
         if not connection.user.is_admin:
-            connection.send_error(msg["id"], websocket_api.const.ERR_UNAUTHORIZED, "Admin only")
+            send_translated_error(connection, msg["id"], websocket_api.const.ERR_UNAUTHORIZED, "admin_only")
             return
         coordinator = _get_coordinator(hass)
         if not coordinator:
-            connection.send_error(msg["id"], "no_coordinator", "TaskMate not initialised")
+            send_translated_error(connection, msg["id"], "no_coordinator", "taskmate_not_initialised")
             return
         try:
             await handler(hass, connection, msg, coordinator)
         except vol.Invalid as err:
-            connection.send_error(msg["id"], "invalid_args", str(err))
+            connection.send_error(msg["id"], "invalid_args", str(err), **error_translation(err))
         except ValueError as err:
-            connection.send_error(msg["id"], "invalid", str(err))
+            connection.send_error(msg["id"], "invalid", str(err), **error_translation(err))
         except Exception as err:  # noqa: BLE001
             _LOGGER.exception("WS handler %s failed", msg.get("type"))
-            connection.send_error(msg["id"], "handler_failed", str(err))
+            connection.send_error(msg["id"], "handler_failed", str(err), **error_translation(err))
         else:
             # Record successful mutating commands in the admin audit log.
             mtype = msg.get("type", "")
@@ -645,7 +646,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
     try:
         birthday = normalize_birthday(msg.get("birthday", ""))
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid_format", str(err))
+        connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
         return
     child = await coordinator.async_add_child(
         name=msg["name"].strip(),
@@ -693,7 +694,7 @@ async def _ws_add_child(hass, connection, msg, coordinator):
 async def _ws_update_child(hass, connection, msg, coordinator):
     existing = coordinator.storage.get_child(msg["child_id"])
     if not existing:
-        connection.send_error(msg["id"], "not_found", f"Child {msg['child_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=msg["child_id"])
         return
     # Checked up front, and here as well as in the schema, so a refused value
     # leaves the stored child untouched whichever door the message came through.
@@ -718,7 +719,7 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         try:
             existing.birthday = normalize_birthday(msg["birthday"])
         except ValueError as err:
-            connection.send_error(msg["id"], "invalid_format", str(err))
+            connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
             return
     if "presence_entity" in msg:
         existing.presence_entity = msg["presence_entity"]
@@ -740,7 +741,7 @@ async def _ws_update_child(hass, connection, msg, coordinator):
                 _opt_str(msg.get("guest_expires_on", existing.guest_expires_on)),
             )
         except ValueError as err:
-            connection.send_error(msg["id"], "invalid_format", str(err))
+            connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
             return
         existing = coordinator.storage.get_child(msg["child_id"])
     await coordinator.async_update_child(existing)
@@ -757,7 +758,7 @@ async def _ws_update_child(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_remove_child(hass, connection, msg, coordinator):
     if not coordinator.storage.get_child(msg["child_id"]):
-        connection.send_error(msg["id"], "not_found", f"Child {msg['child_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=msg["child_id"])
         return
     await coordinator.async_remove_child(msg["child_id"])
     connection.send_result(msg["id"], {"id": msg["child_id"]})
@@ -951,7 +952,7 @@ def _one_off_date(msg: dict, existing=None) -> str | None:
     if not wanted:
         return stored or today.isoformat()
     if wanted != stored and date.fromisoformat(wanted) < today:
-        raise ValueError("A one-off chore can't be set for a day that has already gone")
+        raise TaskMateError("chore_one_off_past_day")
     return wanted
 
 
@@ -1090,7 +1091,7 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         team_points_mode=msg.get("team_points_mode", "each"),
     )
     if team_error:
-        raise ValueError(team_error)
+        raise team_error if isinstance(team_error, Exception) else ValueError(team_error)
     # Same for set times: refuse a bad set before an ordinary chore exists.
     validate_chore_times(
         msg.get("times"),
@@ -1149,7 +1150,7 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
 async def _ws_update_chore(hass, connection, msg, coordinator):
     existing = coordinator.storage.get_chore(msg["chore_id"])
     if not existing:
-        connection.send_error(msg["id"], "not_found", f"Chore {msg['chore_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "chore_not_found", chore_id=msg["chore_id"])
         return
     # Set times are checked against the chore as it will be, before anything
     # is written onto the stored record, so a refused edit changes nothing.
@@ -1213,7 +1214,7 @@ async def _ws_update_chore(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_remove_chore(hass, connection, msg, coordinator):
     if not coordinator.storage.get_chore(msg["chore_id"]):
-        connection.send_error(msg["id"], "not_found", f"Chore {msg['chore_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "chore_not_found", chore_id=msg["chore_id"])
         return
     await coordinator.async_remove_chore(msg["chore_id"])
     connection.send_result(msg["id"], {"id": msg["chore_id"]})
@@ -1284,7 +1285,7 @@ async def _ws_templates_import(hass, connection, msg, coordinator):
     try:
         result = await coordinator.async_import_pack(msg["pack"])
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid_format", str(err))
+        connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], result)
 
@@ -1301,26 +1302,43 @@ async def _ws_templates_import(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_print_chart(hass, connection, msg, coordinator):
     from datetime import date as _date
+    from datetime import timedelta as _timedelta
 
     from homeassistant.util import dt as dt_util
 
-    from . import printable
+    from . import notify_strings, printable
 
     raw = msg.get("week_start", "")
     try:
         anchor = _date.fromisoformat(raw) if raw else dt_util.as_local(dt_util.now()).date()
     except (TypeError, ValueError):
-        connection.send_error(msg["id"], "invalid_format", "week_start must be an ISO date")
+        send_translated_error(connection, msg["id"], "invalid_format", "print_chart_bad_week_start")
         return
 
     data = coordinator.storage.data
+    start = printable.week_start(anchor)
+    end = start + _timedelta(days=6)
+    points_name = coordinator.storage.get_points_name()
+    # The page is in HA's language, like the push notifications.
+    await notify_strings.async_load(hass)
+
+    def _day_month(day) -> str:
+        return f"{day.day} {notify_strings.text(hass, f'month_short_{day.month}')}"
+
     html = printable.build_chart(
         children=list(data.get("children", [])),
         chores=list(data.get("chores", [])),
-        start=printable.week_start(anchor),
+        start=start,
         orientation=msg.get("orientation", "portrait"),
         title=msg.get("title") or "This week",
-        points_name=coordinator.storage.get_points_name(),
+        points_name=points_name,
+        day_names=[notify_strings.text(hass, f"weekday_short_{i}") for i in range(1, 8)],
+        week_label=notify_strings.render(
+            hass, "period_range", {"start": _day_month(start), "end": f"{_day_month(end)} {end.year}"}
+        ),
+        empty_text=notify_strings.text(hass, "print_chart_empty"),
+        footer_text=notify_strings.render(hass, "print_chart_footer", {"points_name": points_name}),
+        lang=notify_strings._language(hass),
     )
     connection.send_result(msg["id"], {"html": html})
 
@@ -1405,7 +1423,7 @@ async def _ws_scheduled_add(hass, connection, msg, coordinator):
             note=msg.get("note", ""),
         )
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid_format", str(err))
+        connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"id": change.id})
 
@@ -1422,7 +1440,7 @@ async def _ws_scheduled_remove(hass, connection, msg, coordinator):
     try:
         await coordinator.async_remove_scheduled_change(msg["change_id"])
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"success": True})
 
@@ -1521,7 +1539,7 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
             msg.get("unlock_minutes", 0),
         )
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid_format", str(err))
+        connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
         return
 
     # coordinator.async_add_reward accepts a subset; build a Reward dataclass
@@ -1569,7 +1587,7 @@ async def _ws_add_reward(hass, connection, msg, coordinator):
 async def _ws_update_reward(hass, connection, msg, coordinator):
     existing = coordinator.storage.get_reward(msg["reward_id"])
     if not existing:
-        connection.send_error(msg["id"], "not_found", f"Reward {msg['reward_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "reward_not_found", reward_id=msg["reward_id"])
         return
     if "unlock_entity" in msg or "unlock_minutes" in msg:
         try:
@@ -1578,7 +1596,7 @@ async def _ws_update_reward(hass, connection, msg, coordinator):
                 msg.get("unlock_minutes", existing.unlock_minutes),
             )
         except ValueError as err:
-            connection.send_error(msg["id"], "invalid_format", str(err))
+            connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
             return
     for field in _REWARD_FIELDS:
         if field in msg:
@@ -1606,7 +1624,7 @@ async def _ws_update_reward(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_remove_reward(hass, connection, msg, coordinator):
     if not coordinator.storage.get_reward(msg["reward_id"]):
-        connection.send_error(msg["id"], "not_found", f"Reward {msg['reward_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "reward_not_found", reward_id=msg["reward_id"])
         return
     await coordinator.async_remove_reward(msg["reward_id"])
     connection.send_result(msg["id"], {"id": msg["reward_id"]})
@@ -1669,7 +1687,7 @@ async def _ws_update_quest(hass, connection, msg, coordinator):
     try:
         await coordinator.async_update_quest(msg["quest_id"], **fields)
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"id": msg["quest_id"]})
 
@@ -1686,7 +1704,7 @@ async def _ws_delete_quest(hass, connection, msg, coordinator):
     try:
         await coordinator.async_delete_quest(msg["quest_id"])
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"id": msg["quest_id"]})
 
@@ -1731,7 +1749,7 @@ async def _ws_set_child_avatar(hass, connection, msg, coordinator):
     try:
         await coordinator.async_set_avatar(msg["child_id"], msg["icon"], enforce_unlock=False)
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid", str(err))
+        connection.send_error(msg["id"], "invalid", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"id": msg["child_id"]})
 
@@ -1873,7 +1891,7 @@ async def _ws_update_challenge(hass, connection, msg, coordinator):
     try:
         await coordinator.async_update_challenge(msg["challenge_id"], **fields)
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"id": msg["challenge_id"]})
 
@@ -1890,7 +1908,7 @@ async def _ws_delete_challenge(hass, connection, msg, coordinator):
     try:
         await coordinator.async_delete_challenge(msg["challenge_id"])
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"id": msg["challenge_id"]})
 
@@ -1957,7 +1975,7 @@ async def _ws_add_penalty(hass, connection, msg, coordinator):
 async def _ws_update_penalty(hass, connection, msg, coordinator):
     existing = coordinator.storage.get_penalty(msg["penalty_id"])
     if not existing:
-        connection.send_error(msg["id"], "not_found", f"Penalty {msg['penalty_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "penalty_not_found", penalty_id=msg["penalty_id"])
         return
     for k in ("name", "points", "description", "icon", "assigned_to", *_REDEMPTION_FIELDS):
         if k in msg:
@@ -1981,7 +1999,7 @@ async def _ws_update_penalty(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_remove_penalty(hass, connection, msg, coordinator):
     if not coordinator.storage.get_penalty(msg["penalty_id"]):
-        connection.send_error(msg["id"], "not_found", f"Penalty {msg['penalty_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "penalty_not_found", penalty_id=msg["penalty_id"])
         return
     await coordinator.async_remove_penalty(msg["penalty_id"])
     connection.send_result(msg["id"], {"id": msg["penalty_id"]})
@@ -2048,7 +2066,7 @@ async def _ws_add_bonus(hass, connection, msg, coordinator):
 async def _ws_update_bonus(hass, connection, msg, coordinator):
     existing = coordinator.storage.get_bonus(msg["bonus_id"])
     if not existing:
-        connection.send_error(msg["id"], "not_found", f"Bonus {msg['bonus_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "bonus_not_found", bonus_id=msg["bonus_id"])
         return
     for k in ("name", "points", "description", "icon", "assigned_to"):
         if k in msg:
@@ -2072,7 +2090,7 @@ async def _ws_update_bonus(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_remove_bonus(hass, connection, msg, coordinator):
     if not coordinator.storage.get_bonus(msg["bonus_id"]):
-        connection.send_error(msg["id"], "not_found", f"Bonus {msg['bonus_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "bonus_not_found", bonus_id=msg["bonus_id"])
         return
     await coordinator.async_remove_bonus(msg["bonus_id"])
     connection.send_result(msg["id"], {"id": msg["bonus_id"]})
@@ -2147,7 +2165,7 @@ async def _ws_update_task_group(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_remove_task_group(hass, connection, msg, coordinator):
     if not coordinator.storage.get_task_group(msg["group_id"]):
-        connection.send_error(msg["id"], "not_found", f"Group {msg['group_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "group_not_found", group_id=msg["group_id"])
         return
     await coordinator.async_remove_task_group(msg["group_id"])
     connection.send_result(msg["id"], {"id": msg["group_id"]})
@@ -2176,7 +2194,7 @@ async def _ws_add_custom_sound(hass, connection, msg, coordinator):
     try:
         sound = await coordinator.async_add_custom_sound(msg["file"], msg["name"])
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid_sound", str(err))
+        connection.send_error(msg["id"], "invalid_sound", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"file": sound.file, "name": sound.name})
 
@@ -2194,7 +2212,7 @@ async def _ws_rename_custom_sound(hass, connection, msg, coordinator):
     try:
         sound = await coordinator.async_rename_custom_sound(msg["file"], msg["name"])
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"file": sound.file, "name": sound.name})
 
@@ -2211,7 +2229,7 @@ async def _ws_remove_custom_sound(hass, connection, msg, coordinator):
     try:
         reset = await coordinator.async_remove_custom_sound(msg["file"])
     except ValueError as err:
-        connection.send_error(msg["id"], "not_found", str(err))
+        connection.send_error(msg["id"], "not_found", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], {"file": msg["file"], "chores_reset": reset})
 
@@ -2391,18 +2409,19 @@ def _slugify_period_id(label: str, taken: set[str]) -> str:
     return slug
 
 
-def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, str | None]:
+def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, TaskMateError | None]:
     """Normalize and validate a time_periods payload.
 
-    Returns (periods, None) on success or (None, error_message) on failure.
+    Returns (periods, None) on success or (None, error) on failure, the error
+    a translated ``TaskMateError`` (``str(error)`` is the English message).
     Enforces: HH:MM times, start < end, non-empty labels for custom periods,
     unique ids, non-overlapping when sorted by start, and block-on-delete for
     periods still referenced by chores.
     """
     if not isinstance(raw, list) or not raw:
-        return None, "time_periods must be a non-empty list"
+        return None, TaskMateError("time_periods_empty")
     if len(raw) > MAX_TIME_PERIODS:
-        return None, f"too many periods (max {MAX_TIME_PERIODS})"
+        return None, TaskMateError("time_periods_too_many", max=MAX_TIME_PERIODS)
 
     builtin_ids = {p["id"] for p in DEFAULT_TIME_PERIODS}
     time_re = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -2411,21 +2430,21 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
 
     for entry in raw:
         if not isinstance(entry, dict):
-            return None, "each period must be an object"
+            return None, TaskMateError("time_periods_not_object")
         label = str(entry.get("label") or "").strip()[:60]
         pid = str(entry.get("id") or "").strip()
         if pid and pid != "anytime" and pid in ids:
-            return None, f"duplicate period id: {pid}"
+            return None, TaskMateError("time_periods_duplicate_id", period_id=pid)
         if not pid or pid == "anytime":
             pid = _slugify_period_id(label, ids)
         if not label and pid not in builtin_ids:
-            return None, "every custom period needs a name"
+            return None, TaskMateError("time_periods_needs_name")
         start = str(entry.get("start") or "")
         end = str(entry.get("end") or "")
         if not time_re.match(start) or not time_re.match(end):
-            return None, f"invalid time for period '{label or pid}' (use HH:MM)"
+            return None, TaskMateError("time_periods_invalid_time", name=label or pid)
         if start >= end:
-            return None, f"period '{label or pid}' must start before it ends"
+            return None, TaskMateError("time_periods_start_after_end", name=label or pid)
         ids.add(pid)
         periods.append(
             {
@@ -2440,8 +2459,10 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
     periods.sort(key=lambda p: p["start"])
     for prev, cur in zip(periods, periods[1:], strict=False):
         if cur["start"] < prev["end"]:
-            return None, (
-                f"'{cur['label'] or cur['id']}' overlaps '{prev['label'] or prev['id']}' — periods cannot overlap"
+            return None, TaskMateError(
+                "time_periods_overlap",
+                name=cur["label"] or cur["id"],
+                other=prev["label"] or prev["id"],
             )
 
     removed = {p["id"] for p in coordinator.get_time_periods()} - {p["id"] for p in periods}
@@ -2450,10 +2471,9 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
             {chore.name or chore.id for chore in coordinator.storage.get_chores() if chore.time_category in removed}
         )
         if in_use:
-            return None, (
-                "cannot delete a period still used by chores: "
-                + ", ".join(in_use[:10])
-                + ("…" if len(in_use) > 10 else "")
+            return None, TaskMateError(
+                "time_periods_in_use",
+                chores=", ".join(in_use[:10]) + ("…" if len(in_use) > 10 else ""),
             )
 
     return periods, None
@@ -2462,28 +2482,29 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, s
 MAX_VACATION_PERIODS: Final = 50
 
 
-def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, str | None]:
+def _validate_vacation_periods(raw: list) -> tuple[list[dict] | None, TaskMateError | None]:
     """Normalise and validate a vacation_periods payload.
 
-    Returns (periods, None) on success or (None, error_message) on failure.
-    An empty list is valid (clears all vacations). Each entry needs valid ISO
-    start/end dates; start/end are swapped if reversed; ids are generated when
-    missing. Returns periods sorted by start.
+    Returns (periods, None) on success or (None, error) on failure, the error
+    a translated ``TaskMateError``. An empty list is valid (clears all
+    vacations). Each entry needs valid ISO start/end dates; start/end are
+    swapped if reversed; ids are generated when missing. Returns periods
+    sorted by start.
     """
     if not isinstance(raw, list):
-        return None, "vacation_periods must be a list"
+        return None, TaskMateError("vacation_periods_not_list")
     if len(raw) > MAX_VACATION_PERIODS:
-        return None, f"too many vacation periods (max {MAX_VACATION_PERIODS})"
+        return None, TaskMateError("vacation_periods_too_many", max=MAX_VACATION_PERIODS)
     periods: list[dict] = []
     taken: set[str] = set()
     for entry in raw:
         if not isinstance(entry, dict):
-            return None, "each vacation period must be an object"
+            return None, TaskMateError("vacation_periods_not_object")
         try:
             start = date.fromisoformat(str(entry.get("start")))
             end = date.fromisoformat(str(entry.get("end")))
         except (TypeError, ValueError):
-            return None, "each vacation period needs valid start and end dates (YYYY-MM-DD)"
+            return None, TaskMateError("vacation_periods_bad_dates")
         if end < start:
             start, end = end, start
         pid = str(entry.get("id") or "").strip()
@@ -2783,14 +2804,14 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
     if "time_periods" in msg:
         periods, err = _validate_time_periods(msg["time_periods"], coordinator)
         if err:
-            connection.send_error(msg["id"], "invalid_time_periods", err)
+            connection.send_error(msg["id"], "invalid_time_periods", str(err), **error_translation(err))
             return
         storage.set_setting("time_periods", periods)
         changed.append("time_periods")
     if "vacation_periods" in msg:
         vacations, verr = _validate_vacation_periods(msg["vacation_periods"])
         if verr:
-            connection.send_error(msg["id"], "invalid_vacation_periods", verr)
+            connection.send_error(msg["id"], "invalid_vacation_periods", str(verr), **error_translation(verr))
             return
         storage.set_setting("vacation_periods", vacations)
         changed.append("vacation_periods")
@@ -3038,7 +3059,7 @@ async def _ws_set_global_chore_order(hass, connection, msg, coordinator):
 async def _ws_add_chores_bulk(hass, connection, msg, coordinator):
     chore_names = [n.strip() for n in msg.get("chore_names", []) if n and n.strip()]
     if not chore_names:
-        connection.send_error(msg["id"], "no_names", "At least one chore name is required")
+        send_translated_error(connection, msg["id"], "no_names", "chores_bulk_no_names")
         return
     chores = await coordinator.async_add_chores_bulk(
         chore_names=chore_names,
@@ -3077,7 +3098,7 @@ async def _ws_templates_list(hass, connection, msg, coordinator):
 async def _ws_templates_get(hass, connection, msg, coordinator):
     tpl = coordinator.get_template(msg["template_id"])
     if tpl is None:
-        connection.send_error(msg["id"], "not_found", f"Template {msg['template_id']} not found")
+        send_translated_error(connection, msg["id"], "not_found", "template_not_found", template_id=msg["template_id"])
         return
     connection.send_result(msg["id"], tpl)
 
@@ -3290,7 +3311,7 @@ async def ws_notif_set_child_notify(hass, connection, msg, coordinator):
     c = coordinator
     child = c.storage.get_child(msg["child_id"])
     if child is None:
-        connection.send_error(msg["id"], "not_found", "Child not found")
+        send_translated_error(connection, msg["id"], "not_found", "notif_child_not_found")
         return
     child.notify_service = msg["notify_service"] or None
     c.storage.update_child(child)
@@ -3313,7 +3334,7 @@ async def ws_notif_set_child_quiet(hass, connection, msg, coordinator):
     c = coordinator
     child = c.storage.get_child(msg["child_id"])
     if child is None:
-        connection.send_error(msg["id"], "not_found", "Child not found")
+        send_translated_error(connection, msg["id"], "not_found", "notif_child_not_found")
         return
     child.quiet_hours_start = msg["quiet_hours_start"]
     child.quiet_hours_end = msg["quiet_hours_end"]
@@ -3342,7 +3363,7 @@ async def ws_notif_upsert_parent(hass, connection, msg, coordinator):
     if p_id:
         existing = next((p for p in c.storage.get_parent_recipients() if p.id == p_id), None)
         if existing is None:
-            connection.send_error(msg["id"], "not_found", "Parent not found")
+            send_translated_error(connection, msg["id"], "not_found", "notif_parent_not_found")
             return
         existing.name = msg["name"]
         existing.notify_service = msg["notify_service"]
@@ -3649,7 +3670,7 @@ async def _ws_bulk_edit_chores(hass, connection, msg, coordinator):
     try:
         result = await coordinator.async_bulk_edit_chores(msg["chore_ids"], dict(msg["changes"]))
     except ValueError as err:
-        connection.send_error(msg["id"], "invalid_format", str(err))
+        connection.send_error(msg["id"], "invalid_format", str(err), **error_translation(err))
         return
     connection.send_result(msg["id"], result)
 

@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
+from .entity_names import TranslatedNameMixin
 
 
 async def async_setup_entry(
@@ -29,7 +30,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class TaskMateBaseBinarySensor(CoordinatorEntity, BinarySensorEntity):
+class TaskMateBaseBinarySensor(TranslatedNameMixin, CoordinatorEntity, BinarySensorEntity):
     """Base class for TaskMate binary sensors."""
 
     def __init__(
@@ -58,7 +59,7 @@ class HasPendingApprovalsBinarySensor(TaskMateBaseBinarySensor):
         """Initialize the binary sensor."""
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_has_pending_approvals"
-        self._attr_name = "Has Pending Approvals"
+        self._set_translated_name("binary_sensor", "has_pending_approvals")
 
     @property
     def is_on(self) -> bool:

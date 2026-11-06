@@ -200,6 +200,7 @@ class TaskMateBadgesCard extends LitElement {
       }
 
       /* ── Grid ── */
+      .badges-empty { padding: 24px 16px; text-align: center; color: var(--secondary-text-color); }
       .badge-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -473,7 +474,7 @@ class TaskMateBadgesCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("taskmate-badges-card: 'entity' is required (e.g. sensor.taskmate_badges_mia)");
+      throw new Error(this._t("badges.error.entity_required"));
     }
     this.config = { title: null, ...config };
     // Extract child_id from entity name for event matching:
@@ -540,13 +541,13 @@ class TaskMateBadgesCard extends LitElement {
     const attrs = entity.attributes || {};
     const isPreview = !attrs.earned && !attrs.available;
     const earned = isPreview
-      ? [{ id: "s1", name: "Early Bird", icon: "mdi:weather-sunny", tier: "gold", point_bonus: 10, earned_at: new Date().toISOString() },
-         { id: "s2", name: "Streak Star", icon: "mdi:fire", tier: "silver", point_bonus: 5, earned_at: new Date().toISOString() }]
+      ? [{ id: "builtin.first_chore", name: "First Chore", icon: "mdi:weather-sunny", tier: "gold", point_bonus: 10, earned_at: new Date().toISOString() },
+         { id: "builtin.7_day_streak", name: "7-Day Streak", icon: "mdi:fire", tier: "silver", point_bonus: 5, earned_at: new Date().toISOString() }]
       : (attrs.earned || []);
     const available = isPreview
-      ? [{ id: "s3", name: "Helping Hand", icon: "mdi:hand-heart", tier: "bronze", point_bonus: 5, progress_pct: 60, progress_label: "3 / 5" }]
+      ? [{ id: "builtin.10_chores", name: "10 Chores Completed", icon: "mdi:hand-heart", tier: "bronze", point_bonus: 5, progress_pct: 60, progress_label: "6 / 10" }]
       : (attrs.available || []);
-    const childName = isPreview ? "Child" : (attrs.child_name || attrs.name || "");
+    const childName = isPreview ? this._t("badges.preview_child") : (attrs.child_name || attrs.name || "");
     const childAvatar = attrs.child_avatar || "mdi:account-circle";
     const totalBadges = attrs.total_badges || (earned.length + available.length);
 
@@ -592,10 +593,12 @@ class TaskMateBadgesCard extends LitElement {
           </select>
         </div>
 
-        <div class="badge-grid">
-          ${filteredEarned.map(b => this._renderEarned(b))}
-          ${filteredLocked.map(b => this._renderLocked(b))}
-        </div>
+        ${(filteredEarned.length + filteredLocked.length) === 0
+          ? html`<div class="badges-empty">${this._t(filter === "all" ? "badges.empty_none" : "badges.empty_tier", { tier: this._t(`badge.tier_${filter}`) })}</div>`
+          : html`<div class="badge-grid">
+              ${filteredEarned.map(b => this._renderEarned(b))}
+              ${filteredLocked.map(b => this._renderLocked(b))}
+            </div>`}
       </ha-card>
     `;
   }
@@ -714,7 +717,7 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
       <div class="tmd-bd">
         ${this._designFilters(d.filter)}
         ${(d.filteredEarned.length + d.filteredLocked.length) === 0
-          ? html`<div class="tmd-empty">${_ltrNums(this._t("badges.count_label", { earned: 0, total: __tmNum(this.hass, d.totalBadges) }))}</div>`
+          ? html`<div class="tmd-empty">${this._t(d.filter === "all" ? "badges.empty_none" : "badges.empty_tier", { tier: this._t(`badge.tier_${d.filter}`) })}</div>`
           : html`<div class="bd-grid">
               ${d.filteredEarned.map((b) => this._designEarnedTile(b))}
               ${d.filteredLocked.map((b) => this._designLockedTile(b))}

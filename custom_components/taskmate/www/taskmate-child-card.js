@@ -49,6 +49,7 @@ const findLitBase = () => {
   return null;
 };
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = findLitBase();
 // The attr resolver defines window.__taskmate_badge_id, but on a cold load a
 // card can render before that module has run; read the id directly then.
@@ -171,6 +172,21 @@ class TaskMateChildCard extends LitElement {
     }
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
+  /** A refused upload as an error: the server's JSON body (translation_key, message) when it sent one. */
+  async _uploadError(resp) {
+    let body = null;
+    try { body = await resp.json(); } catch (_e) { /* not JSON */ }
+    const err = new Error((body && body.message) || `upload failed (${resp.status})`);
+    return body && typeof body === "object" ? Object.assign(err, body) : err;
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -252,16 +268,37 @@ class TaskMateChildCard extends LitElement {
       : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`;
   }
 
+  // The server words an unlock requirement in English ("Level 5", "120 earned",
+  // "7-day streak"; coord_avatars.py); say it in the child's language, as the
+  // kiosk does.
+  _avatarReq(req, opt) {
+    // Newer backends send the rule as data; older ones only the English text.
+    const t = opt && opt.unlock_type, v = opt && Number(opt.unlock_value);
+    if (t && Number.isFinite(v)) {
+      if (t === "level") return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, v) });
+      if (t === "points") return this._t("kiosk.avatar_req_points", { value: __tmNum(this.hass, v), pointsName: this._pointsNameFor() });
+      if (t === "streak") return this._t(v === 1 ? "kiosk.avatar_req_streak_one" : "kiosk.avatar_req_streak", { value: __tmNum(this.hass, v) });
+    }
+    const s = String(req || "");
+    let m = /^Level (\d+)$/.exec(s);
+    if (m) return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, Number(m[1])) });
+    m = /^(\d+) earned$/.exec(s);
+    if (m) return this._t("kiosk.avatar_req_points", { value: __tmNum(this.hass, Number(m[1])), pointsName: this._pointsNameFor() });
+    m = /^(\d+)-day streak$/.exec(s);
+    if (m) return this._t(Number(m[1]) === 1 ? "kiosk.avatar_req_streak_one" : "kiosk.avatar_req_streak", { value: __tmNum(this.hass, Number(m[1])) });
+    return s;
+  }
+
   _renderAvatarPicker(child, options) {
     return html`
       <div class="avatar-picker">
         ${options.map(o => html`
           <button class="avatar-opt ${o.unlocked ? '' : 'locked'} ${o.icon === child.avatar ? 'current' : ''}"
                   ?disabled=${!o.unlocked}
-                  title="${o.unlocked ? (o.label || '') : (this._t('child.avatar_locked') + (o.requirement ? ' — ' + o.requirement : ''))}"
+                  title="${o.unlocked ? (window.__taskmate_avatar_label ? window.__taskmate_avatar_label(this.hass, o) : (o.label || '')) : (o.requirement ? this._t('kiosk.avatar_locked_req', { requirement: this._avatarReq(o.requirement, o) }) : this._t('child.avatar_locked'))}"
                   @click=${o.unlocked ? () => this._chooseAvatar(child, o.icon) : null}>
             <ha-icon icon="${o.unlocked ? o.icon : 'mdi:lock'}"></ha-icon>
-            ${o.label ? html`<span>${o.label}</span>` : ''}
+            ${o.label ? html`<span>${window.__taskmate_avatar_label ? window.__taskmate_avatar_label(this.hass, o) : o.label}</span>` : ''}
           </button>
         `)}
       </div>
@@ -2560,10 +2597,10 @@ class TaskMateChildCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("Please define an entity");
+      throw new Error(this._t("child.error.entity_required"));
     }
     if (!config.child_id) {
-      throw new Error("Please define a child_id");
+      throw new Error(this._t("child.error.child_id_required"));
     }
     // An explicit header_color beats the child's own colour; the default
     // merged in below must not count as one.
@@ -2719,7 +2756,7 @@ class TaskMateChildCard extends LitElement {
             <div class="child-name-container">
               <div class="child-name">${child.name}</div>
               ${child.level ? html`
-                <div class="child-level" title="${_ltrNums(`${child.level_progress || 0} / ${child.level_target || 100}`)} XP">
+                <div class="child-level" title="${_ltrNums(`${__tmNum(this.hass, child.level_progress || 0)} / ${__tmNum(this.hass, child.level_target || 100)}`)} ${this._t("common.xp")}">
                   <span class="level-badge">${this._t('child.level_label', { level: child.level })}</span>
                   <div class="level-xp-track">
                     <div class="level-xp-fill" style="width: ${Math.max(0, Math.min(100, Math.round(((child.level_progress || 0) / (child.level_target || 100)) * 100)))}%"></div>
@@ -2926,7 +2963,7 @@ class TaskMateChildCard extends LitElement {
     const c = best.badge.closest_criterion;
     // Older backends (and criteria-free, manual-award badges) have no
     // closest_criterion — fall back to the percentage.
-    best.label = c && c.target ? _ltrNums(`${__tmNum(this.hass, c.current)} / ${__tmNum(this.hass, c.target)}`) : `${best.pct}%`;
+    best.label = c && c.target ? _ltrNums(`${__tmNum(this.hass, c.current)} / ${__tmNum(this.hass, c.target)}`) : __tmPct(this.hass, best.pct);
     best.name = _ltrNums(this._badgeName(best.badge));
     return best;
   }
@@ -3536,7 +3573,7 @@ class TaskMateChildCard extends LitElement {
             <div class="q-name">${r.chore.name}</div>
             ${r.done
               ? html`<div class="num q-cleared">${this._t("child.console_cleared")}</div>`
-              : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} XP</div>`}
+              : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} ${this._t("common.xp")}</div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
@@ -4532,7 +4569,7 @@ class TaskMateChildCard extends LitElement {
       // "No spins left" / "Nothing left to spin for" arrive here as
       // ServiceValidationError — show them rather than failing silently.
       this.dispatchEvent(new CustomEvent('hass-notification', {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
     } finally {
       this._spinning = null;
@@ -4809,7 +4846,7 @@ class TaskMateChildCard extends LitElement {
             ? this._t('child.recurrence_locked')
           : setTimeLocked
             ? (chore._setTimeEntry && chore._setTimeEntry.opens
-                ? this._t('child.set_time_opens', { time: chore._setTimeEntry.opens })
+                ? this._t('child.set_time_opens', { time: __tmClock(this.hass, chore._setTimeEntry.opens) })
                 : '')
           : isCompletedForToday
             ? this._t('child.click_to_undo')
@@ -5045,7 +5082,7 @@ class TaskMateChildCard extends LitElement {
         const sound = chore.completion_sound || this.config.default_sound || 'coin';
         this._playSound(sound);
         this._celebrating = chore.id;
-        this._launchConfetti();
+        this._spawnConfetti(child.celebration_style);
         setTimeout(() => { this._celebrating = null; this._celebrationPoints = null; this.requestUpdate(); }, 2000);
       }).catch(() => {
         this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
@@ -5279,7 +5316,7 @@ class TaskMateChildCard extends LitElement {
       console.error("Failed to undo bonus sub-task completion:", error);
       const message = this._isUnauthorized(error)
         ? this._t("child.undo_not_allowed")
-        : this._t("child.error_undo", { message: error?.message || "" });
+        : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [bonusKey]: false };
@@ -5516,7 +5553,7 @@ class TaskMateChildCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('child.error_title'),
-          message: this._t('child.error_complete', { message: error.message }),
+          message: this._t('child.error_complete', { message: this._errText(error) }),
           notification_id: `taskmate_error_${chore.id}`,
         });
       }
@@ -5629,7 +5666,7 @@ class TaskMateChildCard extends LitElement {
         await this.hass.auth.refreshAccessToken();
         resp = await postPhoto();
       }
-      if (!resp.ok) throw new Error(`upload failed (${resp.status})`);
+      if (!resp.ok) throw await this._uploadError(resp);
       const { photo_url: photoUrl } = await resp.json();
       if (!photoUrl) throw new Error("no photo_url in response");
 
@@ -5638,9 +5675,11 @@ class TaskMateChildCard extends LitElement {
       await this._handleComplete(chore, child, photoUrl, extra);
     } catch (err) {
       // Keep the overlay open on the preview so the child can retry.
+      // A refusal the server explains (storage full, too large, ...) shows
+      // in the user's language; anything else keeps the generic wording.
       if (this._photoCapture) {
         this._photoCapture = { ...this._photoCapture, step: "preview",
-          error: this._t("child.photo_upload_failed") };
+          error: err && err.translation_key ? this._errText(err) : this._t("child.photo_upload_failed") };
         this.requestUpdate();
       }
     }
@@ -5893,7 +5932,11 @@ class TaskMateChildCard extends LitElement {
       await this.hass.callService("taskmate", "request_help", { child_id: child.id, chore_id: chore.id });
     } catch (err) {
       // "Already on its way" is fine to swallow; anything else un-marks the row.
-      if (!/on its way/i.test(String(err?.message || err))) {
+      // The backend now sends a translated message, so match its key; the
+      // English text match stays as a fallback for older backends.
+      const alreadyOnItsWay = err?.translation_key === "help_already_on_its_way"
+        || /on its way/i.test(String(err?.message || err));
+      if (!alreadyOnItsWay) {
         this._helpSent = { ...this._helpSent, [key]: false };
         this.requestUpdate();
       }
@@ -5911,7 +5954,7 @@ class TaskMateChildCard extends LitElement {
     const day = Math.max(0, Math.min(6, Number(jar.day) || 0));
     const d = new Date(2024, 0, 1 + day);
     const name = d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }));
-    return `${name} ${jar.at || ""}`.trim();
+    return `${name} ${jar.at ? __tmClock(this.hass, jar.at) : ""}`.trim();
   }
 
   async _saveScreenTime(child, minutes) {
@@ -6182,7 +6225,7 @@ class TaskMateChildCard extends LitElement {
       ${streak >= 2 ? html`<span class="${cls} tm-streak-tag" title="${this._t("child.chore_streak_title", { count: streak })}">🔥 ${this._t("child.chore_streak_days", { count: streak })}</span>` : ""}
       ${!done && this._remindersOn() ? html`<button type="button" class="${cls} tm-help-btn tm-remind-btn"
         aria-label="${this._t("child.reminder_title", { chore: chore.name })}"
-        @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${time}` : ""}</button>` : ""}`;
+        @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${__tmClock(this.hass, time)}` : ""}</button>` : ""}`;
   }
 
   _toMinutes(hhmm) {
@@ -6220,10 +6263,10 @@ class TaskMateChildCard extends LitElement {
       <div class="photo-overlay" @click=${close}>
         <div class="photo-sheet tm-remind-sheet" role="dialog" aria-modal="true" aria-label="${this._t("child.reminder_title", { chore: sheet.chore.name })}" @click=${(e) => e.stopPropagation()}>
           <div class="photo-title">🔔 ${this._t("child.reminder_title", { chore: sheet.chore.name })}</div>
-          <div class="photo-dropzone-hint">${this._t("child.reminder_hint", { earliest: bounds.earliest || "", latest: bounds.latest || "" })}</div>
+          <div class="photo-dropzone-hint">${this._t("child.reminder_hint", { earliest: bounds.earliest ? __tmClock(this.hass, bounds.earliest) : "", latest: bounds.latest ? __tmClock(this.hass, bounds.latest) : "" })}</div>
           <div class="tm-goal-chips">
             ${this._reminderPresets(bounds).map(t => html`<button type="button" class="tm-goal-chip ${t === sheet.current ? "on" : ""}"
-              ?disabled=${sheet.saving} @click=${() => this._saveReminder(t)}>${t}</button>`)}
+              ?disabled=${sheet.saving} @click=${() => this._saveReminder(t)}>${__tmClock(this.hass, t)}</button>`)}
           </div>
           <div class="tm-remind-custom">
             <label>${this._t("child.reminder_pick")}
@@ -6251,7 +6294,7 @@ class TaskMateChildCard extends LitElement {
     } catch (err) {
       console.error("set_chore_reminder failed", err);
       sheet.saving = false;
-      sheet.error = String(err?.message || err);
+      sheet.error = this._errText(err) || String(err);
     }
     this.requestUpdate();
   }
@@ -6288,7 +6331,7 @@ class TaskMateChildCard extends LitElement {
         <div class="tm-tomorrow-row" aria-disabled="true" title="${this._t("child.tomorrow_locked")}">
           <span class="tm-tomorrow-glyph">${this._choreGlyph(c)}</span>
           <span class="tm-tomorrow-mid"><span class="tm-tomorrow-name">${c.name}</span>
-            <small>+${__tmNum(this.hass, c.effective_points ?? c.points)}${(child.reminders || {})[c.id] ? ` · 🔔 ${child.reminders[c.id]}` : ""}</small></span>
+            <small>+${__tmNum(this.hass, c.effective_points ?? c.points)}${(child.reminders || {})[c.id] ? ` · 🔔 ${__tmClock(this.hass, child.reminders[c.id])}` : ""}</small></span>
           <ha-icon class="tm-tomorrow-lock" icon="mdi:lock-outline"></ha-icon>
         </div>`)}
       <div class="tm-tomorrow-hint">🔒 ${this._t("child.tomorrow_locked")}</div>
@@ -6329,7 +6372,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _fmtMult(m) {
-    return String(Math.round(Number(m) * 10) / 10);
+    return String(__tmNum(this.hass, Math.round(Number(m) * 10) / 10));
   }
 
   _clock(ms) {
@@ -6699,7 +6742,7 @@ class TaskMateChildCard extends LitElement {
           ${cap.step === "preview" ? html`
             <div class="photo-preview">
               <img src="${cap.previewUrl}" alt="">
-              <span class="photo-size-tag">~${cap.sizeKb} KB</span>
+              <span class="photo-size-tag">${this._t("child.photo_size_kb", { size: __tmNum(this.hass, cap.sizeKb) })}</span>
             </div>
             <div class="photo-btn-row">
               <button class="photo-btn ghost" @click="${() => this._retakePhoto()}">
@@ -6848,7 +6891,7 @@ class TaskMateChildCard extends LitElement {
       console.error("Failed to undo chore completion:", error);
       const message = this._isUnauthorized(error)
         ? this._t("child.undo_not_allowed")
-        : this._t("child.error_undo", { message: error?.message || "" });
+        : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [key]: false, ...(rowKey ? { [rowKey]: false } : {}) };
@@ -6928,7 +6971,7 @@ class TaskMateChildCard extends LitElement {
       // pre-check above.
       const message = this._isUnauthorized(error)
         ? this._t("child.undo_not_allowed")
-        : this._t("child.error_undo", { message: error?.message || "" });
+        : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
       this._loading = { ...this._loading, [chore.id]: false };
@@ -6954,8 +6997,8 @@ class TaskMateChildCard extends LitElement {
     const ms = new Date(iso).getTime() - Date.now();
     if (!Number.isFinite(ms)) return "";
     const mins = Math.max(0, Math.ceil(ms / 60000));
-    const h = Math.floor(mins / 60);
-    return h ? `${h}h ${String(mins % 60).padStart(2, "0")}m` : `${mins}m`;
+    // "1 h 5 min" in the child's language (the screen-time duration words).
+    return this._screenTime(mins);
   }
 
   _renderInspectionBanners(child, designed, pointsName) {

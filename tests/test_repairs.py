@@ -98,6 +98,9 @@ def test_reward_problems():
 
 def test_update_creates_then_clears(monkeypatch):
     created, deleted = [], []
+    # A fresh stand-in per test: patching attributes on the shared MagicMock
+    # module left it without async_create_issue for the next test.
+    monkeypatch.setattr(coord_repairs, "ir", MagicMock())
     monkeypatch.setattr(coord_repairs.ir, "async_create_issue", lambda hass, dom, iid, **kw: created.append(iid))
     monkeypatch.setattr(coord_repairs.ir, "async_delete_issue", lambda hass, dom, iid: deleted.append(iid))
     monkeypatch.setattr(coord_repairs.ir, "async_get", lambda hass: MagicMock(issues={}))
@@ -115,6 +118,9 @@ def test_update_creates_then_clears(monkeypatch):
 
 def test_no_checks_during_startup(monkeypatch):
     created = []
+    # A fresh stand-in per test: patching attributes on the shared MagicMock
+    # module left it without async_create_issue for the next test.
+    monkeypatch.setattr(coord_repairs, "ir", MagicMock())
     monkeypatch.setattr(coord_repairs.ir, "async_create_issue", lambda *a, **kw: created.append(a))
     coord = _Coord(children=[Child(name="V", id="k1", presence_entity="person.gone")])
     coord.async_update_repairs()  # first call starts the grace clock

@@ -252,7 +252,7 @@ class TaskMateGraphCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("graph.error.entity_required"));
     this.config = {
       title: "",
       child_id: null,
@@ -830,7 +830,7 @@ class TaskMateGraphCard extends LitElement {
       dot.style.background = s.color.line;
       const span = document.createElement('span');
       const prefix = series.length > 1 ? `${s.child.name}: ` : '';
-      span.textContent = `${prefix}${val} ${pointsName}`;
+      span.textContent = `${prefix}${__tmNum(this.hass, val)} ${pointsName}`;
       row.appendChild(dot);
       row.appendChild(span);
       tooltip.appendChild(row);

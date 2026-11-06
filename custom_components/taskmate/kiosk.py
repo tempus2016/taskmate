@@ -41,6 +41,7 @@ from homeassistant.core import HomeAssistant
 
 from . import authz
 from .const import DOMAIN
+from .errors import TaskMateError, error_translation, send_translated_error
 from .websocket import _admin_only, _get_coordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -84,7 +85,7 @@ def hash_pin(pin: str, *, salt: bytes | None = None, iterations: int = _ITERATIO
     CPU-bound (~0.1 s); call it through ``hass.async_add_executor_job``.
     """
     if not is_valid_pin(pin):
-        raise ValueError("A kiosk PIN must be exactly 4 digits")
+        raise TaskMateError("kiosk_pin_invalid")
     salt = salt if salt is not None else secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac(_HASH_NAME, pin.encode(), salt, iterations)
     return f"{_SCHEME}${iterations}${salt.hex()}${digest.hex()}"
@@ -198,15 +199,15 @@ def _signed_in(handler):
     async def wrapper(hass, connection, msg):
         coordinator = _get_coordinator(hass)
         if not coordinator:
-            connection.send_error(msg["id"], "no_coordinator", "TaskMate not initialised")
+            send_translated_error(connection, msg["id"], "no_coordinator", "taskmate_not_initialised")
             return
         try:
             await handler(hass, connection, msg, coordinator)
         except ValueError as err:
-            connection.send_error(msg["id"], "invalid", str(err))
+            connection.send_error(msg["id"], "invalid", str(err), **error_translation(err))
         except Exception:  # noqa: BLE001
             _LOGGER.exception("WS handler %s failed", msg.get("type"))
-            connection.send_error(msg["id"], "handler_failed", "Something went wrong; see the Home Assistant log")
+            send_translated_error(connection, msg["id"], "handler_failed", "handler_failed")
 
     wrapper.__name__ = handler.__name__
     wrapper.__doc__ = handler.__doc__
@@ -246,7 +247,7 @@ async def ws_kiosk_verify_pin(hass, connection, msg, coordinator):
     """Check a child's PIN. Returns ok, plus locked_for / attempts_left on a miss."""
     child_id = msg["child_id"]
     if not coordinator.storage.get_child(child_id):
-        connection.send_error(msg["id"], "not_found", f"Child {child_id} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=child_id)
         return
     stored = coordinator.storage.get_kiosk_pin_hash(child_id)
     if not stored:
@@ -285,11 +286,11 @@ async def ws_kiosk_set_pin(hass, connection, msg, coordinator):
     """Set (4 digits) or clear ("") a child's kiosk PIN. Admin only, like the child dialog."""
     child_id = msg["child_id"]
     if not coordinator.storage.get_child(child_id):
-        connection.send_error(msg["id"], "not_found", f"Child {child_id} not found")
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=child_id)
         return
     pin = msg["pin"]
     if pin and not is_valid_pin(pin):
-        connection.send_error(msg["id"], "invalid_format", "A kiosk PIN must be exactly 4 digits")
+        send_translated_error(connection, msg["id"], "invalid_format", "kiosk_pin_invalid")
         return
     stored = await hass.async_add_executor_job(hash_pin, pin) if pin else ""
     coordinator.storage.set_kiosk_pin_hash(child_id, stored)

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from homeassistant.util import dt as dt_util
 
 from .coord_rejections import clean_reject_reason
+from .errors import TaskMateError
 from .models import Child, PointsTransaction, PoolAllocation, Reward, RewardClaim, clean_template_id
 from .timewindow import has_window, is_within_window
 
@@ -95,9 +96,7 @@ class RewardsMixin:
         """
         pool_total = self.storage.get_total_allocated_for_reward(reward.id)
         if pool_total < cost:
-            raise ValueError(
-                f"'{reward.name}' is a shared jackpot and its pool is not full. Need {cost}, have {pool_total} saved up"
-            )
+            raise TaskMateError("reward_jackpot_pool_short", name=reward.name, cost=cost, saved=pool_total)
 
     async def async_add_reward(
         self,
@@ -436,23 +435,23 @@ class RewardsMixin:
         """
         reward = self.get_reward(reward_id)
         if not reward:
-            raise ValueError(f"Reward {reward_id} not found")
+            raise TaskMateError("reward_not_found", reward_id=reward_id)
 
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         holder = child
         if recipient_id and recipient_id != child_id:
             holder = self.validate_reward_gift(reward, child, recipient_id)
         elif not self._reward_is_for_child(reward, child_id):
-            raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
+            raise TaskMateError("reward_not_available_to", name=reward.name, child=child.name)
         if self._reward_is_sold_out(reward):
-            raise ValueError(f"Reward '{reward.name}' is sold out")
+            raise TaskMateError("reward_sold_out", name=reward.name)
         if self._reward_is_expired(reward):
-            raise ValueError(f"Reward '{reward.name}' has expired")
+            raise TaskMateError("reward_expired", name=reward.name)
         if self._reward_is_time_locked(reward):
-            raise ValueError(f"Reward '{reward.name}' is not available right now")
+            raise TaskMateError("reward_not_available_now", name=reward.name)
         # Per-child limit: counted against the child who gets the reward.
         self.require_reward_limit(reward, holder)
 
@@ -474,11 +473,11 @@ class RewardsMixin:
             # gift waiting for approval counts as theirs.
             blocking = [c for c in pending if c.reward_id == reward_id and c.holder_id == holder.id]
         if blocking:
-            raise ValueError(f"A claim for '{reward.name}' is already waiting for approval")
+            raise TaskMateError("reward_claim_already_waiting", name=reward.name)
         if getattr(reward, "streak_freeze", False):
             self._require_streak_freeze_room(child, pending_claims=pending)
         if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
-            raise ValueError("Too many reward claims are already waiting for approval")
+            raise TaskMateError("reward_claims_too_many")
 
         # Cost is always static
         effective_cost = reward.cost
@@ -510,7 +509,7 @@ class RewardsMixin:
             available_points = child.points - committed
 
             if available_points < effective_cost:
-                raise ValueError(f"Not enough points. Need {effective_cost}, have {available_points} available")
+                raise TaskMateError("reward_not_enough_points", cost=effective_cost, available=available_points)
 
         return reward, child
 
@@ -524,7 +523,7 @@ class RewardsMixin:
         """
         cap = self.streak_freeze_max()
         if cap <= 0:
-            raise ValueError("Streak freezes are turned off")
+            raise TaskMateError("streak_freeze_off")
         queued = 0
         for claim in pending_claims or []:
             if claim.child_id != child.id:
@@ -533,7 +532,7 @@ class RewardsMixin:
             if queued_reward and getattr(queued_reward, "streak_freeze", False):
                 queued += 1
         if (child.streak_freezes or 0) + queued >= cap:
-            raise ValueError(f"{child.name} already has the maximum of {cap} streak freezes")
+            raise TaskMateError("streak_freeze_has_max", child=child.name, cap=cap)
 
     async def async_claim_reward(self, reward_id: str, child_id: str, recipient_id: str = "") -> RewardClaim:
         """Child claims a reward — creates a pending claim awaiting parent approval.
@@ -617,7 +616,7 @@ class RewardsMixin:
         if cap <= 0:
             return
         if self._spent_in_period(child_id) + cost > cap:
-            raise ValueError(f"Spending cap reached: {cap} per period already used")
+            raise TaskMateError("reward_spending_cap", cap=cap)
 
     async def async_approve_reward(self, claim_id: str) -> None:
         """Approve a reward claim and deduct points from the child.
@@ -641,7 +640,7 @@ class RewardsMixin:
                 reward = self.get_reward(claim.reward_id)
                 child = self.get_child(claim.child_id)
                 if not reward or not child:
-                    raise ValueError(f"Reward or child not found for claim {claim_id}")
+                    raise TaskMateError("reward_claim_target_missing", claim_id=claim_id)
 
                 # Stock and expiry are checked when the claim is made, but a
                 # claim can sit in the queue for days and several can stack up
@@ -651,9 +650,9 @@ class RewardsMixin:
                 # not re-checked: approval is the parent's call, not the
                 # child's, so an out-of-hours approval is legitimate.
                 if self._reward_is_sold_out(reward):
-                    raise ValueError(f"Reward '{reward.name}' is sold out")
+                    raise TaskMateError("reward_sold_out", name=reward.name)
                 if self._reward_is_expired(reward):
-                    raise ValueError(f"Reward '{reward.name}' has expired")
+                    raise TaskMateError("reward_expired", name=reward.name)
 
                 # Cost is always static
                 effective_cost = reward.cost
@@ -697,7 +696,9 @@ class RewardsMixin:
                 else:
                     # Wallet mode: deduct directly from child.points
                     if child.points < effective_cost:
-                        raise ValueError(f"Not enough points to approve. Need {effective_cost}, have {child.points}")
+                        raise TaskMateError(
+                            "reward_not_enough_points_approve", cost=effective_cost, points=child.points
+                        )
                     child.points -= effective_cost
                     self.storage.update_child(child)
 
@@ -789,8 +790,9 @@ class RewardsMixin:
         claim = next((c for c in self.storage.get_reward_claims() if c.id == claim_id), None)
         if claim is not None and claim.approved:
             reward = self.get_reward(claim.reward_id)
-            name = reward.name if reward else "This reward"
-            raise ValueError(f"'{name}' has already been approved and can no longer be rejected")
+            if reward is None:
+                raise TaskMateError("reward_claim_already_approved_unnamed")
+            raise TaskMateError("reward_claim_already_approved", name=reward.name)
         if claim is not None and claim.wish_id:
             await self._async_reject_wish_claim(claim, reason)
             return
@@ -837,21 +839,21 @@ class RewardsMixin:
         """
         child = self.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
 
         reward = self.get_reward(reward_id)
         if not reward:
-            raise ValueError(f"Reward {reward_id} not found")
+            raise TaskMateError("reward_not_found", reward_id=reward_id)
 
         if not self._reward_is_for_child(reward, child_id):
-            raise ValueError(f"Reward '{reward.name}' is not available to {child.name}")
+            raise TaskMateError("reward_not_available_to", name=reward.name, child=child.name)
         if self._reward_is_sold_out(reward):
-            raise ValueError(f"Reward '{reward.name}' is sold out")
+            raise TaskMateError("reward_sold_out", name=reward.name)
         if self._reward_is_expired(reward):
-            raise ValueError(f"Reward '{reward.name}' has expired")
+            raise TaskMateError("reward_expired", name=reward.name)
 
         if points < 1:
-            raise ValueError("Points to allocate must be at least 1")
+            raise TaskMateError("pool_allocate_min")
 
         # Spendable balance = child.points − points committed to other pending claims.
         # (Already-allocated points are no longer part of child.points, so we do NOT
@@ -869,7 +871,7 @@ class RewardsMixin:
         spendable = child.points - committed
 
         if spendable < 1:
-            raise ValueError(f"No spendable points available for {child.name}")
+            raise TaskMateError("pool_no_spendable", child=child.name)
 
         # Compute remaining pool capacity
         existing = self.storage.get_pool_allocation(child_id, reward_id)
@@ -880,7 +882,7 @@ class RewardsMixin:
             room_left = reward.cost - current_child_allocation
 
         if room_left <= 0:
-            raise ValueError(f"Pool for reward '{reward.name}' is already full")
+            raise TaskMateError("pool_full", name=reward.name)
 
         capped_points = min(points, spendable, room_left)
 

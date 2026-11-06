@@ -38,6 +38,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_SCREEN_TIME_JAR_OPENED, NOTIF_TYPE_SCREEN_TIME_LOW, NOTIF_TYPE_SCREEN_TIME_OUT
+from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -206,15 +207,15 @@ class ScreenTimeMixin:
         """Add (or, negative, take away) minutes. Returns the new balance."""
         child = self.storage.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         try:
             delta = int(minutes)
         except (TypeError, ValueError) as err:
-            raise ValueError("Minutes must be a whole number") from err
+            raise TaskMateError("screen_time_minutes_not_whole") from err
         if delta == 0:
             return self.screen_time_balance(child_id)
         if abs(delta) > SCREEN_TIME_MAX_MINUTES:
-            raise ValueError(f"Minutes cannot exceed {SCREEN_TIME_MAX_MINUTES}")
+            raise TaskMateError("screen_time_minutes_max", max=SCREEN_TIME_MAX_MINUTES)
         balance = self._screen_time_change(child_id, delta, (reason or "adjusted").strip()[:60])
         await self.storage.async_save()
         self.hass.bus.async_fire(
@@ -380,16 +381,16 @@ class ScreenTimeMixin:
         """
         child = self.storage.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.screen_time_enabled() or not self.screen_time_jar_enabled():
-            raise ValueError("The screen-time jar is switched off")
+            raise TaskMateError("screen_time_jar_off")
         jar = self.screen_time_jar(child_id)
         room = max(0, self.screen_time_jar_cap() - jar)
         available = self.screen_time_balance(child_id)
         wanted = available if minutes is None else int(minutes)
         amount = min(wanted, available, room)
         if amount <= 0:
-            raise ValueError("The jar is full" if room <= 0 else "No minutes to save")
+            raise TaskMateError("screen_time_jar_full" if room <= 0 else "screen_time_jar_nothing")
         record = self._screen_time_record(child_id)
         balance = self._screen_time_change(child_id, -amount, "saved in the jar")
         if not jar:
@@ -414,7 +415,7 @@ class ScreenTimeMixin:
         """A parent opens a child's jar early. Returns the minutes released."""
         child = self.storage.get_child(child_id)
         if not child:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.screen_time_jar(child_id):
             return 0
         released = await self._async_screen_time_release_jar(child, self._screen_time_record(child_id))

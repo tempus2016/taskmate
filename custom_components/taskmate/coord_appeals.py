@@ -27,6 +27,7 @@ from homeassistant.util import dt as dt_util
 
 from . import notify_strings
 from .const import NOTIF_TYPE_APPEAL_DECIDED, NOTIF_TYPE_APPEAL_SUBMITTED
+from .errors import TaskMateError
 from .models import RewardClaim, clean_label, generate_id, parse_datetime
 
 _LOGGER = logging.getLogger(__name__)
@@ -123,17 +124,17 @@ class AppealsMixin:
     async def async_appeal(self, child_id: str, kind: str, target_id: str, message: str = "") -> dict[str, Any]:
         """A child appeals one item from their appealable list."""
         if not self.appeals_enabled():
-            raise ValueError("Appeals are switched off.")
+            raise TaskMateError("appeals_off")
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if target_id in self._appealed_targets():
-            raise ValueError("That has already been appealed.")
+            raise TaskMateError("appeals_already_appealed")
         item = next(
             (i for i in self.appealable_for_child(child_id) if i["kind"] == kind and i["target_id"] == target_id), None
         )
         if item is None:
-            raise ValueError("That can't be appealed.")
+            raise TaskMateError("appeals_not_appealable")
         now = dt_util.now()
         record = {
             "id": generate_id(),
@@ -197,12 +198,12 @@ class AppealsMixin:
         """A parent upholds the original decision or overturns it."""
         appeal = next((a for a in self._appeals() if a.get("id") == appeal_id), None)
         if appeal is None:
-            raise ValueError("That appeal no longer exists.")
+            raise TaskMateError("appeals_not_found")
         if appeal.get("status") != "open":
-            raise ValueError("That appeal has already been decided.")
+            raise TaskMateError("appeals_already_decided")
         child = self.get_child(appeal["child_id"])
         if child is None:
-            raise ValueError("The child is no longer here.")
+            raise TaskMateError("appeals_child_gone")
         if overturn:
             await self._async_overturn(appeal, child)
         now = dt_util.now()
@@ -252,7 +253,7 @@ class AppealsMixin:
         if kind == "reward":
             reward = self.get_reward(appeal.get("item_id", ""))
             if reward is None:
-                raise ValueError("That reward no longer exists.")
+                raise TaskMateError("appeals_reward_gone")
             claim = RewardClaim(reward_id=reward.id, child_id=child.id, claimed_at=dt_util.now())
             self.storage.add_reward_claim(claim)
             try:
@@ -264,12 +265,12 @@ class AppealsMixin:
         if kind == "penalty":
             txn = next((t for t in self.storage.get_points_transactions() if t.id == appeal["target_id"]), None)
             if txn is None:
-                raise ValueError("That penalty has already been taken back.")
+                raise TaskMateError("appeals_penalty_already_undone")
             # The undo settles the make-it-right offer: cancels an open one,
             # refuses when the penalty was already earned back.
             await self.async_undo_transaction(txn.id)
             return
-        raise ValueError(f"Unknown appeal kind {kind}")
+        raise TaskMateError("appeals_unknown_kind", kind=kind)
 
 
 def _trim(appeals: list[dict[str, Any]]) -> None:

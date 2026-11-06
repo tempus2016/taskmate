@@ -17,6 +17,7 @@ const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
   ? window.__taskmate_numbers.format(hass, value, opts)
   : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -44,7 +45,7 @@ class TaskMateFamilyGoalCard extends LitElement {
 
   setConfig(config) {
     if (!config || !config.entity) {
-      throw new Error("A TaskMate overview entity is required");
+      throw new Error(this._t("common.please_define_entity"));
     }
     this.config = config;
   }
@@ -120,7 +121,7 @@ class TaskMateFamilyGoalCard extends LitElement {
           <div class="fg-bar"><div class="fg-fill ${achieved ? "done" : ""}" style="width:${pct}%"></div></div>
           <div class="fg-stats">
             <span>${_ltrRatio(__tmNum(this.hass, progress), __tmNum(this.hass, target))} ${pointsName}</span>
-            <span>${pct}%</span>
+            <span>${__tmPct(this.hass, pct)}</span>
           </div>
           ${achieved
             ? html`<div class="fg-reward done">🎉 ${this._t("family_goal.reached", { reward: goal.reward || "" })}</div>`

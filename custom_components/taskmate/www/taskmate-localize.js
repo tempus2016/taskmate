@@ -146,6 +146,7 @@ function _interim(lang, bundle) {
  */
 function localize(hass, key, params) {
   if (hass && hass.language) _lastLang = hass.language;
+  _ensureExceptionStrings(hass);
   const lang = _langOf(hass);
   const bundle = _bundleFor(String(key));
   const id = `${lang}/${bundle}`;
@@ -238,8 +239,10 @@ const _DAY_KEYS = [
  *
  * @param {object} lock - { days: number[], from: string, until: string }
  * @param {function} t - the caller's translate function (key, params) => string
+ * @param {object} [hass] - for HA's time format ("6:00 PM" on a 12-hour
+ *   profile); without one, the page's own hass is used, else the times as stored
  */
-function timeLockLabel(lock, t) {
+function timeLockLabel(lock, t, hass) {
   if (!lock) return '';
   const days = (lock.days || []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6).sort((a, b) => a - b);
   const parts = [];
@@ -247,7 +250,16 @@ function timeLockLabel(lock, t) {
   if (days.length && days.length < 7) parts.push(days.map(d => t(_DAY_KEYS[d])).join(', '));
   const from = lock.from || '';
   const until = lock.until || '';
-  if (from && until && from !== until) parts.push(`${from}–${until}`);
+  if (from && until && from !== until) {
+    let h = hass;
+    if (!h) {
+      try {
+        const ha = typeof document !== 'undefined' && document.querySelector ? document.querySelector('home-assistant') : null;
+        h = ha && ha.hass;
+      } catch (_e) { h = null; }
+    }
+    parts.push(h ? `${clock(h, from)}–${clock(h, until)}` : `${from}–${until}`);
+  }
   return parts.join(' · ');
 }
 
@@ -419,6 +431,69 @@ function formatNumber(hass, value, opts) {
 }
 
 /**
+ * An avatar's name for the picker. The shipped avatars (coord_avatars.py
+ * DEFAULT_AVATAR_CATALOG) arrive with their English label; show those in the
+ * user's language. A label a parent changed is their own text and is kept.
+ */
+const _AVATAR_DEFAULT_LABELS = {
+  starter: 'Starter', rocket: 'Rocket', robot: 'Robot', ninja: 'Ninja',
+  crown: 'Royalty', trophy: 'Champion', fire: 'On Fire', diamond: 'Diamond',
+};
+function avatarLabel(hass, opt) {
+  const label = opt && opt.label ? String(opt.label) : '';
+  const id = opt && opt.id;
+  if (id && _AVATAR_DEFAULT_LABELS[id] === label) {
+    const s = localize(hass, `avatar.label_${id}`);
+    if (s && s !== `avatar.label_${id}`) return s;
+  }
+  return label;
+}
+
+/**
+ * The text to show for a failed TaskMate call. The backend refuses an action
+ * with a translation key (TaskMateError → ServiceValidationError), so show
+ * Home Assistant's translation of it in the user's language; otherwise fall
+ * back to the message as sent, without HA's "Validation error: " prefix.
+ */
+let _excLang = null;
+function _ensureExceptionStrings(hass) {
+  if (!hass || typeof hass.loadBackendTranslation !== 'function') return;
+  const lang = hass.language || '';
+  if (_excLang === lang) return;
+  _excLang = lang;
+  try {
+    const p = hass.loadBackendTranslation('exceptions', 'taskmate');
+    if (p && typeof p.catch === 'function') p.catch(() => { _excLang = null; });
+  } catch (e) {
+    _excLang = null;
+  }
+}
+
+function errorText(hass, err) {
+  _ensureExceptionStrings(hass);
+  const key = err && err.translation_key;
+  if (key && (!err.translation_domain || err.translation_domain === 'taskmate')
+      && hass && typeof hass.localize === 'function') {
+    try {
+      const s = hass.localize(`component.taskmate.exceptions.${key}.message`, err.translation_placeholders || {});
+      if (s) return s;
+    } catch (e) { /* fall through to the sent message */ }
+  }
+  const msg = err && typeof err === 'object' && 'message' in err ? err.message : err;
+  return String(msg == null ? '' : msg).replace(/^Validation error:\s*/, '');
+}
+
+/**
+ * A whole-number percentage (12 → "12%" / "12 %") in HA's language: the
+ * spacing and sign placement follow the locale, as Intl does.
+ */
+function formatPercent(hass, pct) {
+  const n = Number(pct);
+  if (!Number.isFinite(n)) return pct == null ? '' : String(pct);
+  return formatNumber(hass, n / 100, { style: 'percent', maximumFractionDigits: 0 });
+}
+
+/**
  * A wall-clock time ("17:00", as chores, periods and set times store it) in
  * HA's time format: "17:00" on a 24-hour profile, "5:00 PM" on a 12-hour
  * one. Anything that isn't H:MM comes back unchanged.
@@ -477,10 +552,12 @@ function pickerText(key, fallback) {
 window.__taskmate_badge_name = badgeName;
 window.__taskmate_badge_count = badgeCount;
 window.__taskmate_dates = { args: dateArgs, clock, hourNow };
-window.__taskmate_numbers = { args: numberArgs, format: formatNumber };
+window.__taskmate_numbers = { args: numberArgs, format: formatNumber, percent: formatPercent };
 window.__taskmate_picker_text = pickerText;
 window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;
+window.__taskmate_error_text = errorText;
+window.__taskmate_avatar_label = avatarLabel;
 window.__taskmate_loadTranslations = loadTranslations;
 
 // Start fetching the cards bundle (and, on the admin panel's own page, the

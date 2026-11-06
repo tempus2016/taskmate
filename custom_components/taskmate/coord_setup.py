@@ -21,6 +21,7 @@ from typing import Any
 
 from .const import AGE_GROUPS
 from .coord_birthdays import normalize_birthday
+from .errors import TaskMateError
 from .models import clean_template_id
 from .setup_catalogue import library_screen_minutes
 
@@ -51,7 +52,7 @@ def _fold(name: str) -> str:
 def _age_group(value: Any) -> str:
     value = value or ""
     if value and value not in AGE_GROUPS:
-        raise ValueError(f"Unknown age group {value!r}")
+        raise TaskMateError("setup_unknown_age_group", value=value)
     return value
 
 
@@ -88,9 +89,9 @@ class SetupWizardMixin:
             ref = str(spec.get("ref") or "")
             name = (spec.get("name") or "").strip()
             if not ref or ref in seen_refs:
-                raise ValueError("Every new child needs its own ref")
+                raise TaskMateError("setup_child_needs_ref")
             if not name:
-                raise ValueError("A child needs a name")
+                raise TaskMateError("setup_child_needs_name")
             seen_refs.add(ref)
             twin = by_name.get(_fold(name))
             if twin is not None:
@@ -112,7 +113,7 @@ class SetupWizardMixin:
         for spec in child_updates:
             child = self.storage.get_child(spec.get("child_id", ""))
             if child is None:
-                raise ValueError(f"Child {spec.get('child_id')} not found")
+                raise TaskMateError("child_not_found", child_id=spec.get("child_id"))
             birthday = normalize_birthday(spec.get("birthday", ""))
             age_group = _age_group(spec.get("age_group"))
             # Add-only: fill in what is missing, never overwrite.
@@ -128,7 +129,7 @@ class SetupWizardMixin:
                 return ref_to_id[who]
             if who in pending_refs or who in known_ids:
                 return who
-            raise ValueError(f"Chore assigned to an unknown child {who!r}")
+            raise TaskMateError("setup_chore_unknown_child", who=who)
 
         existing_chores = self.storage.get_chores()
         have_chores = {_fold(c.name) for c in existing_chores}
@@ -138,7 +139,7 @@ class SetupWizardMixin:
         for spec in chores:
             name = (spec.get("name") or "").strip()
             if not name:
-                raise ValueError("A chore needs a name")
+                raise TaskMateError("setup_chore_needs_name")
             assigned = [resolve(str(w)) for w in spec.get("assigned_to") or []]
             tpl = clean_template_id(spec.get("template_id"))
             if _fold(name) in have_chores or (tpl and tpl in have_chore_tpls):
@@ -161,7 +162,7 @@ class SetupWizardMixin:
         for spec in rewards:
             name = (spec.get("name") or "").strip()
             if not name:
-                raise ValueError("A reward needs a name")
+                raise TaskMateError("setup_reward_needs_name")
             tpl = clean_template_id(spec.get("template_id"))
             if _fold(name) in have_rewards or (tpl and tpl in have_reward_tpls):
                 skipped_rewards += 1

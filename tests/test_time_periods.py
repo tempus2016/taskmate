@@ -133,7 +133,7 @@ def test_validate_rejects_overlap():
     ]
     periods, err = _validate_time_periods(payload, coord)
     assert periods is None
-    assert "overlap" in err.lower()
+    assert "overlap" in str(err).lower()
 
 
 def test_validate_allows_gaps():
@@ -150,19 +150,19 @@ def test_validate_allows_gaps():
 def test_validate_rejects_start_after_end():
     coord = _coord([Child(name="A")])
     periods, err = _validate_time_periods([{"label": "Backwards", "start": "10:00", "end": "09:00"}], coord)
-    assert periods is None and "start before" in err
+    assert periods is None and "start before" in str(err)
 
 
 def test_validate_rejects_bad_time_format():
     coord = _coord([Child(name="A")])
     periods, err = _validate_time_periods([{"label": "Bad", "start": "25:00", "end": "26:00"}], coord)
-    assert periods is None and "HH:MM" in err
+    assert periods is None and "HH:MM" in str(err)
 
 
 def test_validate_rejects_blank_custom_label():
     coord = _coord([Child(name="A")])
     periods, err = _validate_time_periods([{"label": "  ", "start": "10:00", "end": "11:00"}], coord)
-    assert periods is None and "name" in err
+    assert periods is None and "name" in str(err)
 
 
 def test_validate_rejects_duplicate_ids():
@@ -172,7 +172,7 @@ def test_validate_rejects_duplicate_ids():
         {"id": "x", "label": "Two", "start": "08:00", "end": "09:00"},
     ]
     periods, err = _validate_time_periods(payload, coord)
-    assert periods is None and "duplicate" in err
+    assert periods is None and "duplicate" in str(err)
 
 
 def test_validate_rejects_empty_list():
@@ -204,7 +204,7 @@ def test_validate_blocks_deleting_period_in_use():
     payload = [{"id": "morning", "label": "", "start": "06:00", "end": "12:00"}]
     periods, err = _validate_time_periods(payload, coord)
     assert periods is None
-    assert "Brush teeth" in err
+    assert "Brush teeth" in str(err)
 
 
 def test_validate_allows_deleting_unused_period():

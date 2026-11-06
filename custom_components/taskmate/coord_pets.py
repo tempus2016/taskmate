@@ -35,6 +35,7 @@ from homeassistant.util import dt as dt_util
 
 from . import notify_strings
 from .const import NOTIF_TYPE_PET_EVOLVED
+from .errors import TaskMateError
 
 PET_SPECIES = ("dragon", "cat", "dog", "bunny", "dino", "unicorn")
 PET_NAME_MAX = 24
@@ -124,14 +125,14 @@ class PetsMixin:
         """Adopt (or rename) the child's pet; with ``hatch_egg``, hatch the egg it laid."""
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.pets_enabled():
-            raise ValueError("Pets are switched off.")
+            raise TaskMateError("pets_switched_off")
         if species not in PET_SPECIES:
-            raise ValueError(f"Unknown pet {species!r}")
+            raise TaskMateError("pet_unknown_species", species=species)
         name = (name or "").strip()[:PET_NAME_MAX]
         if not name:
-            raise ValueError("Give your pet a name.")
+            raise TaskMateError("pet_name_required")
         pets = self._pets()
         existing = pets.get(child_id)
         today = dt_util.as_local(dt_util.now()).date().isoformat()
@@ -144,7 +145,7 @@ class PetsMixin:
         }
         if hatch_egg:
             if not existing or not self._pet_view(child, existing)["egg_ready"]:
-                raise ValueError("There's no egg to hatch yet.")
+                raise TaskMateError("pet_no_egg")
             view = self._pet_view(child, existing)
             family = list(existing.get("family") or [])
             family.append(

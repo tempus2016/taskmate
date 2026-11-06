@@ -286,7 +286,11 @@ class TaskMateWeeklyCard extends LitElement {
 
       /* Weekly — designed stat grid (playroom/console/cleanpro) */
       .wk-d-stats { display: grid; gap: 9px; }
-      .wk-d-stats.g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+      /* Four tiles when they fit; two rows of two on a narrow card or with long
+         labels (German "Aufgaben" overflowed a quarter of a phone-width card). */
+      .wk-d-stats.g4 { grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); }
+      .wk-d-stats .stat { min-width: 0; }
+      .wk-d-stats .stat .k { overflow-wrap: anywhere; }
       .wk-d-stats.g2 { grid-template-columns: 1fr 1fr; }
       .wk-pl-stat { background: var(--tmd-surface-2); border-radius: 16px; padding: 11px; text-align: center; }
       .wk-pl-stat .v { font-family: var(--tmd-font-display); font-weight: 800; font-size: 24px; line-height: 1; color: var(--tmd-accent); }
@@ -670,9 +674,9 @@ class TaskMateWeeklyCard extends LitElement {
 
     const stats = [
       { k: this._t("weekly.stat_days_active"), v: `${d.daysActive}/7` },
-      { k: d.pointsName, v: d.weekPoints },
-      { k: this._t("weekly.stat_rewards"), v: d.weekRewards },
-      { k: this._t("weekly.stat_chores"), v: d.weekChores },
+      { k: d.pointsName, v: __tmNum(this.hass, d.weekPoints) },
+      { k: this._t("weekly.stat_rewards"), v: __tmNum(this.hass, d.weekRewards) },
+      { k: this._t("weekly.stat_chores"), v: __tmNum(this.hass, d.weekChores) },
     ];
 
     const cnLike = design !== "playroom"; // console + cleanpro use the .stat kit tile
@@ -720,7 +724,7 @@ class TaskMateWeeklyCard extends LitElement {
             const h = isFuture ? 3 : Math.max(pts > 0 ? 8 : 3, pct);
             return html`
               <div class="wk-bcol">
-                ${design === "playroom" ? html`<span class="val">${!isFuture && pts > 0 ? pts : ""}</span>` : ""}
+                ${design === "playroom" ? html`<span class="val">${!isFuture && pts > 0 ? __tmNum(this.hass, pts) : ""}</span>` : ""}
                 <div class="wk-fill ${barsClass} ${isToday ? "today" : ""}" style="height:${h}%"></div>
                 <span class="lbl ${lblMode}">${design === "console" ? day.short.toUpperCase() : day.short}</span>
               </div>`;

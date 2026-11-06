@@ -18,6 +18,7 @@ from typing import Any
 from homeassistant.util import dt as dt_util
 
 from .const import NOTIF_TYPE_WEEKLY_GOAL_REACHED
+from .errors import TaskMateError
 from .models import PointsTransaction
 
 WEEKLY_GOAL_MAX = 100000
@@ -86,22 +87,22 @@ class WeeklyGoalsMixin:
         """
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         if not self.weekly_goals_enabled():
-            raise ValueError("Weekly goals are switched off.")
+            raise TaskMateError("weekly_goals_off")
         target = int(target)
         if not 0 <= target <= WEEKLY_GOAL_MAX:
-            raise ValueError(f"Pick a goal from 0 to {WEEKLY_GOAL_MAX}.")
+            raise TaskMateError("weekly_goal_range", max=WEEKLY_GOAL_MAX)
         # The record outlives a cleared goal: it keeps ``reached_week``, so
         # clearing and re-setting a goal can't pay the same week's bonus twice.
         goal = self._weekly_goals().setdefault(child_id, {})
         if not as_parent:
             bonus = self.weekly_goal_bonus()
             if target and bonus and target < bonus:
-                raise ValueError(f"A goal has to be at least {bonus}, the bonus it pays.")
+                raise TaskMateError("weekly_goal_below_bonus", bonus=bonus)
             week = _week_key(dt_util.as_local(dt_util.now()).date())
             if goal.get("reached_week") == week and target != int(goal.get("target", 0) or 0):
-                raise ValueError("This week's goal has already been reached and paid, so it can't change until Monday.")
+                raise TaskMateError("weekly_goal_locked")
         goal["target"] = target
         goal["set_at"] = dt_util.now().isoformat()
         await self.storage.async_save()

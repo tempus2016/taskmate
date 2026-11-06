@@ -14,6 +14,7 @@ const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
   ? window.__taskmate_numbers.format(hass, value, opts)
   : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -56,6 +57,13 @@ class TaskMateOverviewCard extends LitElement {
         : true;
     }
     return true;
+  }
+
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
   }
 
   _t(key, params) {
@@ -392,7 +400,7 @@ class TaskMateOverviewCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("overview.error.entity_required"));
     // No title by default: the header falls back to the translated
     // overview.default_title. An explicit empty title still means none.
     this.config = {
@@ -689,7 +697,7 @@ class TaskMateOverviewCard extends LitElement {
 
   _ovKid(design, k, isParent, _pointsIcon) {
     const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
-    const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${k.pct}%` : k.child.name;
+    const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${__tmPct(this.hass, k.pct)}` : k.child.name;
     const isOpen = !!this._expanded[k.child.id];
     const expandable = isParent;
     return html`
@@ -889,7 +897,7 @@ class TaskMateOverviewCard extends LitElement {
       if (this.hass && this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('common.error'),
-          message: String(e && e.message ? e.message : e),
+          message: this._errText(e) || String(e),
           notification_id: `taskmate_overview_behalf_${key}`,
         });
       }

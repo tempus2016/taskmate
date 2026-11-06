@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta
 
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
 from .models import MandatoryMiss, PointsTransaction, _hhmm_minutes
 
 _LOGGER = logging.getLogger(__name__)
@@ -182,7 +183,7 @@ class SetTimesMixin:
         if time_id:
             t = next((t for t in chore.times if t.id == time_id), None)
             if t is None:
-                raise ValueError("That time isn't one of this chore's set times.")
+                raise TaskMateError("set_time_unknown")
             if t.id in done:
                 return None
             if not as_parent and not self.set_time_is_open(chore, t, now):

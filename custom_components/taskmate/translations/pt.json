@@ -128,6 +128,102 @@
         "save": "Guardar alterações",
         "delete": "Eliminar grupo"
       }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Sem som",
+        "coin": "Moeda",
+        "levelup": "Subir de nível",
+        "fanfare": "Fanfarra",
+        "chime": "Sininho",
+        "powerup": "Power-up",
+        "undo": "Anular",
+        "fart1": "Pum 1",
+        "fart2": "Pum 2",
+        "fart3": "Pum 3",
+        "fart4": "Pum 4",
+        "fart5": "Pum 5",
+        "fart6": "Pum 6",
+        "fart7": "Pum 7",
+        "fart8": "Pum 8",
+        "fart9": "Pum 9",
+        "fart10": "Pum 10",
+        "fart_random": "Pum aleatório"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Fácil",
+        "medium": "Médio",
+        "hard": "Difícil"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Todos recebem os pontos completos",
+        "split": "Dividir os pontos igualmente (arredondado para baixo)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Sempre que for devida",
+        "week": "Semanalmente",
+        "month": "Mensalmente"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronze",
+        "silver": "Prata",
+        "gold": "Ouro",
+        "platinum": "Platina"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Exigir todos (E)",
+        "or": "Exigir qualquer (OU)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 hora",
+        "2h": "2 horas",
+        "4h": "4 horas",
+        "bed": "Até à hora de dormir"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Ótimo",
+        "good": "Bom",
+        "ok": "Assim-assim",
+        "sad": "Triste",
+        "upset": "Zangado"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Tarefa",
+        "reward": "Recompensa",
+        "penalty": "Penalização"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Dragão",
+        "cat": "Gato",
+        "dog": "Cão",
+        "bunny": "Coelho",
+        "dino": "Dinossauro",
+        "unicorn": "Unicórnio"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Parece feito",
+        "not_yet": "Ainda não"
+      }
     }
   },
   "services": {
@@ -158,6 +254,18 @@
         "time_id": {
           "name": "Hora definida",
           "description": "Numa tarefa com horas definidas, qual a hora a marcar. Deixe em branco para a que está aberta."
+        },
+        "as_parent": {
+          "name": "Como progenitor",
+          "description": "Concluir em nome da criança e atribuir os pontos de imediato, sem aprovação."
+        },
+        "photo_url": {
+          "name": "URL da foto",
+          "description": "URL ou caminho opcional de uma foto enviada como prova (ex.: uma captura da câmara). Mostrada ao progenitor na aprovação."
+        },
+        "completed_date": {
+          "name": "Feita em",
+          "description": "Regista a tarefa num dia anterior (até 7 dias atrás, não hoje) em que foi feita mas não marcada. Só progenitores; aprovada de imediato. O limite diário desse dia continua a aplicar-se."
         }
       }
     },
@@ -638,6 +746,18 @@
         "daily_limit": {
           "name": "Limite diário",
           "description": "Quantas vezes por dia a tarefa pode ser feita. Tarefas únicas são sempre 1."
+        },
+        "difficulty": {
+          "name": "Dificuldade",
+          "description": "Nível de dificuldade; multiplica os pontos atribuídos pelo multiplicador do nível (médio = ×1,0 base)"
+        },
+        "expires_in_minutes": {
+          "name": "Expira em (minutos)",
+          "description": "Torna esta tarefa reativa, com prazo daqui a estes minutos, ex.: a máquina de lavar acabou, esvazia-a em 30 minutos. A tarefa desaparece e é desativada quando o prazo passa. 0 = sem prazo."
+        },
+        "speed_bonus_points": {
+          "name": "Pontos de bónus de rapidez",
+          "description": "Pontos extra se a tarefa for concluída antes do prazo. Requer expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1208,10 @@
         "notify_on_earn": {
           "name": "Notificar ao ganhar",
           "description": "Enviar uma notificação quando a conquista é ganha"
+        },
+        "combinator": {
+          "name": "Combinação",
+          "description": "Como se combinam vários critérios: AND (todos têm de passar) ou OR (qualquer um). AND por omissão."
         }
       }
     },
@@ -1134,6 +1258,10 @@
         "notify_on_earn": {
           "name": "Notificar ao ganhar",
           "description": "Enviar uma notificação quando a conquista é ganha"
+        },
+        "combinator": {
+          "name": "Combinação",
+          "description": "Como se combinam vários critérios: AND (todos têm de passar) ou OR (qualquer um). AND por omissão."
         }
       }
     },
@@ -1864,22 +1992,93 @@
           "description": "HH:MM, p. ex. 17:30. Vazio remove o lembrete."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Ler tarefas em voz alta",
+      "description": "Diz as tarefas que faltam a uma criança num leitor multimédia, por exemplo \"Ella, faltam-te três coisas…\". Usa o texto de leitura no idioma do Home Assistant, a não ser que tenham sido definidos modelos próprios.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança cujas tarefas são lidas"
+        },
+        "media_player": {
+          "name": "Leitor multimédia",
+          "description": "Onde falar. Se vazio, usa o predefinido nas Definições."
+        },
+        "tts_entity": {
+          "name": "Entidade de texto para voz",
+          "description": "Que serviço TTS usar. Se vazio, o das Definições e depois o único instalado."
+        },
+        "message": {
+          "name": "Mensagem própria",
+          "description": "Dizer isto em vez do resumo gerado."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Girar a roleta de tarefas",
+      "description": "Escolhe ao acaso uma tarefa em falta para uma criança, com multiplicador de pontos. Opcional: ativa-a e define o multiplicador e o número de giros por dia nas definições do painel TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que gira"
+        }
+      }
     }
   },
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "tarefas"
+        "unit_of_measurement": "tarefas",
+        "name": "Estatísticas de {child}"
       },
       "child_badges": {
-        "unit_of_measurement": "medalhas"
+        "unit_of_measurement": "medalhas",
+        "name": "Conquistas de {child}"
       },
       "child_watch": {
         "state": {
           "left": "Faltam #",
           "all_done": "Tudo feito",
           "no_chores": "Sem tarefas"
-        }
+        },
+        "name": "Relógio de {child}"
+      },
+      "overview": {
+        "name": "Visão geral TaskMate"
+      },
+      "chores": {
+        "name": "Tarefas TaskMate"
+      },
+      "chore_availability": {
+        "name": "Disponibilidade das tarefas TaskMate"
+      },
+      "rewards": {
+        "name": "Recompensas TaskMate"
+      },
+      "activity": {
+        "name": "Atividade TaskMate"
+      },
+      "incentives": {
+        "name": "Bónus e penalizações TaskMate"
+      },
+      "bounties": {
+        "name": "Tarefas extra TaskMate"
+      },
+      "auctions": {
+        "name": "Leilões TaskMate"
+      },
+      "chore_board": {
+        "name": "Quadro de tarefas TaskMate"
+      },
+      "child_points": {
+        "name": "Pontos de {child}"
+      },
+      "child_wishlist": {
+        "name": "Lista de desejos de {child}"
+      },
+      "pending_approvals": {
+        "name": "Aprovações pendentes"
       }
     },
     "number": {
@@ -1892,15 +2091,27 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Modo de reposição de sequência"
+        "name": "Modo de reposição de sequência",
+        "state": {
+          "reset": "Reiniciar — sequência volta a 0 num dia falhado",
+          "pause": "Pausar — sequência preservada até próxima conclusão"
+        }
       },
       "card_design": {
-        "name": "Design do cartão"
+        "name": "Design do cartão",
+        "state": {
+          "classic": "Clássico",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Acessível",
+          "graphite": "Grafite"
+        }
       }
     },
     "event": {
       "child_activity": {
-        "name": "Atividade TaskMate",
+        "name": "Atividade de {child}",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1953,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "Atividade da família TaskMate",
+        "name": "Atividade da família",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1969,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Há aprovações pendentes"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Concluir {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Reclamar {reward}"
       }
     }
   },
@@ -2011,6 +2235,1287 @@
     },
     "help_chore_not_available": {
       "message": "{chore} não pode ser feita agora, por isso ainda não há nada para pedir ajuda."
+    },
+    "help_already_on_its_way": {
+      "message": "A ajuda com {chore} já está a caminho."
+    },
+    "help_cooldown": {
+      "message": "Espera um minuto antes de pedires ajuda outra vez."
+    },
+    "rate_limited": {
+      "message": "Demasiados pedidos desta conta. Tenta outra vez daqui a um minuto."
+    },
+    "child_not_found": {
+      "message": "Criança {child_id} não encontrada"
+    },
+    "chore_not_found": {
+      "message": "Tarefa {chore_id} não encontrada"
+    },
+    "reward_not_found": {
+      "message": "Recompensa {reward_id} não encontrada"
+    },
+    "teamwork_size_not_number": {
+      "message": "O tamanho da equipa tem de ser um número inteiro."
+    },
+    "teamwork_size_range": {
+      "message": "Uma tarefa de equipa precisa de 2 a {max} crianças (ou 0 para uma tarefa normal)."
+    },
+    "teamwork_points_mode": {
+      "message": "Os pontos de equipa têm de ser 'each' ou 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "Uma tarefa de equipa não pode ser também aberta."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Uma tarefa de equipa tem de ser atribuída a todos — não a quem chegar primeiro nem por rotação."
+    },
+    "teamwork_timed": {
+      "message": "Uma tarefa cronometrada não pode ser uma tarefa de equipa."
+    },
+    "teamwork_not_team_chore": {
+      "message": "A tarefa “{name}” não é uma tarefa de equipa"
+    },
+    "swap_only_rotation": {
+      "message": "Só as tarefas em rotação podem ser trocadas"
+    },
+    "swap_won_at_auction": {
+      "message": "Esta tarefa foi ganha em leilão hoje, por isso não pode ser trocada"
+    },
+    "swap_already_assigned": {
+      "message": "A tarefa já está atribuída a essa criança hoje"
+    },
+    "swap_already_pending": {
+      "message": "Já há um pedido de troca pendente para esta tarefa"
+    },
+    "swap_too_many_pending": {
+      "message": "Demasiados pedidos de troca pendentes"
+    },
+    "swap_request_not_found": {
+      "message": "Pedido de troca {request_id} não encontrado"
+    },
+    "bulk_unknown_action": {
+      "message": "Ação em massa desconhecida {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Não é possível editar em massa {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Criança desconhecida {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Período desconhecido {period}"
+    },
+    "chore_unknown": {
+      "message": "Tarefa desconhecida: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Saltar não é possível quando a tarefa está atribuída a todos"
+    },
+    "skip_sticky_follower": {
+      "message": "Não é possível saltar uma tarefa que segue o grupo; salta antes a tarefa principal"
+    },
+    "skip_pool_too_small": {
+      "message": "Saltar requer pelo menos 2 crianças na rotação"
+    },
+    "manual_start_everyone_mode": {
+      "message": "O início manual não é possível quando a tarefa está atribuída a todos"
+    },
+    "manual_start_not_in_pool": {
+      "message": "A criança {child_id} não faz parte da rotação desta tarefa"
+    },
+    "chore_photo_required": {
+      "message": "Esta tarefa precisa de uma foto como prova."
+    },
+    "chore_note_required": {
+      "message": "Diz o que fizeste para enviar esta."
+    },
+    "chore_quantity_required": {
+      "message": "Diz quantos {unit} fizeste."
+    },
+    "backdate_day_range": {
+      "message": "Escolhe um dia nos últimos {days} dias, antes de hoje."
+    },
+    "backdate_switched_off": {
+      "message": "“{name}” está desligada."
+    },
+    "backdate_not_assigned": {
+      "message": "“{name}” não é uma das tarefas de {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "“{name}” é feita em rotação ou precisa de uma equipa, por isso não pode ser registada num dia passado."
+    },
+    "backdate_open_ended": {
+      "message": "“{name}” é aberta, por isso precisa da nota da criança e de um preço. Usa o cartão da criança."
+    },
+    "backdate_set_times": {
+      "message": "“{name}” tem horários fixos, por isso não pode ser registada num dia passado."
+    },
+    "backdate_holiday": {
+      "message": "Eram férias {weekday, select, Monday {na segunda-feira} Tuesday {na terça-feira} Wednesday {na quarta-feira} Thursday {na quinta-feira} Friday {na sexta-feira} Saturday {no sábado} Sunday {no domingo} other {em {weekday}}}, por isso não havia tarefas."
+    },
+    "backdate_sick_day": {
+      "message": "{child} esteve doente {weekday, select, Monday {na segunda-feira} Tuesday {na terça-feira} Wednesday {na quarta-feira} Thursday {na quinta-feira} Friday {na sexta-feira} Saturday {no sábado} Sunday {no domingo} other {em {weekday}}}, por isso não havia tarefas."
+    },
+    "backdate_birthday": {
+      "message": "{child} fez anos {weekday, select, Monday {na segunda-feira} Tuesday {na terça-feira} Wednesday {na quarta-feira} Thursday {na quinta-feira} Friday {na sexta-feira} Saturday {no sábado} Sunday {no domingo} other {em {weekday}}}, um dia sem tarefas."
+    },
+    "backdate_auction": {
+      "message": "“{name}” foi ganha em leilão nesse dia, por isso não pode ser registada depois."
+    },
+    "backdate_weekly_target_met": {
+      "message": "“{name}” já tinha atingido as suas {target} nessa semana."
+    },
+    "backdate_not_due": {
+      "message": "“{name}” não estava prevista {weekday, select, Monday {na segunda-feira} Tuesday {na terça-feira} Wednesday {na quarta-feira} Thursday {na quinta-feira} Friday {na sexta-feira} Saturday {no sábado} Sunday {no domingo} other {em {weekday}}}."
+    },
+    "backdate_daily_limit": {
+      "message": "“{name}” já foi feita {done}/{limit} vezes {weekday, select, Monday {na segunda-feira} Tuesday {na terça-feira} Wednesday {na quarta-feira} Thursday {na quinta-feira} Friday {na sexta-feira} Saturday {no sábado} Sunday {no domingo} other {em {weekday}}}."
+    },
+    "chore_disabled": {
+      "message": "A tarefa “{name}” está desligada"
+    },
+    "parent_complete_one_shot": {
+      "message": "A tarefa “{name}” é uma tarefa única e não pode ser concluída por um pai ou mãe"
+    },
+    "parent_complete_no_children": {
+      "message": "A tarefa “{name}” não tem crianças para quem a esconder"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "A tarefa “{name}” é partilhada em rotação e só pode ser feita para todos"
+    },
+    "parent_complete_not_assigned": {
+      "message": "A tarefa “{name}” não está atribuída a essa criança"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Subtarefa bónus {subtask_id} não encontrada na tarefa “{name}”"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "A subtarefa bónus “{subtask}” não está atribuída a {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Não é possível concluir a subtarefa bónus “{subtask}” — a tarefa principal “{name}” tem de ser concluída primeiro hoje."
+    },
+    "bonus_subtask_already_done": {
+      "message": "A subtarefa bónus “{subtask}” já foi concluída hoje."
+    },
+    "undo_window_passed": {
+      "message": "Esta tarefa já não pode ser anulada. Pede a um adulto que a anule."
+    },
+    "undo_points_spent": {
+      "message": "Esta tarefa não pode ser anulada agora: os pontos já foram gastos. Pede a um adulto."
+    },
+    "completion_not_found": {
+      "message": "Conclusão {completion_id} não encontrada"
+    },
+    "completion_not_approved": {
+      "message": "A conclusão não está aprovada; não há nada para anular"
+    },
+    "chore_sort_unknown": {
+      "message": "Ordenação desconhecida “{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Tarefa duplicada no grupo: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "A tarefa “{name}” está atribuída a todos e não pode entrar num grupo"
+    },
+    "task_group_already_member": {
+      "message": "A tarefa “{name}” já pertence ao grupo “{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "Regra de grupo de tarefas desconhecida: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Grupo de tarefas desconhecido: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "A quantidade não pode ser 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Os congelamentos de sequência estão desligados (streak_freeze_max é 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} já tem o máximo de {cap} congelamentos de sequência"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} já tem o máximo de {cap} congelamentos de sequência"
+    },
+    "streak_freeze_off": {
+      "message": "Os congelamentos de sequência estão desligados"
+    },
+    "points_non_negative": {
+      "message": "Os pontos não podem ser negativos"
+    },
+    "transaction_not_found": {
+      "message": "Transação {transaction_id} não encontrada"
+    },
+    "undo_not_undoable": {
+      "message": "Esta ação não pode ser anulada"
+    },
+    "gift_undo_too_old": {
+      "message": "Esta oferta é anterior à função de anular e não pode ser revertida automaticamente."
+    },
+    "gift_undo_spent": {
+      "message": "{child} já gastou parte desta oferta, por isso não pode ser anulada."
+    },
+    "gift_amount_positive": {
+      "message": "O valor da oferta tem de ser positivo"
+    },
+    "gift_same_child": {
+      "message": "Não é possível oferecer à mesma criança"
+    },
+    "gift_child_not_found": {
+      "message": "Remetente ou destinatário não encontrado"
+    },
+    "gift_not_enough_points": {
+      "message": "Pontos insuficientes: {child} tem {points}, oferta {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "“{name}” é um jackpot partilhado e o mealheiro não está cheio. São precisos {cost}, há {saved} poupados"
+    },
+    "reward_not_available_to": {
+      "message": "A recompensa “{name}” não está disponível para {child}"
+    },
+    "reward_sold_out": {
+      "message": "A recompensa “{name}” está esgotada"
+    },
+    "reward_expired": {
+      "message": "A recompensa “{name}” expirou"
+    },
+    "reward_not_available_now": {
+      "message": "A recompensa “{name}” não está disponível neste momento"
+    },
+    "reward_claim_already_waiting": {
+      "message": "Um pedido de “{name}” já está à espera de aprovação"
+    },
+    "reward_claims_too_many": {
+      "message": "Há demasiados pedidos de recompensa à espera de aprovação"
+    },
+    "reward_not_enough_points": {
+      "message": "Pontos insuficientes. São precisos {cost}, tens {available} disponíveis"
+    },
+    "reward_spending_cap": {
+      "message": "Limite de gastos atingido: {cap} por período já usados"
+    },
+    "reward_claim_target_missing": {
+      "message": "Recompensa ou criança não encontrada para o pedido {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Pontos insuficientes para aprovar. São precisos {cost}, há {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "“{name}” já foi aprovada e já não pode ser recusada"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "Esta recompensa já foi aprovada e já não pode ser recusada"
+    },
+    "pool_allocate_min": {
+      "message": "Tens de atribuir pelo menos 1 ponto"
+    },
+    "pool_no_spendable": {
+      "message": "{child} não tem pontos para gastar"
+    },
+    "pool_full": {
+      "message": "O mealheiro da recompensa “{name}” já está cheio"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} pode ter {name} uma vez por dia. Volta a estar disponível em {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} pode ter {name} uma vez por semana. Volta a estar disponível em {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} pode ter {name} uma vez por mês. Volta a estar disponível em {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} pode ter {name} {count} vezes por dia. Volta a estar disponível em {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} pode ter {name} {count} vezes por semana. Volta a estar disponível em {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} pode ter {name} {count} vezes por mês. Volta a estar disponível em {date}"
+    },
+    "reward_gift_off": {
+      "message": "Comprar recompensas uns para os outros está desligado"
+    },
+    "reward_gift_children_only": {
+      "message": "As recompensas só podem ser compradas para crianças"
+    },
+    "reward_gift_not_giftable": {
+      "message": "“{name}” não pode ser comprada para outra pessoa"
+    },
+    "reward_rating_stars": {
+      "message": "Escolhe de 1 a 3 estrelas"
+    },
+    "reward_rating_not_yet": {
+      "message": "Essa recompensa ainda não pode ser avaliada"
+    },
+    "reward_rating_not_holder": {
+      "message": "Só a criança que recebeu a recompensa a pode avaliar"
+    },
+    "reward_rating_already": {
+      "message": "Essa recompensa já foi avaliada"
+    },
+    "service_unknown_child": {
+      "message": "Criança desconhecida “{ref}”. Crianças válidas: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Há mais de uma criança chamada “{ref}”; usa antes o id da criança ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Nada para atualizar: indica pelo menos um campo a alterar"
+    },
+    "service_confirm_delete": {
+      "message": "Define confirm: true para eliminar a tarefa"
+    },
+    "penalty_already_earned_back": {
+      "message": "Essa penalização já foi recuperada."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Essa recompensa não está à espera de ser entregue."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Essa recompensa já foi marcada como entregue."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Essa recompensa pertence a {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "“{field}” não pode ser alterado de forma agendada"
+    },
+    "scheduled_expects_bool": {
+      "message": "“{field}” espera true ou false"
+    },
+    "scheduled_expects_int": {
+      "message": "“{field}” espera um número inteiro"
+    },
+    "scheduled_negative": {
+      "message": "“{field}” não pode ser negativo"
+    },
+    "scheduled_expects_list": {
+      "message": "“{field}” espera uma lista"
+    },
+    "scheduled_expects_text": {
+      "message": "“{field}” espera texto"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on tem de ser uma data ISO, p. ex. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on tem de ser uma data futura"
+    },
+    "scheduled_no_fields": {
+      "message": "Uma alteração agendada tem de mudar pelo menos um campo"
+    },
+    "scheduled_change_not_found": {
+      "message": "Alteração agendada {change_id} não encontrada"
+    },
+    "timed_not_timed": {
+      "message": "A tarefa “{name}” não é uma tarefa cronometrada"
+    },
+    "timed_already_running": {
+      "message": "O temporizador já está a contar"
+    },
+    "timed_daily_cap": {
+      "message": "Limite diário atingido ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "“{name}” não está disponível para {child} neste momento"
+    },
+    "timed_no_running": {
+      "message": "Não há nenhum temporizador a contar para pausar"
+    },
+    "timed_no_active": {
+      "message": "Não há nenhum temporizador ativo para parar"
+    },
+    "set_time_unknown": {
+      "message": "Essa hora não é um dos horários fixos desta tarefa."
+    },
+    "sick_day_range": {
+      "message": "Escolhe um dia entre há uma semana e daqui a um mês."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Nada para restaurar: nunca foi eliminado ou já foi apagado de vez"
+    },
+    "trash_id_exists": {
+      "message": "Já existe algo com o id {item_id}"
+    },
+    "wish_not_found": {
+      "message": "Desejo não encontrado"
+    },
+    "wish_target_not_whole": {
+      "message": "O objetivo tem de ser um número inteiro"
+    },
+    "wish_target_range": {
+      "message": "O objetivo tem de estar entre 1 e {max}"
+    },
+    "wish_name_required": {
+      "message": "Dá um nome ao desejo"
+    },
+    "wish_link_invalid": {
+      "message": "As ligações têm de ser um endereço web começado por http:// ou https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} já tem {max} desejos em curso"
+    },
+    "wish_picture_unusable": {
+      "message": "Essa imagem não pode ser usada"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Só um desejo em espera ou recusado pode ser retirado"
+    },
+    "wish_not_open_for_saving": {
+      "message": "Não é possível poupar para “{name}”"
+    },
+    "wish_move_min": {
+      "message": "Tens de mover pelo menos 1 ponto"
+    },
+    "wish_fully_funded": {
+      "message": "“{name}” já está totalmente pago"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} não tem pontos para gastar"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Não é possível tirar pontos de “{name}” agora"
+    },
+    "wish_take_back_min": {
+      "message": "Tens de retirar pelo menos 1 ponto"
+    },
+    "wish_nothing_saved": {
+      "message": "Não há nada poupado em “{name}” para retirar"
+    },
+    "wish_cannot_redeem": {
+      "message": "“{name}” não pode ser resgatado agora"
+    },
+    "wish_needs_more_points": {
+      "message": "“{name}” ainda precisa de mais {points} pontos"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Já há demasiados pedidos de recompensa à espera de aprovação"
+    },
+    "wish_not_waiting_approval": {
+      "message": "“{name}” não está à espera de aprovação"
+    },
+    "wish_cannot_decline": {
+      "message": "“{name}” já não pode ser recusado"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "“{name}” não aceita promessas"
+    },
+    "wish_pledge_name_required": {
+      "message": "Indica de quem é a promessa"
+    },
+    "wish_pledge_min": {
+      "message": "Uma promessa tem de ser de pelo menos 1 ponto"
+    },
+    "wish_too_many_pledges": {
+      "message": "“{name}” já tem {max} promessas"
+    },
+    "wish_pledges_locked": {
+      "message": "As promessas para “{name}” já não podem ser alteradas"
+    },
+    "wish_pledge_not_found": {
+      "message": "Promessa não encontrada"
+    },
+    "wish_claim_missing": {
+      "message": "Desejo ou criança não encontrados para o pedido {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "“{name}” já não está à espera de ser resgatado"
+    },
+    "wish_not_funded": {
+      "message": "“{name}” já não está totalmente pago"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "A imagem tem de ser um emoji (até {max} caracteres)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Uma cor tem de ser do tipo #ff8800, ou “rainbow”."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Esse artigo não está na loja."
+    },
+    "pet_shop_name_too_long": {
+      "message": "O nome pode ter no máximo {max} caracteres."
+    },
+    "pet_shop_name_required": {
+      "message": "Dá um nome ao artigo."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Posição desconhecida “{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "O preço e o nível têm de ser números inteiros."
+    },
+    "pet_shop_cost_range": {
+      "message": "O preço tem de estar entre 1 e {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "O nível tem de estar entre 0 e {max}."
+    },
+    "pet_shop_full": {
+      "message": "A loja tem no máximo {max} artigos."
+    },
+    "pets_switched_off": {
+      "message": "Os animais estão desligados."
+    },
+    "pet_adopt_first": {
+      "message": "Adota primeiro um animal."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Isso ainda não está desbloqueado."
+    },
+    "pet_shop_closed": {
+      "message": "A loja de animais está fechada."
+    },
+    "pet_shop_buy_first": {
+      "message": "Compra-o primeiro."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Esse artigo não está à venda."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Desbloqueia no nível {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Já tens isso."
+    },
+    "pet_shop_already_pending": {
+      "message": "Isso já está à espera de um pai ou mãe."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Ainda não tens pontos suficientes para isso."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Essa compra já não está à espera."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Essa criança ou artigo já não existe; recusa a compra em vez disso."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} já não tem pontos suficientes para isso."
+    },
+    "pet_unknown_species": {
+      "message": "Animal desconhecido “{species}”"
+    },
+    "pet_name_required": {
+      "message": "Dá um nome ao teu animal."
+    },
+    "pet_no_egg": {
+      "message": "Ainda não há nenhum ovo para chocar."
+    },
+    "auction_not_found": {
+      "message": "Esse leilão já não existe. Atualiza o cartão."
+    },
+    "auction_refuse_off": {
+      "message": "Essa tarefa está desligada."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Uma tarefa sem atribuição não pode ser dada a ninguém, por isso não pode ir a leilão."
+    },
+    "auction_refuse_team": {
+      "message": "Uma tarefa de equipa é partilhada por uma equipa, por isso não pode ir a leilão."
+    },
+    "auction_refuse_timed": {
+      "message": "Uma tarefa cronometrada é paga ao minuto, por isso não pode ir a leilão."
+    },
+    "auction_refuse_open_ended": {
+      "message": "O preço de uma tarefa em aberto é definido pelo pai ou mãe, por isso não pode ir a leilão."
+    },
+    "auction_invalid_date": {
+      "message": "Data inválida: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Escolhe uma ocorrência a partir de amanhã."
+    },
+    "auction_not_scheduled": {
+      "message": "“{chore}” não está agendada para {date}."
+    },
+    "auction_already_exists": {
+      "message": "Essa ocorrência já tem um leilão."
+    },
+    "auction_points_not_whole": {
+      "message": "Os pontos têm de ser números inteiros."
+    },
+    "auction_max_range": {
+      "message": "A licitação máxima está entre 1 e {max} pontos."
+    },
+    "auction_min_range": {
+      "message": "A licitação mínima tem de estar entre 1 e o máximo."
+    },
+    "auction_needs_close": {
+      "message": "Um leilão precisa de uma hora de fecho."
+    },
+    "auction_close_in_past": {
+      "message": "A hora de fecho já passou."
+    },
+    "auction_close_before_day": {
+      "message": "As licitações têm de fechar antes do dia da tarefa."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Só as crianças que podem fazer esta tarefa podem licitar."
+    },
+    "auction_no_bidders": {
+      "message": "Escolhe pelo menos uma criança que possa licitar."
+    },
+    "auction_already_closed": {
+      "message": "Este leilão já fechou."
+    },
+    "auction_already_cancelled": {
+      "message": "Este leilão já foi cancelado."
+    },
+    "auction_occurrence_passed": {
+      "message": "Essa ocorrência já passou."
+    },
+    "auction_still_live": {
+      "message": "Este leilão ainda está a decorrer. Cancela-o em vez disso."
+    },
+    "auction_not_for_you": {
+      "message": "Este leilão não é para ti."
+    },
+    "auction_bidding_closed": {
+      "message": "As licitações neste leilão já fecharam."
+    },
+    "auction_bid_not_whole": {
+      "message": "Uma licitação é um número inteiro de pontos."
+    },
+    "auction_bid_range": {
+      "message": "Licita entre {min} e {max} pontos."
+    },
+    "auction_no_bid": {
+      "message": "Não licitaste neste."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Hora de expiração inválida: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Essa tarefa extra já não existe. Atualiza o cartão."
+    },
+    "bounty_title_required": {
+      "message": "Uma tarefa extra precisa de um título."
+    },
+    "bounty_points_not_whole": {
+      "message": "Os pontos têm de ser um número inteiro."
+    },
+    "bounty_points_range": {
+      "message": "Uma tarefa extra vale entre 1 e {max} pontos."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "A reserva tem de ser um número inteiro de horas."
+    },
+    "bounty_claim_hours_range": {
+      "message": "A reserva dura entre 1 e {max} horas."
+    },
+    "bounty_expiry_in_past": {
+      "message": "A expiração já passou."
+    },
+    "bounty_finished_locked": {
+      "message": "Uma tarefa extra concluída não pode ser editada."
+    },
+    "bounty_claimed_locked": {
+      "message": "Depois de uma tarefa extra ser reservada, só os pontos e a expiração podem mudar."
+    },
+    "bounty_review_before_remove": {
+      "message": "Aprova ou rejeita o trabalho feito antes de remover esta tarefa extra."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Só uma tarefa extra reservada pode ser libertada."
+    },
+    "bounty_not_for_you": {
+      "message": "Esta tarefa extra não é para ti."
+    },
+    "bounty_taken": {
+      "message": "Alguém chegou primeiro — esta tarefa extra já não está disponível."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Termina primeiro “{title}” — só podes ter uma tarefa extra de cada vez."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Não reservaste esta tarefa extra."
+    },
+    "bounty_claim_expired": {
+      "message": "A tua reserva desta tarefa extra expirou."
+    },
+    "bounty_photo_required": {
+      "message": "Esta tarefa extra precisa de uma foto do trabalho feito."
+    },
+    "raffle_name_required": {
+      "message": "Dá um nome ao sorteio."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Um bilhete custa de 1 a {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Escolhe quando o sorteio é feito."
+    },
+    "raffle_field_required": {
+      "message": "{field} é obrigatório"
+    },
+    "raffle_draw_in_past": {
+      "message": "O sorteio tem de ser no futuro."
+    },
+    "raffle_not_found": {
+      "message": "Sorteio não encontrado"
+    },
+    "raffle_not_open_edit": {
+      "message": "Só um sorteio aberto pode ser alterado."
+    },
+    "raffle_price_locked": {
+      "message": "Já foram comprados bilhetes, por isso o preço não pode mudar."
+    },
+    "raffle_closed": {
+      "message": "Este sorteio já fechou."
+    },
+    "raffle_drawing": {
+      "message": "Este sorteio está a ser feito."
+    },
+    "raffle_not_open_to": {
+      "message": "Este sorteio não está aberto a {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Compra pelo menos um bilhete."
+    },
+    "raffle_max_tickets": {
+      "message": "Podes ter no máximo {max} bilhetes."
+    },
+    "raffle_not_enough_points": {
+      "message": "Não tens pontos suficientes para tantos bilhetes."
+    },
+    "raffle_already_closed": {
+      "message": "Este sorteio já fechou."
+    },
+    "roulette_off": {
+      "message": "A roleta de tarefas está desligada"
+    },
+    "roulette_no_spins": {
+      "message": "Não há mais giros hoje"
+    },
+    "roulette_nothing_left": {
+      "message": "Já não há nada para girar"
+    },
+    "unlock_not_allowed": {
+      "message": "“{entity_id}” não está na lista de desbloqueios permitidos. Adiciona-o nas Definições antes de o usares como recompensa."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Os minutos de desbloqueio têm de ser um número inteiro"
+    },
+    "unlock_minutes_negative": {
+      "message": "Os minutos de desbloqueio não podem ser negativos"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Os minutos de desbloqueio não podem passar de {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Esse avatar não está no catálogo"
+    },
+    "avatar_locked": {
+      "message": "Esse avatar ainda não está desbloqueado"
+    },
+    "weekly_goals_off": {
+      "message": "Os objetivos semanais estão desligados."
+    },
+    "weekly_goal_range": {
+      "message": "Escolhe um objetivo de 0 a {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Um objetivo tem de ser pelo menos {bonus}, o bónus que dá."
+    },
+    "weekly_goal_locked": {
+      "message": "O objetivo desta semana já foi atingido e pago, por isso não pode mudar até segunda-feira."
+    },
+    "challenge_name_required": {
+      "message": "O nome do desafio é obrigatório"
+    },
+    "challenge_target_min": {
+      "message": "O objetivo tem de ser pelo menos 1"
+    },
+    "challenge_not_found": {
+      "message": "Desafio {challenge_id} não encontrado"
+    },
+    "quest_name_required": {
+      "message": "O nome da missão é obrigatório"
+    },
+    "quest_needs_step": {
+      "message": "Uma missão precisa de pelo menos um passo"
+    },
+    "quest_not_found": {
+      "message": "Missão {quest_id} não encontrada"
+    },
+    "admin_only": {
+      "message": "Só para administradores"
+    },
+    "taskmate_not_initialised": {
+      "message": "O TaskMate ainda não está pronto"
+    },
+    "not_allowed": {
+      "message": "Não permitido"
+    },
+    "handler_failed": {
+      "message": "Algo correu mal; consulta o registo do Home Assistant"
+    },
+    "chore_one_off_past_day": {
+      "message": "Uma tarefa única não pode ser marcada para um dia que já passou"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start tem de ser uma data ISO"
+    },
+    "penalty_not_found": {
+      "message": "Penalização {penalty_id} não encontrada"
+    },
+    "bonus_not_found": {
+      "message": "Bónus {bonus_id} não encontrado"
+    },
+    "group_not_found": {
+      "message": "Grupo {group_id} não encontrado"
+    },
+    "chores_bulk_no_names": {
+      "message": "É preciso pelo menos um nome de tarefa"
+    },
+    "notif_child_not_found": {
+      "message": "Criança não encontrada"
+    },
+    "notif_parent_not_found": {
+      "message": "Pai ou mãe não encontrado"
+    },
+    "recap_not_found": {
+      "message": "Resumo não encontrado"
+    },
+    "voucher_not_approved": {
+      "message": "Só uma recompensa aprovada pode ser impressa"
+    },
+    "voucher_missing": {
+      "message": "Essa recompensa ou criança já não existe"
+    },
+    "setup_invalid_birthday": {
+      "message": "O aniversário “{value}” não é uma data válida"
+    },
+    "kiosk_pin_invalid": {
+      "message": "Um PIN de quiosque tem de ter exatamente 4 dígitos"
+    },
+    "time_periods_empty": {
+      "message": "Tem de haver pelo menos um período"
+    },
+    "time_periods_too_many": {
+      "message": "demasiados períodos (máx. {max})"
+    },
+    "time_periods_not_object": {
+      "message": "cada período tem de ser um objeto"
+    },
+    "time_periods_duplicate_id": {
+      "message": "id de período duplicado: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "cada período personalizado precisa de um nome"
+    },
+    "time_periods_invalid_time": {
+      "message": "hora inválida para o período “{name}” (usa HH:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "o período “{name}” tem de começar antes de acabar"
+    },
+    "time_periods_overlap": {
+      "message": "“{name}” sobrepõe-se a “{other}” — os períodos não se podem sobrepor"
+    },
+    "time_periods_in_use": {
+      "message": "não é possível apagar um período ainda usado por tarefas: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "os períodos de férias têm de ser uma lista"
+    },
+    "vacation_periods_too_many": {
+      "message": "demasiados períodos de férias (máx. {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "cada período de férias tem de ser um objeto"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "cada período de férias precisa de datas de início e fim válidas (AAAA-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Não é possível aplicar um modelo sem tarefas"
+    },
+    "template_none_selected": {
+      "message": "Escolhe pelo menos uma tarefa"
+    },
+    "template_no_valid_chores": {
+      "message": "Não foram encontradas tarefas válidas para os IDs escolhidos"
+    },
+    "template_needs_chore": {
+      "message": "Um modelo tem de ter pelo menos uma tarefa"
+    },
+    "template_builtin_modify": {
+      "message": "Não é possível alterar o modelo incluído “{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "Não é possível apagar o modelo incluído “{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "Isto não parece um pacote do TaskMate"
+    },
+    "template_pack_wrong_format": {
+      "message": "Não é um pacote de modelos do TaskMate"
+    },
+    "template_pack_version_nan": {
+      "message": "A versão do pacote não é um número"
+    },
+    "template_pack_too_new": {
+      "message": "Este pacote precisa de um TaskMate mais recente (versão do pacote {version}, esta entende {supported})"
+    },
+    "template_pack_empty": {
+      "message": "O pacote não tem modelos"
+    },
+    "template_pack_too_many": {
+      "message": "O pacote tem demasiados modelos (máx. {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "O pacote contém um modelo mal formado"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Um modelo do pacote não tem nome"
+    },
+    "template_pack_template_no_chores": {
+      "message": "O modelo “{name}” não tem tarefas"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "O modelo “{name}” tem demasiadas tarefas"
+    },
+    "template_pack_malformed_chore": {
+      "message": "O modelo “{name}” tem uma tarefa mal formada"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "Uma tarefa em “{name}” não tem nome"
+    },
+    "boost_bad_time": {
+      "message": "“{value}” não é uma hora como 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "O multiplicador tem de ser um número."
+    },
+    "boost_multiplier_range": {
+      "message": "Escolhe um multiplicador de ×{min} a ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Tarefa {chore_id} não encontrada."
+    },
+    "boost_child_not_found": {
+      "message": "Criança {child_id} não encontrada."
+    },
+    "boost_start_past": {
+      "message": "Um boost não pode começar no passado."
+    },
+    "boost_too_far_ahead": {
+      "message": "Um boost pode ser agendado até uma semana antes."
+    },
+    "boost_minutes_nan": {
+      "message": "Os minutos têm de ser um número inteiro."
+    },
+    "boost_minutes_range": {
+      "message": "Escolhe de 1 a {max} minutos."
+    },
+    "boost_already_ended": {
+      "message": "Esse boost já terminou."
+    },
+    "boost_rule_no_days": {
+      "message": "Escolhe pelo menos um dia."
+    },
+    "boost_rule_end_before_start": {
+      "message": "A hora de fim tem de ser depois da hora de início."
+    },
+    "boost_rules_max": {
+      "message": "No máximo {max} boosts recorrentes."
+    },
+    "boost_rule_gone": {
+      "message": "Esse boost recorrente já não existe."
+    },
+    "season_pack_unknown": {
+      "message": "Pacote sazonal desconhecido: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Criança desconhecida: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Esta tarefa já foi anulada. Atualiza o cartão."
+    },
+    "import_invalid_payload": {
+      "message": "Exportação do TaskMate inválida"
+    },
+    "import_data_not_object": {
+      "message": "Os dados importados têm de ser um objeto"
+    },
+    "allowance_points_min": {
+      "message": "Os pontos têm de ser pelo menos 1"
+    },
+    "allowance_not_enabled": {
+      "message": "A mesada não está ativada"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} só tem {points} {points_name} para pagar."
+    },
+    "appeals_off": {
+      "message": "Os recursos estão desligados."
+    },
+    "appeals_already_appealed": {
+      "message": "Já foi feito recurso disso."
+    },
+    "appeals_not_appealable": {
+      "message": "Não é possível recorrer disso."
+    },
+    "appeals_not_found": {
+      "message": "Esse recurso já não existe."
+    },
+    "appeals_already_decided": {
+      "message": "Esse recurso já foi decidido."
+    },
+    "appeals_child_gone": {
+      "message": "A criança já não está aqui."
+    },
+    "appeals_reward_gone": {
+      "message": "Essa recompensa já não existe."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Essa penalização já foi retirada."
+    },
+    "appeals_unknown_kind": {
+      "message": "Tipo de recurso desconhecido {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "O aniversário tem de ser AAAA-MM-DD ou MM-DD, recebido “{value}”"
+    },
+    "birthday_in_future": {
+      "message": "O aniversário não pode ser no futuro"
+    },
+    "chore_reminders_off": {
+      "message": "Os lembretes estão desligados"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} não é uma das tarefas de {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "Escolhe uma hora como 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Escolhe uma hora entre {earliest} e {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on tem de ser uma data ISO, por ex. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Essa inspeção já não existe. Atualiza e tenta outra vez."
+    },
+    "inspection_already_decided": {
+      "message": "Essa inspeção já foi decidida ou já fechou."
+    },
+    "inspections_off": {
+      "message": "As inspeções surpresa estão desligadas nas Definições."
+    },
+    "inspection_chore_gone": {
+      "message": "Essa tarefa já não existe."
+    },
+    "inspection_not_approved": {
+      "message": "Só as tarefas aprovadas podem ser inspecionadas."
+    },
+    "inspection_not_child_chore": {
+      "message": "Só uma tarefa da própria criança pode ser inspecionada."
+    },
+    "inspection_child_gone": {
+      "message": "Essa criança já não existe."
+    },
+    "inspection_too_old": {
+      "message": "Só as tarefas aprovadas nas últimas {hours} horas podem ser inspecionadas."
+    },
+    "inspection_already_inspected": {
+      "message": "Essa tarefa já foi inspecionada."
+    },
+    "inspection_redo_today_only": {
+      "message": "Só uma tarefa terminada hoje pode ser devolvida para refazer."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url tem de ser um /caminho, um URL http(s) ou noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group não pode ter espaços (experimenta family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group não pode ter caracteres de controlo"
+    },
+    "notification_group_too_long": {
+      "message": "group pode ter no máximo 64 caracteres"
+    },
+    "notification_unknown_type": {
+      "message": "Tipo de notificação desconhecido {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Destinatário de notificações desconhecido {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Os minutos têm de ser um número inteiro"
+    },
+    "screen_time_minutes_max": {
+      "message": "Os minutos não podem passar de {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "O frasco de tempo de ecrã está desligado"
+    },
+    "screen_time_jar_full": {
+      "message": "O frasco está cheio"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Não há minutos para poupar"
+    },
+    "setup_unknown_age_group": {
+      "message": "Faixa etária desconhecida “{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Cada criança nova precisa da sua própria ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Uma criança precisa de um nome"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Tarefa atribuída a uma criança desconhecida “{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "Uma tarefa precisa de um nome"
+    },
+    "setup_reward_needs_name": {
+      "message": "Uma recompensa precisa de um nome"
+    },
+    "sibling_checks_off": {
+      "message": "As verificações entre irmãos estão desligadas"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Veredicto desconhecido {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Essa tarefa já foi verificada. Atualiza o cartão."
+    },
+    "sibling_check_own_chore": {
+      "message": "Não podes verificar a tua própria tarefa"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} não pode verificar as tarefas desta criança"
+    },
+    "sound_invalid_file_name": {
+      "message": "Nome de ficheiro de som inválido: {file}"
+    },
+    "sound_already_registered": {
+      "message": "O som {file} já está registado"
+    },
+    "sound_unknown_custom": {
+      "message": "Som personalizado desconhecido: {file}"
+    },
+    "tour_adult": {
+      "message": "Os perfis de adultos não têm a visita guiada"
+    },
+    "tour_bad_status": {
+      "message": "status tem de ser 'done' ou 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Passo da visita desconhecido {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Já está a falar; tenta outra vez daqui a pouco"
+    },
+    "tts_no_media_player": {
+      "message": "Nenhum leitor multimédia indicado e nenhum predefinido nas Definições"
+    },
+    "tts_no_entity": {
+      "message": "Nenhuma entidade de texto para voz encontrada. Define uma nas Definições ou indica tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} não é uma das tarefas de {child} hoje."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Humor desconhecido “{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Os horários fixos têm de ser uma lista."
+    },
+    "set_times_too_many": {
+      "message": "Uma tarefa pode ter no máximo {max} horários fixos."
+    },
+    "set_times_timed": {
+      "message": "Uma tarefa cronometrada não pode ter horários fixos."
+    },
+    "set_times_open_ended": {
+      "message": "Uma tarefa sem limite não pode ter horários fixos."
+    },
+    "set_times_quantity": {
+      "message": "Uma tarefa de quantidade não pode ter horários fixos."
+    },
+    "set_times_teamwork": {
+      "message": "Uma tarefa de equipa não pode ter horários fixos."
+    },
+    "set_times_need_start_end": {
+      "message": "Cada horário fixo precisa de um início e de um fim."
+    },
+    "set_times_bad_format": {
+      "message": "Os horários fixos precisam de um início e de um fim como 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "Um horário fixo tem de fechar depois de abrir, no mesmo dia."
+    },
+    "set_times_overlap": {
+      "message": "Dois horários fixos sobrepõem-se. Muda um deles."
+    },
+    "template_not_found": {
+      "message": "Modelo {template_id} não encontrado"
+    },
+    "upload_admin_required": {
+      "message": "É preciso ser administrador"
+    },
+    "upload_file_too_large": {
+      "message": "Ficheiro demasiado grande"
+    },
+    "upload_expected_multipart": {
+      "message": "Era esperado um formulário multipart"
+    },
+    "upload_too_many_parts": {
+      "message": "Demasiadas partes no formulário"
+    },
+    "upload_no_file": {
+      "message": "Nenhum ficheiro enviado"
+    },
+    "upload_image_unsupported": {
+      "message": "Imagem não suportada (JPEG, PNG ou WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Armazenamento de imagens cheio"
+    },
+    "upload_image_store_failed": {
+      "message": "Não foi possível guardar a imagem"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Demasiados envios, tenta outra vez daqui a pouco"
+    },
+    "upload_photo_busy": {
+      "message": "Demasiados envios ao mesmo tempo, tenta outra vez daqui a pouco"
+    },
+    "upload_photo_storage_full": {
+      "message": "Armazenamento de fotos cheio"
+    },
+    "upload_photo_timeout": {
+      "message": "O envio demorou demasiado"
+    },
+    "upload_photo_invalid": {
+      "message": "Imagem inválida"
+    },
+    "upload_photo_store_failed": {
+      "message": "Não foi possível guardar a foto"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Tens demasiadas fotos à espera de serem anexadas a uma tarefa. Envia-as ou remove-as primeiro."
+    },
+    "upload_sound_unsupported": {
+      "message": "Som não suportado (MP3, OGG, WAV ou M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Armazenamento de sons cheio"
+    },
+    "upload_sound_store_failed": {
+      "message": "Não foi possível guardar o som"
     }
   },
   "issues": {

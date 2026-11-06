@@ -22,6 +22,7 @@ from homeassistant.core import HomeAssistant
 
 from . import photos
 from .const import DOMAIN
+from .errors import error_body
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,20 +105,20 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         user_id = getattr(user, "id", "") or "anonymous"
         if self._limiter.check(user_id):
             _LOGGER.warning("Rejecting photo upload from %s: rate limit exceeded", user_id)
-            return self.json_message("Too many uploads, try again shortly", HTTPStatus.TOO_MANY_REQUESTS)
+            return self.json(error_body("upload_photo_rate_limited"), HTTPStatus.TOO_MANY_REQUESTS)
 
         # Every slot busy means every slot is buffering somebody's body. Say
         # so now rather than queue: a queue of waiting handlers is itself a
         # pile of open connections one account can build.
         if self._slots.locked():
-            return self.json_message("Too many uploads at once, try again in a moment", HTTPStatus.TOO_MANY_REQUESTS)
+            return self.json(error_body("upload_photo_busy"), HTTPStatus.TOO_MANY_REQUESTS)
         async with self._slots:
             return await self._handle_upload(request, user_id)
 
     async def _handle_upload(self, request: web.Request, user_id: str) -> web.Response:
         # Cheap pre-check on the declared length before reading the body.
         if request.content_length and request.content_length > photos.MAX_UPLOAD_BYTES:
-            return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            return self.json(error_body("upload_file_too_large"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
         # This account's own pile of not-yet-submitted photos comes first: the
         # household pool is shared, this one is theirs alone.
@@ -131,19 +132,19 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         if used >= photos.MAX_TOTAL_BYTES:
             used = await self._async_sweep_when_full(user_id)
         if used >= photos.MAX_TOTAL_BYTES:
-            return self.json_message("Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE)
+            return self.json(error_body("upload_photo_storage_full"), HTTPStatus.INSUFFICIENT_STORAGE)
 
         try:
             async with asyncio.timeout(self.BODY_READ_SECONDS):
                 data = await self._read_file_part(request)
         except TimeoutError:
-            return self.json_message("Upload took too long", HTTPStatus.REQUEST_TIMEOUT)
+            return self.json(error_body("upload_photo_timeout"), HTTPStatus.REQUEST_TIMEOUT)
         if isinstance(data, web.Response):
             return data
 
         ext = photos.detect_image_ext(bytes(data))
         if ext is None:
-            return self.json_message("Not a valid image", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_photo_invalid"), HTTPStatus.BAD_REQUEST)
 
         # Re-check with the real size now the body is in hand (the pre-checks
         # above only knew the declared length and that neither budget was
@@ -153,7 +154,7 @@ class TaskMatePhotoUploadView(HomeAssistantView):
             return self._too_many_waiting()
         used = await self.hass.async_add_executor_job(photos.total_photos_bytes, self.hass)
         if used + len(data) > photos.MAX_TOTAL_BYTES:
-            return self.json_message("Photo storage full", HTTPStatus.INSUFFICIENT_STORAGE)
+            return self.json(error_body("upload_photo_storage_full"), HTTPStatus.INSUFFICIENT_STORAGE)
 
         name = f"{uuid.uuid4().hex}.{ext}"
         directory = photos.photos_path(self.hass)
@@ -167,16 +168,13 @@ class TaskMatePhotoUploadView(HomeAssistantView):
             await self.hass.async_add_executor_job(_write)
         except OSError as err:
             _LOGGER.error("Failed to store evidence photo: %s", err)
-            return self.json_message("Could not store photo", HTTPStatus.INTERNAL_SERVER_ERROR)
+            return self.json(error_body("upload_photo_store_failed"), HTTPStatus.INTERNAL_SERVER_ERROR)
 
         self._owners.record(name, user_id)
         return self.json({"photo_url": f"{photos.URL_PREFIX}/{name}"})
 
     def _too_many_waiting(self) -> web.Response:
-        return self.json_message(
-            "You have too many photos waiting to be attached to a chore. Submit or remove those first.",
-            HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
-        )
+        return self.json(error_body("upload_photo_pending_limit"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
 
     def _referenced(self) -> set[str]:
         coordinator = _get_coordinator(self.hass)
@@ -199,7 +197,7 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         try:
             reader = await request.multipart()
         except (ValueError, AssertionError):
-            return self.json_message("Expected multipart form", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_expected_multipart"), HTTPStatus.BAD_REQUEST)
 
         # Find the "file" part. Bound the scan so a stream of endlessly-named
         # non-"file" parts can't hold a handler open indefinitely.
@@ -208,10 +206,10 @@ class TaskMatePhotoUploadView(HomeAssistantView):
         while field is not None and field.name != "file":
             parts_scanned += 1
             if parts_scanned > 16:
-                return self.json_message("Too many form parts", HTTPStatus.BAD_REQUEST)
+                return self.json(error_body("upload_too_many_parts"), HTTPStatus.BAD_REQUEST)
             field = await reader.next()
         if field is None:
-            return self.json_message("No file provided", HTTPStatus.BAD_REQUEST)
+            return self.json(error_body("upload_no_file"), HTTPStatus.BAD_REQUEST)
 
         # Stream the part, enforcing the size cap as we go.
         data = bytearray()
@@ -221,7 +219,7 @@ class TaskMatePhotoUploadView(HomeAssistantView):
                 break
             data.extend(chunk)
             if len(data) > photos.MAX_UPLOAD_BYTES:
-                return self.json_message("File too large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return self.json(error_body("upload_file_too_large"), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
         return data
 
     async def _async_sweep_when_full(self, user_id: str) -> int:

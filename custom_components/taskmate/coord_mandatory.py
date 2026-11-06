@@ -13,6 +13,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.util import dt as dt_util
 
+from . import notify_strings
 from .const import (
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
@@ -352,7 +353,9 @@ class MandatoryMixin:
             ctx = {
                 "child_id": miss.child_id,
                 "child_name": getattr(child, "name", ""),
-                "chore_name": set_time_label(chore, getattr(miss, "time_id", "")) if chore else "chore",
+                "chore_name": set_time_label(chore, getattr(miss, "time_id", ""))
+                if chore
+                else notify_strings.text(self.hass, "fallback_chore"),
             }
             for stage in range(miss.escalation_stage + 1, target + 1):
                 if stage in (1, 2):

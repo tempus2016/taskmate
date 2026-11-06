@@ -50,8 +50,19 @@ def build_chart(
     orientation: str = "portrait",
     title: str = "This week",
     points_name: str = "Stars",
+    day_names: list[str] | None = None,
+    week_label: str = "",
+    empty_text: str = "No chores to show for this week.",
+    footer_text: str = "",
+    lang: str = "en",
 ) -> str:
-    """Render the printable chart as a standalone HTML document."""
+    """Render the printable chart as a standalone HTML document.
+
+    ``day_names`` (Monday first), ``week_label``, ``empty_text`` and
+    ``footer_text`` carry the caller's translated wording; without them the
+    chart is in English.
+    """
+    names = day_names if day_names and len(day_names) == 7 else [d[:3] for d in DAY_NAMES]
     if orientation not in ORIENTATIONS:
         orientation = "portrait"
 
@@ -77,13 +88,14 @@ def build_chart(
         rows.append(f'<tr><th class="who">{escape(str(child.get("name", "")))}</th>' + "".join(cells) + "</tr>")
 
     header = "".join(
-        f'<th><span class="dow">{DAY_NAMES[d.weekday()][:3]}</span><span class="dom">{d.day}</span></th>' for d in days
+        f'<th><span class="dow">{escape(names[d.weekday()])}</span><span class="dom">{d.day}</span></th>' for d in days
     )
-    week_label = f"{start.strftime('%d %b')} – {(start + timedelta(days=6)).strftime('%d %b %Y')}"
-    body = "".join(rows) or ('<tr><td colspan="8" class="empty">No chores to show for this week.</td></tr>')
+    week_label = week_label or f"{start.strftime('%d %b')} – {(start + timedelta(days=6)).strftime('%d %b %Y')}"
+    footer_text = footer_text or f"Tick each box as it's done. {points_name} are still awarded in TaskMate."
+    body = "".join(rows) or (f'<tr><td colspan="8" class="empty">{escape(empty_text)}</td></tr>')
 
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{escape(lang, quote=True)}">
 <head>
 <meta charset="utf-8">
 <title>{escape(title)} — {escape(week_label)}</title>
@@ -127,6 +139,6 @@ def build_chart(
   <thead><tr><th class="who">&nbsp;</th>{header}</tr></thead>
   <tbody>{body}</tbody>
 </table>
-<footer>Tick each box as it's done. {escape(points_name)} are still awarded in TaskMate.</footer>
+<footer>{escape(footer_text)}</footer>
 </body>
 </html>"""

@@ -33,6 +33,7 @@ from .const import (
     WISH_MAX_PLEDGES,
     WISH_MAX_TARGET,
 )
+from .errors import TaskMateError
 from .models import (
     PLEDGE_MESSAGE_MAX,
     PLEDGE_NAME_MAX,
@@ -91,13 +92,13 @@ class WishlistMixin:
         """Return the wish, or raise if it doesn't exist or isn't this child's."""
         wish = self.storage.get_wish(wish_id)
         if wish is None or (child_id is not None and wish.child_id != child_id):
-            raise ValueError("Wish not found")
+            raise TaskMateError("wish_not_found")
         return wish
 
     def _require_child(self, child_id: str) -> Child:
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         return child
 
     @staticmethod
@@ -146,9 +147,9 @@ class WishlistMixin:
         try:
             value = int(target)
         except (TypeError, ValueError) as err:
-            raise ValueError("The target must be a whole number") from err
+            raise TaskMateError("wish_target_not_whole") from err
         if value < 1 or value > WISH_MAX_TARGET:
-            raise ValueError(f"The target must be between 1 and {WISH_MAX_TARGET}")
+            raise TaskMateError("wish_target_range", max=WISH_MAX_TARGET)
         return value
 
     # ── child actions ────────────────────────────────────────────────────
@@ -164,14 +165,14 @@ class WishlistMixin:
         child = self._require_child(child_id)
         clean_name = clean_label(name, WISH_NAME_MAX)
         if not clean_name:
-            raise ValueError("Give the wish a name")
+            raise TaskMateError("wish_name_required")
         value = self._valid_target(target)
         clean_link = clean_wish_link(link)
         if (link or "").strip() and not clean_link:
-            raise ValueError("Links must be a web address starting with http:// or https://")
+            raise TaskMateError("wish_link_invalid")
         open_count = sum(1 for w in self.storage.get_wishes() if w.child_id == child_id and w.status in OPEN_STATUSES)
         if open_count >= WISH_MAX_OPEN_PER_CHILD:
-            raise ValueError(f"{child.name} already has {WISH_MAX_OPEN_PER_CHILD} wishes on the go")
+            raise TaskMateError("wish_too_many_open", child_name=child.name, max=WISH_MAX_OPEN_PER_CHILD)
 
         image_url = ""
         if photo_url:
@@ -206,19 +207,19 @@ class WishlistMixin:
         copied somewhere every signed-in user can see it.
         """
         if not photos.is_taskmate_photo_url(photo_url):
-            raise ValueError("That picture can't be used")
+            raise TaskMateError("wish_picture_unusable")
         if photos.is_photo_in_use(self.storage, photo_url):
-            raise ValueError("That picture can't be used")
+            raise TaskMateError("wish_picture_unusable")
         image_url = await images.async_adopt_photo(self.hass, photo_url)
         if not image_url:
-            raise ValueError("That picture can't be used")
+            raise TaskMateError("wish_picture_unusable")
         return image_url
 
     async def async_withdraw_wish(self, wish_id: str, child_id: str) -> None:
         """A child takes back a wish still waiting for approval, or clears a declined one."""
         wish = self._require_wish(wish_id, child_id)
         if wish.status not in ("pending", "declined"):
-            raise ValueError("Only a wish that is waiting or was declined can be withdrawn")
+            raise TaskMateError("wish_withdraw_not_allowed")
         self.storage.remove_wish(wish.id)
         await self.storage.async_save()
         await self.async_refresh()
@@ -233,15 +234,15 @@ class WishlistMixin:
         wish = self._require_wish(wish_id, child_id)
         child = self._require_child(child_id)
         if wish.status != "active":
-            raise ValueError(f"'{wish.name}' isn't open for saving")
+            raise TaskMateError("wish_not_open_for_saving", name=wish.name)
         if int(points) < 1:
-            raise ValueError("Points to move must be at least 1")
+            raise TaskMateError("wish_move_min")
         room = wish.remaining
         if room <= 0:
-            raise ValueError(f"'{wish.name}' is already fully funded")
+            raise TaskMateError("wish_fully_funded", name=wish.name)
         spendable = self._wish_spendable(child)
         if spendable < 1:
-            raise ValueError(f"No spendable points available for {child.name}")
+            raise TaskMateError("wish_no_spendable", child_name=child.name)
         moved = min(int(points), spendable, room)
 
         # The expiry lots these points came out of travel with the wish, so
@@ -262,11 +263,11 @@ class WishlistMixin:
         wish = self._require_wish(wish_id, child_id)
         child = self._require_child(child_id)
         if wish.status != "active":
-            raise ValueError(f"Points can't be taken out of '{wish.name}' right now")
+            raise TaskMateError("wish_take_back_not_allowed", name=wish.name)
         if int(points) < 1:
-            raise ValueError("Points to take back must be at least 1")
+            raise TaskMateError("wish_take_back_min")
         if wish.saved <= 0:
-            raise ValueError(f"Nothing saved in '{wish.name}' to take back")
+            raise TaskMateError("wish_nothing_saved", name=wish.name)
         taken = min(int(points), wish.saved)
 
         returned, wish.saved_lots = split_saved_lots(wish.saved_lots, taken)
@@ -296,12 +297,12 @@ class WishlistMixin:
         wish = self._require_wish(wish_id, child_id)
         child = self._require_child(child_id)
         if wish.status != "active":
-            raise ValueError(f"'{wish.name}' can't be redeemed right now")
+            raise TaskMateError("wish_cannot_redeem", name=wish.name)
         if not wish.funded:
-            raise ValueError(f"'{wish.name}' needs {wish.remaining} more points first")
+            raise TaskMateError("wish_needs_more_points", name=wish.name, points=wish.remaining)
         own_pending = [c for c in self.storage.get_pending_reward_claims() if c.child_id == child_id]
         if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
-            raise ValueError("Too many reward claims are already waiting for approval")
+            raise TaskMateError("wish_too_many_pending_claims")
 
         claim = RewardClaim(reward_id=wish.id, child_id=child_id, claimed_at=dt_util.now(), wish_id=wish.id)
         self.storage.add_reward_claim(claim)
@@ -331,7 +332,7 @@ class WishlistMixin:
         """Turn a waiting wish into a savings goal, optionally at a different target."""
         wish = self._require_wish(wish_id)
         if wish.status != "pending":
-            raise ValueError(f"'{wish.name}' isn't waiting for approval")
+            raise TaskMateError("wish_not_waiting_approval", name=wish.name)
         if target is not None:
             wish.target = self._valid_target(target)
         wish.status = "active"
@@ -350,7 +351,7 @@ class WishlistMixin:
         """
         wish = self._require_wish(wish_id)
         if wish.status not in OPEN_STATUSES:
-            raise ValueError(f"'{wish.name}' can no longer be declined")
+            raise TaskMateError("wish_cannot_decline", name=wish.name)
         cancelled = self._release_wish(wish, "declined")
         wish.status = "declined"
         wish.declined_at = dt_util.now()
@@ -375,17 +376,17 @@ class WishlistMixin:
         """Record a relative's gift towards a wish, capped at what it still needs."""
         wish = self._require_wish(wish_id)
         if wish.status != "active":
-            raise ValueError(f"'{wish.name}' isn't open for pledges")
+            raise TaskMateError("wish_not_open_for_pledges", name=wish.name)
         who = clean_label(name, PLEDGE_NAME_MAX)
         if not who:
-            raise ValueError("Say who the pledge is from")
+            raise TaskMateError("wish_pledge_name_required")
         if int(points) < 1:
-            raise ValueError("A pledge must be at least 1 point")
+            raise TaskMateError("wish_pledge_min")
         room = wish.remaining
         if room <= 0:
-            raise ValueError(f"'{wish.name}' is already fully funded")
+            raise TaskMateError("wish_fully_funded", name=wish.name)
         if len(wish.pledges) >= WISH_MAX_PLEDGES:
-            raise ValueError(f"'{wish.name}' already has {WISH_MAX_PLEDGES} pledges")
+            raise TaskMateError("wish_too_many_pledges", name=wish.name, max=WISH_MAX_PLEDGES)
         pledge = WishPledge(
             name=who,
             points=min(int(points), room),
@@ -430,10 +431,10 @@ class WishlistMixin:
         """
         wish = self._require_wish(wish_id)
         if wish.status not in ("active", "redeem_requested"):
-            raise ValueError(f"Pledges on '{wish.name}' can no longer be changed")
+            raise TaskMateError("wish_pledges_locked", name=wish.name)
         pledge = next((p for p in wish.pledges if p.id == pledge_id), None)
         if pledge is None:
-            raise ValueError("Pledge not found")
+            raise TaskMateError("wish_pledge_not_found")
         wish.pledges = [p for p in wish.pledges if p.id != pledge_id]
         cancelled: list[str] = []
         if wish.status == "redeem_requested" and not wish.funded:
@@ -462,11 +463,11 @@ class WishlistMixin:
         wish = self.storage.get_wish(claim.wish_id)
         child = self.get_child(claim.child_id)
         if wish is None or child is None:
-            raise ValueError(f"Wish or child not found for claim {claim.id}")
+            raise TaskMateError("wish_claim_missing", claim_id=claim.id)
         if wish.status != "redeem_requested" or wish.claim_id != claim.id:
-            raise ValueError(f"'{wish.name}' is no longer waiting to be redeemed")
+            raise TaskMateError("wish_no_longer_redeemable", name=wish.name)
         if not wish.funded:
-            raise ValueError(f"'{wish.name}' is not fully funded any more")
+            raise TaskMateError("wish_not_funded", name=wish.name)
 
         now = dt_util.now()
         wish.status = "redeemed"

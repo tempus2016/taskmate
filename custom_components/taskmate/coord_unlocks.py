@@ -28,6 +28,8 @@ from typing import Any
 from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.util import dt as dt_util
 
+from .errors import TaskMateError
+
 _LOGGER = logging.getLogger(__name__)
 
 _ENTITY_ID_RE = re.compile(r"[a-z0-9_]+\.[a-z0-9_]+")
@@ -72,17 +74,15 @@ class UnlocksMixin:
         if not entity_id:
             return "", 0
         if not self.is_unlock_allowed(entity_id):
-            raise ValueError(
-                f"'{entity_id}' is not on the unlock allowlist. Add it in Settings before using it as a reward."
-            )
+            raise TaskMateError("unlock_not_allowed", entity_id=entity_id)
         try:
             mins = int(minutes or 0)
         except (TypeError, ValueError) as err:
-            raise ValueError("Unlock minutes must be a whole number") from err
+            raise TaskMateError("unlock_minutes_not_whole") from err
         if mins < 0:
-            raise ValueError("Unlock minutes cannot be negative")
+            raise TaskMateError("unlock_minutes_negative")
         if mins > MAX_UNLOCK_MINUTES:
-            raise ValueError(f"Unlock minutes cannot exceed {MAX_UNLOCK_MINUTES}")
+            raise TaskMateError("unlock_minutes_too_many", max=MAX_UNLOCK_MINUTES)
         return entity_id, mins
 
     # ── active unlock bookkeeping ────────────────────────────────────────

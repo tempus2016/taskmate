@@ -74,6 +74,7 @@ from .coord_tts import ReadAloudMixin
 from .coord_unlocks import UnlocksMixin
 from .coord_wellbeing import WellbeingMixin
 from .coord_wishlist import WishlistMixin
+from .errors import TaskMateError
 from .models import Child, Chore
 from .storage import TaskMateStorage
 
@@ -435,7 +436,7 @@ class TaskMateCoordinator(
     async def async_import_config(self, payload: dict) -> None:
         """Restore TaskMate data from an export payload (full replace)."""
         if not isinstance(payload, dict) or not isinstance(payload.get("data"), dict):
-            raise ValueError("Invalid TaskMate export payload")
+            raise TaskMateError("import_invalid_payload")
         self.storage.import_data(payload["data"])
         await self.storage.async_save()
         await self.async_refresh()
@@ -735,17 +736,22 @@ class TaskMateCoordinator(
         """
         child = self.get_child(child_id)
         if child is None:
-            raise ValueError(f"Child {child_id} not found")
+            raise TaskMateError("child_not_found", child_id=child_id)
         points = int(points)
         if points < 1:
-            raise ValueError("points must be >= 1")
+            raise TaskMateError("allowance_points_min")
         if not self._setting_enabled("allowance_enabled"):
-            raise ValueError("Allowance is not enabled")
+            raise TaskMateError("allowance_not_enabled")
         # The ledger records cash handed over for points taken. Removing
         # points floors the balance at zero, so a payout bigger than the
         # balance would log money for points the child never had.
         if child.points < points:
-            raise ValueError(f"{child.name} only has {child.points} points to pay out.")
+            raise TaskMateError(
+                "allowance_not_enough_points",
+                name=child.name,
+                points=child.points,
+                points_name=self.storage.get_points_name(),
+            )
         try:
             rate = int(self.storage.get_setting("allowance_rate", 10))
         except (TypeError, ValueError):

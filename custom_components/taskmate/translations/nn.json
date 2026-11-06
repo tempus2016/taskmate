@@ -128,6 +128,102 @@
         "save": "Lagre endringar",
         "delete": "Slett gruppe"
       }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Ingen lyd",
+        "coin": "Mynt",
+        "levelup": "Nytt nivå",
+        "fanfare": "Fanfare",
+        "chime": "Klokkespel",
+        "powerup": "Power-up",
+        "undo": "Angre",
+        "fart1": "Promp 1",
+        "fart2": "Promp 2",
+        "fart3": "Promp 3",
+        "fart4": "Promp 4",
+        "fart5": "Promp 5",
+        "fart6": "Promp 6",
+        "fart7": "Promp 7",
+        "fart8": "Promp 8",
+        "fart9": "Promp 9",
+        "fart10": "Promp 10",
+        "fart_random": "Tilfeldig promp"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Lett",
+        "medium": "Middels",
+        "hard": "Vanskeleg"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Alle får fulle poeng",
+        "split": "Del poenga likt (runda ned)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Kvar gong han skal gjerast",
+        "week": "Kvar veke",
+        "month": "Kvar månad"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronse",
+        "silver": "Sølv",
+        "gold": "Gull",
+        "platinum": "Platina"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Krev alle (OG)",
+        "or": "Krev kva som helst (ELLER)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 time",
+        "2h": "2 timar",
+        "4h": "4 timar",
+        "bed": "Til leggjetid"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Kjempebra",
+        "good": "Bra",
+        "ok": "Heilt ok",
+        "sad": "Lei meg",
+        "upset": "Sint"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Oppgåve",
+        "reward": "Belønning",
+        "penalty": "Straff"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Drake",
+        "cat": "Katt",
+        "dog": "Hund",
+        "bunny": "Kanin",
+        "dino": "Dino",
+        "unicorn": "Einhyrning"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Ser ferdig ut",
+        "not_yet": "Ikkje enno"
+      }
     }
   },
   "services": {
@@ -158,6 +254,18 @@
         "time_id": {
           "name": "Fast tidspunkt",
           "description": "For ei oppgåve med faste tider: kva tidspunkt som blir haka av. La stå tomt for det som er ope no."
+        },
+        "as_parent": {
+          "name": "Som forelder",
+          "description": "Fullfør på vegner av bornet og gje poeng med ein gong, utan godkjenning."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Valfri URL eller sti til eit bilete som vert sendt som prov (t.d. eit kamerabilete). Vert vist til forelderen ved godkjenning."
+        },
+        "completed_date": {
+          "name": "Gjort den",
+          "description": "Registrer oppgåva på ein tidlegare dag (opptil 7 dagar attende, ikkje i dag) då ho vart gjort, men ikkje kryssa av. Berre foreldre; vert godkjend med ein gong. Dagsgrensa gjeld framleis."
         }
       }
     },
@@ -638,6 +746,18 @@
         "daily_limit": {
           "name": "Dagleg grense",
           "description": "Kor mange gonger om dagen oppgåva kan gjerast. Eingongsoppgåver er alltid 1."
+        },
+        "difficulty": {
+          "name": "Vanskegrad",
+          "description": "Vanskenivå; gangar poenga med multiplikatoren til nivået (middels = ×1,0 som utgangspunkt)"
+        },
+        "expires_in_minutes": {
+          "name": "Går ut om (minutt)",
+          "description": "Gjer dette til ei reaktiv oppgåve med frist så mange minutt frå no, t.d. vaskemaskina er ferdig, tøm ho innan 30 minutt. Oppgåva forsvinn og vert slått av når fristen er ute. 0 = ingen frist."
+        },
+        "speed_bonus_points": {
+          "name": "Fartsbonuspoeng",
+          "description": "Ekstra poeng om oppgåva vert fullført før fristen. Krev expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1208,10 @@
         "notify_on_earn": {
           "name": "Varsle ved oppnåing",
           "description": "Send eit varsel når merket vert oppnådd"
+        },
+        "combinator": {
+          "name": "Kombinasjon",
+          "description": "Korleis fleire kriterium vert kombinerte: AND (alle må vere oppfylte) eller OR (eitt av dei). Standard er AND."
         }
       }
     },
@@ -1134,6 +1258,10 @@
         "notify_on_earn": {
           "name": "Varsle ved oppnåing",
           "description": "Send eit varsel når merket vert oppnådd"
+        },
+        "combinator": {
+          "name": "Kombinasjon",
+          "description": "Korleis fleire kriterium vert kombinerte: AND (alle må vere oppfylte) eller OR (eitt av dei). Standard er AND."
         }
       }
     },
@@ -1864,22 +1992,93 @@
           "description": "TT:MM, t.d. 17:30. Tomt fjernar påminninga."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Les oppgåver høgt",
+      "description": "Les opp oppgåvene eit born har att på ein mediespelar, t.d. «Ella, du har tre ting att …». Brukar opplesingsteksten på språket til Home Assistant, med mindre eigne malar er sette.",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som får oppgåvene sine lesne opp"
+        },
+        "media_player": {
+          "name": "Mediespelar",
+          "description": "Kvar det skal lesast opp. Brukar standarden frå Innstillingar om tom."
+        },
+        "tts_entity": {
+          "name": "Tekst-til-tale-entitet",
+          "description": "Kva TTS-teneste som skal brukast. Elles den frå Innstillingar, så den einaste installerte."
+        },
+        "message": {
+          "name": "Eiga melding",
+          "description": "Sei dette i staden for det automatiske samandraget."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Snurr oppgåverulett",
+      "description": "Vel ei tilfeldig oppgåve som står att for eit born, med poengmultiplikator. Må slåast på: aktiver han og set multiplikator og tal på daglege snurr i innstillingane i TaskMate-panelet.",
+      "fields": {
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til bornet som snurrar"
+        }
+      }
     }
   },
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "oppgåver"
+        "unit_of_measurement": "oppgåver",
+        "name": "Statistikken til {child}"
       },
       "child_badges": {
-        "unit_of_measurement": "merke"
+        "unit_of_measurement": "merke",
+        "name": "Merka til {child}"
       },
       "child_watch": {
         "state": {
           "left": "# att",
           "all_done": "Alt ferdig",
           "no_chores": "Ingen oppgåver"
-        }
+        },
+        "name": "Smartklokka til {child}"
+      },
+      "overview": {
+        "name": "TaskMate-oversikt"
+      },
+      "chores": {
+        "name": "TaskMate-oppgåver"
+      },
+      "chore_availability": {
+        "name": "TaskMate-tilgjenge for oppgåver"
+      },
+      "rewards": {
+        "name": "TaskMate-premiar"
+      },
+      "activity": {
+        "name": "TaskMate-aktivitet"
+      },
+      "incentives": {
+        "name": "TaskMate-bonusar og straffar"
+      },
+      "bounties": {
+        "name": "TaskMate-dusørar"
+      },
+      "auctions": {
+        "name": "TaskMate-auksjonar"
+      },
+      "chore_board": {
+        "name": "TaskMate-oppgåvetavle"
+      },
+      "child_points": {
+        "name": "Poenga til {child}"
+      },
+      "child_wishlist": {
+        "name": "Ønskjelista til {child}"
+      },
+      "pending_approvals": {
+        "name": "Ventande godkjenningar"
       }
     },
     "number": {
@@ -1892,15 +2091,27 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Tilbakestillingsmodus for rekkje"
+        "name": "Tilbakestillingsmodus for rekkje",
+        "state": {
+          "reset": "Nullstill — rekka går til 0 ved tapt dag",
+          "pause": "Pause — rekka vert bevart til neste fullføring"
+        }
       },
       "card_design": {
-        "name": "Kortdesign"
+        "name": "Kortdesign",
+        "state": {
+          "classic": "Klassisk",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Tilgjengeleg",
+          "graphite": "Grafitt"
+        }
       }
     },
     "event": {
       "child_activity": {
-        "name": "TaskMate-aktivitet",
+        "name": "Aktiviteten til {child}",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1953,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "TaskMate-familieaktivitet",
+        "name": "Familieaktivitet",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -1969,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Har ventande godkjenningar"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Fullfør {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Hent {reward}"
       }
     }
   },
@@ -2011,6 +2235,1287 @@
     },
     "help_chore_not_available": {
       "message": "{chore} kan ikkje gjerast akkurat no, så det er ingenting å be om hjelp til enno."
+    },
+    "help_already_on_its_way": {
+      "message": "Hjelpa med {chore} er alt på veg."
+    },
+    "help_cooldown": {
+      "message": "Vent eit minutt før du ber om hjelp igjen."
+    },
+    "rate_limited": {
+      "message": "For mange førespurnader frå denne kontoen. Prøv igjen om eit minutt."
+    },
+    "child_not_found": {
+      "message": "Born {child_id} ikkje funne"
+    },
+    "chore_not_found": {
+      "message": "Oppgåve {chore_id} ikkje funnen"
+    },
+    "reward_not_found": {
+      "message": "Løn {reward_id} ikkje funnen"
+    },
+    "teamwork_size_not_number": {
+      "message": "Lagstorleiken må vere eit heiltal."
+    },
+    "teamwork_size_range": {
+      "message": "Ei lagoppgåve treng mellom 2 og {max} born (eller 0 for ei vanleg oppgåve)."
+    },
+    "teamwork_points_mode": {
+      "message": "Lagpoeng må vere 'each' eller 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "Ei lagoppgåve kan ikkje òg vere open."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Ei lagoppgåve må tildelast alle — ikkje førstemann eller på omgang."
+    },
+    "teamwork_timed": {
+      "message": "Ei tidsoppgåve kan ikkje vere ei lagoppgåve."
+    },
+    "teamwork_not_team_chore": {
+      "message": "Oppgåva «{name}» er ikkje ei lagoppgåve"
+    },
+    "swap_only_rotation": {
+      "message": "Berre oppgåver på omgang kan bytast"
+    },
+    "swap_won_at_auction": {
+      "message": "Denne oppgåva vart vunnen på auksjon i dag, så ho kan ikkje bytast"
+    },
+    "swap_already_assigned": {
+      "message": "Oppgåva er alt tildelt det barnet i dag"
+    },
+    "swap_already_pending": {
+      "message": "Det ventar alt ein byteførespurnad for denne oppgåva"
+    },
+    "swap_too_many_pending": {
+      "message": "For mange ventande byteførespurnader"
+    },
+    "swap_request_not_found": {
+      "message": "Byteførespurnaden {request_id} vart ikkje funnen"
+    },
+    "bulk_unknown_action": {
+      "message": "Ukjend massehandling {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Kan ikkje masseredigere {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Ukjent born {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Ukjend tidsperiode {period}"
+    },
+    "chore_unknown": {
+      "message": "Ukjend oppgåve: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Hopp over verkar ikkje når oppgåva er tildelt alle"
+    },
+    "skip_sticky_follower": {
+      "message": "Ei oppgåve som følgjer gruppa si kan ikkje hoppast over; hopp over hovudoppgåva i staden"
+    },
+    "skip_pool_too_small": {
+      "message": "Hopp over krev minst 2 born på omgangen"
+    },
+    "manual_start_everyone_mode": {
+      "message": "Manuell start verkar ikkje når oppgåva er tildelt alle"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Born {child_id} er ikkje med på omgangen for denne oppgåva"
+    },
+    "chore_photo_required": {
+      "message": "Denne oppgåva krev eit bilete som prov."
+    },
+    "chore_note_required": {
+      "message": "Skriv kva du gjorde for å sende inn denne."
+    },
+    "chore_quantity_required": {
+      "message": "Skriv kor mange {unit} du gjorde."
+    },
+    "backdate_day_range": {
+      "message": "Vel ein dag i løpet av dei siste {days} dagane, før i dag."
+    },
+    "backdate_switched_off": {
+      "message": "«{name}» er slått av."
+    },
+    "backdate_not_assigned": {
+      "message": "«{name}» er ikkje ei av oppgåvene til {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "«{name}» går på omgang eller treng eit lag, så ho kan ikkje førast for ein tidlegare dag."
+    },
+    "backdate_open_ended": {
+      "message": "«{name}» er open, så ho treng notatet til barnet og ein pris. Bruk kortet til barnet."
+    },
+    "backdate_set_times": {
+      "message": "«{name}» har faste tider, så ho kan ikkje førast for ein tidlegare dag."
+    },
+    "backdate_holiday": {
+      "message": "Det var ferie {weekday, select, Monday {på måndag} Tuesday {på tysdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på laurdag} Sunday {på sundag} other {på {weekday}}}, så ingen oppgåver skulle gjerast."
+    },
+    "backdate_sick_day": {
+      "message": "{child} var sjuk {weekday, select, Monday {på måndag} Tuesday {på tysdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på laurdag} Sunday {på sundag} other {på {weekday}}}, så ingen oppgåver skulle gjerast."
+    },
+    "backdate_birthday": {
+      "message": "{child} hadde bursdag {weekday, select, Monday {på måndag} Tuesday {på tysdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på laurdag} Sunday {på sundag} other {på {weekday}}}, ein fridag frå oppgåver."
+    },
+    "backdate_auction": {
+      "message": "«{name}» vart vunnen på auksjon den dagen, så ho kan ikkje førast i etterkant."
+    },
+    "backdate_weekly_target_met": {
+      "message": "«{name}» nådde alt sine {target} den veka."
+    },
+    "backdate_not_due": {
+      "message": "«{name}» skulle ikkje gjerast {weekday, select, Monday {på måndag} Tuesday {på tysdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på laurdag} Sunday {på sundag} other {på {weekday}}}."
+    },
+    "backdate_daily_limit": {
+      "message": "«{name}» vart alt gjord {done}/{limit} gonger {weekday, select, Monday {på måndag} Tuesday {på tysdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på laurdag} Sunday {på sundag} other {på {weekday}}}."
+    },
+    "chore_disabled": {
+      "message": "Oppgåva «{name}» er slått av"
+    },
+    "parent_complete_one_shot": {
+      "message": "Oppgåva «{name}» er ei eingongsoppgåve og kan ikkje fullførast av ein forelder"
+    },
+    "parent_complete_no_children": {
+      "message": "Oppgåva «{name}» har ingen born å skjule ho for"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "Oppgåva «{name}» vert delt på omgang og kan berre fullførast for alle"
+    },
+    "parent_complete_not_assigned": {
+      "message": "Oppgåva «{name}» er ikkje tildelt det barnet"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Bonus-deloppgåva {subtask_id} vart ikkje funnen i oppgåva «{name}»"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "Bonus-deloppgåva «{subtask}» er ikkje tildelt {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Bonus-deloppgåva «{subtask}» kan ikkje fullførast — hovudoppgåva «{name}» må fullførast først i dag."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Bonus-deloppgåva «{subtask}» er alt fullført i dag."
+    },
+    "undo_window_passed": {
+      "message": "Denne oppgåva kan ikkje angrast lenger. Be ein forelder om å angre ho."
+    },
+    "undo_points_spent": {
+      "message": "Denne oppgåva kan ikkje angrast no: poenga er alt brukte. Spør ein forelder."
+    },
+    "completion_not_found": {
+      "message": "Fullføringa {completion_id} vart ikkje funnen"
+    },
+    "completion_not_approved": {
+      "message": "Fullføringa er ikkje godkjend; ingenting å angre"
+    },
+    "chore_sort_unknown": {
+      "message": "Ukjend sortering «{sort}»"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Oppgåva står to gonger i gruppa: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "Oppgåva «{name}» er tildelt alle og kan ikkje bli med i ei gruppe"
+    },
+    "task_group_already_member": {
+      "message": "Oppgåva «{name}» høyrer alt til gruppa «{group}»"
+    },
+    "task_group_unknown_policy": {
+      "message": "Ukjend regel for oppgåvegruppe: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Ukjend oppgåvegruppe: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "Talet kan ikkje vere 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Rekkjefrys er slått av (streak_freeze_max er 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} har alt maksimalt {cap} rekkjefrys"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} har alt maksimalt {cap} rekkjefrys"
+    },
+    "streak_freeze_off": {
+      "message": "Rekkjefrys er slått av"
+    },
+    "points_non_negative": {
+      "message": "Poeng kan ikkje vere negative"
+    },
+    "transaction_not_found": {
+      "message": "Posteringa {transaction_id} vart ikkje funnen"
+    },
+    "undo_not_undoable": {
+      "message": "Denne handlinga kan ikkje angrast"
+    },
+    "gift_undo_too_old": {
+      "message": "Denne gåva er eldre enn angrefunksjonen og kan ikkje reverserast automatisk."
+    },
+    "gift_undo_spent": {
+      "message": "{child} har alt brukt noko av denne gåva, så ho kan ikkje angrast."
+    },
+    "gift_amount_positive": {
+      "message": "Gåvebeløpet må vere positivt"
+    },
+    "gift_same_child": {
+      "message": "Ein kan ikkje gje ei gåve til seg sjølv"
+    },
+    "gift_child_not_found": {
+      "message": "Avsendar eller mottakar vart ikkje funnen"
+    },
+    "gift_not_enough_points": {
+      "message": "Ikkje nok poeng: {child} har {points}, gåve {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "«{name}» er ein felles jackpot, og potten er ikkje full. Treng {cost}, har spart {saved}"
+    },
+    "reward_not_available_to": {
+      "message": "Løna «{name}» er ikkje tilgjengeleg for {child}"
+    },
+    "reward_sold_out": {
+      "message": "Løna «{name}» er utseld"
+    },
+    "reward_expired": {
+      "message": "Løna «{name}» har gått ut"
+    },
+    "reward_not_available_now": {
+      "message": "Løna «{name}» er ikkje tilgjengeleg akkurat no"
+    },
+    "reward_claim_already_waiting": {
+      "message": "Ein førespurnad om «{name}» ventar alt på godkjenning"
+    },
+    "reward_claims_too_many": {
+      "message": "For mange førespurnader om løn ventar alt på godkjenning"
+    },
+    "reward_not_enough_points": {
+      "message": "Ikkje nok poeng. Treng {cost}, har {available} tilgjengeleg"
+    },
+    "reward_spending_cap": {
+      "message": "Forbruksgrensa er nådd: {cap} per periode er alt brukt"
+    },
+    "reward_claim_target_missing": {
+      "message": "Løn eller born vart ikkje funne for førespurnaden {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Ikkje nok poeng til å godkjenne. Treng {cost}, har {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "«{name}» er alt godkjend og kan ikkje lenger avvisast"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "Denne løna er alt godkjend og kan ikkje lenger avvisast"
+    },
+    "pool_allocate_min": {
+      "message": "Det må setjast av minst 1 poeng"
+    },
+    "pool_no_spendable": {
+      "message": "{child} har ingen poeng å bruke"
+    },
+    "pool_full": {
+      "message": "Potten for løna «{name}» er alt full"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} kan få {name} éin gong om dagen. Ho er tilgjengeleg att {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} kan få {name} éin gong i veka. Ho er tilgjengeleg att {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} kan få {name} éin gong i månaden. Ho er tilgjengeleg att {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} kan få {name} {count} gonger om dagen. Ho er tilgjengeleg att {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} kan få {name} {count} gonger i veka. Ho er tilgjengeleg att {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} kan få {name} {count} gonger i månaden. Ho er tilgjengeleg att {date}"
+    },
+    "reward_gift_off": {
+      "message": "Å kjøpe løn til kvarandre er slått av"
+    },
+    "reward_gift_children_only": {
+      "message": "Løn kan berre kjøpast til born"
+    },
+    "reward_gift_not_giftable": {
+      "message": "«{name}» kan ikkje kjøpast til nokon andre"
+    },
+    "reward_rating_stars": {
+      "message": "Vel 1 til 3 stjerner"
+    },
+    "reward_rating_not_yet": {
+      "message": "Den løna kan ikkje vurderast enno"
+    },
+    "reward_rating_not_holder": {
+      "message": "Berre barnet som fekk løna kan vurdere ho"
+    },
+    "reward_rating_already": {
+      "message": "Den løna er alt vurdert"
+    },
+    "service_unknown_child": {
+      "message": "Ukjent born «{ref}». Gyldige born: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Meir enn eitt born heiter «{ref}»; bruk id-en til barnet i staden ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Ingenting å oppdatere: oppgje minst eitt felt som skal endrast"
+    },
+    "service_confirm_delete": {
+      "message": "Set confirm: true for å slette oppgåva"
+    },
+    "penalty_already_earned_back": {
+      "message": "Den straffa er alt tent inn att."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Den løna ventar ikkje på å bli gjeven."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Den løna er alt merkt som gjeven."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Den løna høyrer til {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "«{field}» kan ikkje endrast planlagt"
+    },
+    "scheduled_expects_bool": {
+      "message": "«{field}» må vere true eller false"
+    },
+    "scheduled_expects_int": {
+      "message": "«{field}» må vere eit heiltal"
+    },
+    "scheduled_negative": {
+      "message": "«{field}» kan ikkje vere negativ"
+    },
+    "scheduled_expects_list": {
+      "message": "«{field}» må vere ei liste"
+    },
+    "scheduled_expects_text": {
+      "message": "«{field}» må vere tekst"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on må vere ein ISO-dato, t.d. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on må vere ein dato fram i tid"
+    },
+    "scheduled_no_fields": {
+      "message": "Ei planlagd endring må endre minst eitt felt"
+    },
+    "scheduled_change_not_found": {
+      "message": "Den planlagde endringa {change_id} vart ikkje funnen"
+    },
+    "timed_not_timed": {
+      "message": "Oppgåva «{name}» er ikkje ei tidsoppgåve"
+    },
+    "timed_already_running": {
+      "message": "Tidtakaren går alt"
+    },
+    "timed_daily_cap": {
+      "message": "Dagsgrensa er nådd ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "«{name}» er ikkje tilgjengeleg for {child} akkurat no"
+    },
+    "timed_no_running": {
+      "message": "Ingen tidtakar som går å setje på pause"
+    },
+    "timed_no_active": {
+      "message": "Ingen aktiv tidtakar å stoppe"
+    },
+    "set_time_unknown": {
+      "message": "Det tidspunktet er ikkje ei av dei faste tidene for denne oppgåva."
+    },
+    "sick_day_range": {
+      "message": "Vel ein dag frå ei veke sidan til ein månad fram."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Ingenting å gjenopprette: det vart aldri sletta eller er fjerna for godt"
+    },
+    "trash_id_exists": {
+      "message": "Det finst alt noko med id {item_id}"
+    },
+    "wish_not_found": {
+      "message": "Fann ikkje ønsket"
+    },
+    "wish_target_not_whole": {
+      "message": "Målet må vere eit heiltal"
+    },
+    "wish_target_range": {
+      "message": "Målet må vere mellom 1 og {max}"
+    },
+    "wish_name_required": {
+      "message": "Gi ønsket eit namn"
+    },
+    "wish_link_invalid": {
+      "message": "Lenkjer må vere ei nettadresse som byrjar med http:// eller https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} har alt {max} ønske på gang"
+    },
+    "wish_picture_unusable": {
+      "message": "Det biletet kan ikkje brukast"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Berre eit ønske som ventar eller vart avslått, kan trekkjast tilbake"
+    },
+    "wish_not_open_for_saving": {
+      "message": "Det går ikkje an å spare til «{name}»"
+    },
+    "wish_move_min": {
+      "message": "Du må flytte minst 1 poeng"
+    },
+    "wish_fully_funded": {
+      "message": "«{name}» er alt fullfinansiert"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} har ingen poeng å bruke"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Poeng kan ikkje takast ut av «{name}» akkurat no"
+    },
+    "wish_take_back_min": {
+      "message": "Du må ta tilbake minst 1 poeng"
+    },
+    "wish_nothing_saved": {
+      "message": "Ingenting er spart i «{name}» som kan takast tilbake"
+    },
+    "wish_cannot_redeem": {
+      "message": "«{name}» kan ikkje løysast inn akkurat no"
+    },
+    "wish_needs_more_points": {
+      "message": "«{name}» treng {points} poeng til først"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "For mange førespurnader om løn ventar alt på godkjenning"
+    },
+    "wish_not_waiting_approval": {
+      "message": "«{name}» ventar ikkje på godkjenning"
+    },
+    "wish_cannot_decline": {
+      "message": "«{name}» kan ikkje lenger avslåast"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "«{name}» tek ikkje imot tilsegn"
+    },
+    "wish_pledge_name_required": {
+      "message": "Sei kven tilsegnet er frå"
+    },
+    "wish_pledge_min": {
+      "message": "Eit tilsegn må vere på minst 1 poeng"
+    },
+    "wish_too_many_pledges": {
+      "message": "«{name}» har alt {max} tilsegn"
+    },
+    "wish_pledges_locked": {
+      "message": "Tilsegn til «{name}» kan ikkje lenger endrast"
+    },
+    "wish_pledge_not_found": {
+      "message": "Fann ikkje tilsegnet"
+    },
+    "wish_claim_missing": {
+      "message": "Fann ikkje ønsket eller barnet for førespurnad {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "«{name}» ventar ikkje lenger på å bli løyst inn"
+    },
+    "wish_not_funded": {
+      "message": "«{name}» er ikkje lenger fullfinansiert"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "Biletet må vere ein emoji (opptil {max} teikn)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Ein farge må sjå ut som #ff8800, eller vere «rainbow»."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Den tingen finst ikkje i butikken."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Namnet kan ha maks {max} teikn."
+    },
+    "pet_shop_name_required": {
+      "message": "Gi tingen eit namn."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Ukjend plass «{slot}»"
+    },
+    "pet_shop_not_whole": {
+      "message": "Pris og nivå må vere heiltal."
+    },
+    "pet_shop_cost_range": {
+      "message": "Prisen må vere mellom 1 og {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "Nivået må vere mellom 0 og {max}."
+    },
+    "pet_shop_full": {
+      "message": "Butikken har plass til maks {max} ting."
+    },
+    "pets_switched_off": {
+      "message": "Kjæledyr er slått av."
+    },
+    "pet_adopt_first": {
+      "message": "Adopter eit kjæledyr først."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Det er ikkje låst opp enno."
+    },
+    "pet_shop_closed": {
+      "message": "Dyrebutikken er stengd."
+    },
+    "pet_shop_buy_first": {
+      "message": "Kjøp han først."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Den tingen er ikkje til sals."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Han vert låst opp på nivå {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Du har han alt."
+    },
+    "pet_shop_already_pending": {
+      "message": "Han ventar alt på ein forelder."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Ikkje nok poeng til han enno."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Det kjøpet ventar ikkje lenger."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Det barnet eller den tingen finst ikkje lenger – avslå kjøpet i staden."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} har ikkje nok poeng til han no."
+    },
+    "pet_unknown_species": {
+      "message": "Ukjend kjæledyr «{species}»"
+    },
+    "pet_name_required": {
+      "message": "Gi kjæledyret ditt eit namn."
+    },
+    "pet_no_egg": {
+      "message": "Det er ikkje noko egg å klekkje enno."
+    },
+    "auction_not_found": {
+      "message": "Den auksjonen finst ikkje lenger. Oppdater kortet."
+    },
+    "auction_refuse_off": {
+      "message": "Den oppgåva er slått av."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Ei oppgåve utan tildeling kan ikkje givast til nokon, så ho kan ikkje auksjonerast bort."
+    },
+    "auction_refuse_team": {
+      "message": "Ei lagoppgåve vert delt av eit lag, så ho kan ikkje auksjonerast bort."
+    },
+    "auction_refuse_timed": {
+      "message": "Ei tidteken oppgåve vert betalt per minutt, så ho kan ikkje auksjonerast bort."
+    },
+    "auction_refuse_open_ended": {
+      "message": "Prisen på ei open oppgåve vert sett av forelderen, så ho kan ikkje auksjonerast bort."
+    },
+    "auction_invalid_date": {
+      "message": "Ugyldig dato: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Vel ein gong frå og med i morgon."
+    },
+    "auction_not_scheduled": {
+      "message": "«{chore}» er ikkje planlagd {date}."
+    },
+    "auction_already_exists": {
+      "message": "Den gongen har alt ein auksjon."
+    },
+    "auction_points_not_whole": {
+      "message": "Poeng må vere heiltal."
+    },
+    "auction_max_range": {
+      "message": "Høgaste bod er mellom 1 og {max} poeng."
+    },
+    "auction_min_range": {
+      "message": "Lågaste bod må vere mellom 1 og det høgaste."
+    },
+    "auction_needs_close": {
+      "message": "Ein auksjon treng eit sluttidspunkt."
+    },
+    "auction_close_in_past": {
+      "message": "Sluttidspunktet har alt vore."
+    },
+    "auction_close_before_day": {
+      "message": "Budrunden må slutte før dagen oppgåva skal gjerast."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Berre born som kan gjere denne oppgåva, kan by på ho."
+    },
+    "auction_no_bidders": {
+      "message": "Vel minst eitt barn som kan by."
+    },
+    "auction_already_closed": {
+      "message": "Denne auksjonen er alt avslutta."
+    },
+    "auction_already_cancelled": {
+      "message": "Denne auksjonen er alt avlyst."
+    },
+    "auction_occurrence_passed": {
+      "message": "Den gongen har alt vore."
+    },
+    "auction_still_live": {
+      "message": "Denne auksjonen held framleis på. Avlys han i staden."
+    },
+    "auction_not_for_you": {
+      "message": "Denne auksjonen er ikkje for deg."
+    },
+    "auction_bidding_closed": {
+      "message": "Bodgjevinga på denne auksjonen er avslutta."
+    },
+    "auction_bid_not_whole": {
+      "message": "Eit bod er eit heilt tal poeng."
+    },
+    "auction_bid_range": {
+      "message": "By mellom {min} og {max} poeng."
+    },
+    "auction_no_bid": {
+      "message": "Du har ikkje bode på denne."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Ugyldig utløpstid: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Den dusøren finst ikkje lenger. Oppdater kortet."
+    },
+    "bounty_title_required": {
+      "message": "Ein dusør treng ein tittel."
+    },
+    "bounty_points_not_whole": {
+      "message": "Poeng må vere eit heiltal."
+    },
+    "bounty_points_range": {
+      "message": "Ein dusør er verd mellom 1 og {max} poeng."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Reservasjonen må vere eit heilt tal timar."
+    },
+    "bounty_claim_hours_range": {
+      "message": "Reservasjonen varer mellom 1 og {max} timar."
+    },
+    "bounty_expiry_in_past": {
+      "message": "Utløpstida har alt vore."
+    },
+    "bounty_finished_locked": {
+      "message": "Ein ferdig dusør kan ikkje redigerast."
+    },
+    "bounty_claimed_locked": {
+      "message": "Når ein dusør er teken, kan berre poenga og utløpstida endrast."
+    },
+    "bounty_review_before_remove": {
+      "message": "Godkjenn eller avvis den ferdige jobben før du fjernar denne dusøren."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Berre ein dusør som er teken, kan frigjevast."
+    },
+    "bounty_not_for_you": {
+      "message": "Denne dusøren er ikkje for deg."
+    },
+    "bounty_taken": {
+      "message": "Nokon andre kom først – denne dusøren er ikkje på tavla lenger."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Gjer ferdig «{title}» først – du kan berre ha éin dusør om gongen."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Du har ikkje teke denne dusøren."
+    },
+    "bounty_claim_expired": {
+      "message": "Reservasjonen din av denne dusøren gjekk ut."
+    },
+    "bounty_photo_required": {
+      "message": "Denne dusøren treng eit bilete av den ferdige jobben."
+    },
+    "raffle_name_required": {
+      "message": "Gi loddtrekninga eit namn."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Eit lodd kostar 1 til {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Vel når loddtrekninga skal skje."
+    },
+    "raffle_field_required": {
+      "message": "{field} er påkravd"
+    },
+    "raffle_draw_in_past": {
+      "message": "Trekninga må vere fram i tid."
+    },
+    "raffle_not_found": {
+      "message": "Fann ikkje loddtrekninga"
+    },
+    "raffle_not_open_edit": {
+      "message": "Berre ei open loddtrekning kan endrast."
+    },
+    "raffle_price_locked": {
+      "message": "Det er kjøpt lodd, så prisen kan ikkje endrast."
+    },
+    "raffle_closed": {
+      "message": "Denne loddtrekninga er stengd."
+    },
+    "raffle_drawing": {
+      "message": "Denne loddtrekninga vert trekt no."
+    },
+    "raffle_not_open_to": {
+      "message": "Denne loddtrekninga er ikkje open for {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Kjøp minst eitt lodd."
+    },
+    "raffle_max_tickets": {
+      "message": "Du kan ha maks {max} lodd."
+    },
+    "raffle_not_enough_points": {
+      "message": "Ikkje nok poeng til så mange lodd."
+    },
+    "raffle_already_closed": {
+      "message": "Denne loddtrekninga er alt stengd."
+    },
+    "roulette_off": {
+      "message": "Oppgåverulett er slått av"
+    },
+    "roulette_no_spins": {
+      "message": "Ingen fleire spinn i dag"
+    },
+    "roulette_nothing_left": {
+      "message": "Ingenting att å spinne for"
+    },
+    "unlock_not_allowed": {
+      "message": "«{entity_id}» er ikkje på lista over tillatne opplåsingar. Legg han til i Innstillingar før du brukar han som løn."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Opplåsingsminutt må vere eit heiltal"
+    },
+    "unlock_minutes_negative": {
+      "message": "Opplåsingsminutt kan ikkje vere negative"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Opplåsingsminutt kan ikkje vere meir enn {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Den avataren finst ikkje i katalogen"
+    },
+    "avatar_locked": {
+      "message": "Den avataren er ikkje låst opp enno"
+    },
+    "weekly_goals_off": {
+      "message": "Vekesmål er slått av."
+    },
+    "weekly_goal_range": {
+      "message": "Vel eit mål frå 0 til {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Eit mål må vere minst {bonus}, bonusen det gir."
+    },
+    "weekly_goal_locked": {
+      "message": "Vekesmålet er alt nådd og betalt, så det kan ikkje endrast før måndag."
+    },
+    "challenge_name_required": {
+      "message": "Utfordringa må ha eit namn"
+    },
+    "challenge_target_min": {
+      "message": "Målet må vere minst 1"
+    },
+    "challenge_not_found": {
+      "message": "Fann ikkje utfordringa {challenge_id}"
+    },
+    "quest_name_required": {
+      "message": "Oppdraget må ha eit namn"
+    },
+    "quest_needs_step": {
+      "message": "Eit oppdrag treng minst eitt steg"
+    },
+    "quest_not_found": {
+      "message": "Fann ikkje oppdraget {quest_id}"
+    },
+    "admin_only": {
+      "message": "Berre for administratorar"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate er ikkje klar enno"
+    },
+    "not_allowed": {
+      "message": "Ikkje tillate"
+    },
+    "handler_failed": {
+      "message": "Noko gjekk gale; sjå Home Assistant-loggen"
+    },
+    "chore_one_off_past_day": {
+      "message": "Ei eingongsoppgåve kan ikkje setjast til ein dag som alt er forbi"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start må vere ein ISO-dato"
+    },
+    "penalty_not_found": {
+      "message": "Straff {penalty_id} ikkje funnen"
+    },
+    "bonus_not_found": {
+      "message": "Bonus {bonus_id} ikkje funnen"
+    },
+    "group_not_found": {
+      "message": "Gruppe {group_id} ikkje funnen"
+    },
+    "chores_bulk_no_names": {
+      "message": "Minst eitt oppgåvenamn må fyllast inn"
+    },
+    "notif_child_not_found": {
+      "message": "Barnet vart ikkje funne"
+    },
+    "notif_parent_not_found": {
+      "message": "Forelderen vart ikkje funnen"
+    },
+    "recap_not_found": {
+      "message": "Oppsummeringa vart ikkje funnen"
+    },
+    "voucher_not_approved": {
+      "message": "Berre ei godkjend løning kan skrivast ut"
+    },
+    "voucher_missing": {
+      "message": "Den løninga eller det barnet finst ikkje lenger"
+    },
+    "setup_invalid_birthday": {
+      "message": "Bursdagen «{value}» er ikkje ein gyldig dato"
+    },
+    "kiosk_pin_invalid": {
+      "message": "Ein kiosk-PIN må vere nøyaktig 4 siffer"
+    },
+    "time_periods_empty": {
+      "message": "Det må vere minst éin tidsperiode"
+    },
+    "time_periods_too_many": {
+      "message": "for mange periodar (maks. {max})"
+    },
+    "time_periods_not_object": {
+      "message": "kvar periode må vere eit objekt"
+    },
+    "time_periods_duplicate_id": {
+      "message": "periode-ID finst to gonger: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "kvar eigen periode må ha eit namn"
+    },
+    "time_periods_invalid_time": {
+      "message": "ugyldig tid for perioden «{name}» (bruk TT:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "perioden «{name}» må starte før han sluttar"
+    },
+    "time_periods_overlap": {
+      "message": "«{name}» overlappar «{other}» — periodar kan ikkje overlappe"
+    },
+    "time_periods_in_use": {
+      "message": "ein periode som framleis vert brukt av oppgåver, kan ikkje slettast: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "ferieperiodane må vere ei liste"
+    },
+    "vacation_periods_too_many": {
+      "message": "for mange ferieperiodar (maks. {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "kvar ferieperiode må vere eit objekt"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "kvar ferieperiode må ha gyldige start- og sluttdatoar (ÅÅÅÅ-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Ein mal utan oppgåver kan ikkje brukast"
+    },
+    "template_none_selected": {
+      "message": "Vel minst éi oppgåve"
+    },
+    "template_no_valid_chores": {
+      "message": "Fann ingen gyldige oppgåver for dei valde ID-ane"
+    },
+    "template_needs_chore": {
+      "message": "Ein mal må ha minst éi oppgåve"
+    },
+    "template_builtin_modify": {
+      "message": "Den innebygde malen «{template_id}» kan ikkje endrast"
+    },
+    "template_builtin_delete": {
+      "message": "Den innebygde malen «{template_id}» kan ikkje slettast"
+    },
+    "template_pack_not_pack": {
+      "message": "Det ser ikkje ut som ein TaskMate-pakke"
+    },
+    "template_pack_wrong_format": {
+      "message": "Ikkje ein TaskMate-malpakke"
+    },
+    "template_pack_version_nan": {
+      "message": "Pakkeversjonen er ikkje eit tal"
+    },
+    "template_pack_too_new": {
+      "message": "Denne pakken krev ein nyare TaskMate (pakkeversjon {version}, denne forstår {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Pakken inneheld ingen malar"
+    },
+    "template_pack_too_many": {
+      "message": "Pakken har for mange malar (maks. {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Pakken inneheld ein ugyldig mal"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Ein mal i pakken manglar namn"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Malen «{name}» har ingen oppgåver"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Malen «{name}» har for mange oppgåver"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Malen «{name}» har ei ugyldig oppgåve"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "Ei oppgåve i «{name}» manglar namn"
+    },
+    "boost_bad_time": {
+      "message": "«{value}» er ikkje eit klokkeslett som 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "Multiplikatoren må vere eit tal."
+    },
+    "boost_multiplier_range": {
+      "message": "Vel ein multiplikator frå ×{min} til ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Oppgåva {chore_id} vart ikkje funnen."
+    },
+    "boost_child_not_found": {
+      "message": "Born {child_id} ikkje funne."
+    },
+    "boost_start_past": {
+      "message": "Ein boost kan ikkje starte i fortida."
+    },
+    "boost_too_far_ahead": {
+      "message": "Ein boost kan planleggjast inntil ei veke fram."
+    },
+    "boost_minutes_nan": {
+      "message": "Minutta må vere eit heiltal."
+    },
+    "boost_minutes_range": {
+      "message": "Vel frå 1 til {max} minutt."
+    },
+    "boost_already_ended": {
+      "message": "Den boosten er alt over."
+    },
+    "boost_rule_no_days": {
+      "message": "Vel minst éin dag."
+    },
+    "boost_rule_end_before_start": {
+      "message": "Sluttida må vere etter starttida."
+    },
+    "boost_rules_max": {
+      "message": "Høgst {max} gjentakande boostar."
+    },
+    "boost_rule_gone": {
+      "message": "Den gjentakande boosten finst ikkje lenger."
+    },
+    "season_pack_unknown": {
+      "message": "Ukjend sesongpakke: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Ukjent born: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Denne oppgåva er alt angra. Last inn kortet på nytt."
+    },
+    "import_invalid_payload": {
+      "message": "Ugyldig TaskMate-eksport"
+    },
+    "import_data_not_object": {
+      "message": "Importdata må vere eit objekt"
+    },
+    "allowance_points_min": {
+      "message": "Poeng må vere minst 1"
+    },
+    "allowance_not_enabled": {
+      "message": "Lommepengar er ikkje slått på"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} har berre {points} {points_name} å betale ut."
+    },
+    "appeals_off": {
+      "message": "Klager er slått av."
+    },
+    "appeals_already_appealed": {
+      "message": "Det er alt klaga på."
+    },
+    "appeals_not_appealable": {
+      "message": "Det kan ikkje klagast på."
+    },
+    "appeals_not_found": {
+      "message": "Den klaga finst ikkje lenger."
+    },
+    "appeals_already_decided": {
+      "message": "Den klaga er alt avgjord."
+    },
+    "appeals_child_gone": {
+      "message": "Barnet er ikkje her lenger."
+    },
+    "appeals_reward_gone": {
+      "message": "Den påskjøninga finst ikkje lenger."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Den straffa er alt trekt tilbake."
+    },
+    "appeals_unknown_kind": {
+      "message": "Ukjend klagetype {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Bursdagen må vere ÅÅÅÅ-MM-DD eller MM-DD, fekk «{value}»"
+    },
+    "birthday_in_future": {
+      "message": "Bursdagen kan ikkje vere i framtida"
+    },
+    "chore_reminders_off": {
+      "message": "Påminningar er slått av"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} er ikkje ei av oppgåvene til {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "Vel eit tidspunkt som 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Vel eit tidspunkt mellom {earliest} og {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on må vere ein ISO-dato, t.d. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Den inspeksjonen finst ikkje lenger. Last inn på nytt og prøv igjen."
+    },
+    "inspection_already_decided": {
+      "message": "Den inspeksjonen er alt avgjord eller lukka."
+    },
+    "inspections_off": {
+      "message": "Overraskingsinspeksjonar er slått av i Innstillingar."
+    },
+    "inspection_chore_gone": {
+      "message": "Den oppgåva finst ikkje lenger."
+    },
+    "inspection_not_approved": {
+      "message": "Berre godkjende oppgåver kan inspiserast."
+    },
+    "inspection_not_child_chore": {
+      "message": "Berre ei oppgåve barnet sjølv har gjort kan inspiserast."
+    },
+    "inspection_child_gone": {
+      "message": "Det barnet finst ikkje lenger."
+    },
+    "inspection_too_old": {
+      "message": "Berre oppgåver godkjende dei siste {hours} timane kan inspiserast."
+    },
+    "inspection_already_inspected": {
+      "message": "Den oppgåva er alt inspisert."
+    },
+    "inspection_redo_today_only": {
+      "message": "Berre ei oppgåve som er gjord i dag, kan sendast tilbake for å gjerast på nytt."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url må vere ein /sti, ein http(s)-URL eller noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group kan ikkje innehalde mellomrom (prøv family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group kan ikkje innehalde kontrollteikn"
+    },
+    "notification_group_too_long": {
+      "message": "group kan vere høgst 64 teikn"
+    },
+    "notification_unknown_type": {
+      "message": "Ukjend varslingstype {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Ukjend varslingsmottakar {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Minutt må vere eit heiltal"
+    },
+    "screen_time_minutes_max": {
+      "message": "Minutt kan ikkje vere over {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "Skjermtidskrukka er slått av"
+    },
+    "screen_time_jar_full": {
+      "message": "Krukka er full"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Ingen minutt å spare"
+    },
+    "setup_unknown_age_group": {
+      "message": "Ukjend aldersgruppe «{value}»"
+    },
+    "setup_child_needs_ref": {
+      "message": "Kvart nytt barn treng sin eigen ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Eit barn treng eit namn"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Oppgåva er tildelt eit ukjend barn «{who}»"
+    },
+    "setup_chore_needs_name": {
+      "message": "Ei oppgåve treng eit namn"
+    },
+    "setup_reward_needs_name": {
+      "message": "Ei påskjøning treng eit namn"
+    },
+    "sibling_checks_off": {
+      "message": "Syskensjekk er slått av"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Ukjend vurdering {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Den oppgåva er alt sjekka. Last inn kortet på nytt."
+    },
+    "sibling_check_own_chore": {
+      "message": "Du kan ikkje sjekke di eiga oppgåve"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} kan ikkje sjekke oppgåvene til dette barnet"
+    },
+    "sound_invalid_file_name": {
+      "message": "Ikkje eit gyldig lydfilnamn: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Lyden {file} er alt lagd til"
+    },
+    "sound_unknown_custom": {
+      "message": "Ukjend eigen lyd: {file}"
+    },
+    "tour_adult": {
+      "message": "Vaksenprofilar får ikkje omvisinga"
+    },
+    "tour_bad_status": {
+      "message": "status må vere 'done' eller 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Ukjent steg i omvisinga {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Snakkar alt; prøv igjen om litt"
+    },
+    "tts_no_media_player": {
+      "message": "Ingen mediespelar oppgitt, og ingen standard vald i Innstillingar"
+    },
+    "tts_no_entity": {
+      "message": "Fann ingen tekst-til-tale-entitet. Vel ein i Innstillingar eller oppgi tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} er ikkje ei av oppgåvene til {child} i dag."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Ukjent humør «{mood}»"
+    },
+    "set_times_not_list": {
+      "message": "Faste tider må vere ei liste."
+    },
+    "set_times_too_many": {
+      "message": "Ei oppgåve kan ha høgst {max} faste tider."
+    },
+    "set_times_timed": {
+      "message": "Ei oppgåve med tidtaking kan ikkje ha faste tider."
+    },
+    "set_times_open_ended": {
+      "message": "Ei open oppgåve kan ikkje ha faste tider."
+    },
+    "set_times_quantity": {
+      "message": "Ei mengdeoppgåve kan ikkje ha faste tider."
+    },
+    "set_times_teamwork": {
+      "message": "Ei lagoppgåve kan ikkje ha faste tider."
+    },
+    "set_times_need_start_end": {
+      "message": "Kvar faste tid treng ein start og ein slutt."
+    },
+    "set_times_bad_format": {
+      "message": "Faste tider treng ein start og ein slutt som 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "Ei fast tid må stengje etter at ho opnar, same dagen."
+    },
+    "set_times_overlap": {
+      "message": "To faste tider overlappar. Flytt den eine så dei ikkje gjer det."
+    },
+    "template_not_found": {
+      "message": "Malen {template_id} vart ikkje funnen"
+    },
+    "upload_admin_required": {
+      "message": "Krev administrator"
+    },
+    "upload_file_too_large": {
+      "message": "Fila er for stor"
+    },
+    "upload_expected_multipart": {
+      "message": "Venta eit multipart-skjema"
+    },
+    "upload_too_many_parts": {
+      "message": "For mange delar i skjemaet"
+    },
+    "upload_no_file": {
+      "message": "Inga fil send"
+    },
+    "upload_image_unsupported": {
+      "message": "Ikkje eit støtta bilete (JPEG, PNG eller WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Biletlageret er fullt"
+    },
+    "upload_image_store_failed": {
+      "message": "Kunne ikkje lagre biletet"
+    },
+    "upload_photo_rate_limited": {
+      "message": "For mange opplastingar, prøv igjen om litt"
+    },
+    "upload_photo_busy": {
+      "message": "For mange opplastingar samstundes, prøv igjen om ein augneblink"
+    },
+    "upload_photo_storage_full": {
+      "message": "Fotolageret er fullt"
+    },
+    "upload_photo_timeout": {
+      "message": "Opplastinga tok for lang tid"
+    },
+    "upload_photo_invalid": {
+      "message": "Ikkje eit gyldig bilete"
+    },
+    "upload_photo_store_failed": {
+      "message": "Kunne ikkje lagre fotoet"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Du har for mange foto som ventar på å bli knytte til ei oppgåve. Send inn eller fjern dei først."
+    },
+    "upload_sound_unsupported": {
+      "message": "Ikkje ein støtta lyd (MP3, OGG, WAV eller M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Lydlageret er fullt"
+    },
+    "upload_sound_store_failed": {
+      "message": "Kunne ikkje lagre lyden"
     }
   },
   "issues": {

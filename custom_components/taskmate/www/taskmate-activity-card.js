@@ -92,6 +92,13 @@ class TaskMateActivityCard extends LitElement {
     return true;
   }
 
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
+  }
+
   _t(key, params) {
     const fn = window.__taskmate_localize;
     return fn ? fn(this.hass, key, params) : key;
@@ -608,6 +615,10 @@ class TaskMateActivityCard extends LitElement {
       .act-cn-row:last-child { border-bottom: none; }
       .act-cn-mid { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; }
       .act-cn-time { font-size: 11px; flex-shrink: 0; text-align: end; line-height: 1.3; white-space: nowrap; }
+      /* The relative age goes under the clock time, so a longer word ("vor 2 T.",
+         "il y a 2 j") doesn't push the row past a phone-width card. */
+      .act-cn-time .act-rel { display: block; }
+      .act-cn-time .act-sep { display: none; }
 
       /* Clean Pro — connecting rail */
       .act-cp-rail { position: relative; padding-inline-start: 26px; }
@@ -646,7 +657,7 @@ class TaskMateActivityCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("common.please_define_entity"));
     this.config = {
       title: "",
       max_items: 30,
@@ -1085,8 +1096,8 @@ class TaskMateActivityCard extends LitElement {
     if (!id || this.config.show_undo === false) return '';
     const loading = !!this._loading[id];
     const message = kind === 'chore'
-      ? this._t('activity.undo_confirm_chore', { detail, child, points })
-      : this._t('activity.undo_confirm_txn', { detail, child, points });
+      ? this._t('activity.undo_confirm_chore', { detail, child, points: __tmNum(this.hass, points) })
+      : this._t('activity.undo_confirm_txn', { detail, child, points: __tmNum(this.hass, points) });
     return html`
       <button
         class="undo-btn"
@@ -1142,7 +1153,7 @@ class TaskMateActivityCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('activity.undo_error_title'),
-          message: this._t('activity.undo_error_body', { message: error.message }),
+          message: this._t('activity.undo_error_body', { message: this._errText(error) }),
           notification_id: `taskmate_undo_error_${id}`,
         });
       }
@@ -1342,7 +1353,7 @@ class TaskMateActivityCard extends LitElement {
 
     const rows = filteredEvents.map(e => this._describeEvent(e, childNames, pointsIcon, chorePointsMap));
 
-    const sub = design === 'console' ? 'LIVE · STREAM' : this._t('activity.recent_events');
+    const sub = design === 'console' ? this._t('activity.console_stream') : this._t('activity.recent_events');
     const pill = design === 'console' ? this._t(filteredEvents.length === 1 ? 'activity.events_count_one' : 'activity.events_count', { count: filteredEvents.length }) : '';
     const body = html`
       ${this.config.show_filter_chips !== false ? this._designFilterChips() : ''}
@@ -1363,7 +1374,7 @@ class TaskMateActivityCard extends LitElement {
   // relative "x ago" ALONGSIDE it (matches the classic activity-meta row).
   _timeMeta(r) {
     return this.config.show_relative_time !== false
-      ? html`${r.time} <span class="act-rel">· ${r.ago}</span>`
+      ? html`${r.time} <span class="act-rel"><span class="act-sep">· </span>${r.ago}</span>`
       : html`${r.time}`;
   }
   _stripe(r) {

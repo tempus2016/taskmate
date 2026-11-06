@@ -62,10 +62,10 @@ class TaskMateRoutineCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("You need to define an entity");
-    if (!config.child_id) throw new Error("You need to define a child_id");
+    if (!config.entity) throw new Error(this._t("routine.error.entity_required"));
+    // No child_id yet (e.g. the card picker preview): render shows the card's own "pick a child" state.
     if (config.time_category && !TIME_CATEGORIES.includes(config.time_category)) {
-      throw new Error(`time_category must be one of: ${TIME_CATEGORIES.join(", ")}`);
+      throw new Error(this._t("routine.error.time_category", { options: TIME_CATEGORIES.join(", ") }));
     }
     this.config = config;
   }
@@ -143,7 +143,7 @@ class TaskMateRoutineCard extends LitElement {
       this._runCompleted.delete(String(chore.id));
     } catch (err) {
       this.dispatchEvent(new CustomEvent("hass-notification", {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
     } finally {
       this._busy = false;
@@ -158,6 +158,13 @@ class TaskMateRoutineCard extends LitElement {
         : true;
     }
     return true;
+  }
+
+  /** A backend error in the user's language (see __taskmate_error_text in taskmate-localize.js). */
+  _errText(err) {
+    return window.__taskmate_error_text
+      ? window.__taskmate_error_text(this.hass, err)
+      : String((err && err.message) || err || "");
   }
 
   _t(key, params) {
@@ -280,7 +287,7 @@ class TaskMateRoutineCard extends LitElement {
     } catch (err) {
       // Surface rather than silently stalling the routine on a failed call.
       this.dispatchEvent(new CustomEvent("hass-notification", {
-        detail: { message: String(err?.message || err) }, bubbles: true, composed: true,
+        detail: { message: this._errText(err) || String(err) }, bubbles: true, composed: true,
       }));
     } finally {
       this._busy = false;
@@ -388,10 +395,10 @@ class TaskMateRoutineCard extends LitElement {
           </div>
           ${chore.quantity_unit && !done ? html`
             <div class="rt-qty" role="group" aria-label="${chore.quantity_unit}">
-              <button class="rt-qty-step" aria-label="−" ?disabled=${this._qtyFor(chore) <= 1}
+              <button class="rt-qty-step" aria-label="${this._t("routine.qty_less")}" ?disabled=${this._qtyFor(chore) <= 1}
                       @click=${() => this._setQty(chore, this._qtyFor(chore) - 1)}>−</button>
-              <span class="rt-qty-n">${this._qtyFor(chore)}</span>
-              <button class="rt-qty-step" aria-label="+"
+              <span class="rt-qty-n">${__tmNum(this.hass, this._qtyFor(chore))}</span>
+              <button class="rt-qty-step" aria-label="${this._t("routine.qty_more")}"
                       ?disabled=${chore.quantity_max && this._qtyFor(chore) >= chore.quantity_max}
                       @click=${() => this._setQty(chore, this._qtyFor(chore) + 1)}>+</button>
               <span class="rt-qty-unit">${chore.quantity_unit}</span>

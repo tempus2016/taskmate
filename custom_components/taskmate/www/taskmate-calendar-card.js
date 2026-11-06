@@ -736,7 +736,7 @@ class TaskMateCalendarCard extends LitElement {
 
     const sub = isToday ? this._t("common.today") : dayShort;
     const pill = design === "console" && totalPending
-      ? _ltrNums(this._t("calendar.child_summary", { done: 0, total: __tmNum(this.hass, totalPending) })) : "";
+      ? _ltrNums(this._t(totalPending === 1 ? "calendar.left_count_one" : "calendar.left_count", { count: __tmNum(this.hass, totalPending) })) : "";
     return wrap(sub, pill, body);
   }
 

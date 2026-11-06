@@ -39,6 +39,7 @@ from .const import (
     NOTIF_TYPE_INSPECTION_REMINDER,
     NOTIF_TYPE_INSPECTION_STARTED,
 )
+from .errors import TaskMateError
 from .models import clean_label, format_datetime, generate_id, parse_datetime
 from .timewindow import parse_hhmm
 
@@ -143,9 +144,9 @@ class InspectionsMixin:
     def _require_open_inspection(self, inspection_id: str) -> dict:
         record = self._find_inspection(inspection_id)
         if record is None:
-            raise ValueError("That inspection no longer exists. Refresh and try again.")
+            raise TaskMateError("inspection_not_found")
         if record.get("status") != "open":
-            raise ValueError("That inspection has already been decided or has closed.")
+            raise TaskMateError("inspection_already_decided")
         return record
 
     def _save_inspection(self, record: dict) -> None:
@@ -163,23 +164,23 @@ class InspectionsMixin:
         bounty = self.storage.get_bounty(getattr(completion, "bounty_id", "") or "")
         return getattr(bounty, "title", "") or ""
 
-    def inspectable_error(self, completion, now: datetime | None = None) -> str:
-        """Why ``completion`` can't be inspected right now ("" when it can)."""
+    def inspectable_refusal(self, completion, now: datetime | None = None) -> TaskMateError | None:
+        """Why ``completion`` can't be inspected right now (None when it can)."""
         if completion is None:
-            return "That chore no longer exists."
+            return TaskMateError("inspection_chore_gone")
         if not completion.approved:
-            return "Only approved chores can be inspected."
+            return TaskMateError("inspection_not_approved")
         if getattr(completion, "bonus_subtask_id", "") or completion.child_id == "__parent__":
-            return "Only a child's own chore can be inspected."
+            return TaskMateError("inspection_not_child_chore")
         if self.get_child(completion.child_id) is None:
-            return "That child no longer exists."
+            return TaskMateError("inspection_child_gone")
         now = now or dt_util.now()
         approved = completion.approved_at or completion.completed_at
         if approved is None or now - approved > timedelta(hours=INSPECTABLE_HOURS):
-            return f"Only chores approved in the last {INSPECTABLE_HOURS} hours can be inspected."
+            return TaskMateError("inspection_too_old", hours=INSPECTABLE_HOURS)
         if any(r.get("completion_id") == completion.id for r in self.storage.get_inspections()):
-            return "That chore has already been inspected."
-        return ""
+            return TaskMateError("inspection_already_inspected")
+        return None
 
     def inspectable_completion_ids(self) -> list[str]:
         """Approved completions a parent may inspect now (the panel's magnifier)."""
@@ -190,7 +191,7 @@ class InspectionsMixin:
         return [
             c.id
             for c in self.storage.get_completions()
-            if c.approved and (c.approved_at or c.completed_at) >= cutoff and not self.inspectable_error(c, now)
+            if c.approved and (c.approved_at or c.completed_at) >= cutoff and self.inspectable_refusal(c, now) is None
         ]
 
     def inspection_can_redo(self, record: dict) -> bool:
@@ -216,12 +217,12 @@ class InspectionsMixin:
     ) -> dict:
         """Flag an approved chore for a spot check."""
         if not self.inspections_enabled():
-            raise ValueError("Surprise inspections are switched off in Settings.")
+            raise TaskMateError("inspections_off")
         completion = self._inspected_completion(completion_id)
         now = dt_util.now()
-        error = self.inspectable_error(completion, now)
-        if error:
-            raise ValueError(error)
+        refusal = self.inspectable_refusal(completion, now)
+        if refusal:
+            raise refusal
         window = window if window in INSPECTION_WINDOWS else self.inspection_default_window()
         bonus = self.inspection_default_bonus() if bonus is None else max(0, min(INSPECTION_BONUS_MAX, int(bonus)))
         tell = self._insp_flag("inspection_tell_child", True) if tell_child is None else bool(tell_child)
@@ -336,7 +337,7 @@ class InspectionsMixin:
         if redo is None:
             redo = self.inspection_fail_default() == "redo"
         if redo and not self.inspection_can_redo(record):
-            raise ValueError("Only a chore finished today can be sent back to redo.")
+            raise TaskMateError("inspection_redo_today_only")
         record["status"] = "redo" if redo else "failed"
         record["decided_at"] = format_datetime(dt_util.now())
         record["note"] = clean_label(note, INSPECTION_NOTE_MAX)
@@ -588,7 +589,7 @@ class InspectionsMixin:
             and _local_date(c.approved_at or c.completed_at) == today.isoformat()
             and (not allowed or c.child_id in allowed)
             and c.child_id != yesterday_child
-            and not self.inspectable_error(c, now)
+            and self.inspectable_refusal(c, now) is None
         ]
         if not candidates:
             return None

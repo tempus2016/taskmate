@@ -11,6 +11,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_NOTIFICATION_NAV_URL, DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY, DOMAIN
+from .errors import TaskMateError
 from .models import (
     Auction,
     AwardedBadge,
@@ -1830,7 +1831,7 @@ class TaskMateStorage:
         import copy
 
         if not isinstance(data, dict):
-            raise ValueError("import data must be an object")
+            raise TaskMateError("import_data_not_object")
         kept = self._authorisation_state()
         self._data = copy.deepcopy(data)
         list_keys = (
@@ -2559,7 +2560,7 @@ class TaskMateStorage:
             if tpl.get("id") == template_id:
                 tpl.update(updates)
                 return
-        raise ValueError(f"Template {template_id} not found")
+        raise TaskMateError("template_not_found", template_id=template_id)
 
     def remove_custom_template(self, template_id: str) -> None:
         """Remove a custom template."""
@@ -2567,4 +2568,4 @@ class TaskMateStorage:
         original_len = len(templates)
         self._data["templates"] = [t for t in templates if t.get("id") != template_id]
         if len(self._data["templates"]) == original_len:
-            raise ValueError(f"Template {template_id} not found")
+            raise TaskMateError("template_not_found", template_id=template_id)
