@@ -61,7 +61,7 @@ Create your own badges via the Admin Panel or services. Custom badges support an
 - **AND** (default) — every criterion must pass for the badge to auto-award.
 - **OR** — the badge auto-awards as soon as *any one* criterion passes.
 
-The combinator is set per badge with the `combinator` field (`AND` or `OR`).
+The combinator is set per badge with the `combinator` field: `and` or `or` (the action editor's drop-down uses lower case; `AND` and `OR` still work).
 
 ### Operators
 
