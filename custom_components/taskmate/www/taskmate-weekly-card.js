@@ -286,7 +286,11 @@ class TaskMateWeeklyCard extends LitElement {
 
       /* Weekly — designed stat grid (playroom/console/cleanpro) */
       .wk-d-stats { display: grid; gap: 9px; }
-      .wk-d-stats.g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+      /* Four tiles when they fit; two rows of two on a narrow card or with long
+         labels (German "Aufgaben" overflowed a quarter of a phone-width card). */
+      .wk-d-stats.g4 { grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); }
+      .wk-d-stats .stat { min-width: 0; }
+      .wk-d-stats .stat .k { overflow-wrap: anywhere; }
       .wk-d-stats.g2 { grid-template-columns: 1fr 1fr; }
       .wk-pl-stat { background: var(--tmd-surface-2); border-radius: 16px; padding: 11px; text-align: center; }
       .wk-pl-stat .v { font-family: var(--tmd-font-display); font-weight: 800; font-size: 24px; line-height: 1; color: var(--tmd-accent); }

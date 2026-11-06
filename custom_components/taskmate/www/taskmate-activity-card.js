@@ -615,6 +615,10 @@ class TaskMateActivityCard extends LitElement {
       .act-cn-row:last-child { border-bottom: none; }
       .act-cn-mid { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; }
       .act-cn-time { font-size: 11px; flex-shrink: 0; text-align: end; line-height: 1.3; white-space: nowrap; }
+      /* The relative age goes under the clock time, so a longer word ("vor 2 T.",
+         "il y a 2 j") doesn't push the row past a phone-width card. */
+      .act-cn-time .act-rel { display: block; }
+      .act-cn-time .act-sep { display: none; }
 
       /* Clean Pro — connecting rail */
       .act-cp-rail { position: relative; padding-inline-start: 26px; }
@@ -1370,7 +1374,7 @@ class TaskMateActivityCard extends LitElement {
   // relative "x ago" ALONGSIDE it (matches the classic activity-meta row).
   _timeMeta(r) {
     return this.config.show_relative_time !== false
-      ? html`${r.time} <span class="act-rel">· ${r.ago}</span>`
+      ? html`${r.time} <span class="act-rel"><span class="act-sep">· </span>${r.ago}</span>`
       : html`${r.time}`;
   }
   _stripe(r) {
