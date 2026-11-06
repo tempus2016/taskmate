@@ -129,7 +129,7 @@ class PetsMixin:
         if not self.pets_enabled():
             raise TaskMateError("pets_switched_off")
         if species not in PET_SPECIES:
-            raise TaskMateError("pet_unknown_species", species=repr(species))
+            raise TaskMateError("pet_unknown_species", species=species)
         name = (name or "").strip()[:PET_NAME_MAX]
         if not name:
             raise TaskMateError("pet_name_required")

@@ -167,7 +167,7 @@ class TemplatesMixin:
     ) -> None:
         """Update a custom template. Raises for built-in templates."""
         if template_id in BUILT_IN_IDS:
-            raise TaskMateError("template_builtin_modify", template_id=f"'{template_id}'")
+            raise TaskMateError("template_builtin_modify", template_id=template_id)
         updates = {}
         if name is not None:
             updates["name"] = name.strip()
@@ -181,7 +181,7 @@ class TemplatesMixin:
     async def async_delete_template(self, template_id: str) -> None:
         """Delete a custom template. Raises for built-in templates."""
         if template_id in BUILT_IN_IDS:
-            raise TaskMateError("template_builtin_delete", template_id=f"'{template_id}'")
+            raise TaskMateError("template_builtin_delete", template_id=template_id)
         self.storage.remove_custom_template(template_id)
         await self.storage.async_save()
 
@@ -258,17 +258,17 @@ class TemplatesMixin:
 
             raw_chores = entry.get("chores")
             if not isinstance(raw_chores, list) or not raw_chores:
-                raise TaskMateError("template_pack_template_no_chores", name=f"'{name}'")
+                raise TaskMateError("template_pack_template_no_chores", name=name)
             if len(raw_chores) > self.MAX_PACK_CHORES:
-                raise TaskMateError("template_pack_template_too_many_chores", name=f"'{name}'")
+                raise TaskMateError("template_pack_template_too_many_chores", name=name)
 
             chores = []
             for raw in raw_chores:
                 if not isinstance(raw, dict):
-                    raise TaskMateError("template_pack_malformed_chore", name=f"'{name}'")
+                    raise TaskMateError("template_pack_malformed_chore", name=name)
                 chore_name = str(raw.get("name", "")).strip()
                 if not chore_name:
-                    raise TaskMateError("template_pack_unnamed_chore", name=f"'{name}'")
+                    raise TaskMateError("template_pack_unnamed_chore", name=name)
                 # Whitelist: unknown keys are dropped, never carried through.
                 cleaned = {k: v for k, v in raw.items() if k in TEMPLATE_CHORE_FIELDS}
                 cleaned["name"] = chore_name[:200]

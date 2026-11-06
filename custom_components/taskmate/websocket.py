@@ -2442,9 +2442,9 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, T
         start = str(entry.get("start") or "")
         end = str(entry.get("end") or "")
         if not time_re.match(start) or not time_re.match(end):
-            return None, TaskMateError("time_periods_invalid_time", name=f"'{label or pid}'")
+            return None, TaskMateError("time_periods_invalid_time", name=label or pid)
         if start >= end:
-            return None, TaskMateError("time_periods_start_after_end", name=f"'{label or pid}'")
+            return None, TaskMateError("time_periods_start_after_end", name=label or pid)
         ids.add(pid)
         periods.append(
             {
@@ -2461,8 +2461,8 @@ def _validate_time_periods(raw: list, coordinator) -> tuple[list[dict] | None, T
         if cur["start"] < prev["end"]:
             return None, TaskMateError(
                 "time_periods_overlap",
-                name=f"'{cur['label'] or cur['id']}'",
-                other=f"'{prev['label'] or prev['id']}'",
+                name=cur["label"] or cur["id"],
+                other=prev["label"] or prev["id"],
             )
 
     removed = {p["id"] for p in coordinator.get_time_periods()} - {p["id"] for p in periods}

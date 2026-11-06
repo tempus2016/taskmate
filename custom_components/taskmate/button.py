@@ -16,6 +16,7 @@ from . import authz
 from .const import DOMAIN
 from .coordinator import TaskMateCoordinator, button_keys, chore_has_button
 from .entity import taskmate_device_info
+from .entity_names import TranslatedNameMixin
 from .models import Child, Chore, Reward
 
 _LOGGER = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ async def async_setup_entry(
     coordinator.async_add_listener(async_update_entities)
 
 
-class TaskMateBaseButton(CoordinatorEntity, ButtonEntity):
+class TaskMateBaseButton(TranslatedNameMixin, CoordinatorEntity, ButtonEntity):
     """Base class for TaskMate buttons."""
 
     def __init__(
@@ -120,7 +121,7 @@ class CompleteChoreButton(TaskMateBaseButton):
         self.child_id = child.id
         self.chore_id = chore.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_{chore.id}_complete"
-        self._attr_name = f"{child.name}: Complete {chore.name}"
+        self._set_translated_name("button", "complete_chore", child=child.name, chore=chore.name)
 
     @property
     def icon(self) -> str:
@@ -177,7 +178,7 @@ class ClaimRewardButton(TaskMateBaseButton):
         self.child_id = child.id
         self.reward_id = reward.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_{reward.id}_claim"
-        self._attr_name = f"{child.name}: Claim {reward.name}"
+        self._set_translated_name("button", "claim_reward", child=child.name, reward=reward.name)
 
     @property
     def icon(self) -> str:

@@ -45,7 +45,8 @@ def test_complete_chore_button_identity_and_icon():
     coord = _coord(child=child, chore=chore)
     btn = CompleteChoreButton(coord, _entry(), child, chore)
     assert btn._attr_unique_id == "entry1_ch1_cho1_complete"
-    assert btn._attr_name == "Malia: Complete Dishes"
+    assert btn.name == "Malia: Complete Dishes"
+    assert btn.suggested_object_id == "Malia: Complete Dishes"
     assert btn.icon == "mdi:check-circle"  # no picture set -> falls back
     attrs = btn.extra_state_attributes
     assert attrs["child_id"] == "ch1"
@@ -85,7 +86,8 @@ def test_claim_reward_button_identity_and_press():
     coord = _coord(child=child, reward=reward)
     btn = ClaimRewardButton(coord, _entry(), child, reward)
     assert btn._attr_unique_id == "entry1_ch2_rw1_claim"
-    assert btn._attr_name == "Leo: Claim Ice Cream"
+    assert btn.name == "Leo: Claim Ice Cream"
+    assert btn.suggested_object_id == "Leo: Claim Ice Cream"
     assert btn.icon == "mdi:ice-cream"
     run(btn.async_press())
     coord.async_claim_reward.assert_awaited_once_with("rw1", "ch2")

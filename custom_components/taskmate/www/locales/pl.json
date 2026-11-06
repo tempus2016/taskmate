@@ -186,6 +186,8 @@
   "badges.editor_help": "Konfiguracja przez YAML: ustaw entity na sensor odznak (np. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "Nie znaleziono {entity}",
   "badges.error.entity_required": "Wskaż encję: sensor odznak dziecka (np. sensor.taskmate_badges_mia)",
+  "badges.empty_none": "Brak odznak",
+  "badges.empty_tier": "Brak odznak – poziom: {tier}",
   "badges.label": "Odznaki",
   "badges.next_up": "Następna",
   "badges.one_more": "Jeszcze jeden krok i będzie Twoja!",

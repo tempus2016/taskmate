@@ -1323,74 +1323,7 @@ class TaskMateRewardsCard extends LitElement {
         </div>
       </ha-card>
 
-      ${this._pendingClaim ? html`
-        <div class="confirm-overlay" @click="${this._cancelClaim}">
-          <div class="confirm-dialog" @click="${(e) => e.stopPropagation()}">
-            <ha-icon class="dialog-icon" icon="mdi:gift-outline"></ha-icon>
-            <div class="dialog-title">${this._t('rewards.confirm_title')}</div>
-            <div class="dialog-body">
-              ${(() => {
-                const r = this._pendingClaim;
-                const child = r._child;
-                const cost = r.cost;
-                // Pool/jackpot redemptions spend POOLED points, not the claiming
-                // child's wallet. Showing the child's balance vs the full cost
-                // produced a nonsensical negative "Remaining" (#557). Use the pool
-                // total (jackpot: summed across all children; savings-jar: this
-                // child's allocation) so the calculation reflects the pooled points.
-                const isJackpot = r.is_jackpot === true;
-                const isPoolRedeem = isJackpot || r.pool_enabled === true || this.config.enable_pool_mode === true;
-                let currentPoints;
-                let availableLabel;
-                if (isPoolRedeem) {
-                  const poolAllocations = r.pool_allocations || {};
-                  currentPoints = isJackpot
-                    ? (typeof r.jackpot_pool_total === 'number' ? r.jackpot_pool_total : 0)
-                    : (child ? (poolAllocations[child.id] || 0) : 0);
-                  availableLabel = this._t('rewards.confirm_pool_total');
-                } else {
-                  currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
-                  availableLabel = this._t('rewards.confirm_your_points', { name: pointsName });
-                }
-                const remaining = currentPoints !== null ? currentPoints - cost : null;
-                return html`
-                  <div style="margin-bottom: 12px;">${this._t('rewards.confirm_body', { name: r.name })}</div>
-                  ${currentPoints !== null ? html`
-                    <div class="dialog-points-summary">
-                      <div class="dialog-points-row">
-                        <span>${availableLabel}</span>
-                        <span class="points-val">
-                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                          ${__tmNum(this.hass, currentPoints)}
-                        </span>
-                      </div>
-                      <div class="dialog-points-row cost">
-                        <span>${this._t('rewards.confirm_cost')}</span>
-                        <span class="points-val">
-                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                          −${__tmNum(this.hass, cost)}
-                        </span>
-                      </div>
-                      <div class="dialog-points-row remaining">
-                        <span>${this._t('rewards.confirm_remaining')}</span>
-                        <span class="points-val">
-                          <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
-                          ${__tmNum(this.hass, remaining)}
-                        </span>
-                      </div>
-                    </div>
-                  ` : ''}
-                `;
-              })()}
-            </div>
-            ${this._renderGiftPicker()}
-            <div class="dialog-buttons">
-              <button class="btn-cancel" @click="${this._cancelClaim}">${this._t('common.cancel')}</button>
-              <button class="btn-confirm" @click="${this._confirmClaim}">${this._t('rewards.confirm_claim_btn')}</button>
-            </div>
-          </div>
-        </div>
-      ` : ""}
+      ${this._renderConfirmDialog(pointsIcon, pointsName)}
     `;
   }
 
@@ -2218,7 +2151,7 @@ class TaskMateRewardsCard extends LitElement {
       ? html`<button class="btn sm ${d.canAfford && !d.limitNext ? 'good' : ''}"
           ?disabled="${!d.canAfford || isLoading || !!d.limitNext}"
           @click="${(e) => { e.stopPropagation(); this._promptClaim(reward, d.relevantChild); }}"
-          title="${d.canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
+          title="${d.limitNext ? this._t('rewards.limit_again', { day: this._dayLabel(d.limitNext) }) : d.canAfford ? this._t('rewards.claim_reward') : this._t('rewards.not_enough_points')}"
         >${this._t('rewards.claim_reward')}</button>`
       : '';
 
@@ -2290,15 +2223,33 @@ class TaskMateRewardsCard extends LitElement {
             ${(() => {
               const r = this._pendingClaim;
               const child = r._child;
-              const currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
               const cost = r.cost;
+              // Pool/jackpot redemptions spend POOLED points, not the claiming
+              // child's wallet. Showing the child's balance vs the full cost
+              // produced a nonsensical negative "Remaining" (#557). Use the pool
+              // total (jackpot: summed across all children; savings-jar: this
+              // child's allocation) so the calculation reflects the pooled points.
+              const isJackpot = r.is_jackpot === true;
+              const isPoolRedeem = isJackpot || r.pool_enabled === true || this.config.enable_pool_mode === true;
+              let currentPoints;
+              let availableLabel;
+              if (isPoolRedeem) {
+                const poolAllocations = r.pool_allocations || {};
+                currentPoints = isJackpot
+                  ? (typeof r.jackpot_pool_total === 'number' ? r.jackpot_pool_total : 0)
+                  : (child ? (poolAllocations[child.id] || 0) : 0);
+                availableLabel = this._t('rewards.confirm_pool_total');
+              } else {
+                currentPoints = child ? (typeof child.spendable_balance === 'number' ? child.spendable_balance : (child.points || 0)) : null;
+                availableLabel = this._t('rewards.confirm_your_points', { name: pointsName });
+              }
               const remaining = currentPoints !== null ? currentPoints - cost : null;
               return html`
                 <div style="margin-bottom: 12px;">${this._t('rewards.confirm_body', { name: r.name })}</div>
                 ${currentPoints !== null ? html`
                   <div class="dialog-points-summary">
                     <div class="dialog-points-row">
-                      <span>${this._t('rewards.confirm_your_points', { name: pointsName })}</span>
+                      <span>${availableLabel}</span>
                       <span class="points-val">
                         <ha-icon icon="${pointsIcon}" style="--mdc-icon-size:14px;"></ha-icon>
                         ${__tmNum(this.hass, currentPoints)}

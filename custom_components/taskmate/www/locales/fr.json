@@ -185,6 +185,8 @@
   "badges.editor_help": "Configurez via YAML : définissez entity sur votre capteur de badges (ex. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "{entity} introuvable",
   "badges.error.entity_required": "Veuillez définir une entité : le capteur de badges de l'enfant (ex. sensor.taskmate_badges_mia)",
+  "badges.empty_none": "Aucun badge pour le moment",
+  "badges.empty_tier": "Aucun badge {tier} pour le moment",
   "badges.label": "Badges",
   "badges.next_up": "Prochain",
   "badges.one_more": "Encore un et il est à toi !",

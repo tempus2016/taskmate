@@ -56,7 +56,7 @@ _FKB_SCREEN_SUFFIX = "-screenOn"
 def _parse_time(value: Any) -> time:
     m = _TIME_RE.match(str(value or ""))
     if not m:
-        raise TaskMateError("boost_bad_time", value=f"'{value}'")
+        raise TaskMateError("boost_bad_time", value=value)
     return time(int(m.group(1)), int(m.group(2)))
 
 

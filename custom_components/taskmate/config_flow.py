@@ -17,7 +17,8 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from .const import DEFAULT_POINTS_ICON, DEFAULT_POINTS_NAME, DOMAIN
+from .const import DEFAULT_POINTS_ICON, DOMAIN
+from .points_name import default_points_name as _default_points_name
 
 
 class TaskMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -28,6 +29,7 @@ class TaskMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
+        default_name = await self.hass.async_add_executor_job(_default_points_name, self.hass.config.language)
 
         if user_input is not None:
             # Check if already configured
@@ -37,7 +39,7 @@ class TaskMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title="TaskMate",
                 data={
-                    "points_name": user_input.get("points_name", DEFAULT_POINTS_NAME),
+                    "points_name": user_input.get("points_name", default_name),
                     "points_icon": user_input.get("points_icon", DEFAULT_POINTS_ICON),
                 },
             )
@@ -46,12 +48,9 @@ class TaskMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Optional("points_name", default=DEFAULT_POINTS_NAME): str,
+                    vol.Optional("points_name", default=default_name): str,
                     vol.Optional("points_icon", default=DEFAULT_POINTS_ICON): selector.IconSelector(),
                 }
             ),
             errors=errors,
-            description_placeholders={
-                "title": "Welcome to TaskMate!",
-            },
         )

@@ -32,31 +32,31 @@ def coerce_scheduled_value(field: str, value: Any) -> Any:
     """
     expected = SCHEDULED_CHANGE_FIELDS.get(field)
     if expected is None:
-        raise TaskMateError("scheduled_field_not_allowed", field=f"'{field}'")
+        raise TaskMateError("scheduled_field_not_allowed", field=field)
 
     if expected is bool:
         if isinstance(value, bool):
             return value
         if isinstance(value, str) and value.lower() in ("true", "false"):
             return value.lower() == "true"
-        raise TaskMateError("scheduled_expects_bool", field=f"'{field}'")
+        raise TaskMateError("scheduled_expects_bool", field=field)
 
     if expected is int:
         try:
             coerced = int(value)
         except (TypeError, ValueError) as err:
-            raise TaskMateError("scheduled_expects_int", field=f"'{field}'") from err
+            raise TaskMateError("scheduled_expects_int", field=field) from err
         if coerced < 0:
-            raise TaskMateError("scheduled_negative", field=f"'{field}'")
+            raise TaskMateError("scheduled_negative", field=field)
         return coerced
 
     if expected is list:
         if not isinstance(value, list):
-            raise TaskMateError("scheduled_expects_list", field=f"'{field}'")
+            raise TaskMateError("scheduled_expects_list", field=field)
         return [str(v) for v in value]
 
     if value is None:
-        raise TaskMateError("scheduled_expects_text", field=f"'{field}'")
+        raise TaskMateError("scheduled_expects_text", field=field)
     return str(value)
 
 

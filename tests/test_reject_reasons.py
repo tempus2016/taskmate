@@ -337,5 +337,5 @@ def test_the_notice_reads_well_with_and_without_a_reason(hass):
         meta, {"child_name": "Mia", "item_name": "Tidy room", "reason_text": ": Not finished"}
     )
     without = notif._render_template(meta, {"child_name": "Mia", "item_name": "Tidy room", "reason_text": ""})
-    assert with_reason.endswith("'Tidy room' was sent back: Not finished")
-    assert without.endswith("'Tidy room' was sent back")
+    assert with_reason.endswith("“Tidy room” was sent back: Not finished")
+    assert without.endswith("“Tidy room” was sent back")

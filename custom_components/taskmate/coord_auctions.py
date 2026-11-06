@@ -247,7 +247,7 @@ class AuctionsMixin:
         if day <= today:
             raise TaskMateError("auction_pick_future")
         if not self._is_chore_scheduled_for_date(chore, day):
-            raise TaskMateError("auction_not_scheduled", chore=f"'{chore.name}'", date=day.isoformat())
+            raise TaskMateError("auction_not_scheduled", chore=chore.name, date=day.isoformat())
         if self._auction_blocks(chore.id, day.isoformat()):
             raise TaskMateError("auction_already_exists")
 

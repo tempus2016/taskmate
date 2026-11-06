@@ -185,6 +185,8 @@
   "badges.editor_help": "Konfigurer via YAML: sett entity til din badge-sensor (f.eks. sensor.taskmate_badges_mia).",
   "badges.entity_not_found": "{entity} ikke funnet",
   "badges.error.entity_required": "Vennligst definer en entitet: barnets badge-sensor (f.eks. sensor.taskmate_badges_mia)",
+  "badges.empty_none": "Ingen merker ennå",
+  "badges.empty_tier": "Ingen merker i {tier} ennå",
   "badges.label": "Merker",
   "badges.next_up": "Neste",
   "badges.one_more": "Bare én til, så er det ditt!",

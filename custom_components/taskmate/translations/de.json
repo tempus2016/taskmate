@@ -2029,17 +2029,56 @@
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "Aufgaben"
+        "unit_of_measurement": "Aufgaben",
+        "name": "Statistik von {child}"
       },
       "child_badges": {
-        "unit_of_measurement": "Abzeichen"
+        "unit_of_measurement": "Abzeichen",
+        "name": "Abzeichen von {child}"
       },
       "child_watch": {
         "state": {
           "left": "Noch #",
           "all_done": "Alles erledigt",
           "no_chores": "Keine Aufgaben"
-        }
+        },
+        "name": "Smartwatch von {child}"
+      },
+      "overview": {
+        "name": "TaskMate-Überblick"
+      },
+      "chores": {
+        "name": "TaskMate-Aufgaben"
+      },
+      "chore_availability": {
+        "name": "TaskMate-Aufgabenverfügbarkeit"
+      },
+      "rewards": {
+        "name": "TaskMate-Belohnungen"
+      },
+      "activity": {
+        "name": "TaskMate-Aktivität"
+      },
+      "incentives": {
+        "name": "TaskMate-Boni und Strafen"
+      },
+      "bounties": {
+        "name": "TaskMate-Sonderjobs"
+      },
+      "auctions": {
+        "name": "TaskMate-Auktionen"
+      },
+      "chore_board": {
+        "name": "TaskMate-Aufgabenübersicht"
+      },
+      "child_points": {
+        "name": "Punkte von {child}"
+      },
+      "child_wishlist": {
+        "name": "Wunschliste von {child}"
+      },
+      "pending_approvals": {
+        "name": "Ausstehende Genehmigungen"
       }
     },
     "number": {
@@ -2072,7 +2111,7 @@
     },
     "event": {
       "child_activity": {
-        "name": "TaskMate-Aktivität",
+        "name": "Aktivität von {child}",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2125,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "TaskMate-Familienaktivität",
+        "name": "Familienaktivität",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2141,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Genehmigungen ausstehend"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: {chore} erledigen"
+      },
+      "claim_reward": {
+        "name": "{child}: {reward} einlösen"
       }
     }
   },
@@ -2221,7 +2273,7 @@
       "message": "Eine Aufgabe mit Timer kann keine Teamaufgabe sein."
     },
     "teamwork_not_team_chore": {
-      "message": "Die Aufgabe {name} ist keine Teamaufgabe"
+      "message": "Die Aufgabe „{name}“ ist keine Teamaufgabe"
     },
     "swap_only_rotation": {
       "message": "Nur reihum wechselnde Aufgaben können getauscht werden"
@@ -2284,19 +2336,19 @@
       "message": "Wähle einen Tag in den letzten {days} Tagen, vor heute."
     },
     "backdate_switched_off": {
-      "message": "{name} ist ausgeschaltet."
+      "message": "„{name}“ ist ausgeschaltet."
     },
     "backdate_not_assigned": {
-      "message": "{name} gehört nicht zu den Aufgaben von {child}."
+      "message": "„{name}“ gehört nicht zu den Aufgaben von {child}."
     },
     "backdate_rotation_team": {
-      "message": "{name} wechselt reihum oder braucht ein Team und kann deshalb nicht für einen vergangenen Tag eingetragen werden."
+      "message": "„{name}“ wechselt reihum oder braucht ein Team und kann deshalb nicht für einen vergangenen Tag eingetragen werden."
     },
     "backdate_open_ended": {
-      "message": "{name} ist offen und braucht daher die Notiz des Kindes und einen Preis. Nutze die Karte des Kindes."
+      "message": "„{name}“ ist offen und braucht daher die Notiz des Kindes und einen Preis. Nutze die Karte des Kindes."
     },
     "backdate_set_times": {
-      "message": "{name} hat feste Zeiten und kann deshalb nicht für einen vergangenen Tag eingetragen werden."
+      "message": "„{name}“ hat feste Zeiten und kann deshalb nicht für einen vergangenen Tag eingetragen werden."
     },
     "backdate_holiday": {
       "message": "{weekday, select, Monday {Am Montag} Tuesday {Am Dienstag} Wednesday {Am Mittwoch} Thursday {Am Donnerstag} Friday {Am Freitag} Saturday {Am Samstag} Sunday {Am Sonntag} other {Am {weekday}}} waren Ferien, also war keine Aufgabe fällig."
@@ -2308,43 +2360,43 @@
       "message": "{child} hatte {weekday, select, Monday {am Montag} Tuesday {am Dienstag} Wednesday {am Mittwoch} Thursday {am Donnerstag} Friday {am Freitag} Saturday {am Samstag} Sunday {am Sonntag} other {am {weekday}}} Geburtstag, ein aufgabenfreier Tag."
     },
     "backdate_auction": {
-      "message": "{name} wurde an dem Tag ersteigert und kann deshalb nicht nachträglich eingetragen werden."
+      "message": "„{name}“ wurde an dem Tag ersteigert und kann deshalb nicht nachträglich eingetragen werden."
     },
     "backdate_weekly_target_met": {
-      "message": "{name} hat in dieser Woche schon seine {target} erreicht."
+      "message": "„{name}“ hat in dieser Woche schon seine {target} erreicht."
     },
     "backdate_not_due": {
-      "message": "{name} war {weekday, select, Monday {am Montag} Tuesday {am Dienstag} Wednesday {am Mittwoch} Thursday {am Donnerstag} Friday {am Freitag} Saturday {am Samstag} Sunday {am Sonntag} other {am {weekday}}} nicht fällig."
+      "message": "„{name}“ war {weekday, select, Monday {am Montag} Tuesday {am Dienstag} Wednesday {am Mittwoch} Thursday {am Donnerstag} Friday {am Freitag} Saturday {am Samstag} Sunday {am Sonntag} other {am {weekday}}} nicht fällig."
     },
     "backdate_daily_limit": {
-      "message": "{name} wurde {weekday, select, Monday {am Montag} Tuesday {am Dienstag} Wednesday {am Mittwoch} Thursday {am Donnerstag} Friday {am Freitag} Saturday {am Samstag} Sunday {am Sonntag} other {am {weekday}}} schon {done}/{limit}-mal erledigt."
+      "message": "„{name}“ wurde {weekday, select, Monday {am Montag} Tuesday {am Dienstag} Wednesday {am Mittwoch} Thursday {am Donnerstag} Friday {am Freitag} Saturday {am Samstag} Sunday {am Sonntag} other {am {weekday}}} schon {done}/{limit}-mal erledigt."
     },
     "chore_disabled": {
-      "message": "Die Aufgabe {name} ist deaktiviert"
+      "message": "Die Aufgabe „{name}“ ist deaktiviert"
     },
     "parent_complete_one_shot": {
-      "message": "Die Aufgabe {name} ist eine einmalige Aufgabe und kann nicht von Eltern erledigt werden"
+      "message": "Die Aufgabe „{name}“ ist eine einmalige Aufgabe und kann nicht von Eltern erledigt werden"
     },
     "parent_complete_no_children": {
-      "message": "Die Aufgabe {name} hat keine Kinder, für die sie ausgeblendet werden kann"
+      "message": "Die Aufgabe „{name}“ hat keine Kinder, für die sie ausgeblendet werden kann"
     },
     "parent_complete_rotation_shared": {
-      "message": "Die Aufgabe {name} wird reihum geteilt und kann nur für alle erledigt werden"
+      "message": "Die Aufgabe „{name}“ wird reihum geteilt und kann nur für alle erledigt werden"
     },
     "parent_complete_not_assigned": {
-      "message": "Die Aufgabe {name} ist diesem Kind nicht zugewiesen"
+      "message": "Die Aufgabe „{name}“ ist diesem Kind nicht zugewiesen"
     },
     "bonus_subtask_not_found": {
-      "message": "Bonus-Unteraufgabe {subtask_id} in der Aufgabe {name} nicht gefunden"
+      "message": "Bonus-Unteraufgabe {subtask_id} in der Aufgabe „{name}“ nicht gefunden"
     },
     "bonus_subtask_not_assigned": {
-      "message": "Die Bonus-Unteraufgabe {subtask} ist {child} nicht zugewiesen."
+      "message": "Die Bonus-Unteraufgabe „{subtask}“ ist {child} nicht zugewiesen."
     },
     "bonus_subtask_parent_first": {
-      "message": "Die Bonus-Unteraufgabe {subtask} kann nicht erledigt werden — die Hauptaufgabe {name} muss heute zuerst erledigt sein."
+      "message": "Die Bonus-Unteraufgabe „{subtask}“ kann nicht erledigt werden — die Hauptaufgabe „{name}“ muss heute zuerst erledigt sein."
     },
     "bonus_subtask_already_done": {
-      "message": "Die Bonus-Unteraufgabe {subtask} ist heute schon erledigt."
+      "message": "Die Bonus-Unteraufgabe „{subtask}“ ist heute schon erledigt."
     },
     "undo_window_passed": {
       "message": "Diese Aufgabe kann nicht mehr rückgängig gemacht werden. Bitte deine Eltern darum."
@@ -2359,16 +2411,16 @@
       "message": "Die Erledigung ist nicht genehmigt; nichts rückgängig zu machen"
     },
     "chore_sort_unknown": {
-      "message": "Unbekannte Sortierung {sort}"
+      "message": "Unbekannte Sortierung „{sort}“"
     },
     "task_group_duplicate_chore": {
       "message": "Doppelte Aufgabe in der Gruppe: {chore_id}"
     },
     "task_group_everyone_mode": {
-      "message": "Die Aufgabe {name} ist allen zugewiesen und kann keiner Gruppe beitreten"
+      "message": "Die Aufgabe „{name}“ ist allen zugewiesen und kann keiner Gruppe beitreten"
     },
     "task_group_already_member": {
-      "message": "Die Aufgabe {name} gehört schon zur Gruppe {group}"
+      "message": "Die Aufgabe „{name}“ gehört schon zur Gruppe „{group}“"
     },
     "task_group_unknown_policy": {
       "message": "Unbekannte Regel für Aufgabengruppen: {policy}"
@@ -2419,22 +2471,22 @@
       "message": "Nicht genug Punkte: {child} hat {points}, Geschenk {gift}"
     },
     "reward_jackpot_pool_short": {
-      "message": "{name} ist ein gemeinsamer Jackpot und der Topf ist noch nicht voll. Nötig: {cost}, gespart: {saved}"
+      "message": "„{name}“ ist ein gemeinsamer Jackpot und der Topf ist noch nicht voll. Nötig: {cost}, gespart: {saved}"
     },
     "reward_not_available_to": {
-      "message": "Die Belohnung {name} ist für {child} nicht verfügbar"
+      "message": "Die Belohnung „{name}“ ist für {child} nicht verfügbar"
     },
     "reward_sold_out": {
-      "message": "Die Belohnung {name} ist ausverkauft"
+      "message": "Die Belohnung „{name}“ ist ausverkauft"
     },
     "reward_expired": {
-      "message": "Die Belohnung {name} ist abgelaufen"
+      "message": "Die Belohnung „{name}“ ist abgelaufen"
     },
     "reward_not_available_now": {
-      "message": "Die Belohnung {name} ist gerade nicht verfügbar"
+      "message": "Die Belohnung „{name}“ ist gerade nicht verfügbar"
     },
     "reward_claim_already_waiting": {
-      "message": "Eine Anfrage für {name} wartet schon auf Genehmigung"
+      "message": "Eine Anfrage für „{name}“ wartet schon auf Genehmigung"
     },
     "reward_claims_too_many": {
       "message": "Zu viele Belohnungsanfragen warten schon auf Genehmigung"
@@ -2452,7 +2504,7 @@
       "message": "Nicht genug Punkte zum Genehmigen. Nötig: {cost}, vorhanden: {points}"
     },
     "reward_claim_already_approved": {
-      "message": "{name} ist schon genehmigt und kann nicht mehr abgelehnt werden"
+      "message": "„{name}“ ist schon genehmigt und kann nicht mehr abgelehnt werden"
     },
     "reward_claim_already_approved_unnamed": {
       "message": "Diese Belohnung ist schon genehmigt und kann nicht mehr abgelehnt werden"
@@ -2464,7 +2516,7 @@
       "message": "{child} hat keine Punkte zum Ausgeben"
     },
     "pool_full": {
-      "message": "Der Topf für die Belohnung {name} ist schon voll"
+      "message": "Der Topf für die Belohnung „{name}“ ist schon voll"
     },
     "reward_limit_once_day": {
       "message": "{child} kann {name} einmal am Tag bekommen. Wieder verfügbar am {date}"
@@ -2491,7 +2543,7 @@
       "message": "Belohnungen können nur für Kinder gekauft werden"
     },
     "reward_gift_not_giftable": {
-      "message": "{name} kann nicht für jemand anderen gekauft werden"
+      "message": "„{name}“ kann nicht für jemand anderen gekauft werden"
     },
     "reward_rating_stars": {
       "message": "Wähle 1 bis 3 Sterne"
@@ -2506,10 +2558,10 @@
       "message": "Diese Belohnung wurde schon bewertet"
     },
     "service_unknown_child": {
-      "message": "Unbekanntes Kind {ref}. Gültige Kinder: {valid}"
+      "message": "Unbekanntes Kind „{ref}“. Gültige Kinder: {valid}"
     },
     "service_ambiguous_child": {
-      "message": "Mehr als ein Kind heißt {ref}; nutze stattdessen die Kind-ID ({ids})"
+      "message": "Mehr als ein Kind heißt „{ref}“; nutze stattdessen die Kind-ID ({ids})"
     },
     "service_nothing_to_update": {
       "message": "Nichts zu aktualisieren: Gib mindestens ein Feld zum Ändern an"
@@ -2530,22 +2582,22 @@
       "message": "Diese Belohnung gehört {child}."
     },
     "scheduled_field_not_allowed": {
-      "message": "{field} kann nicht geplant geändert werden"
+      "message": "„{field}“ kann nicht geplant geändert werden"
     },
     "scheduled_expects_bool": {
-      "message": "{field} erwartet true oder false"
+      "message": "„{field}“ erwartet true oder false"
     },
     "scheduled_expects_int": {
-      "message": "{field} erwartet eine ganze Zahl"
+      "message": "„{field}“ erwartet eine ganze Zahl"
     },
     "scheduled_negative": {
-      "message": "{field} darf nicht negativ sein"
+      "message": "„{field}“ darf nicht negativ sein"
     },
     "scheduled_expects_list": {
-      "message": "{field} erwartet eine Liste"
+      "message": "„{field}“ erwartet eine Liste"
     },
     "scheduled_expects_text": {
-      "message": "{field} erwartet Text"
+      "message": "„{field}“ erwartet Text"
     },
     "scheduled_apply_on_format": {
       "message": "apply_on muss ein ISO-Datum sein, z. B. 2026-09-01"
@@ -2560,7 +2612,7 @@
       "message": "Geplante Änderung {change_id} nicht gefunden"
     },
     "timed_not_timed": {
-      "message": "Die Aufgabe {name} ist keine Aufgabe mit Timer"
+      "message": "Die Aufgabe „{name}“ ist keine Aufgabe mit Timer"
     },
     "timed_already_running": {
       "message": "Der Timer läuft schon"
@@ -2569,7 +2621,7 @@
       "message": "Tageslimit erreicht ({minutes} Min.)"
     },
     "timed_not_available": {
-      "message": "{name} ist für {child} gerade nicht verfügbar"
+      "message": "„{name}“ ist für {child} gerade nicht verfügbar"
     },
     "timed_no_running": {
       "message": "Kein laufender Timer zum Pausieren"
@@ -2614,43 +2666,43 @@
       "message": "Nur ein wartender oder abgelehnter Wunsch kann zurückgezogen werden"
     },
     "wish_not_open_for_saving": {
-      "message": "Für {name} kann gerade nicht gespart werden"
+      "message": "Für „{name}“ kann gerade nicht gespart werden"
     },
     "wish_move_min": {
       "message": "Es muss mindestens 1 Punkt verschoben werden"
     },
     "wish_fully_funded": {
-      "message": "{name} ist schon voll finanziert"
+      "message": "„{name}“ ist schon voll finanziert"
     },
     "wish_no_spendable": {
       "message": "{child_name} hat keine Punkte zum Ausgeben"
     },
     "wish_take_back_not_allowed": {
-      "message": "Aus {name} können gerade keine Punkte genommen werden"
+      "message": "Aus „{name}“ können gerade keine Punkte genommen werden"
     },
     "wish_take_back_min": {
       "message": "Es muss mindestens 1 Punkt zurückgenommen werden"
     },
     "wish_nothing_saved": {
-      "message": "In {name} ist nichts gespart, das du zurücknehmen kannst"
+      "message": "In „{name}“ ist nichts gespart, das du zurücknehmen kannst"
     },
     "wish_cannot_redeem": {
-      "message": "{name} kann gerade nicht eingelöst werden"
+      "message": "„{name}“ kann gerade nicht eingelöst werden"
     },
     "wish_needs_more_points": {
-      "message": "{name} braucht erst noch {points} Punkte"
+      "message": "„{name}“ braucht erst noch {points} Punkte"
     },
     "wish_too_many_pending_claims": {
       "message": "Es warten schon zu viele Belohnungsanfragen auf Freigabe"
     },
     "wish_not_waiting_approval": {
-      "message": "{name} wartet nicht auf Freigabe"
+      "message": "„{name}“ wartet nicht auf Freigabe"
     },
     "wish_cannot_decline": {
-      "message": "{name} kann nicht mehr abgelehnt werden"
+      "message": "„{name}“ kann nicht mehr abgelehnt werden"
     },
     "wish_not_open_for_pledges": {
-      "message": "Für {name} kann gerade nichts zugesagt werden"
+      "message": "Für „{name}“ kann gerade nichts zugesagt werden"
     },
     "wish_pledge_name_required": {
       "message": "Gib an, von wem die Zusage ist"
@@ -2659,10 +2711,10 @@
       "message": "Eine Zusage muss mindestens 1 Punkt sein"
     },
     "wish_too_many_pledges": {
-      "message": "{name} hat schon {max} Zusagen"
+      "message": "„{name}“ hat schon {max} Zusagen"
     },
     "wish_pledges_locked": {
-      "message": "Zusagen für {name} können nicht mehr geändert werden"
+      "message": "Zusagen für „{name}“ können nicht mehr geändert werden"
     },
     "wish_pledge_not_found": {
       "message": "Zusage nicht gefunden"
@@ -2671,10 +2723,10 @@
       "message": "Wunsch oder Kind für Anfrage {claim_id} nicht gefunden"
     },
     "wish_no_longer_redeemable": {
-      "message": "{name} wartet nicht mehr aufs Einlösen"
+      "message": "„{name}“ wartet nicht mehr aufs Einlösen"
     },
     "wish_not_funded": {
-      "message": "{name} ist nicht mehr voll finanziert"
+      "message": "„{name}“ ist nicht mehr voll finanziert"
     },
     "pet_shop_emoji_invalid": {
       "message": "Das Bild muss ein Emoji sein (bis zu {max} Zeichen)."
@@ -2692,7 +2744,7 @@
       "message": "Gib dem Artikel einen Namen."
     },
     "pet_shop_unknown_slot": {
-      "message": "Unbekannter Platz {slot}"
+      "message": "Unbekannter Platz „{slot}“"
     },
     "pet_shop_not_whole": {
       "message": "Preis und Level müssen ganze Zahlen sein."
@@ -2746,7 +2798,7 @@
       "message": "{child_name} hat jetzt nicht mehr genug Punkte dafür."
     },
     "pet_unknown_species": {
-      "message": "Unbekanntes Haustier {species}"
+      "message": "Unbekanntes Haustier „{species}“"
     },
     "pet_name_required": {
       "message": "Gib deinem Haustier einen Namen."
@@ -2779,7 +2831,7 @@
       "message": "Wähle einen Termin ab morgen."
     },
     "auction_not_scheduled": {
-      "message": "{chore} ist am {date} nicht geplant."
+      "message": "„{chore}“ ist am {date} nicht geplant."
     },
     "auction_already_exists": {
       "message": "Für diesen Termin gibt es schon eine Auktion."
@@ -2878,7 +2930,7 @@
       "message": "Jemand anderes war schneller – dieser Sonderjob ist nicht mehr da."
     },
     "bounty_one_at_a_time": {
-      "message": "Erledige zuerst {title} – du kannst nur einen Sonderjob gleichzeitig haben."
+      "message": "Erledige zuerst „{title}“ – du kannst nur einen Sonderjob gleichzeitig haben."
     },
     "bounty_not_claimed_by_you": {
       "message": "Du hast diesen Sonderjob nicht übernommen."
@@ -2944,7 +2996,7 @@
       "message": "Nichts mehr übrig, wofür du drehen kannst"
     },
     "unlock_not_allowed": {
-      "message": "{entity_id} steht nicht auf der Freigabeliste. Füge es in den Einstellungen hinzu, bevor du es als Belohnung verwendest."
+      "message": "„{entity_id}“ steht nicht auf der Freigabeliste. Füge es in den Einstellungen hinzu, bevor du es als Belohnung verwendest."
     },
     "unlock_minutes_not_whole": {
       "message": "Die Freigabeminuten müssen eine ganze Zahl sein"
@@ -3037,7 +3089,7 @@
       "message": "Diese Belohnung oder dieses Kind gibt es nicht mehr"
     },
     "setup_invalid_birthday": {
-      "message": "Der Geburtstag {value} ist kein gültiges Datum"
+      "message": "Der Geburtstag „{value}“ ist kein gültiges Datum"
     },
     "kiosk_pin_invalid": {
       "message": "Eine Kiosk-PIN muss genau 4 Ziffern haben"
@@ -3058,13 +3110,13 @@
       "message": "jeder eigene Zeitraum braucht einen Namen"
     },
     "time_periods_invalid_time": {
-      "message": "ungültige Uhrzeit für den Zeitraum {name} (nutze HH:MM)"
+      "message": "ungültige Uhrzeit für den Zeitraum „{name}“ (nutze HH:MM)"
     },
     "time_periods_start_after_end": {
-      "message": "der Zeitraum {name} muss beginnen, bevor er endet"
+      "message": "der Zeitraum „{name}“ muss beginnen, bevor er endet"
     },
     "time_periods_overlap": {
-      "message": "{name} überschneidet sich mit {other} — Zeiträume dürfen sich nicht überschneiden"
+      "message": "„{name}“ überschneidet sich mit „{other}“ — Zeiträume dürfen sich nicht überschneiden"
     },
     "time_periods_in_use": {
       "message": "ein Zeitraum, den noch Aufgaben nutzen, kann nicht gelöscht werden: {chores}"
@@ -3094,10 +3146,10 @@
       "message": "Eine Vorlage braucht mindestens eine Aufgabe"
     },
     "template_builtin_modify": {
-      "message": "Die eingebaute Vorlage {template_id} kann nicht geändert werden"
+      "message": "Die eingebaute Vorlage „{template_id}“ kann nicht geändert werden"
     },
     "template_builtin_delete": {
-      "message": "Die eingebaute Vorlage {template_id} kann nicht gelöscht werden"
+      "message": "Die eingebaute Vorlage „{template_id}“ kann nicht gelöscht werden"
     },
     "template_pack_not_pack": {
       "message": "Das sieht nicht nach einem TaskMate-Paket aus"
@@ -3124,19 +3176,19 @@
       "message": "Eine Vorlage im Paket hat keinen Namen"
     },
     "template_pack_template_no_chores": {
-      "message": "Die Vorlage {name} hat keine Aufgaben"
+      "message": "Die Vorlage „{name}“ hat keine Aufgaben"
     },
     "template_pack_template_too_many_chores": {
-      "message": "Die Vorlage {name} hat zu viele Aufgaben"
+      "message": "Die Vorlage „{name}“ hat zu viele Aufgaben"
     },
     "template_pack_malformed_chore": {
-      "message": "Die Vorlage {name} enthält eine fehlerhafte Aufgabe"
+      "message": "Die Vorlage „{name}“ enthält eine fehlerhafte Aufgabe"
     },
     "template_pack_unnamed_chore": {
-      "message": "Eine Aufgabe in {name} hat keinen Namen"
+      "message": "Eine Aufgabe in „{name}“ hat keinen Namen"
     },
     "boost_bad_time": {
-      "message": "{value} ist keine Uhrzeit wie 09:30."
+      "message": "„{value}“ ist keine Uhrzeit wie 09:30."
     },
     "boost_multiplier_nan": {
       "message": "Der Multiplikator muss eine Zahl sein."
@@ -3199,7 +3251,7 @@
       "message": "Taschengeld ist nicht eingeschaltet"
     },
     "allowance_not_enough_points": {
-      "message": "{name} hat nur {points} Punkte zum Auszahlen."
+      "message": "{name} hat nur {points} {points_name} zum Auszahlen."
     },
     "appeals_off": {
       "message": "Einsprüche sind ausgeschaltet."
@@ -3229,7 +3281,7 @@
       "message": "Unbekannte Einspruchsart {kind}"
     },
     "birthday_invalid_format": {
-      "message": "Der Geburtstag muss JJJJ-MM-TT oder MM-TT sein, erhalten: {value}"
+      "message": "Der Geburtstag muss JJJJ-MM-TT oder MM-TT sein, erhalten: „{value}“"
     },
     "birthday_in_future": {
       "message": "Der Geburtstag kann nicht in der Zukunft liegen"
@@ -3313,7 +3365,7 @@
       "message": "Keine Minuten zum Sparen"
     },
     "setup_unknown_age_group": {
-      "message": "Unbekannte Altersgruppe {value}"
+      "message": "Unbekannte Altersgruppe „{value}“"
     },
     "setup_child_needs_ref": {
       "message": "Jedes neue Kind braucht eine eigene ref"
@@ -3322,7 +3374,7 @@
       "message": "Ein Kind braucht einen Namen"
     },
     "setup_chore_unknown_child": {
-      "message": "Aufgabe ist einem unbekannten Kind zugewiesen: {who}"
+      "message": "Aufgabe ist einem unbekannten Kind zugewiesen: „{who}“"
     },
     "setup_chore_needs_name": {
       "message": "Eine Aufgabe braucht einen Namen"
@@ -3376,7 +3428,7 @@
       "message": "{chore} gehört heute nicht zu den Aufgaben von {child}."
     },
     "wellbeing_unknown_mood": {
-      "message": "Unbekannte Stimmung {mood}"
+      "message": "Unbekannte Stimmung „{mood}“"
     },
     "set_times_not_list": {
       "message": "Feste Zeiten müssen eine Liste sein."

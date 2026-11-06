@@ -26,6 +26,7 @@ from .coord_rewards import reward_is_time_locked
 from .coord_set_times import set_time_label, set_time_of
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
+from .entity_names import TranslatedNameMixin
 from .models import Child
 from .seasons import active_season
 from .watch import DEFAULT_STATE_STRINGS, today_board, watch_state, watch_summary
@@ -1253,7 +1254,7 @@ async def async_setup_entry(
     coordinator.async_add_listener(async_add_child_sensors)
 
 
-class TaskMateBaseSensor(CoordinatorEntity, SensorEntity):
+class TaskMateBaseSensor(TranslatedNameMixin, CoordinatorEntity, SensorEntity):
     """Base class for TaskMate sensors."""
 
     def __init__(
@@ -1333,7 +1334,7 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_overall_stats"
-        self._attr_name = "TaskMate Overview"
+        self._set_translated_name("sensor", "overview")
         self._published_entity_map: dict | None = None
 
     async def async_added_to_hass(self) -> None:
@@ -1514,7 +1515,7 @@ class TaskMateChoresSensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_chores"
-        self._attr_name = "TaskMate Chores"
+        self._set_translated_name("sensor", "chores")
 
     @property
     def native_value(self) -> int:
@@ -1566,7 +1567,7 @@ class TaskMateChoreAvailabilitySensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_chore_availability"
-        self._attr_name = "TaskMate Chore Availability"
+        self._set_translated_name("sensor", "chore_availability")
 
     @property
     def native_value(self) -> int:
@@ -1601,7 +1602,7 @@ class TaskMateRewardsSensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_rewards"
-        self._attr_name = "TaskMate Rewards"
+        self._set_translated_name("sensor", "rewards")
 
     @property
     def native_value(self) -> int:
@@ -1639,7 +1640,7 @@ class TaskMateActivitySensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_activity"
-        self._attr_name = "TaskMate Activity"
+        self._set_translated_name("sensor", "activity")
 
     @property
     def native_value(self) -> int:
@@ -1688,7 +1689,7 @@ class TaskMateIncentivesSensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_incentives"
-        self._attr_name = "TaskMate Incentives"
+        self._set_translated_name("sensor", "incentives")
 
     @property
     def native_value(self) -> int:
@@ -1774,7 +1775,7 @@ class TaskMateBountiesSensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_bounties"
-        self._attr_name = "TaskMate Bounties"
+        self._set_translated_name("sensor", "bounties")
 
     @property
     def native_value(self) -> int:
@@ -1807,7 +1808,7 @@ class TaskMateAuctionsSensor(_CachedAttrsSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_auctions"
-        self._attr_name = "TaskMate Auctions"
+        self._set_translated_name("sensor", "auctions")
 
     @property
     def native_value(self) -> int:
@@ -1844,7 +1845,7 @@ class TaskMateChoreBoardSensor(TaskMateBaseSensor):
     ) -> None:
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_chore_board"
-        self._attr_name = "TaskMate Chore Board"
+        self._set_translated_name("sensor", "chore_board")
         self._board_key: tuple | None = None
         self._board: dict | None = None
 
@@ -1882,7 +1883,7 @@ class ChildPointsSensor(TaskMateBaseSensor):
         super().__init__(coordinator, entry)
         self.child_id = child.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_points"
-        self._attr_name = f"{child.name} Points"
+        self._set_translated_name("sensor", "child_points", child=child.name)
         self._attr_state_class = SensorStateClass.TOTAL
 
     @property
@@ -1938,7 +1939,7 @@ class ChildStatsSensor(TaskMateBaseSensor):
         super().__init__(coordinator, entry)
         self.child_id = child.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_stats"
-        self._attr_name = f"{child.name} Stats"
+        self._set_translated_name("sensor", "child_stats", child=child.name)
         self._attr_state_class = SensorStateClass.TOTAL
 
     @property
@@ -2038,7 +2039,7 @@ class ChildWishlistSensor(TaskMateBaseSensor):
         super().__init__(coordinator, entry)
         self.child_id = child.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_wishlist"
-        self._attr_name = f"{child.name} Wishlist"
+        self._set_translated_name("sensor", "child_wishlist", child=child.name)
 
     @property
     def native_value(self) -> int:
@@ -2080,7 +2081,7 @@ class ChildWatchSensor(TaskMateBaseSensor):
         super().__init__(coordinator, entry)
         self.child_id = child.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_watch"
-        self._attr_name = f"{child.name} Watch"
+        self._set_translated_name("sensor", "child_watch", child=child.name)
         self._state_strings: dict[str, str] = dict(DEFAULT_STATE_STRINGS)
         self._summary_key: tuple | None = None
         self._summary: dict | None = None
@@ -2149,7 +2150,7 @@ class ChildBadgesSensor(TaskMateBaseSensor):
         super().__init__(coordinator, entry)
         self.child_id = child.id
         self._attr_unique_id = f"{entry.entry_id}_{child.id}_badges"
-        self._attr_name = f"{child.name} Badges"
+        self._set_translated_name("sensor", "child_badges", child=child.name)
 
     @property
     def native_value(self) -> int:
@@ -2248,7 +2249,7 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         """Initialize the sensor."""
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_pending_approvals"
-        self._attr_name = "Pending Approvals"
+        self._set_translated_name("sensor", "pending_approvals")
         self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property

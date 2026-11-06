@@ -728,7 +728,7 @@ def test_global_sensor_recorder_payloads_under_limit():
     for sensor in _stress_sensors(coord, entry):
         size = _bytes(_recorder_payload(type(sensor), sensor.extra_state_attributes))
         if size >= MAX_ATTR_BYTES:
-            oversized.append(f"{sensor._attr_name}: {size} bytes")
+            oversized.append(f"{sensor.name}: {size} bytes")
     assert not oversized, "recorder payload over the 16384-byte limit: " + "; ".join(oversized)
 
 

@@ -1465,16 +1465,16 @@ class ChoresMixin:
         """
         child_id = child.id
         if not getattr(chore, "enabled", True):
-            return TaskMateError("backdate_switched_off", name=f"'{chore.name}'")
+            return TaskMateError("backdate_switched_off", name=chore.name)
         assigned = chore.assigned_to or []
         if (assigned and child_id not in assigned) or child_id in (getattr(chore, "disabled_for", None) or []):
-            return TaskMateError("backdate_not_assigned", name=f"'{chore.name}'", child=child.name)
+            return TaskMateError("backdate_not_assigned", name=chore.name, child=child.name)
         if (getattr(chore, "assignment_mode", "everyone") or "everyone") != "everyone" or self.teamwork_size(chore):
-            return TaskMateError("backdate_rotation_team", name=f"'{chore.name}'")
+            return TaskMateError("backdate_rotation_team", name=chore.name)
         if getattr(chore, "open_ended", False):
-            return TaskMateError("backdate_open_ended", name=f"'{chore.name}'")
+            return TaskMateError("backdate_open_ended", name=chore.name)
         if chore_has_times(chore):
-            return TaskMateError("backdate_set_times", name=f"'{chore.name}'")
+            return TaskMateError("backdate_set_times", name=chore.name)
         if self.is_vacation_day(day):
             return TaskMateError("backdate_holiday", weekday=day.strftime("%A"))
         if self.is_sick_day(child.id, day):
@@ -1484,16 +1484,16 @@ class ChoresMixin:
         if not getattr(chore, "mandatory", False) and self.is_birthday_day_off(child, day):
             return TaskMateError("backdate_birthday", weekday=day.strftime("%A"), child=child.name)
         if self.auction_winner(chore, day):
-            return TaskMateError("backdate_auction", name=f"'{chore.name}'")
+            return TaskMateError("backdate_auction", name=chore.name)
 
         # A weekly-target chore (#883) has no fixed days — the child picks them —
         # so it isn't "due" on any one day; its quota is the gate instead.
         weekly_target = int(getattr(chore, "weekly_target", 0) or 0)
         if weekly_target:
             if quota and self.weekly_target_met(chore, child_id, on=day):
-                return TaskMateError("backdate_weekly_target_met", name=f"'{chore.name}'", target=weekly_target)
+                return TaskMateError("backdate_weekly_target_met", name=chore.name, target=weekly_target)
         elif not self._is_chore_scheduled_for_date(chore, day):
-            return TaskMateError("backdate_not_due", name=f"'{chore.name}'", weekday=day.strftime("%A"))
+            return TaskMateError("backdate_not_due", name=chore.name, weekday=day.strftime("%A"))
 
         if not quota:
             return None
@@ -1511,7 +1511,7 @@ class ChoresMixin:
         if done_that_day >= daily_limit:
             return TaskMateError(
                 "backdate_daily_limit",
-                name=f"'{chore.name}'",
+                name=chore.name,
                 done=done_that_day,
                 limit=daily_limit,
                 weekday=day.strftime("%A"),
@@ -1565,11 +1565,11 @@ class ChoresMixin:
             raise TaskMateError("chore_not_found", chore_id=chore_id)
 
         if not getattr(chore, "enabled", True):
-            raise TaskMateError("chore_disabled", name=f"'{chore.name}'")
+            raise TaskMateError("chore_disabled", name=chore.name)
 
         schedule_mode = getattr(chore, "schedule_mode", "specific_days")
         if schedule_mode == "one_shot":
-            raise TaskMateError("parent_complete_one_shot", name=f"'{chore.name}'")
+            raise TaskMateError("parent_complete_one_shot", name=chore.name)
 
         now = dt_util.now()
 
@@ -1578,16 +1578,16 @@ class ChoresMixin:
         child_ids = list(assigned) if assigned else [c.id for c in self.storage.get_children()]
 
         if not child_ids:
-            raise TaskMateError("parent_complete_no_children", name=f"'{chore.name}'")
+            raise TaskMateError("parent_complete_no_children", name=chore.name)
 
         if child_id:
             # Only an everyone-mode chore gives each child their own copy; a
             # rotation or race has one shared slot, so "done for one child"
             # means nothing there.
             if getattr(chore, "assignment_mode", "everyone") != "everyone":
-                raise TaskMateError("parent_complete_rotation_shared", name=f"'{chore.name}'")
+                raise TaskMateError("parent_complete_rotation_shared", name=chore.name)
             if child_id not in child_ids:
-                raise TaskMateError("parent_complete_not_assigned", name=f"'{chore.name}'")
+                raise TaskMateError("parent_complete_not_assigned", name=chore.name)
             child_ids = [child_id]
 
         completion = ChoreCompletion(
@@ -1640,7 +1640,7 @@ class ChoresMixin:
 
         subtask = next((b for b in chore.bonus_subtasks if b.id == bonus_subtask_id), None)
         if not subtask:
-            raise TaskMateError("bonus_subtask_not_found", subtask_id=bonus_subtask_id, name=f"'{chore.name}'")
+            raise TaskMateError("bonus_subtask_not_found", subtask_id=bonus_subtask_id, name=chore.name)
 
         child = self.get_child(child_id)
         if not child:
@@ -1655,7 +1655,7 @@ class ChoresMixin:
         # that same completion closes the availability window.
         assigned = getattr(chore, "assigned_to", []) or []
         if assigned and child_id not in assigned:
-            raise TaskMateError("bonus_subtask_not_assigned", subtask=f"'{subtask.name}'", child=child.name)
+            raise TaskMateError("bonus_subtask_not_assigned", subtask=subtask.name, child=child.name)
 
         # Gate check: parent chore must be completed today
         all_completions = self.storage.get_completions()
@@ -1667,7 +1667,7 @@ class ChoresMixin:
             for c in all_completions
         )
         if not parent_done_today:
-            raise TaskMateError("bonus_subtask_parent_first", subtask=f"'{subtask.name}'", name=f"'{chore.name}'")
+            raise TaskMateError("bonus_subtask_parent_first", subtask=subtask.name, name=chore.name)
 
         # Duplicate check: bonus sub-task not already completed today
         already_done = any(
@@ -1678,7 +1678,7 @@ class ChoresMixin:
             for c in all_completions
         )
         if already_done:
-            raise TaskMateError("bonus_subtask_already_done", subtask=f"'{subtask.name}'")
+            raise TaskMateError("bonus_subtask_already_done", subtask=subtask.name)
 
         # A grown-up's own sub-task never waits for approval (#1061). A chore
         # whose main completion must be reviewed (approval, a photo, or an
@@ -3061,7 +3061,7 @@ class ChoresMixin:
         fine-tune it afterwards. Returns how many children were updated.
         """
         if sort_by not in CHORE_SORT_PRESETS:
-            raise TaskMateError("chore_sort_unknown", sort=repr(sort_by))
+            raise TaskMateError("chore_sort_unknown", sort=sort_by)
         chores = self.storage.get_chores()
         periods = self.get_time_periods() if sort_by == "time" else None
         wanted = set(child_ids) if child_ids else None
@@ -3114,12 +3114,10 @@ class ChoresMixin:
             if not chore:
                 raise TaskMateError("chore_unknown", chore_id=chore_id)
             if getattr(chore, "assignment_mode", "everyone") == "everyone":
-                raise TaskMateError("task_group_everyone_mode", name=f"'{chore.name}'")
+                raise TaskMateError("task_group_everyone_mode", name=chore.name)
             existing_group = self.storage.get_task_group_for_chore(chore_id)
             if existing_group and existing_group.id != exclude_group_id:
-                raise TaskMateError(
-                    "task_group_already_member", name=f"'{chore.name}'", group=f"'{existing_group.name}'"
-                )
+                raise TaskMateError("task_group_already_member", name=chore.name, group=existing_group.name)
 
     async def async_add_task_group(self, name: str, policy: str, chore_ids: list[str] | None = None):
         """Create a task group."""

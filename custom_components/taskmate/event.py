@@ -28,6 +28,7 @@ from .const import (
 from .coord_notifications import notification_event_name
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
+from .entity_names import TranslatedNameMixin
 
 # Bus events that are about one child, by the event type the entity reports.
 # Moments that only a notification announces take that notification's event
@@ -167,7 +168,7 @@ async def async_setup_entry(
         entry.async_on_unload(hass.bus.async_listen(bus_event, _make_family_listener(event_type)))
 
 
-class _TaskMateEventBase(EventEntity):
+class _TaskMateEventBase(TranslatedNameMixin, EventEntity):
     """Shared behaviour: fire only once HA has the entity."""
 
     _attr_should_poll = False
@@ -198,7 +199,7 @@ class TaskMateChildEvent(_TaskMateEventBase):
         super().__init__(entry)
         self.child_id = child_id
         self._attr_unique_id = f"{entry.entry_id}_{child_id}_activity_event"
-        self._attr_name = f"{child_name} activity"
+        self._set_translated_name("event", "child_activity", child=child_name)
 
 
 class TaskMateFamilyEvent(_TaskMateEventBase):
@@ -211,4 +212,4 @@ class TaskMateFamilyEvent(_TaskMateEventBase):
     def __init__(self, entry: ConfigEntry) -> None:
         super().__init__(entry)
         self._attr_unique_id = f"{entry.entry_id}_family_activity_event"
-        self._attr_name = "Family activity"
+        self._set_translated_name("event", "family_activity")

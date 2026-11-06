@@ -148,7 +148,7 @@ class PetShopMixin:
         if not name and not (existing and existing["id"] in _DEFAULT_IDS):
             raise TaskMateError("pet_shop_name_required")
         if slot not in PET_SHOP_SLOTS:
-            raise TaskMateError("pet_shop_unknown_slot", slot=repr(slot))
+            raise TaskMateError("pet_shop_unknown_slot", slot=slot)
         try:
             cost = int(cost)
             level = int(level or 0)

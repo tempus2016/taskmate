@@ -27,7 +27,7 @@ class TimedMixin:
         if not chore:
             raise TaskMateError("chore_not_found", chore_id=chore_id)
         if chore.task_type != "timed":
-            raise TaskMateError("timed_not_timed", name=f"'{chore.name}'")
+            raise TaskMateError("timed_not_timed", name=chore.name)
 
         child = self.get_child(child_id)
         if not child:
@@ -57,7 +57,7 @@ class TimedMixin:
             # eligibility the child card uses, so a disabled, off-day, or
             # not-yours timed chore can't be farmed via a crafted start call.
             if not self._timed_start_allowed(chore, child_id):
-                raise TaskMateError("timed_not_available", name=f"'{chore.name}'", child=child.name)
+                raise TaskMateError("timed_not_available", name=chore.name, child=child.name)
             # A prerequisite not done yet (#771): completing the chore is refused
             # until then, so starting its timer is too — otherwise the session
             # runs on a row the card hides under dependency_mode: hide.

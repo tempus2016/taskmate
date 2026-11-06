@@ -291,7 +291,7 @@ class BountiesMixin:
             raise TaskMateError("bounty_taken")
         current = self.active_bounty_claim(child_id)
         if current is not None:
-            raise TaskMateError("bounty_one_at_a_time", title=f"'{current.title}'")
+            raise TaskMateError("bounty_one_at_a_time", title=current.title)
         bounty.status = "claimed"
         bounty.claimed_by = child_id
         bounty.claimed_at = now

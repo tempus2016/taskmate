@@ -2029,17 +2029,56 @@
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "tâches"
+        "unit_of_measurement": "tâches",
+        "name": "Statistiques de {child}"
       },
       "child_badges": {
-        "unit_of_measurement": "badges"
+        "unit_of_measurement": "badges",
+        "name": "Badges de {child}"
       },
       "child_watch": {
         "state": {
           "left": "Encore #",
           "all_done": "Tout est fait",
           "no_chores": "Aucune tâche"
-        }
+        },
+        "name": "Montre de {child}"
+      },
+      "overview": {
+        "name": "Vue d'ensemble TaskMate"
+      },
+      "chores": {
+        "name": "Tâches TaskMate"
+      },
+      "chore_availability": {
+        "name": "Disponibilité des tâches TaskMate"
+      },
+      "rewards": {
+        "name": "Récompenses TaskMate"
+      },
+      "activity": {
+        "name": "Activité TaskMate"
+      },
+      "incentives": {
+        "name": "Bonus et pénalités TaskMate"
+      },
+      "bounties": {
+        "name": "Primes TaskMate"
+      },
+      "auctions": {
+        "name": "Enchères TaskMate"
+      },
+      "chore_board": {
+        "name": "Tableau des tâches TaskMate"
+      },
+      "child_points": {
+        "name": "Points de {child}"
+      },
+      "child_wishlist": {
+        "name": "Liste de souhaits de {child}"
+      },
+      "pending_approvals": {
+        "name": "Approbations en attente"
       }
     },
     "number": {
@@ -2072,7 +2111,7 @@
     },
     "event": {
       "child_activity": {
-        "name": "Activité TaskMate",
+        "name": "Activité de {child}",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2125,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "Activité familiale TaskMate",
+        "name": "Activité familiale",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2141,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Approbations en attente présentes"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child} : Terminer {chore}"
+      },
+      "claim_reward": {
+        "name": "{child} : Réclamer {reward}"
       }
     }
   },
@@ -2221,7 +2273,7 @@
       "message": "Une tâche chronométrée ne peut pas être une tâche d’équipe."
     },
     "teamwork_not_team_chore": {
-      "message": "La tâche {name} n’est pas une tâche d’équipe"
+      "message": "La tâche « {name} » n’est pas une tâche d’équipe"
     },
     "swap_only_rotation": {
       "message": "Seules les tâches en rotation peuvent être échangées"
@@ -2284,19 +2336,19 @@
       "message": "Choisis un jour parmi les {days} derniers jours, avant aujourd’hui."
     },
     "backdate_switched_off": {
-      "message": "{name} est désactivée."
+      "message": "« {name} » est désactivée."
     },
     "backdate_not_assigned": {
-      "message": "{name} ne fait pas partie des tâches de {child}."
+      "message": "« {name} » ne fait pas partie des tâches de {child}."
     },
     "backdate_rotation_team": {
-      "message": "{name} tourne ou demande une équipe, elle ne peut donc pas être notée pour un jour passé."
+      "message": "« {name} » tourne ou demande une équipe, elle ne peut donc pas être notée pour un jour passé."
     },
     "backdate_open_ended": {
-      "message": "{name} est ouverte : il faut la note de l’enfant et un prix. Utilise la carte de l’enfant."
+      "message": "« {name} » est ouverte : il faut la note de l’enfant et un prix. Utilise la carte de l’enfant."
     },
     "backdate_set_times": {
-      "message": "{name} a des horaires fixes, elle ne peut donc pas être notée pour un jour passé."
+      "message": "« {name} » a des horaires fixes, elle ne peut donc pas être notée pour un jour passé."
     },
     "backdate_holiday": {
       "message": "C’étaient les vacances {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}, donc aucune tâche n’était prévue."
@@ -2308,43 +2360,43 @@
       "message": "C’était l’anniversaire de {child} {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}, un jour sans tâches."
     },
     "backdate_auction": {
-      "message": "{name} a été remportée aux enchères ce jour-là, elle ne peut donc pas être notée après coup."
+      "message": "« {name} » a été remportée aux enchères ce jour-là, elle ne peut donc pas être notée après coup."
     },
     "backdate_weekly_target_met": {
-      "message": "{name} a déjà atteint ses {target} cette semaine-là."
+      "message": "« {name} » a déjà atteint ses {target} cette semaine-là."
     },
     "backdate_not_due": {
-      "message": "{name} n’était pas prévue {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}."
+      "message": "« {name} » n’était pas prévue {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}."
     },
     "backdate_daily_limit": {
-      "message": "{name} a déjà été faite {done}/{limit} fois {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}."
+      "message": "« {name} » a déjà été faite {done}/{limit} fois {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}."
     },
     "chore_disabled": {
-      "message": "La tâche {name} est désactivée"
+      "message": "La tâche « {name} » est désactivée"
     },
     "parent_complete_one_shot": {
-      "message": "La tâche {name} est une tâche unique et ne peut pas être terminée par un parent"
+      "message": "La tâche « {name} » est une tâche unique et ne peut pas être terminée par un parent"
     },
     "parent_complete_no_children": {
-      "message": "La tâche {name} n’a aucun enfant pour qui la masquer"
+      "message": "La tâche « {name} » n’a aucun enfant pour qui la masquer"
     },
     "parent_complete_rotation_shared": {
-      "message": "La tâche {name} est partagée en rotation et ne peut être faite que pour tout le monde"
+      "message": "La tâche « {name} » est partagée en rotation et ne peut être faite que pour tout le monde"
     },
     "parent_complete_not_assigned": {
-      "message": "La tâche {name} n’est pas attribuée à cet enfant"
+      "message": "La tâche « {name} » n’est pas attribuée à cet enfant"
     },
     "bonus_subtask_not_found": {
-      "message": "Sous-tâche bonus {subtask_id} introuvable dans la tâche {name}"
+      "message": "Sous-tâche bonus {subtask_id} introuvable dans la tâche « {name} »"
     },
     "bonus_subtask_not_assigned": {
-      "message": "La sous-tâche bonus {subtask} n’est pas attribuée à {child}."
+      "message": "La sous-tâche bonus « {subtask} » n’est pas attribuée à {child}."
     },
     "bonus_subtask_parent_first": {
-      "message": "Impossible de terminer la sous-tâche bonus {subtask} — la tâche principale {name} doit d’abord être faite aujourd’hui."
+      "message": "Impossible de terminer la sous-tâche bonus « {subtask} » — la tâche principale « {name} » doit d’abord être faite aujourd’hui."
     },
     "bonus_subtask_already_done": {
-      "message": "La sous-tâche bonus {subtask} est déjà terminée aujourd’hui."
+      "message": "La sous-tâche bonus « {subtask} » est déjà terminée aujourd’hui."
     },
     "undo_window_passed": {
       "message": "Cette tâche ne peut plus être annulée. Demande à un parent de l’annuler."
@@ -2359,16 +2411,16 @@
       "message": "La réalisation n’est pas approuvée ; rien à annuler"
     },
     "chore_sort_unknown": {
-      "message": "Tri inconnu {sort}"
+      "message": "Tri inconnu « {sort} »"
     },
     "task_group_duplicate_chore": {
       "message": "Tâche en double dans le groupe : {chore_id}"
     },
     "task_group_everyone_mode": {
-      "message": "La tâche {name} est attribuée à tout le monde et ne peut pas rejoindre un groupe"
+      "message": "La tâche « {name} » est attribuée à tout le monde et ne peut pas rejoindre un groupe"
     },
     "task_group_already_member": {
-      "message": "La tâche {name} appartient déjà au groupe {group}"
+      "message": "La tâche « {name} » appartient déjà au groupe « {group} »"
     },
     "task_group_unknown_policy": {
       "message": "Règle de groupe de tâches inconnue : {policy}"
@@ -2419,22 +2471,22 @@
       "message": "Pas assez de points : {child} en a {points}, cadeau {gift}"
     },
     "reward_jackpot_pool_short": {
-      "message": "{name} est un jackpot commun et sa cagnotte n’est pas pleine. Il faut {cost}, {saved} sont économisés"
+      "message": "« {name} » est un jackpot commun et sa cagnotte n’est pas pleine. Il faut {cost}, {saved} sont économisés"
     },
     "reward_not_available_to": {
-      "message": "La récompense {name} n’est pas disponible pour {child}"
+      "message": "La récompense « {name} » n’est pas disponible pour {child}"
     },
     "reward_sold_out": {
-      "message": "La récompense {name} est épuisée"
+      "message": "La récompense « {name} » est épuisée"
     },
     "reward_expired": {
-      "message": "La récompense {name} a expiré"
+      "message": "La récompense « {name} » a expiré"
     },
     "reward_not_available_now": {
-      "message": "La récompense {name} n’est pas disponible pour le moment"
+      "message": "La récompense « {name} » n’est pas disponible pour le moment"
     },
     "reward_claim_already_waiting": {
-      "message": "Une demande pour {name} attend déjà d’être approuvée"
+      "message": "Une demande pour « {name} » attend déjà d’être approuvée"
     },
     "reward_claims_too_many": {
       "message": "Trop de demandes de récompense attendent déjà d’être approuvées"
@@ -2452,7 +2504,7 @@
       "message": "Pas assez de points pour approuver. Il en faut {cost}, il y en a {points}"
     },
     "reward_claim_already_approved": {
-      "message": "{name} a déjà été approuvée et ne peut plus être refusée"
+      "message": "« {name} » a déjà été approuvée et ne peut plus être refusée"
     },
     "reward_claim_already_approved_unnamed": {
       "message": "Cette récompense a déjà été approuvée et ne peut plus être refusée"
@@ -2464,7 +2516,7 @@
       "message": "{child} n’a aucun point à dépenser"
     },
     "pool_full": {
-      "message": "La cagnotte de la récompense {name} est déjà pleine"
+      "message": "La cagnotte de la récompense « {name} » est déjà pleine"
     },
     "reward_limit_once_day": {
       "message": "{child} peut avoir {name} une fois par jour. De nouveau disponible le {date}"
@@ -2491,7 +2543,7 @@
       "message": "Les récompenses ne peuvent être achetées que pour des enfants"
     },
     "reward_gift_not_giftable": {
-      "message": "{name} ne peut pas être achetée pour quelqu’un d’autre"
+      "message": "« {name} » ne peut pas être achetée pour quelqu’un d’autre"
     },
     "reward_rating_stars": {
       "message": "Choisis de 1 à 3 étoiles"
@@ -2506,10 +2558,10 @@
       "message": "Cette récompense a déjà été notée"
     },
     "service_unknown_child": {
-      "message": "Enfant inconnu {ref}. Enfants valides : {valid}"
+      "message": "Enfant inconnu « {ref} ». Enfants valides : {valid}"
     },
     "service_ambiguous_child": {
-      "message": "Plusieurs enfants s’appellent {ref} ; utilise plutôt l’id de l’enfant ({ids})"
+      "message": "Plusieurs enfants s’appellent « {ref} » ; utilise plutôt l’id de l’enfant ({ids})"
     },
     "service_nothing_to_update": {
       "message": "Rien à mettre à jour : indique au moins un champ à modifier"
@@ -2530,22 +2582,22 @@
       "message": "Cette récompense appartient à {child}."
     },
     "scheduled_field_not_allowed": {
-      "message": "{field} ne peut pas être modifié de façon planifiée"
+      "message": "« {field} » ne peut pas être modifié de façon planifiée"
     },
     "scheduled_expects_bool": {
-      "message": "{field} attend true ou false"
+      "message": "« {field} » attend true ou false"
     },
     "scheduled_expects_int": {
-      "message": "{field} attend un nombre entier"
+      "message": "« {field} » attend un nombre entier"
     },
     "scheduled_negative": {
-      "message": "{field} ne peut pas être négatif"
+      "message": "« {field} » ne peut pas être négatif"
     },
     "scheduled_expects_list": {
-      "message": "{field} attend une liste"
+      "message": "« {field} » attend une liste"
     },
     "scheduled_expects_text": {
-      "message": "{field} attend du texte"
+      "message": "« {field} » attend du texte"
     },
     "scheduled_apply_on_format": {
       "message": "apply_on doit être une date ISO, p. ex. 2026-09-01"
@@ -2560,7 +2612,7 @@
       "message": "Modification planifiée {change_id} introuvable"
     },
     "timed_not_timed": {
-      "message": "La tâche {name} n’est pas une tâche chronométrée"
+      "message": "La tâche « {name} » n’est pas une tâche chronométrée"
     },
     "timed_already_running": {
       "message": "Le minuteur tourne déjà"
@@ -2569,7 +2621,7 @@
       "message": "Limite du jour atteinte ({minutes} min)"
     },
     "timed_not_available": {
-      "message": "{name} n’est pas disponible pour {child} pour le moment"
+      "message": "« {name} » n’est pas disponible pour {child} pour le moment"
     },
     "timed_no_running": {
       "message": "Aucun minuteur en cours à mettre en pause"
@@ -2614,43 +2666,43 @@
       "message": "Seul un souhait en attente ou refusé peut être retiré"
     },
     "wish_not_open_for_saving": {
-      "message": "{name} n’est pas ouvert à l’épargne"
+      "message": "« {name} » n’est pas ouvert à l’épargne"
     },
     "wish_move_min": {
       "message": "Il faut déplacer au moins 1 point"
     },
     "wish_fully_funded": {
-      "message": "{name} est déjà entièrement financé"
+      "message": "« {name} » est déjà entièrement financé"
     },
     "wish_no_spendable": {
       "message": "{child_name} n’a aucun point à dépenser"
     },
     "wish_take_back_not_allowed": {
-      "message": "Impossible de retirer des points de {name} pour le moment"
+      "message": "Impossible de retirer des points de « {name} » pour le moment"
     },
     "wish_take_back_min": {
       "message": "Il faut reprendre au moins 1 point"
     },
     "wish_nothing_saved": {
-      "message": "Rien n’est épargné dans {name} à reprendre"
+      "message": "Rien n’est épargné dans « {name} » à reprendre"
     },
     "wish_cannot_redeem": {
-      "message": "{name} ne peut pas être échangé pour le moment"
+      "message": "« {name} » ne peut pas être échangé pour le moment"
     },
     "wish_needs_more_points": {
-      "message": "Il manque encore {points} points pour {name}"
+      "message": "Il manque encore {points} points pour « {name} »"
     },
     "wish_too_many_pending_claims": {
       "message": "Trop de demandes de récompense attendent déjà une validation"
     },
     "wish_not_waiting_approval": {
-      "message": "{name} n’attend pas de validation"
+      "message": "« {name} » n’attend pas de validation"
     },
     "wish_cannot_decline": {
-      "message": "{name} ne peut plus être refusé"
+      "message": "« {name} » ne peut plus être refusé"
     },
     "wish_not_open_for_pledges": {
-      "message": "{name} n’accepte pas de promesses"
+      "message": "« {name} » n’accepte pas de promesses"
     },
     "wish_pledge_name_required": {
       "message": "Indique de qui vient la promesse"
@@ -2659,10 +2711,10 @@
       "message": "Une promesse doit valoir au moins 1 point"
     },
     "wish_too_many_pledges": {
-      "message": "{name} a déjà {max} promesses"
+      "message": "« {name} » a déjà {max} promesses"
     },
     "wish_pledges_locked": {
-      "message": "Les promesses pour {name} ne peuvent plus être modifiées"
+      "message": "Les promesses pour « {name} » ne peuvent plus être modifiées"
     },
     "wish_pledge_not_found": {
       "message": "Promesse introuvable"
@@ -2671,10 +2723,10 @@
       "message": "Souhait ou enfant introuvable pour la demande {claim_id}"
     },
     "wish_no_longer_redeemable": {
-      "message": "{name} n’attend plus d’être échangé"
+      "message": "« {name} » n’attend plus d’être échangé"
     },
     "wish_not_funded": {
-      "message": "{name} n’est plus entièrement financé"
+      "message": "« {name} » n’est plus entièrement financé"
     },
     "pet_shop_emoji_invalid": {
       "message": "L’image doit être un emoji (jusqu’à {max} caractères)."
@@ -2692,7 +2744,7 @@
       "message": "Donne un nom à l’article."
     },
     "pet_shop_unknown_slot": {
-      "message": "Emplacement inconnu {slot}"
+      "message": "Emplacement inconnu « {slot} »"
     },
     "pet_shop_not_whole": {
       "message": "Le prix et le niveau doivent être des nombres entiers."
@@ -2746,7 +2798,7 @@
       "message": "{child_name} n’a plus assez de points pour ça."
     },
     "pet_unknown_species": {
-      "message": "Animal inconnu {species}"
+      "message": "Animal inconnu « {species} »"
     },
     "pet_name_required": {
       "message": "Donne un nom à ton animal."
@@ -2779,7 +2831,7 @@
       "message": "Choisis une occurrence à partir de demain."
     },
     "auction_not_scheduled": {
-      "message": "{chore} n’est pas prévue le {date}."
+      "message": "« {chore} » n’est pas prévue le {date}."
     },
     "auction_already_exists": {
       "message": "Cette occurrence a déjà une enchère."
@@ -2878,7 +2930,7 @@
       "message": "Quelqu’un a été plus rapide — cette prime n’est plus disponible."
     },
     "bounty_one_at_a_time": {
-      "message": "Termine d’abord {title} — tu ne peux avoir qu’une prime à la fois."
+      "message": "Termine d’abord « {title} » — tu ne peux avoir qu’une prime à la fois."
     },
     "bounty_not_claimed_by_you": {
       "message": "Tu n’as pas réservé cette prime."
@@ -2944,7 +2996,7 @@
       "message": "Plus rien à faire tourner"
     },
     "unlock_not_allowed": {
-      "message": "{entity_id} n’est pas dans la liste des déblocages autorisés. Ajoute-le dans les Paramètres avant de l’utiliser comme récompense."
+      "message": "« {entity_id} » n’est pas dans la liste des déblocages autorisés. Ajoute-le dans les Paramètres avant de l’utiliser comme récompense."
     },
     "unlock_minutes_not_whole": {
       "message": "Les minutes de déblocage doivent être un nombre entier"
@@ -3037,7 +3089,7 @@
       "message": "Cette récompense ou cet enfant n’existe plus"
     },
     "setup_invalid_birthday": {
-      "message": "L’anniversaire {value} n’est pas une date valide"
+      "message": "L’anniversaire « {value} » n’est pas une date valide"
     },
     "kiosk_pin_invalid": {
       "message": "Un code PIN de kiosque doit comporter exactement 4 chiffres"
@@ -3058,13 +3110,13 @@
       "message": "chaque période personnalisée doit avoir un nom"
     },
     "time_periods_invalid_time": {
-      "message": "heure non valide pour la période {name} (utilise HH:MM)"
+      "message": "heure non valide pour la période « {name} » (utilise HH:MM)"
     },
     "time_periods_start_after_end": {
-      "message": "la période {name} doit commencer avant de se terminer"
+      "message": "la période « {name} » doit commencer avant de se terminer"
     },
     "time_periods_overlap": {
-      "message": "{name} chevauche {other} — les périodes ne peuvent pas se chevaucher"
+      "message": "« {name} » chevauche « {other} » — les périodes ne peuvent pas se chevaucher"
     },
     "time_periods_in_use": {
       "message": "impossible de supprimer une période encore utilisée par des tâches : {chores}"
@@ -3094,10 +3146,10 @@
       "message": "Un modèle doit contenir au moins une tâche"
     },
     "template_builtin_modify": {
-      "message": "Le modèle intégré {template_id} ne peut pas être modifié"
+      "message": "Le modèle intégré « {template_id} » ne peut pas être modifié"
     },
     "template_builtin_delete": {
-      "message": "Le modèle intégré {template_id} ne peut pas être supprimé"
+      "message": "Le modèle intégré « {template_id} » ne peut pas être supprimé"
     },
     "template_pack_not_pack": {
       "message": "Ça ne ressemble pas à un pack TaskMate"
@@ -3124,19 +3176,19 @@
       "message": "Un modèle du pack n’a pas de nom"
     },
     "template_pack_template_no_chores": {
-      "message": "Le modèle {name} ne contient aucune tâche"
+      "message": "Le modèle « {name} » ne contient aucune tâche"
     },
     "template_pack_template_too_many_chores": {
-      "message": "Le modèle {name} contient trop de tâches"
+      "message": "Le modèle « {name} » contient trop de tâches"
     },
     "template_pack_malformed_chore": {
-      "message": "Le modèle {name} contient une tâche mal formée"
+      "message": "Le modèle « {name} » contient une tâche mal formée"
     },
     "template_pack_unnamed_chore": {
-      "message": "Une tâche de {name} n’a pas de nom"
+      "message": "Une tâche de « {name} » n’a pas de nom"
     },
     "boost_bad_time": {
-      "message": "{value} n’est pas une heure comme 09:30."
+      "message": "« {value} » n’est pas une heure comme 09:30."
     },
     "boost_multiplier_nan": {
       "message": "Le multiplicateur doit être un nombre."
@@ -3199,7 +3251,7 @@
       "message": "L’argent de poche n’est pas activé"
     },
     "allowance_not_enough_points": {
-      "message": "{name} n’a que {points} points à verser."
+      "message": "{name} n’a que {points} {points_name} à verser."
     },
     "appeals_off": {
       "message": "Les contestations sont désactivées."
@@ -3229,7 +3281,7 @@
       "message": "Type de contestation inconnu {kind}"
     },
     "birthday_invalid_format": {
-      "message": "L’anniversaire doit être au format AAAA-MM-JJ ou MM-JJ, reçu : {value}"
+      "message": "L’anniversaire doit être au format AAAA-MM-JJ ou MM-JJ, reçu : « {value} »"
     },
     "birthday_in_future": {
       "message": "L’anniversaire ne peut pas être dans le futur"
@@ -3313,7 +3365,7 @@
       "message": "Aucune minute à mettre de côté"
     },
     "setup_unknown_age_group": {
-      "message": "Tranche d’âge inconnue {value}"
+      "message": "Tranche d’âge inconnue « {value} »"
     },
     "setup_child_needs_ref": {
       "message": "Chaque nouvel enfant a besoin de sa propre ref"
@@ -3322,7 +3374,7 @@
       "message": "Un enfant a besoin d’un nom"
     },
     "setup_chore_unknown_child": {
-      "message": "Tâche attribuée à un enfant inconnu {who}"
+      "message": "Tâche attribuée à un enfant inconnu « {who} »"
     },
     "setup_chore_needs_name": {
       "message": "Une tâche a besoin d’un nom"
@@ -3376,7 +3428,7 @@
       "message": "{chore} ne fait pas partie des tâches de {child} aujourd’hui."
     },
     "wellbeing_unknown_mood": {
-      "message": "Humeur inconnue {mood}"
+      "message": "Humeur inconnue « {mood} »"
     },
     "set_times_not_list": {
       "message": "Les horaires fixes doivent être une liste."

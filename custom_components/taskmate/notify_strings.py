@@ -39,50 +39,50 @@ DEFAULTS: dict[str, str] = {
     "streak_at_risk": "{child_name}, complete a chore today to keep your {streak}-day streak!",
     "all_chores_done": "{child_name} finished every chore today!",
     "badge_earned": "{child_name} earned the {badge_name} badge!",
-    "pending_chore_approval": "{child_name} completed '{chore_name}' (+{points} {points_name}) — awaiting approval.",
-    "pending_reward_claim": "{child_name} claimed '{reward_name}' ({cost} {points_name}) — awaiting approval.",
+    "pending_chore_approval": "{child_name} completed “{chore_name}” (+{points} {points_name}) — awaiting approval.",
+    "pending_reward_claim": "{child_name} claimed “{reward_name}” ({cost} {points_name}) — awaiting approval.",
     "streak_milestone": "{child_name} hit a {days}-day streak — +{points} {points_name}!",
     "level_up": "{child_name} reached level {level}! 🎉",
     "weekly_digest": "TaskMate weekly digest:\n{summary}",
     "celebration": "🎉 {message}",
-    "mandatory_reminder": "{child_name}, you still need to do '{chore_name}'.",
-    "mandatory_parent_alert": "{child_name} still hasn't done the mandatory chore '{chore_name}'.",
+    "mandatory_reminder": "{child_name}, you still need to do “{chore_name}”.",
+    "mandatory_parent_alert": "{child_name} still hasn't done the mandatory chore “{chore_name}”.",
     "monthly_report": "TaskMate {month} report:\n{summary}",
     "season_champion": "🏆 {child_name} won the {month} leaderboard with {points} {points_name}!",
     "family_goal_reached": "🎉 Family goal reached: {goal_name}! Time for {goal_reward}.",
     "birthday": "🎂 Happy birthday, {child_name}! Every chore pays {multiplier}× today.",
     "streak_freeze_used": "❄️ A streak freeze saved {child_name}'s {streak}-day streak ({freezes_left} left).",
     "presence_arrival": "🏠 You're home, {child_name} — {count} chores left today.",
-    "wish_requested": "{child_name} wished for '{wish_name}' ({target} {points_name}) — waiting for your approval.",
-    "wish_pledged": "💝 {pledger} added {points} {points_name} to your wish '{wish_name}'!",
+    "wish_requested": "{child_name} wished for “{wish_name}” ({target} {points_name}) — waiting for your approval.",
+    "wish_pledged": "💝 {pledger} added {points} {points_name} to your wish “{wish_name}”!",
     "bounty_posted": "🏁 New bounty: {bounty_name} — {points} {points_name}. First to claim it gets it!",
     "bounty_claim_lapsing": (
-        "⏳ {child_name}, {minutes} minutes left to finish '{bounty_name}' before it goes back on the board."
+        "⏳ {child_name}, {minutes} minutes left to finish “{bounty_name}” before it goes back on the board."
     ),
     "recap_ready": "✨ Your {period} recap is ready, {child_name}! Tap to watch it.",
-    "item_rejected": "↩️ {child_name}, '{item_name}' was sent back{reason_text}",
+    "item_rejected": "↩️ {child_name}, “{item_name}” was sent back{reason_text}",
     "auction_opened": "🔨 New auction: {chore_name} on {date}, up to {max_points} {points_name}. Lowest bid wins!",
-    "auction_closing": "⏳ {child_name}, bidding on '{chore_name}' closes in {minutes} minutes.",
+    "auction_closing": "⏳ {child_name}, bidding on “{chore_name}” closes in {minutes} minutes.",
     "auction_result": "🔨 Auction closed: {result_text}",
     "inspection_started": (
-        "🔍 {child_name}, a grown-up is coming to inspect '{chore_name}' before {until}. "
+        "🔍 {child_name}, a grown-up is coming to inspect “{chore_name}” before {until}. "
         "Keep it looking great for +{bonus} {points_name}!"
     ),
     "inspection_passed": (
-        "🌟 Inspection passed, {child_name}! '{chore_name}' looked great: +{bonus} {points_name}{note_text}"
+        "🌟 Inspection passed, {child_name}! “{chore_name}” looked great: +{bonus} {points_name}{note_text}"
     ),
     "inspection_reminder": (
-        "🔍 {child_name}'s '{chore_name}' inspection closes in {minutes} minutes — pass or fail it before {until}."
+        "🔍 {child_name}'s “{chore_name}” inspection closes in {minutes} minutes — pass or fail it before {until}."
     ),
-    "help_requested": "🙋 {child_name} needs help with '{chore_name}'{message_text}",
+    "help_requested": "🙋 {child_name} needs help with “{chore_name}”{message_text}",
     "mood_low": "{emoji} {child_name} had a tough day today. Maybe check in?",
     "weekly_goal_reached": "🎯 {child_name} reached their weekly goal of {target} {points_name} — +{bonus} bonus!",
-    "reward_owed": "🎁 {child_name} is still waiting for '{reward_name}' — redeemed {days} days ago.",
+    "reward_owed": "🎁 {child_name} is still waiting for “{reward_name}” — redeemed {days} days ago.",
     "personal_best": "🏆 New personal best! {child_name}: {record_label} — {value}.",
     "boost_started": "⚡ Boost! {chores_text} pay ×{multiplier} for the next {minutes} minutes.",
     "boost_all_chores": "All chores",
-    "appeal_submitted": "⚖️ {child_name} is appealing '{item_name}'{message_text}",
-    "appeal_decided": "⚖️ Your appeal about '{item_name}' was {outcome}{note_text}",
+    "appeal_submitted": "⚖️ {child_name} is appealing “{item_name}”{message_text}",
+    "appeal_decided": "⚖️ Your appeal about “{item_name}” was {outcome}{note_text}",
     "appeal_outcome_overturned": "accepted",
     "appeal_outcome_upheld": "turned down",
     "screen_time_low": "📺 {child_name} has {minutes} minutes of screen time left.",
@@ -105,7 +105,7 @@ DEFAULTS: dict[str, str] = {
     "pet_news_egg": "🥚 {pet_name} laid an egg! {child_name} can hatch a new pet.",
     "pet_news_level": "💖 {pet_name} reached pet level {pet_level}!",
     "pet_item_requested": "🛍️ {child_name} wants to buy {item_name} for {pet_name} ({cost} {points_name}). Approve it in TaskMate.",
-    "penalty_redeemed": "🤝 {child_name} made it right with '{chore_name}' and earned back {points} {points_name}.",
+    "penalty_redeemed": "🤝 {child_name} made it right with “{chore_name}” and earned back {points} {points_name}.",
     "raffle_drawn": "🎟️ {raffle_name}: {winner_name} won! ({tickets} tickets in the draw)",
     # Voice assistant replies (intents.py).
     "voice_not_found": "I couldn't find anyone called {name}.",
@@ -132,21 +132,21 @@ DEFAULTS: dict[str, str] = {
     "print_chart_empty": "No chores to show for this week.",
     "print_chart_footer": "Tick each box as it's done. {points_name} are still awarded in TaskMate.",
     # Pieces that callers assemble into the messages above.
-    "auction_won": "{child_name} won '{chore_name}' on {date} for {points} {points_name}.",
-    "auction_no_bids": "no bids for '{chore_name}', so it goes back to the normal rota.",
-    "auction_called_off": "the auction for '{chore_name}' was called off. It goes back to the normal rota.",
+    "auction_won": "{child_name} won “{chore_name}” on {date} for {points} {points_name}.",
+    "auction_no_bids": "no bids for “{chore_name}”, so it goes back to the normal rota.",
+    "auction_called_off": "the auction for “{chore_name}” was called off. It goes back to the normal rota.",
     "weekly_digest_line": "• {child_name}: {chores} chores, {points} {points_name} earned",
     "monthly_report_line": "• {child_name}: {chores} chores, {points} {points_name}, level {level}, best streak {streak}",
     # Celebration messages (the celebration push and the taskmate_celebration
     # event), keyed celebrate_<kind>.
     "celebrate_all_chores_done": "{child_name} finished every chore today!",
     "celebrate_birthday": "Happy birthday, {child_name}!",
-    "celebrate_challenge_completed": "{child_name} completed the challenge '{challenge_name}'!",
+    "celebrate_challenge_completed": "{child_name} completed the challenge “{challenge_name}”!",
     "celebrate_inspection_passed": "{child_name}'s {chore_name} passed inspection!",
     "celebrate_level_up": "{child_name} reached level {level}!",
     "celebrate_perfect_week": "{child_name} earned a perfect week — +{bonus}!",
-    "celebrate_weekly_target": "{child_name} reached the weekly target for '{chore_name}' — +{bonus}!",
-    "celebrate_quest_completed": "{child_name} completed the quest '{quest_name}'!",
+    "celebrate_weekly_target": "{child_name} reached the weekly target for “{chore_name}” — +{bonus}!",
+    "celebrate_quest_completed": "{child_name} completed the quest “{quest_name}”!",
     "celebrate_streak_milestone": "{child_name} hit a {days}-day streak!",
     "celebrate_personal_best": "{child_name} set a new personal best: {record_label} — {value}!",
     # Recap announcements: the single-recap child push is recap_ready above.

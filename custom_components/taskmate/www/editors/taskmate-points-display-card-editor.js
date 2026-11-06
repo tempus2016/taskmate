@@ -181,9 +181,9 @@ class TaskMatePointsDisplayCardEditor extends LitElement {
       label: this._t('common.editor.header_colour'),
       helper: this._t('common.editor.header_colour_helper'),
       resetLabel: this._t('common.reset'),
-      onInput: (v) => this._update(key, v),
-      onPreset: (v) => this._update(key, v),
-      onReset: () => this._update(key, defaultValue),
+      onInput: (v) => this._set(key, v),
+      onPreset: (v) => this._set(key, v),
+      onReset: () => this._set(key, defaultValue),
     });
   }
 

@@ -20,6 +20,7 @@ import re
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate"
 RESOLVER = (ROOT / "www" / "taskmate-attr-resolver.js").read_text(encoding="utf-8")
 SENSOR_SRC = (ROOT / "sensor.py").read_text(encoding="utf-8")
+ENTITY_NAMES_SRC = (ROOT / "entity_names.py").read_text(encoding="utf-8")
 
 # The card layer treats this one as the primary entity, not a companion.
 PRIMARY = "sensor.taskmate_overview"
@@ -50,9 +51,13 @@ def _entity_id(name: str) -> str:
 
 
 def _static_sensor_entity_ids() -> set[str]:
-    """Every non-per-child sensor. Per-child names are f-strings, so the plain
-    string literals are exactly the singleton sensors."""
-    return {_entity_id(n) for n in re.findall(r'self\._attr_name = "([^"]+)"', SENSOR_SRC)}
+    """Every non-per-child sensor. The English names (the entity id source)
+    live in entity_names.ENGLISH_NAMES; per-child ones carry a `{child}`
+    placeholder, so the rest are exactly the singleton sensors."""
+    block = re.search(r'"sensor": \{(.*?)\n    \},', ENTITY_NAMES_SRC, re.S)
+    assert block, "sensor block not found in ENGLISH_NAMES"
+    names = re.findall(r'"[a-z_]+": "([^"]+)"', block.group(1))
+    return {_entity_id(n) for n in names if "{" not in n}
 
 
 class TestCompanionIdsAreReal:

@@ -241,7 +241,7 @@ def test_sensor_state_attributes_and_cache():
         entry = MagicMock(entry_id="e1")
         sensor = ChildWatchSensor(coord, entry, kid)
         assert sensor._attr_unique_id == f"e1_{kid.id}_watch"
-        assert sensor._attr_name == "Kid Watch"
+        assert sensor.suggested_object_id == "Kid Watch"
         assert sensor.native_value == "1 left"
         assert sensor.extra_state_attributes["next_chore"] == "Only"
 

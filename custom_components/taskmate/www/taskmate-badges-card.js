@@ -200,6 +200,7 @@ class TaskMateBadgesCard extends LitElement {
       }
 
       /* ── Grid ── */
+      .badges-empty { padding: 24px 16px; text-align: center; color: var(--secondary-text-color); }
       .badge-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -592,10 +593,12 @@ class TaskMateBadgesCard extends LitElement {
           </select>
         </div>
 
-        <div class="badge-grid">
-          ${filteredEarned.map(b => this._renderEarned(b))}
-          ${filteredLocked.map(b => this._renderLocked(b))}
-        </div>
+        ${(filteredEarned.length + filteredLocked.length) === 0
+          ? html`<div class="badges-empty">${this._t(filter === "all" ? "badges.empty_none" : "badges.empty_tier", { tier: this._t(`badge.tier_${filter}`) })}</div>`
+          : html`<div class="badge-grid">
+              ${filteredEarned.map(b => this._renderEarned(b))}
+              ${filteredLocked.map(b => this._renderLocked(b))}
+            </div>`}
       </ha-card>
     `;
   }
@@ -714,7 +717,7 @@ TaskMateBadgesCard.prototype._renderDesigned = function (design, d) {
       <div class="tmd-bd">
         ${this._designFilters(d.filter)}
         ${(d.filteredEarned.length + d.filteredLocked.length) === 0
-          ? html`<div class="tmd-empty">${_ltrNums(this._t("badges.count_label", { earned: 0, total: __tmNum(this.hass, d.totalBadges) }))}</div>`
+          ? html`<div class="tmd-empty">${this._t(d.filter === "all" ? "badges.empty_none" : "badges.empty_tier", { tier: this._t(`badge.tier_${d.filter}`) })}</div>`
           : html`<div class="bd-grid">
               ${d.filteredEarned.map((b) => this._designEarnedTile(b))}
               ${d.filteredLocked.map((b) => this._designLockedTile(b))}

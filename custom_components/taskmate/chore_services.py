@@ -177,10 +177,10 @@ def resolve_children(coordinator, refs) -> list[str]:
         else:
             matches = [c for c in children if (c.name or "").strip().casefold() == ref.casefold()]
             if not matches:
-                raise TaskMateError("service_unknown_child", ref=repr(ref), valid=valid)
+                raise TaskMateError("service_unknown_child", ref=ref, valid=valid)
             if len(matches) > 1:
                 ids = ", ".join(c.id for c in matches)
-                raise TaskMateError("service_ambiguous_child", ref=repr(ref), ids=ids)
+                raise TaskMateError("service_ambiguous_child", ref=ref, ids=ids)
             child_id = matches[0].id
         if child_id not in resolved:
             resolved.append(child_id)

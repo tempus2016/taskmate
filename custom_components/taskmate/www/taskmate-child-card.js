@@ -5082,7 +5082,7 @@ class TaskMateChildCard extends LitElement {
         const sound = chore.completion_sound || this.config.default_sound || 'coin';
         this._playSound(sound);
         this._celebrating = chore.id;
-        this._launchConfetti();
+        this._spawnConfetti(child.celebration_style);
         setTimeout(() => { this._celebrating = null; this._celebrationPoints = null; this.requestUpdate(); }, 2000);
       }).catch(() => {
         this._loading = { ...this._loading, [`timed_${chore.id}`]: false };

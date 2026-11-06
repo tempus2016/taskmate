@@ -234,12 +234,12 @@ class WishlistMixin:
         wish = self._require_wish(wish_id, child_id)
         child = self._require_child(child_id)
         if wish.status != "active":
-            raise TaskMateError("wish_not_open_for_saving", name=f"'{wish.name}'")
+            raise TaskMateError("wish_not_open_for_saving", name=wish.name)
         if int(points) < 1:
             raise TaskMateError("wish_move_min")
         room = wish.remaining
         if room <= 0:
-            raise TaskMateError("wish_fully_funded", name=f"'{wish.name}'")
+            raise TaskMateError("wish_fully_funded", name=wish.name)
         spendable = self._wish_spendable(child)
         if spendable < 1:
             raise TaskMateError("wish_no_spendable", child_name=child.name)
@@ -263,11 +263,11 @@ class WishlistMixin:
         wish = self._require_wish(wish_id, child_id)
         child = self._require_child(child_id)
         if wish.status != "active":
-            raise TaskMateError("wish_take_back_not_allowed", name=f"'{wish.name}'")
+            raise TaskMateError("wish_take_back_not_allowed", name=wish.name)
         if int(points) < 1:
             raise TaskMateError("wish_take_back_min")
         if wish.saved <= 0:
-            raise TaskMateError("wish_nothing_saved", name=f"'{wish.name}'")
+            raise TaskMateError("wish_nothing_saved", name=wish.name)
         taken = min(int(points), wish.saved)
 
         returned, wish.saved_lots = split_saved_lots(wish.saved_lots, taken)
@@ -297,9 +297,9 @@ class WishlistMixin:
         wish = self._require_wish(wish_id, child_id)
         child = self._require_child(child_id)
         if wish.status != "active":
-            raise TaskMateError("wish_cannot_redeem", name=f"'{wish.name}'")
+            raise TaskMateError("wish_cannot_redeem", name=wish.name)
         if not wish.funded:
-            raise TaskMateError("wish_needs_more_points", name=f"'{wish.name}'", points=wish.remaining)
+            raise TaskMateError("wish_needs_more_points", name=wish.name, points=wish.remaining)
         own_pending = [c for c in self.storage.get_pending_reward_claims() if c.child_id == child_id]
         if len(own_pending) >= _MAX_PENDING_CLAIMS_PER_CHILD:
             raise TaskMateError("wish_too_many_pending_claims")
@@ -332,7 +332,7 @@ class WishlistMixin:
         """Turn a waiting wish into a savings goal, optionally at a different target."""
         wish = self._require_wish(wish_id)
         if wish.status != "pending":
-            raise TaskMateError("wish_not_waiting_approval", name=f"'{wish.name}'")
+            raise TaskMateError("wish_not_waiting_approval", name=wish.name)
         if target is not None:
             wish.target = self._valid_target(target)
         wish.status = "active"
@@ -351,7 +351,7 @@ class WishlistMixin:
         """
         wish = self._require_wish(wish_id)
         if wish.status not in OPEN_STATUSES:
-            raise TaskMateError("wish_cannot_decline", name=f"'{wish.name}'")
+            raise TaskMateError("wish_cannot_decline", name=wish.name)
         cancelled = self._release_wish(wish, "declined")
         wish.status = "declined"
         wish.declined_at = dt_util.now()
@@ -376,7 +376,7 @@ class WishlistMixin:
         """Record a relative's gift towards a wish, capped at what it still needs."""
         wish = self._require_wish(wish_id)
         if wish.status != "active":
-            raise TaskMateError("wish_not_open_for_pledges", name=f"'{wish.name}'")
+            raise TaskMateError("wish_not_open_for_pledges", name=wish.name)
         who = clean_label(name, PLEDGE_NAME_MAX)
         if not who:
             raise TaskMateError("wish_pledge_name_required")
@@ -384,9 +384,9 @@ class WishlistMixin:
             raise TaskMateError("wish_pledge_min")
         room = wish.remaining
         if room <= 0:
-            raise TaskMateError("wish_fully_funded", name=f"'{wish.name}'")
+            raise TaskMateError("wish_fully_funded", name=wish.name)
         if len(wish.pledges) >= WISH_MAX_PLEDGES:
-            raise TaskMateError("wish_too_many_pledges", name=f"'{wish.name}'", max=WISH_MAX_PLEDGES)
+            raise TaskMateError("wish_too_many_pledges", name=wish.name, max=WISH_MAX_PLEDGES)
         pledge = WishPledge(
             name=who,
             points=min(int(points), room),
@@ -431,7 +431,7 @@ class WishlistMixin:
         """
         wish = self._require_wish(wish_id)
         if wish.status not in ("active", "redeem_requested"):
-            raise TaskMateError("wish_pledges_locked", name=f"'{wish.name}'")
+            raise TaskMateError("wish_pledges_locked", name=wish.name)
         pledge = next((p for p in wish.pledges if p.id == pledge_id), None)
         if pledge is None:
             raise TaskMateError("wish_pledge_not_found")
@@ -465,9 +465,9 @@ class WishlistMixin:
         if wish is None or child is None:
             raise TaskMateError("wish_claim_missing", claim_id=claim.id)
         if wish.status != "redeem_requested" or wish.claim_id != claim.id:
-            raise TaskMateError("wish_no_longer_redeemable", name=f"'{wish.name}'")
+            raise TaskMateError("wish_no_longer_redeemable", name=wish.name)
         if not wish.funded:
-            raise TaskMateError("wish_not_funded", name=f"'{wish.name}'")
+            raise TaskMateError("wish_not_funded", name=wish.name)
 
         now = dt_util.now()
         wish.status = "redeemed"

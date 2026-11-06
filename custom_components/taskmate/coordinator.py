@@ -746,7 +746,12 @@ class TaskMateCoordinator(
         # points floors the balance at zero, so a payout bigger than the
         # balance would log money for points the child never had.
         if child.points < points:
-            raise TaskMateError("allowance_not_enough_points", name=child.name, points=child.points)
+            raise TaskMateError(
+                "allowance_not_enough_points",
+                name=child.name,
+                points=child.points,
+                points_name=self.storage.get_points_name(),
+            )
         try:
             rate = int(self.storage.get_setting("allowance_rate", 10))
         except (TypeError, ValueError):

@@ -2029,17 +2029,56 @@
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "chores"
+        "unit_of_measurement": "chores",
+        "name": "{child} Stats"
       },
       "child_badges": {
-        "unit_of_measurement": "badges"
+        "unit_of_measurement": "badges",
+        "name": "{child} Badges"
       },
       "child_watch": {
         "state": {
           "left": "# left",
           "all_done": "All done",
           "no_chores": "No chores"
-        }
+        },
+        "name": "{child} Watch"
+      },
+      "overview": {
+        "name": "TaskMate Overview"
+      },
+      "chores": {
+        "name": "TaskMate Chores"
+      },
+      "chore_availability": {
+        "name": "TaskMate Chore Availability"
+      },
+      "rewards": {
+        "name": "TaskMate Rewards"
+      },
+      "activity": {
+        "name": "TaskMate Activity"
+      },
+      "incentives": {
+        "name": "TaskMate Incentives"
+      },
+      "bounties": {
+        "name": "TaskMate Bounties"
+      },
+      "auctions": {
+        "name": "TaskMate Auctions"
+      },
+      "chore_board": {
+        "name": "TaskMate Chore Board"
+      },
+      "child_points": {
+        "name": "{child} Points"
+      },
+      "child_wishlist": {
+        "name": "{child} Wishlist"
+      },
+      "pending_approvals": {
+        "name": "Pending Approvals"
       }
     },
     "number": {
@@ -2072,7 +2111,7 @@
     },
     "event": {
       "child_activity": {
-        "name": "TaskMate activity",
+        "name": "{child} activity",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2125,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "TaskMate family activity",
+        "name": "Family activity",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2141,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Has Pending Approvals"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Complete {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Claim {reward}"
       }
     }
   },
@@ -2221,7 +2273,7 @@
       "message": "A timed task can't be a teamwork chore."
     },
     "teamwork_not_team_chore": {
-      "message": "Chore {name} is not a teamwork chore"
+      "message": "Chore “{name}” is not a teamwork chore"
     },
     "swap_only_rotation": {
       "message": "Only rotation chores can be swapped"
@@ -2284,19 +2336,19 @@
       "message": "Pick a day in the last {days} days, before today."
     },
     "backdate_switched_off": {
-      "message": "{name} is switched off."
+      "message": "“{name}” is switched off."
     },
     "backdate_not_assigned": {
-      "message": "{name} isn't one of {child}’s jobs."
+      "message": "“{name}” isn't one of {child}’s jobs."
     },
     "backdate_rotation_team": {
-      "message": "{name} rotates or needs a team, so it can't be logged for a past day."
+      "message": "“{name}” rotates or needs a team, so it can't be logged for a past day."
     },
     "backdate_open_ended": {
-      "message": "{name} is open-ended, so it needs the child's note and a price. Use the child's card."
+      "message": "“{name}” is open-ended, so it needs the child's note and a price. Use the child's card."
     },
     "backdate_set_times": {
-      "message": "{name} has set times, so it can't be logged for a past day."
+      "message": "“{name}” has set times, so it can't be logged for a past day."
     },
     "backdate_holiday": {
       "message": "{weekday} was a holiday, so no jobs were due."
@@ -2308,43 +2360,43 @@
       "message": "{weekday} was {child}’s birthday, a day off from jobs."
     },
     "backdate_auction": {
-      "message": "{name} was won at auction that day, so it can't be logged afterwards."
+      "message": "“{name}” was won at auction that day, so it can't be logged afterwards."
     },
     "backdate_weekly_target_met": {
-      "message": "{name} already reached its {target} for that week."
+      "message": "“{name}” already reached its {target} for that week."
     },
     "backdate_not_due": {
-      "message": "{name} wasn't due on {weekday}."
+      "message": "“{name}” wasn't due on {weekday}."
     },
     "backdate_daily_limit": {
-      "message": "{name} was already done {done}/{limit} times on {weekday}."
+      "message": "“{name}” was already done {done}/{limit} times on {weekday}."
     },
     "chore_disabled": {
-      "message": "Chore {name} is disabled"
+      "message": "Chore “{name}” is disabled"
     },
     "parent_complete_one_shot": {
-      "message": "Chore {name} is a one-shot chore and cannot be parent-completed"
+      "message": "Chore “{name}” is a one-shot chore and cannot be parent-completed"
     },
     "parent_complete_no_children": {
-      "message": "Chore {name} has no children to suppress"
+      "message": "Chore “{name}” has no children to suppress"
     },
     "parent_complete_rotation_shared": {
-      "message": "Chore {name} is shared by a rotation and can only be done for everyone"
+      "message": "Chore “{name}” is shared by a rotation and can only be done for everyone"
     },
     "parent_complete_not_assigned": {
-      "message": "Chore {name} is not assigned to that child"
+      "message": "Chore “{name}” is not assigned to that child"
     },
     "bonus_subtask_not_found": {
-      "message": "Bonus sub-task {subtask_id} not found on chore {name}"
+      "message": "Bonus sub-task {subtask_id} not found on chore “{name}”"
     },
     "bonus_subtask_not_assigned": {
-      "message": "Bonus sub-task {subtask} is not assigned to {child}."
+      "message": "Bonus sub-task “{subtask}” is not assigned to {child}."
     },
     "bonus_subtask_parent_first": {
-      "message": "Cannot complete bonus sub-task {subtask} — parent chore {name} must be completed first today."
+      "message": "Cannot complete bonus sub-task “{subtask}” — parent chore “{name}” must be completed first today."
     },
     "bonus_subtask_already_done": {
-      "message": "Bonus sub-task {subtask} already completed today."
+      "message": "Bonus sub-task “{subtask}” already completed today."
     },
     "undo_window_passed": {
       "message": "This chore can't be undone any more. Ask a parent to undo it."
@@ -2359,16 +2411,16 @@
       "message": "Completion is not approved; nothing to undo"
     },
     "chore_sort_unknown": {
-      "message": "Unknown sort {sort}"
+      "message": "Unknown sort “{sort}”"
     },
     "task_group_duplicate_chore": {
       "message": "Duplicate chore in group: {chore_id}"
     },
     "task_group_everyone_mode": {
-      "message": "Chore {name} uses 'everyone' mode and cannot join a group"
+      "message": "Chore “{name}” uses 'everyone' mode and cannot join a group"
     },
     "task_group_already_member": {
-      "message": "Chore {name} already belongs to group {group}"
+      "message": "Chore “{name}” already belongs to group “{group}”"
     },
     "task_group_unknown_policy": {
       "message": "Unknown task group policy: {policy}"
@@ -2419,22 +2471,22 @@
       "message": "Not enough points: {child} has {points}, gift {gift}"
     },
     "reward_jackpot_pool_short": {
-      "message": "{name} is a shared jackpot and its pool is not full. Need {cost}, have {saved} saved up"
+      "message": "“{name}” is a shared jackpot and its pool is not full. Need {cost}, have {saved} saved up"
     },
     "reward_not_available_to": {
-      "message": "Reward {name} is not available to {child}"
+      "message": "Reward “{name}” is not available to {child}"
     },
     "reward_sold_out": {
-      "message": "Reward {name} is sold out"
+      "message": "Reward “{name}” is sold out"
     },
     "reward_expired": {
-      "message": "Reward {name} has expired"
+      "message": "Reward “{name}” has expired"
     },
     "reward_not_available_now": {
-      "message": "Reward {name} is not available right now"
+      "message": "Reward “{name}” is not available right now"
     },
     "reward_claim_already_waiting": {
-      "message": "A claim for {name} is already waiting for approval"
+      "message": "A claim for “{name}” is already waiting for approval"
     },
     "reward_claims_too_many": {
       "message": "Too many reward claims are already waiting for approval"
@@ -2452,7 +2504,7 @@
       "message": "Not enough points to approve. Need {cost}, have {points}"
     },
     "reward_claim_already_approved": {
-      "message": "{name} has already been approved and can no longer be rejected"
+      "message": "“{name}” has already been approved and can no longer be rejected"
     },
     "reward_claim_already_approved_unnamed": {
       "message": "'This reward' has already been approved and can no longer be rejected"
@@ -2464,7 +2516,7 @@
       "message": "No spendable points available for {child}"
     },
     "pool_full": {
-      "message": "Pool for reward {name} is already full"
+      "message": "Pool for reward “{name}” is already full"
     },
     "reward_limit_once_day": {
       "message": "{child} can have {name} once a day. It's available again on {date}"
@@ -2491,7 +2543,7 @@
       "message": "Rewards can only be bought for children"
     },
     "reward_gift_not_giftable": {
-      "message": "{name} can't be bought for someone else"
+      "message": "“{name}” can't be bought for someone else"
     },
     "reward_rating_stars": {
       "message": "Pick 1 to 3 stars"
@@ -2506,10 +2558,10 @@
       "message": "That reward has already been rated"
     },
     "service_unknown_child": {
-      "message": "Unknown child {ref}. Valid children: {valid}"
+      "message": "Unknown child “{ref}”. Valid children: {valid}"
     },
     "service_ambiguous_child": {
-      "message": "More than one child is called {ref}; use the child id instead ({ids})"
+      "message": "More than one child is called “{ref}”; use the child id instead ({ids})"
     },
     "service_nothing_to_update": {
       "message": "Nothing to update: name at least one field to change"
@@ -2530,22 +2582,22 @@
       "message": "That reward belongs to {child}."
     },
     "scheduled_field_not_allowed": {
-      "message": "{field} cannot be changed on a schedule"
+      "message": "“{field}” cannot be changed on a schedule"
     },
     "scheduled_expects_bool": {
-      "message": "{field} expects true or false"
+      "message": "“{field}” expects true or false"
     },
     "scheduled_expects_int": {
-      "message": "{field} expects a whole number"
+      "message": "“{field}” expects a whole number"
     },
     "scheduled_negative": {
-      "message": "{field} cannot be negative"
+      "message": "“{field}” cannot be negative"
     },
     "scheduled_expects_list": {
-      "message": "{field} expects a list"
+      "message": "“{field}” expects a list"
     },
     "scheduled_expects_text": {
-      "message": "{field} expects text"
+      "message": "“{field}” expects text"
     },
     "scheduled_apply_on_format": {
       "message": "apply_on must be an ISO date, e.g. 2026-09-01"
@@ -2560,7 +2612,7 @@
       "message": "Scheduled change {change_id} not found"
     },
     "timed_not_timed": {
-      "message": "Chore {name} is not a timed task"
+      "message": "Chore “{name}” is not a timed task"
     },
     "timed_already_running": {
       "message": "Timer is already running"
@@ -2569,7 +2621,7 @@
       "message": "Daily cap reached ({minutes} min)"
     },
     "timed_not_available": {
-      "message": "{name} is not available for {child} right now"
+      "message": "“{name}” is not available for {child} right now"
     },
     "timed_no_running": {
       "message": "No running timer to pause"
@@ -2614,43 +2666,43 @@
       "message": "Only a wish that is waiting or was declined can be withdrawn"
     },
     "wish_not_open_for_saving": {
-      "message": "{name} isn't open for saving"
+      "message": "“{name}” isn't open for saving"
     },
     "wish_move_min": {
       "message": "Points to move must be at least 1"
     },
     "wish_fully_funded": {
-      "message": "{name} is already fully funded"
+      "message": "“{name}” is already fully funded"
     },
     "wish_no_spendable": {
       "message": "No spendable points available for {child_name}"
     },
     "wish_take_back_not_allowed": {
-      "message": "Points can't be taken out of {name} right now"
+      "message": "Points can't be taken out of “{name}” right now"
     },
     "wish_take_back_min": {
       "message": "Points to take back must be at least 1"
     },
     "wish_nothing_saved": {
-      "message": "Nothing saved in {name} to take back"
+      "message": "Nothing saved in “{name}” to take back"
     },
     "wish_cannot_redeem": {
-      "message": "{name} can't be redeemed right now"
+      "message": "“{name}” can't be redeemed right now"
     },
     "wish_needs_more_points": {
-      "message": "{name} needs {points} more points first"
+      "message": "“{name}” needs {points} more points first"
     },
     "wish_too_many_pending_claims": {
       "message": "Too many reward claims are already waiting for approval"
     },
     "wish_not_waiting_approval": {
-      "message": "{name} isn't waiting for approval"
+      "message": "“{name}” isn't waiting for approval"
     },
     "wish_cannot_decline": {
-      "message": "{name} can no longer be declined"
+      "message": "“{name}” can no longer be declined"
     },
     "wish_not_open_for_pledges": {
-      "message": "{name} isn't open for pledges"
+      "message": "“{name}” isn't open for pledges"
     },
     "wish_pledge_name_required": {
       "message": "Say who the pledge is from"
@@ -2659,10 +2711,10 @@
       "message": "A pledge must be at least 1 point"
     },
     "wish_too_many_pledges": {
-      "message": "{name} already has {max} pledges"
+      "message": "“{name}” already has {max} pledges"
     },
     "wish_pledges_locked": {
-      "message": "Pledges on {name} can no longer be changed"
+      "message": "Pledges on “{name}” can no longer be changed"
     },
     "wish_pledge_not_found": {
       "message": "Pledge not found"
@@ -2671,10 +2723,10 @@
       "message": "Wish or child not found for claim {claim_id}"
     },
     "wish_no_longer_redeemable": {
-      "message": "{name} is no longer waiting to be redeemed"
+      "message": "“{name}” is no longer waiting to be redeemed"
     },
     "wish_not_funded": {
-      "message": "{name} is not fully funded any more"
+      "message": "“{name}” is not fully funded any more"
     },
     "pet_shop_emoji_invalid": {
       "message": "The picture must be an emoji (up to {max} characters)."
@@ -2692,7 +2744,7 @@
       "message": "Give the item a name."
     },
     "pet_shop_unknown_slot": {
-      "message": "Unknown slot {slot}"
+      "message": "Unknown slot “{slot}”"
     },
     "pet_shop_not_whole": {
       "message": "Cost and level must be whole numbers."
@@ -2746,7 +2798,7 @@
       "message": "{child_name} doesn't have enough points for it now."
     },
     "pet_unknown_species": {
-      "message": "Unknown pet {species}"
+      "message": "Unknown pet “{species}”"
     },
     "pet_name_required": {
       "message": "Give your pet a name."
@@ -2779,7 +2831,7 @@
       "message": "Pick an occurrence from tomorrow onwards."
     },
     "auction_not_scheduled": {
-      "message": "{chore} isn't scheduled on {date}."
+      "message": "“{chore}” isn't scheduled on {date}."
     },
     "auction_already_exists": {
       "message": "That occurrence already has an auction."
@@ -2878,7 +2930,7 @@
       "message": "Someone else got there first — this bounty isn't on the board any more."
     },
     "bounty_one_at_a_time": {
-      "message": "Finish {title} first — you can only hold one bounty at a time."
+      "message": "Finish “{title}” first — you can only hold one bounty at a time."
     },
     "bounty_not_claimed_by_you": {
       "message": "You don't have this bounty claimed."
@@ -2944,7 +2996,7 @@
       "message": "Nothing left to spin for"
     },
     "unlock_not_allowed": {
-      "message": "{entity_id} is not on the unlock allowlist. Add it in Settings before using it as a reward."
+      "message": "“{entity_id}” is not on the unlock allowlist. Add it in Settings before using it as a reward."
     },
     "unlock_minutes_not_whole": {
       "message": "Unlock minutes must be a whole number"
@@ -3037,7 +3089,7 @@
       "message": "That reward or child no longer exists"
     },
     "setup_invalid_birthday": {
-      "message": "Birthday {value} is not a valid date"
+      "message": "Birthday “{value}” is not a valid date"
     },
     "kiosk_pin_invalid": {
       "message": "A kiosk PIN must be exactly 4 digits"
@@ -3058,13 +3110,13 @@
       "message": "every custom period needs a name"
     },
     "time_periods_invalid_time": {
-      "message": "invalid time for period {name} (use HH:MM)"
+      "message": "invalid time for period “{name}” (use HH:MM)"
     },
     "time_periods_start_after_end": {
-      "message": "period {name} must start before it ends"
+      "message": "period “{name}” must start before it ends"
     },
     "time_periods_overlap": {
-      "message": "{name} overlaps {other} — periods cannot overlap"
+      "message": "“{name}” overlaps “{other}” — periods cannot overlap"
     },
     "time_periods_in_use": {
       "message": "cannot delete a period still used by chores: {chores}"
@@ -3094,10 +3146,10 @@
       "message": "Template must have at least one chore"
     },
     "template_builtin_modify": {
-      "message": "Cannot modify built-in template {template_id}"
+      "message": "Cannot modify built-in template “{template_id}”"
     },
     "template_builtin_delete": {
-      "message": "Cannot delete built-in template {template_id}"
+      "message": "Cannot delete built-in template “{template_id}”"
     },
     "template_pack_not_pack": {
       "message": "That doesn't look like a TaskMate pack"
@@ -3124,19 +3176,19 @@
       "message": "A template in the pack has no name"
     },
     "template_pack_template_no_chores": {
-      "message": "Template {name} has no chores"
+      "message": "Template “{name}” has no chores"
     },
     "template_pack_template_too_many_chores": {
-      "message": "Template {name} has too many chores"
+      "message": "Template “{name}” has too many chores"
     },
     "template_pack_malformed_chore": {
-      "message": "Template {name} has a malformed chore"
+      "message": "Template “{name}” has a malformed chore"
     },
     "template_pack_unnamed_chore": {
-      "message": "A chore in {name} has no name"
+      "message": "A chore in “{name}” has no name"
     },
     "boost_bad_time": {
-      "message": "{value} is not a time like 09:30."
+      "message": "“{value}” is not a time like 09:30."
     },
     "boost_multiplier_nan": {
       "message": "The multiplier must be a number."
@@ -3199,7 +3251,7 @@
       "message": "Allowance is not enabled"
     },
     "allowance_not_enough_points": {
-      "message": "{name} only has {points} points to pay out."
+      "message": "{name} only has {points} {points_name} to pay out."
     },
     "appeals_off": {
       "message": "Appeals are switched off."
@@ -3229,7 +3281,7 @@
       "message": "Unknown appeal kind {kind}"
     },
     "birthday_invalid_format": {
-      "message": "Birthday must be YYYY-MM-DD or MM-DD, got {value}"
+      "message": "Birthday must be YYYY-MM-DD or MM-DD, got “{value}”"
     },
     "birthday_in_future": {
       "message": "Birthday can't be in the future"
@@ -3313,7 +3365,7 @@
       "message": "No minutes to save"
     },
     "setup_unknown_age_group": {
-      "message": "Unknown age group {value}"
+      "message": "Unknown age group “{value}”"
     },
     "setup_child_needs_ref": {
       "message": "Every new child needs its own ref"
@@ -3322,7 +3374,7 @@
       "message": "A child needs a name"
     },
     "setup_chore_unknown_child": {
-      "message": "Chore assigned to an unknown child {who}"
+      "message": "Chore assigned to an unknown child “{who}”"
     },
     "setup_chore_needs_name": {
       "message": "A chore needs a name"
@@ -3376,7 +3428,7 @@
       "message": "{chore} is not one of {child}'s chores today."
     },
     "wellbeing_unknown_mood": {
-      "message": "Unknown mood {mood}"
+      "message": "Unknown mood “{mood}”"
     },
     "set_times_not_list": {
       "message": "Set times must be a list."

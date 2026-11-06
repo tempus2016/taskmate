@@ -70,9 +70,9 @@ class RewardExtrasMixin:
         if getattr(recipient, "is_adult", False):
             raise TaskMateError("reward_gift_children_only")
         if not self._reward_is_for_child(reward, recipient.id):
-            raise TaskMateError("reward_not_available_to", name=f"'{reward.name}'", child=recipient.name)
+            raise TaskMateError("reward_not_available_to", name=reward.name, child=recipient.name)
         if reward.is_jackpot or reward.pool_enabled or getattr(reward, "streak_freeze", False):
-            raise TaskMateError("reward_gift_not_giftable", name=f"'{reward.name}'")
+            raise TaskMateError("reward_gift_not_giftable", name=reward.name)
         return recipient
 
     def incoming_gifts(self, child_id: str) -> list[dict[str, Any]]:

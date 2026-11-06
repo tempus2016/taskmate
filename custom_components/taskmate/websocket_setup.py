@@ -85,7 +85,7 @@ def _birthday_error(msg) -> tuple[str, TaskMateError] | None:
         try:
             parse_birthday(value)
         except ValueError:
-            return "invalid_birthday", TaskMateError("setup_invalid_birthday", value=repr(value))
+            return "invalid_birthday", TaskMateError("setup_invalid_birthday", value=value)
         try:
             normalize_birthday(value)
         except ValueError:

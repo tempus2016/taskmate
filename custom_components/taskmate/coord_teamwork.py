@@ -204,7 +204,7 @@ class TeamworkMixin:
         if not self.get_child(child_id):
             raise TaskMateError("child_not_found", child_id=child_id)
         if not self.teamwork_size(chore):
-            raise TaskMateError("teamwork_not_team_chore", name=f"'{chore.name}'")
+            raise TaskMateError("teamwork_not_team_chore", name=chore.name)
 
         day = dt_util.as_local(dt_util.now()).date().isoformat()
         joined = self.storage.get_team_joins(chore_id, day)

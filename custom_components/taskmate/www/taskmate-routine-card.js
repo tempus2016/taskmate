@@ -63,7 +63,7 @@ class TaskMateRoutineCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) throw new Error(this._t("routine.error.entity_required"));
-    if (!config.child_id) throw new Error(this._t("routine.error.child_required"));
+    // No child_id yet (e.g. the card picker preview): render shows the card's own "pick a child" state.
     if (config.time_category && !TIME_CATEGORIES.includes(config.time_category)) {
       throw new Error(this._t("routine.error.time_category", { options: TIME_CATEGORIES.join(", ") }));
     }

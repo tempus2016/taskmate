@@ -159,8 +159,11 @@ test("the card asks for a child when none is configured", () => {
   assert.ok(render(card.render()).markup.includes(localize("bounty.no_child")));
 });
 
-test("the card needs a child_id", () => {
-  assert.throws(() => new Card().setConfig({ entity: ENTITY }));
+test("with no child_id (the card picker preview) the card asks for a child instead of erroring", () => {
+  const card = new Card();
+  assert.doesNotThrow(() => card.setConfig({ entity: ENTITY, child_id: "" }));
+  card.hass = hassWith([open()]);
+  assert.ok(JSON.stringify(render(card.render())).includes(localize("bounty.no_child")));
 });
 
 // ── panel: Bounties tab ─────────────────────────────────────────────────────

@@ -52,7 +52,7 @@ def _fold(name: str) -> str:
 def _age_group(value: Any) -> str:
     value = value or ""
     if value and value not in AGE_GROUPS:
-        raise TaskMateError("setup_unknown_age_group", value=repr(value))
+        raise TaskMateError("setup_unknown_age_group", value=value)
     return value
 
 
@@ -129,7 +129,7 @@ class SetupWizardMixin:
                 return ref_to_id[who]
             if who in pending_refs or who in known_ids:
                 return who
-            raise TaskMateError("setup_chore_unknown_child", who=repr(who))
+            raise TaskMateError("setup_chore_unknown_child", who=who)
 
         existing_chores = self.storage.get_chores()
         have_chores = {_fold(c.name) for c in existing_chores}

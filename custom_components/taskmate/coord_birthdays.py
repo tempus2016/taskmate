@@ -41,7 +41,7 @@ def parse_birthday(value: str) -> tuple[int | None, int, int]:
     """
     m = _BIRTHDAY_RE.match((value or "").strip())
     if not m:
-        raise TaskMateError("birthday_invalid_format", value=repr(value))
+        raise TaskMateError("birthday_invalid_format", value=value)
     year = int(m.group(1)) if m.group(1) else None
     month, day = int(m.group(2)), int(m.group(3))
     # 2000 is a leap year, so a year-less 02-29 validates.

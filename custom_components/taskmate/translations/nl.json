@@ -2029,17 +2029,56 @@
   "entity": {
     "sensor": {
       "child_stats": {
-        "unit_of_measurement": "taken"
+        "unit_of_measurement": "taken",
+        "name": "Statistieken van {child}"
       },
       "child_badges": {
-        "unit_of_measurement": "badges"
+        "unit_of_measurement": "badges",
+        "name": "Medailles van {child}"
       },
       "child_watch": {
         "state": {
           "left": "# over",
           "all_done": "Klaar",
           "no_chores": "Geen taken"
-        }
+        },
+        "name": "Smartwatch van {child}"
+      },
+      "overview": {
+        "name": "TaskMate-overzicht"
+      },
+      "chores": {
+        "name": "TaskMate-taken"
+      },
+      "chore_availability": {
+        "name": "TaskMate-beschikbaarheid van taken"
+      },
+      "rewards": {
+        "name": "TaskMate-beloningen"
+      },
+      "activity": {
+        "name": "TaskMate-activiteit"
+      },
+      "incentives": {
+        "name": "TaskMate-bonussen en puntenaftrek"
+      },
+      "bounties": {
+        "name": "TaskMate-klussen"
+      },
+      "auctions": {
+        "name": "TaskMate-veilingen"
+      },
+      "chore_board": {
+        "name": "TaskMate-takenbord"
+      },
+      "child_points": {
+        "name": "Punten van {child}"
+      },
+      "child_wishlist": {
+        "name": "Verlanglijstje van {child}"
+      },
+      "pending_approvals": {
+        "name": "Wacht op goedkeuring"
       }
     },
     "number": {
@@ -2072,7 +2111,7 @@
     },
     "event": {
       "child_activity": {
-        "name": "TaskMate-activiteit",
+        "name": "Activiteit van {child}",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2125,7 +2164,7 @@
         }
       },
       "family_activity": {
-        "name": "TaskMate-gezinsactiviteit",
+        "name": "Gezinsactiviteit",
         "state_attributes": {
           "event_type": {
             "state": {
@@ -2141,6 +2180,19 @@
             }
           }
         }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Iets wacht op goedkeuring"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: {chore} afronden"
+      },
+      "claim_reward": {
+        "name": "{child}: {reward} inwisselen"
       }
     }
   },
@@ -2221,7 +2273,7 @@
       "message": "Een taak met timer kan geen teamtaak zijn."
     },
     "teamwork_not_team_chore": {
-      "message": "Taak {name} is geen teamtaak"
+      "message": "Taak ‘{name}’ is geen teamtaak"
     },
     "swap_only_rotation": {
       "message": "Alleen beurtelingse taken kunnen geruild worden"
@@ -2284,19 +2336,19 @@
       "message": "Kies een dag in de afgelopen {days} dagen, vóór vandaag."
     },
     "backdate_switched_off": {
-      "message": "{name} staat uit."
+      "message": "‘{name}’ staat uit."
     },
     "backdate_not_assigned": {
-      "message": "{name} hoort niet bij de taken van {child}."
+      "message": "‘{name}’ hoort niet bij de taken van {child}."
     },
     "backdate_rotation_team": {
-      "message": "{name} gaat om de beurt of heeft een team nodig, dus je kunt hem niet voor een eerdere dag invullen."
+      "message": "‘{name}’ gaat om de beurt of heeft een team nodig, dus je kunt hem niet voor een eerdere dag invullen."
     },
     "backdate_open_ended": {
-      "message": "{name} is open, dus er zijn een notitie van het kind en een prijs nodig. Gebruik de kaart van het kind."
+      "message": "‘{name}’ is open, dus er zijn een notitie van het kind en een prijs nodig. Gebruik de kaart van het kind."
     },
     "backdate_set_times": {
-      "message": "{name} heeft vaste tijden, dus je kunt hem niet voor een eerdere dag invullen."
+      "message": "‘{name}’ heeft vaste tijden, dus je kunt hem niet voor een eerdere dag invullen."
     },
     "backdate_holiday": {
       "message": "Het was vakantie {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}}, dus er waren geen taken."
@@ -2308,43 +2360,43 @@
       "message": "{child} was jarig {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}}, een dag zonder taken."
     },
     "backdate_auction": {
-      "message": "{name} is die dag op de veiling gewonnen, dus je kunt hem achteraf niet invullen."
+      "message": "‘{name}’ is die dag op de veiling gewonnen, dus je kunt hem achteraf niet invullen."
     },
     "backdate_weekly_target_met": {
-      "message": "{name} had die week zijn {target} al gehaald."
+      "message": "‘{name}’ had die week zijn {target} al gehaald."
     },
     "backdate_not_due": {
-      "message": "{name} stond {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} niet gepland."
+      "message": "‘{name}’ stond {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} niet gepland."
     },
     "backdate_daily_limit": {
-      "message": "{name} is {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} al {done}/{limit} keer gedaan."
+      "message": "‘{name}’ is {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} al {done}/{limit} keer gedaan."
     },
     "chore_disabled": {
-      "message": "Taak {name} staat uit"
+      "message": "Taak ‘{name}’ staat uit"
     },
     "parent_complete_one_shot": {
-      "message": "Taak {name} is een eenmalige taak en kan niet door een ouder afgerond worden"
+      "message": "Taak ‘{name}’ is een eenmalige taak en kan niet door een ouder afgerond worden"
     },
     "parent_complete_no_children": {
-      "message": "Taak {name} heeft geen kinderen om hem voor te verbergen"
+      "message": "Taak ‘{name}’ heeft geen kinderen om hem voor te verbergen"
     },
     "parent_complete_rotation_shared": {
-      "message": "Taak {name} wordt om de beurt gedeeld en kan alleen voor iedereen afgerond worden"
+      "message": "Taak ‘{name}’ wordt om de beurt gedeeld en kan alleen voor iedereen afgerond worden"
     },
     "parent_complete_not_assigned": {
-      "message": "Taak {name} is niet aan dat kind toegewezen"
+      "message": "Taak ‘{name}’ is niet aan dat kind toegewezen"
     },
     "bonus_subtask_not_found": {
-      "message": "Bonusdeeltaak {subtask_id} niet gevonden in taak {name}"
+      "message": "Bonusdeeltaak {subtask_id} niet gevonden in taak ‘{name}’"
     },
     "bonus_subtask_not_assigned": {
-      "message": "Bonusdeeltaak {subtask} is niet aan {child} toegewezen."
+      "message": "Bonusdeeltaak ‘{subtask}’ is niet aan {child} toegewezen."
     },
     "bonus_subtask_parent_first": {
-      "message": "Bonusdeeltaak {subtask} kan niet afgerond worden — de hoofdtaak {name} moet vandaag eerst gedaan zijn."
+      "message": "Bonusdeeltaak ‘{subtask}’ kan niet afgerond worden — de hoofdtaak ‘{name}’ moet vandaag eerst gedaan zijn."
     },
     "bonus_subtask_already_done": {
-      "message": "Bonusdeeltaak {subtask} is vandaag al gedaan."
+      "message": "Bonusdeeltaak ‘{subtask}’ is vandaag al gedaan."
     },
     "undo_window_passed": {
       "message": "Deze taak kan niet meer ongedaan gemaakt worden. Vraag een ouder om het te doen."
@@ -2359,16 +2411,16 @@
       "message": "De afronding is niet goedgekeurd; er valt niets ongedaan te maken"
     },
     "chore_sort_unknown": {
-      "message": "Onbekende sortering {sort}"
+      "message": "Onbekende sortering ‘{sort}’"
     },
     "task_group_duplicate_chore": {
       "message": "Dubbele taak in groep: {chore_id}"
     },
     "task_group_everyone_mode": {
-      "message": "Taak {name} is aan iedereen toegewezen en kan niet bij een groep"
+      "message": "Taak ‘{name}’ is aan iedereen toegewezen en kan niet bij een groep"
     },
     "task_group_already_member": {
-      "message": "Taak {name} hoort al bij groep {group}"
+      "message": "Taak ‘{name}’ hoort al bij groep ‘{group}’"
     },
     "task_group_unknown_policy": {
       "message": "Onbekende regel voor taakgroep: {policy}"
@@ -2419,22 +2471,22 @@
       "message": "Niet genoeg punten: {child} heeft {points}, cadeau {gift}"
     },
     "reward_jackpot_pool_short": {
-      "message": "{name} is een gezamenlijke jackpot en de pot is niet vol. Nodig: {cost}, gespaard: {saved}"
+      "message": "‘{name}’ is een gezamenlijke jackpot en de pot is niet vol. Nodig: {cost}, gespaard: {saved}"
     },
     "reward_not_available_to": {
-      "message": "Beloning {name} is niet beschikbaar voor {child}"
+      "message": "Beloning ‘{name}’ is niet beschikbaar voor {child}"
     },
     "reward_sold_out": {
-      "message": "Beloning {name} is uitverkocht"
+      "message": "Beloning ‘{name}’ is uitverkocht"
     },
     "reward_expired": {
-      "message": "Beloning {name} is verlopen"
+      "message": "Beloning ‘{name}’ is verlopen"
     },
     "reward_not_available_now": {
-      "message": "Beloning {name} is nu niet beschikbaar"
+      "message": "Beloning ‘{name}’ is nu niet beschikbaar"
     },
     "reward_claim_already_waiting": {
-      "message": "Een aanvraag voor {name} wacht al op goedkeuring"
+      "message": "Een aanvraag voor ‘{name}’ wacht al op goedkeuring"
     },
     "reward_claims_too_many": {
       "message": "Er wachten al te veel beloningsaanvragen op goedkeuring"
@@ -2452,7 +2504,7 @@
       "message": "Niet genoeg punten om goed te keuren. Nodig: {cost}, aanwezig: {points}"
     },
     "reward_claim_already_approved": {
-      "message": "{name} is al goedgekeurd en kan niet meer afgewezen worden"
+      "message": "‘{name}’ is al goedgekeurd en kan niet meer afgewezen worden"
     },
     "reward_claim_already_approved_unnamed": {
       "message": "Deze beloning is al goedgekeurd en kan niet meer afgewezen worden"
@@ -2464,7 +2516,7 @@
       "message": "{child} heeft geen punten om uit te geven"
     },
     "pool_full": {
-      "message": "De pot voor beloning {name} is al vol"
+      "message": "De pot voor beloning ‘{name}’ is al vol"
     },
     "reward_limit_once_day": {
       "message": "{child} kan {name} één keer per dag krijgen. Weer beschikbaar op {date}"
@@ -2491,7 +2543,7 @@
       "message": "Beloningen kunnen alleen voor kinderen gekocht worden"
     },
     "reward_gift_not_giftable": {
-      "message": "{name} kan niet voor iemand anders gekocht worden"
+      "message": "‘{name}’ kan niet voor iemand anders gekocht worden"
     },
     "reward_rating_stars": {
       "message": "Kies 1 tot 3 sterren"
@@ -2506,10 +2558,10 @@
       "message": "Die beloning is al beoordeeld"
     },
     "service_unknown_child": {
-      "message": "Onbekend kind {ref}. Geldige kinderen: {valid}"
+      "message": "Onbekend kind ‘{ref}’. Geldige kinderen: {valid}"
     },
     "service_ambiguous_child": {
-      "message": "Meer dan één kind heet {ref}; gebruik in plaats daarvan de id van het kind ({ids})"
+      "message": "Meer dan één kind heet ‘{ref}’; gebruik in plaats daarvan de id van het kind ({ids})"
     },
     "service_nothing_to_update": {
       "message": "Niets bij te werken: noem minstens één veld om te wijzigen"
@@ -2530,22 +2582,22 @@
       "message": "Die beloning is van {child}."
     },
     "scheduled_field_not_allowed": {
-      "message": "{field} kan niet gepland gewijzigd worden"
+      "message": "‘{field}’ kan niet gepland gewijzigd worden"
     },
     "scheduled_expects_bool": {
-      "message": "{field} verwacht true of false"
+      "message": "‘{field}’ verwacht true of false"
     },
     "scheduled_expects_int": {
-      "message": "{field} verwacht een heel getal"
+      "message": "‘{field}’ verwacht een heel getal"
     },
     "scheduled_negative": {
-      "message": "{field} mag niet negatief zijn"
+      "message": "‘{field}’ mag niet negatief zijn"
     },
     "scheduled_expects_list": {
-      "message": "{field} verwacht een lijst"
+      "message": "‘{field}’ verwacht een lijst"
     },
     "scheduled_expects_text": {
-      "message": "{field} verwacht tekst"
+      "message": "‘{field}’ verwacht tekst"
     },
     "scheduled_apply_on_format": {
       "message": "apply_on moet een ISO-datum zijn, bijv. 2026-09-01"
@@ -2560,7 +2612,7 @@
       "message": "Geplande wijziging {change_id} niet gevonden"
     },
     "timed_not_timed": {
-      "message": "Taak {name} is geen taak met timer"
+      "message": "Taak ‘{name}’ is geen taak met timer"
     },
     "timed_already_running": {
       "message": "De timer loopt al"
@@ -2569,7 +2621,7 @@
       "message": "Daglimiet bereikt ({minutes} min)"
     },
     "timed_not_available": {
-      "message": "{name} is nu niet beschikbaar voor {child}"
+      "message": "‘{name}’ is nu niet beschikbaar voor {child}"
     },
     "timed_no_running": {
       "message": "Geen lopende timer om te pauzeren"
@@ -2614,43 +2666,43 @@
       "message": "Alleen een wens die wacht of is afgewezen kan worden ingetrokken"
     },
     "wish_not_open_for_saving": {
-      "message": "Voor {name} kan nu niet gespaard worden"
+      "message": "Voor ‘{name}’ kan nu niet gespaard worden"
     },
     "wish_move_min": {
       "message": "Je moet minstens 1 punt verplaatsen"
     },
     "wish_fully_funded": {
-      "message": "{name} is al volledig gespaard"
+      "message": "‘{name}’ is al volledig gespaard"
     },
     "wish_no_spendable": {
       "message": "{child_name} heeft geen punten om uit te geven"
     },
     "wish_take_back_not_allowed": {
-      "message": "Er kunnen nu geen punten uit {name} worden gehaald"
+      "message": "Er kunnen nu geen punten uit ‘{name}’ worden gehaald"
     },
     "wish_take_back_min": {
       "message": "Je moet minstens 1 punt terugnemen"
     },
     "wish_nothing_saved": {
-      "message": "Er is niets gespaard in {name} om terug te nemen"
+      "message": "Er is niets gespaard in ‘{name}’ om terug te nemen"
     },
     "wish_cannot_redeem": {
-      "message": "{name} kan nu niet worden ingewisseld"
+      "message": "‘{name}’ kan nu niet worden ingewisseld"
     },
     "wish_needs_more_points": {
-      "message": "{name} heeft eerst nog {points} punten nodig"
+      "message": "‘{name}’ heeft eerst nog {points} punten nodig"
     },
     "wish_too_many_pending_claims": {
       "message": "Er wachten al te veel beloningsaanvragen op goedkeuring"
     },
     "wish_not_waiting_approval": {
-      "message": "{name} wacht niet op goedkeuring"
+      "message": "‘{name}’ wacht niet op goedkeuring"
     },
     "wish_cannot_decline": {
-      "message": "{name} kan niet meer worden afgewezen"
+      "message": "‘{name}’ kan niet meer worden afgewezen"
     },
     "wish_not_open_for_pledges": {
-      "message": "Voor {name} kan nu niets worden toegezegd"
+      "message": "Voor ‘{name}’ kan nu niets worden toegezegd"
     },
     "wish_pledge_name_required": {
       "message": "Zeg van wie de toezegging is"
@@ -2659,10 +2711,10 @@
       "message": "Een toezegging moet minstens 1 punt zijn"
     },
     "wish_too_many_pledges": {
-      "message": "{name} heeft al {max} toezeggingen"
+      "message": "‘{name}’ heeft al {max} toezeggingen"
     },
     "wish_pledges_locked": {
-      "message": "Toezeggingen voor {name} kunnen niet meer worden gewijzigd"
+      "message": "Toezeggingen voor ‘{name}’ kunnen niet meer worden gewijzigd"
     },
     "wish_pledge_not_found": {
       "message": "Toezegging niet gevonden"
@@ -2671,10 +2723,10 @@
       "message": "Wens of kind niet gevonden voor aanvraag {claim_id}"
     },
     "wish_no_longer_redeemable": {
-      "message": "{name} wacht niet meer op inwisselen"
+      "message": "‘{name}’ wacht niet meer op inwisselen"
     },
     "wish_not_funded": {
-      "message": "{name} is niet meer volledig gespaard"
+      "message": "‘{name}’ is niet meer volledig gespaard"
     },
     "pet_shop_emoji_invalid": {
       "message": "De afbeelding moet een emoji zijn (maximaal {max} tekens)."
@@ -2692,7 +2744,7 @@
       "message": "Geef het artikel een naam."
     },
     "pet_shop_unknown_slot": {
-      "message": "Onbekende plek {slot}"
+      "message": "Onbekende plek ‘{slot}’"
     },
     "pet_shop_not_whole": {
       "message": "Prijs en niveau moeten hele getallen zijn."
@@ -2746,7 +2798,7 @@
       "message": "{child_name} heeft er nu niet genoeg punten voor."
     },
     "pet_unknown_species": {
-      "message": "Onbekend huisdier {species}"
+      "message": "Onbekend huisdier ‘{species}’"
     },
     "pet_name_required": {
       "message": "Geef je huisdier een naam."
@@ -2779,7 +2831,7 @@
       "message": "Kies een keer vanaf morgen."
     },
     "auction_not_scheduled": {
-      "message": "{chore} staat niet gepland op {date}."
+      "message": "‘{chore}’ staat niet gepland op {date}."
     },
     "auction_already_exists": {
       "message": "Voor die keer is er al een veiling."
@@ -2878,7 +2930,7 @@
       "message": "Iemand anders was je voor — deze klus staat er niet meer."
     },
     "bounty_one_at_a_time": {
-      "message": "Maak eerst {title} af — je kunt maar één klus tegelijk hebben."
+      "message": "Maak eerst ‘{title}’ af — je kunt maar één klus tegelijk hebben."
     },
     "bounty_not_claimed_by_you": {
       "message": "Je hebt deze klus niet geclaimd."
@@ -2944,7 +2996,7 @@
       "message": "Niets meer om voor te draaien"
     },
     "unlock_not_allowed": {
-      "message": "{entity_id} staat niet op de lijst met toegestane ontgrendelingen. Voeg het toe in Instellingen voordat je het als beloning gebruikt."
+      "message": "‘{entity_id}’ staat niet op de lijst met toegestane ontgrendelingen. Voeg het toe in Instellingen voordat je het als beloning gebruikt."
     },
     "unlock_minutes_not_whole": {
       "message": "Ontgrendelminuten moeten een heel getal zijn"
@@ -3037,7 +3089,7 @@
       "message": "Die beloning of dat kind bestaat niet meer"
     },
     "setup_invalid_birthday": {
-      "message": "Verjaardag {value} is geen geldige datum"
+      "message": "Verjaardag ‘{value}’ is geen geldige datum"
     },
     "kiosk_pin_invalid": {
       "message": "Een kiosk-pincode moet precies 4 cijfers hebben"
@@ -3058,13 +3110,13 @@
       "message": "elk eigen dagdeel heeft een naam nodig"
     },
     "time_periods_invalid_time": {
-      "message": "ongeldige tijd voor dagdeel {name} (gebruik UU:MM)"
+      "message": "ongeldige tijd voor dagdeel ‘{name}’ (gebruik UU:MM)"
     },
     "time_periods_start_after_end": {
-      "message": "dagdeel {name} moet beginnen voordat het eindigt"
+      "message": "dagdeel ‘{name}’ moet beginnen voordat het eindigt"
     },
     "time_periods_overlap": {
-      "message": "{name} overlapt {other} — dagdelen mogen niet overlappen"
+      "message": "‘{name}’ overlapt ‘{other}’ — dagdelen mogen niet overlappen"
     },
     "time_periods_in_use": {
       "message": "een dagdeel dat nog door taken wordt gebruikt, kan niet worden verwijderd: {chores}"
@@ -3094,10 +3146,10 @@
       "message": "Een sjabloon moet minstens één taak hebben"
     },
     "template_builtin_modify": {
-      "message": "Het ingebouwde sjabloon {template_id} kan niet worden gewijzigd"
+      "message": "Het ingebouwde sjabloon ‘{template_id}’ kan niet worden gewijzigd"
     },
     "template_builtin_delete": {
-      "message": "Het ingebouwde sjabloon {template_id} kan niet worden verwijderd"
+      "message": "Het ingebouwde sjabloon ‘{template_id}’ kan niet worden verwijderd"
     },
     "template_pack_not_pack": {
       "message": "Dat lijkt niet op een TaskMate-pakket"
@@ -3124,19 +3176,19 @@
       "message": "Een sjabloon in het pakket heeft geen naam"
     },
     "template_pack_template_no_chores": {
-      "message": "Sjabloon {name} heeft geen taken"
+      "message": "Sjabloon ‘{name}’ heeft geen taken"
     },
     "template_pack_template_too_many_chores": {
-      "message": "Sjabloon {name} heeft te veel taken"
+      "message": "Sjabloon ‘{name}’ heeft te veel taken"
     },
     "template_pack_malformed_chore": {
-      "message": "Sjabloon {name} bevat een ongeldige taak"
+      "message": "Sjabloon ‘{name}’ bevat een ongeldige taak"
     },
     "template_pack_unnamed_chore": {
-      "message": "Een taak in {name} heeft geen naam"
+      "message": "Een taak in ‘{name}’ heeft geen naam"
     },
     "boost_bad_time": {
-      "message": "{value} is geen tijd zoals 09:30."
+      "message": "‘{value}’ is geen tijd zoals 09:30."
     },
     "boost_multiplier_nan": {
       "message": "De vermenigvuldiger moet een getal zijn."
@@ -3199,7 +3251,7 @@
       "message": "Zakgeld staat niet aan"
     },
     "allowance_not_enough_points": {
-      "message": "{name} heeft maar {points} punten om uit te betalen."
+      "message": "{name} heeft maar {points} {points_name} om uit te betalen."
     },
     "appeals_off": {
       "message": "Bezwaar maken staat uit."
@@ -3229,7 +3281,7 @@
       "message": "Onbekend soort bezwaar {kind}"
     },
     "birthday_invalid_format": {
-      "message": "Verjaardag moet JJJJ-MM-DD of MM-DD zijn, kreeg {value}"
+      "message": "Verjaardag moet JJJJ-MM-DD of MM-DD zijn, kreeg ‘{value}’"
     },
     "birthday_in_future": {
       "message": "Verjaardag kan niet in de toekomst liggen"
@@ -3313,7 +3365,7 @@
       "message": "Geen minuten om te sparen"
     },
     "setup_unknown_age_group": {
-      "message": "Onbekende leeftijdsgroep {value}"
+      "message": "Onbekende leeftijdsgroep ‘{value}’"
     },
     "setup_child_needs_ref": {
       "message": "Elk nieuw kind heeft een eigen ref nodig"
@@ -3322,7 +3374,7 @@
       "message": "Een kind heeft een naam nodig"
     },
     "setup_chore_unknown_child": {
-      "message": "Taak toegewezen aan een onbekend kind {who}"
+      "message": "Taak toegewezen aan een onbekend kind ‘{who}’"
     },
     "setup_chore_needs_name": {
       "message": "Een taak heeft een naam nodig"
@@ -3376,7 +3428,7 @@
       "message": "{chore} hoort vandaag niet bij de taken van {child}."
     },
     "wellbeing_unknown_mood": {
-      "message": "Onbekende stemming {mood}"
+      "message": "Onbekende stemming ‘{mood}’"
     },
     "set_times_not_list": {
       "message": "Vaste tijden moeten een lijst zijn."

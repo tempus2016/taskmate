@@ -74,7 +74,7 @@ class UnlocksMixin:
         if not entity_id:
             return "", 0
         if not self.is_unlock_allowed(entity_id):
-            raise TaskMateError("unlock_not_allowed", entity_id=f"'{entity_id}'")
+            raise TaskMateError("unlock_not_allowed", entity_id=entity_id)
         try:
             mins = int(minutes or 0)
         except (TypeError, ValueError) as err:

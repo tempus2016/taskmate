@@ -196,7 +196,7 @@ class WellbeingMixin:
         if child is None:
             raise TaskMateError("child_not_found", child_id=child_id)
         if mood not in MOODS:
-            raise TaskMateError("wellbeing_unknown_mood", mood=repr(mood))
+            raise TaskMateError("wellbeing_unknown_mood", mood=mood)
         today = dt_util.as_local(dt_util.now()).date()
         per_child = self._moods().setdefault(child_id, {})
         per_child[today.isoformat()] = mood

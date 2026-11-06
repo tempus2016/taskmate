@@ -70,7 +70,7 @@ class TaskMateAuctionCard extends LitElement {
 
   setConfig(config) {
     if (!config || !config.entity) throw new Error(this._t("auction.error.entity_required"));
-    if (!config.child_id) throw new Error(this._t("auction.error.child_required"));
+    // No child_id yet (e.g. the card picker preview): render shows the card's own "pick a child" state.
     this.config = config;
     this._fetchedKey = null;
   }
