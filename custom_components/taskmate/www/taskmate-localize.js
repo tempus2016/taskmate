@@ -238,8 +238,10 @@ const _DAY_KEYS = [
  *
  * @param {object} lock - { days: number[], from: string, until: string }
  * @param {function} t - the caller's translate function (key, params) => string
+ * @param {object} [hass] - for HA's time format ("6:00 PM" on a 12-hour
+ *   profile); without one, the page's own hass is used, else the times as stored
  */
-function timeLockLabel(lock, t) {
+function timeLockLabel(lock, t, hass) {
   if (!lock) return '';
   const days = (lock.days || []).map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6).sort((a, b) => a - b);
   const parts = [];
@@ -247,7 +249,16 @@ function timeLockLabel(lock, t) {
   if (days.length && days.length < 7) parts.push(days.map(d => t(_DAY_KEYS[d])).join(', '));
   const from = lock.from || '';
   const until = lock.until || '';
-  if (from && until && from !== until) parts.push(`${from}–${until}`);
+  if (from && until && from !== until) {
+    let h = hass;
+    if (!h) {
+      try {
+        const ha = typeof document !== 'undefined' && document.querySelector ? document.querySelector('home-assistant') : null;
+        h = ha && ha.hass;
+      } catch (_e) { h = null; }
+    }
+    parts.push(h ? `${clock(h, from)}–${clock(h, until)}` : `${from}–${until}`);
+  }
   return parts.join(' · ');
 }
 

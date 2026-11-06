@@ -62,10 +62,10 @@ class TaskMateRoutineCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("You need to define an entity");
-    if (!config.child_id) throw new Error("You need to define a child_id");
+    if (!config.entity) throw new Error(this._t("routine.error.entity_required"));
+    if (!config.child_id) throw new Error(this._t("routine.error.child_required"));
     if (config.time_category && !TIME_CATEGORIES.includes(config.time_category)) {
-      throw new Error(`time_category must be one of: ${TIME_CATEGORIES.join(", ")}`);
+      throw new Error(this._t("routine.error.time_category", { options: TIME_CATEGORIES.join(", ") }));
     }
     this.config = config;
   }
@@ -388,10 +388,10 @@ class TaskMateRoutineCard extends LitElement {
           </div>
           ${chore.quantity_unit && !done ? html`
             <div class="rt-qty" role="group" aria-label="${chore.quantity_unit}">
-              <button class="rt-qty-step" aria-label="−" ?disabled=${this._qtyFor(chore) <= 1}
+              <button class="rt-qty-step" aria-label="${this._t("routine.qty_less")}" ?disabled=${this._qtyFor(chore) <= 1}
                       @click=${() => this._setQty(chore, this._qtyFor(chore) - 1)}>−</button>
-              <span class="rt-qty-n">${this._qtyFor(chore)}</span>
-              <button class="rt-qty-step" aria-label="+"
+              <span class="rt-qty-n">${__tmNum(this.hass, this._qtyFor(chore))}</span>
+              <button class="rt-qty-step" aria-label="${this._t("routine.qty_more")}"
                       ?disabled=${chore.quantity_max && this._qtyFor(chore) >= chore.quantity_max}
                       @click=${() => this._setQty(chore, this._qtyFor(chore) + 1)}>+</button>
               <span class="rt-qty-unit">${chore.quantity_unit}</span>

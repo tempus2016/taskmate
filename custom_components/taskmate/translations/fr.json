@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Horaire fixe",
           "description": "Pour une tâche à heures fixes, l'horaire à cocher. Laissez vide pour celui qui est ouvert."
+        },
+        "as_parent": {
+          "name": "En tant que parent",
+          "description": "Terminer au nom de l'enfant et attribuer les points tout de suite, sans approbation."
+        },
+        "photo_url": {
+          "name": "URL de la photo",
+          "description": "URL ou chemin facultatif d'une photo envoyée comme preuve (par ex. une capture de caméra). Affichée au parent lors de l'approbation."
+        },
+        "completed_date": {
+          "name": "Faite le",
+          "description": "Enregistre la tâche pour un jour précédent (jusqu'à 7 jours avant, pas aujourd'hui) où elle a été faite mais pas cochée. Parents uniquement ; approuvée directement. La limite quotidienne de ce jour s'applique."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Limite quotidienne",
           "description": "Combien de fois par jour la corvée peut être faite. Toujours 1 pour une corvée ponctuelle."
+        },
+        "difficulty": {
+          "name": "Difficulté",
+          "description": "Niveau de difficulté ; multiplie les points attribués par le coefficient du niveau (moyen = ×1,0 de base)"
+        },
+        "expires_in_minutes": {
+          "name": "Expire dans (minutes)",
+          "description": "Fait de cette corvée une tâche réactive avec une échéance dans ce nombre de minutes, par ex. la machine à laver a fini, la vider sous 30 minutes. La corvée disparaît et est désactivée une fois l'échéance passée. 0 = pas d'échéance."
+        },
+        "speed_bonus_points": {
+          "name": "Points bonus de rapidité",
+          "description": "Points en plus si la corvée est terminée avant l'échéance. Nécessite expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Notifier à l'obtention",
           "description": "Envoyer une notification lorsque le badge est obtenu"
+        },
+        "combinator": {
+          "name": "Combinaison",
+          "description": "Comment plusieurs critères se combinent : AND (tous requis) ou OR (n'importe lequel). AND par défaut."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Notifier à l'obtention",
           "description": "Envoyer une notification lorsque le badge est obtenu"
+        },
+        "combinator": {
+          "name": "Combinaison",
+          "description": "Comment plusieurs critères se combinent : AND (tous requis) ou OR (n'importe lequel). AND par défaut."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "HH:MM, par ex. 17:30. Vide supprime le rappel."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Lire les corvées à voix haute",
+      "description": "Énonce les corvées restantes d'un enfant sur un lecteur multimédia, par exemple « Ella, il te reste trois choses… ». Utilise le texte de lecture dans la langue de Home Assistant, sauf si des modèles personnalisés sont définis.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant dont les corvées sont lues"
+        },
+        "media_player": {
+          "name": "Lecteur multimédia",
+          "description": "Où parler. À défaut, celui défini dans les paramètres."
+        },
+        "tts_entity": {
+          "name": "Entité de synthèse vocale",
+          "description": "Le service TTS à utiliser. À défaut, celui des paramètres, puis le seul installé."
+        },
+        "message": {
+          "name": "Message personnalisé",
+          "description": "Dire ceci au lieu du résumé généré."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Lancer la roulette des corvées",
+      "description": "Choisit au hasard une corvée restante pour un enfant, avec un multiplicateur de points. À activer : allume-la et règle le multiplicateur et le nombre de tours par jour dans les paramètres du panneau TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'identifiant de l'enfant qui lance la roulette"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Mode de réinitialisation de série"
+        "name": "Mode de réinitialisation de série",
+        "state": {
+          "reset": "Réinitialiser — la série retombe à 0 en cas d'oubli",
+          "pause": "Pause — la série est préservée jusqu'à la prochaine exécution"
+        }
       },
       "card_design": {
-        "name": "Design de carte"
+        "name": "Design de carte",
+        "state": {
+          "classic": "Classique",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Accessible",
+          "graphite": "Graphite"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} ne peut pas être faite pour l'instant, il n'y a donc encore rien pour quoi demander de l'aide."
+    },
+    "help_already_on_its_way": {
+      "message": "L'aide pour {chore} est déjà en route."
+    },
+    "help_cooldown": {
+      "message": "Attends une minute avant de redemander de l'aide."
+    },
+    "rate_limited": {
+      "message": "Trop de demandes depuis ce compte. Réessaie dans une minute."
     }
   },
   "issues": {

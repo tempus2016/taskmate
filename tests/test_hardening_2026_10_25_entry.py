@@ -22,7 +22,7 @@ from custom_components.taskmate.const import DOMAIN
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.models import Child
 from custom_components.taskmate.storage import TaskMateStorage
-from tests.conftest import FakeStore
+from tests.conftest import FakeServiceValidationError, FakeStore
 
 UTC = dt.timezone.utc
 
@@ -509,8 +509,9 @@ def test_a_second_help_request_within_a_minute_is_refused_whatever_the_chore():
     other = run(coord.async_add_chore("Feed cat", points=3, schedule_mode="specific_days"))
     with patch(_NOW_PATH, return_value=_now()):
         run(coord.async_request_help(kid.id, chore.id))
-        with pytest.raises(ValueError):
+        with pytest.raises(FakeServiceValidationError) as refused:
             run(coord.async_request_help(kid.id, other.id))
+        assert refused.value.translation_key == "help_cooldown"
     with patch(_NOW_PATH, return_value=_now() + dt.timedelta(seconds=tm.coord_wellbeing.HELP_COOLDOWN_SECONDS + 1)):
         run(coord.async_request_help(kid.id, other.id))
         assert [r["chore_id"] for r in coord.open_help_requests(kid.id)] == [other.id, chore.id]

@@ -83,7 +83,7 @@ class TaskMateWishlistCard extends LitElement {
 
   setConfig(config) {
     if (!config || !config.entity) {
-      throw new Error("A TaskMate overview entity is required");
+      throw new Error(this._t("wishlist.entity_required"));
     }
     this.config = config;
   }
@@ -446,7 +446,7 @@ class TaskMateWishlistCard extends LitElement {
           </div>
         </div>
         ${showProgress ? html`
-          <div class="wl-split" role="img" aria-label="${this._t("wishlist.progress_label", { total: Math.min(target, saved + pledged), target })}">
+          <div class="wl-split" role="img" aria-label="${this._t("wishlist.progress_label", { total: __tmNum(this.hass, Math.min(target, saved + pledged)), target: __tmNum(this.hass, target) })}">
             <i class="wl-me" style="width:${pct(saved)}%"></i>
             <i class="wl-fam" style="width:${pct(Math.min(pledged, Math.max(0, target - saved)))}%"></i>
           </div>
@@ -529,10 +529,10 @@ class TaskMateWishlistCard extends LitElement {
         <span class="wl-label">${this._t("wishlist.field_target")}</span>
         <div class="wl-row">
           <div class="wl-stepper">
-            <button aria-label="−" @click=${() => this._stepTarget(-TARGET_STEP)}>−</button>
+            <button aria-label="${this._t("wishlist.target_lower")}" @click=${() => this._stepTarget(-TARGET_STEP)}>−</button>
             <input type="number" min="1" max="${MAX_TARGET}" .value=${String(s.target)}
               @input=${(e) => this._setSheet({ target: Math.max(1, Math.min(MAX_TARGET, parseInt(e.target.value, 10) || 1)) })}>
-            <button aria-label="+" @click=${() => this._stepTarget(TARGET_STEP)}>+</button>
+            <button aria-label="${this._t("wishlist.target_raise")}" @click=${() => this._stepTarget(TARGET_STEP)}>+</button>
           </div>
           <span class="wl-hint">${this._t("wishlist.target_hint")}</span>
         </div>
@@ -571,7 +571,7 @@ class TaskMateWishlistCard extends LitElement {
         <span>0</span>
         <span>${isMove
           ? this._t("wishlist.move_info", { balance: __tmNum(this.hass, spendable), needed: __tmNum(this.hass, this._remaining(wish)) })
-          : this._t("wishlist.take_info", { saved: Number(wish.saved) || 0 })}</span>
+          : this._t("wishlist.take_info", { saved: __tmNum(this.hass, Number(wish.saved) || 0) })}</span>
         <span>${__tmNum(this.hass, max)}</span>
       </div>
       <div class="wl-chips">

@@ -392,7 +392,7 @@ class TaskMateOverviewCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("overview.error.entity_required"));
     // No title by default: the header falls back to the translated
     // overview.default_title. An explicit empty title still means none.
     this.config = {

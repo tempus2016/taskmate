@@ -104,11 +104,15 @@ class WellbeingMixin:
             except (TypeError, ValueError):
                 continue
             if req.get("chore_id") == chore_id and at >= repeat_cutoff:
-                raise ValueError("Help is already on its way.")
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="help_already_on_its_way",
+                    translation_placeholders={"chore": chore.name},
+                )
             # One open request a minute across every chore: each one is a push
             # to every parent, and a different chore each tap is still a burst.
             if at >= cooldown_cutoff:
-                raise ValueError("Give it a minute before asking for help again.")
+                raise ServiceValidationError(translation_domain=DOMAIN, translation_key="help_cooldown")
         record = {
             "id": generate_id(),
             "child_id": child_id,

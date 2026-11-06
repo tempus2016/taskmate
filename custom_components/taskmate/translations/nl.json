@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Vaste tijd",
           "description": "Bij een taak met vaste tijden: welke tijd wordt afgevinkt. Leeg laten voor de tijd die nu open is."
+        },
+        "as_parent": {
+          "name": "Als ouder",
+          "description": "Rond af namens het kind en geef de punten meteen, zonder goedkeuring."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Optionele URL of pad naar een foto als bewijs (bijv. een camerabeeld). De ouder ziet hem bij het goedkeuren."
+        },
+        "completed_date": {
+          "name": "Gedaan op",
+          "description": "Registreer de taak voor een eerdere dag (tot 7 dagen terug, niet vandaag) waarop hij gedaan maar niet afgevinkt is. Alleen ouders; meteen goedgekeurd. De daglimiet van die dag blijft gelden."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Daglimiet",
           "description": "Hoe vaak per dag de taak gedaan kan worden. Eenmalige taken altijd 1."
+        },
+        "difficulty": {
+          "name": "Moeilijkheid",
+          "description": "Moeilijkheidsniveau; vermenigvuldigt de punten met de factor van het niveau (gemiddeld = ×1,0 als basis)"
+        },
+        "expires_in_minutes": {
+          "name": "Verloopt over (minuten)",
+          "description": "Maak dit een directe taak met een deadline over zoveel minuten, bijv. de wasmachine is klaar, leeg hem binnen 30 minuten. Na de deadline verdwijnt de taak en wordt hij uitgezet. 0 = geen deadline."
+        },
+        "speed_bonus_points": {
+          "name": "Snelheidsbonuspunten",
+          "description": "Extra punten als de taak voor de deadline af is. Werkt alleen met expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Melding bij behalen",
           "description": "Stuur een melding als de badge verdiend is"
+        },
+        "combinator": {
+          "name": "Combinatie",
+          "description": "Hoe meerdere criteria samengaan: AND (allemaal nodig) of OR (één is genoeg). Standaard AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Melding bij behalen",
           "description": "Stuur een melding als de badge verdiend is"
+        },
+        "combinator": {
+          "name": "Combinatie",
+          "description": "Hoe meerdere criteria samengaan: AND (allemaal nodig) of OR (één is genoeg). Standaard AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "UU:MM, bijv. 17:30. Leeg wist de herinnering."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Taken voorlezen",
+      "description": "Lees de openstaande taken van een kind voor op een mediaspeler, bijvoorbeeld \"Ella, je hebt nog drie dingen te doen…\". Gebruikt de voorleestekst in de taal van Home Assistant, tenzij er eigen voorleessjablonen zijn ingesteld.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind van wie de taken worden voorgelezen"
+        },
+        "media_player": {
+          "name": "Mediaspeler",
+          "description": "Waar voorgelezen wordt. Anders de standaard uit Instellingen."
+        },
+        "tts_entity": {
+          "name": "Tekst-naar-spraak-entiteit",
+          "description": "Welke TTS-dienst gebruikt wordt. Anders die uit Instellingen, en anders de enige die geïnstalleerd is."
+        },
+        "message": {
+          "name": "Eigen bericht",
+          "description": "Zeg dit in plaats van de gemaakte samenvatting."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Takenroulette draaien",
+      "description": "Kies een willekeurige openstaande taak voor een kind met een puntenvermenigvuldiger. Moet je aanzetten: schakel het in en stel de vermenigvuldiger en het aantal draaibeurten per dag in bij de instellingen van het TaskMate-paneel.",
+      "fields": {
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "Het ID van het kind dat draait"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Reeks na gemiste dag"
+        "name": "Reeks na gemiste dag",
+        "state": {
+          "reset": "Opnieuw beginnen — bij een gemiste dag gaat je reeks terug naar 0",
+          "pause": "Pauzeren — je reeks blijft staan tot de volgende keer"
+        }
       },
       "card_design": {
-        "name": "Kaartstijl"
+        "name": "Kaartstijl",
+        "state": {
+          "classic": "Klassiek",
+          "playroom": "Speelkamer",
+          "console": "Console",
+          "cleanpro": "Strak en professioneel",
+          "accessible": "Toegankelijk",
+          "graphite": "Grafiet"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} kan nu niet gedaan worden, dus er is nog niets om hulp bij te vragen."
+    },
+    "help_already_on_its_way": {
+      "message": "Hulp bij {chore} is al onderweg."
+    },
+    "help_cooldown": {
+      "message": "Wacht even een minuutje voordat je weer om hulp vraagt."
+    },
+    "rate_limited": {
+      "message": "Te veel verzoeken vanaf dit account. Probeer het over een minuut opnieuw."
     }
   },
   "issues": {

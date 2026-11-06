@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Horário definido",
           "description": "Em uma tarefa com horários definidos, qual horário marcar. Deixe em branco para o que está aberto agora."
+        },
+        "as_parent": {
+          "name": "Como responsável",
+          "description": "Concluir em nome da criança e conceder os pontos na hora, sem aprovação."
+        },
+        "photo_url": {
+          "name": "URL da foto",
+          "description": "URL ou caminho opcional de uma foto enviada como prova (ex.: uma captura da câmera). Mostrada ao responsável na aprovação."
+        },
+        "completed_date": {
+          "name": "Feita em",
+          "description": "Registra a tarefa em um dia anterior (até 7 dias atrás, não hoje) em que foi feita mas não marcada. Só responsáveis; aprovada na hora. O limite diário desse dia continua valendo."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Limite diário",
           "description": "Quantas vezes por dia a tarefa pode ser feita. Tarefas únicas são sempre 1."
+        },
+        "difficulty": {
+          "name": "Dificuldade",
+          "description": "Nível de dificuldade; multiplica os pontos concedidos pelo multiplicador do nível (médio = ×1,0 base)"
+        },
+        "expires_in_minutes": {
+          "name": "Expira em (minutos)",
+          "description": "Torna esta tarefa reativa, com prazo daqui a estes minutos, ex.: a máquina de lavar terminou, esvazie-a em 30 minutos. A tarefa some e é desativada quando o prazo passa. 0 = sem prazo."
+        },
+        "speed_bonus_points": {
+          "name": "Pontos de bônus de rapidez",
+          "description": "Pontos extras se a tarefa for concluída antes do prazo. Requer expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Notificar ao ganhar",
           "description": "Enviar uma notificação quando a conquista é ganha"
+        },
+        "combinator": {
+          "name": "Combinação",
+          "description": "Como vários critérios se combinam: AND (todos precisam passar) ou OR (qualquer um). Padrão AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Notificar ao ganhar",
           "description": "Enviar uma notificação quando a conquista é ganha"
+        },
+        "combinator": {
+          "name": "Combinação",
+          "description": "Como vários critérios se combinam: AND (todos precisam passar) ou OR (qualquer um). Padrão AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "HH:MM, ex.: 17:30. Vazio remove o lembrete."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Ler tarefas em voz alta",
+      "description": "Fala as tarefas pendentes de uma criança em um player de mídia, por exemplo \"Ella, faltam três coisas…\". Usa o texto de leitura no idioma do Home Assistant, a menos que modelos próprios tenham sido definidos.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança cujas tarefas são lidas"
+        },
+        "media_player": {
+          "name": "Player de mídia",
+          "description": "Onde falar. Se vazio, usa o padrão definido nas Configurações."
+        },
+        "tts_entity": {
+          "name": "Entidade de texto para fala",
+          "description": "Qual serviço TTS usar. Se vazio, o das Configurações e depois o único instalado."
+        },
+        "message": {
+          "name": "Mensagem própria",
+          "description": "Dizer isto em vez do resumo gerado."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Girar a roleta de tarefas",
+      "description": "Escolhe aleatoriamente uma tarefa pendente para uma criança, com multiplicador de pontos. Opcional: ative-a e defina o multiplicador e o número de giros por dia nas configurações do painel TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que gira"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Modo de redefinição de sequência"
+        "name": "Modo de redefinição de sequência",
+        "state": {
+          "reset": "Reiniciar — sequência volta a 0 num dia falhado",
+          "pause": "Pausar — sequência preservada até próxima conclusão"
+        }
       },
       "card_design": {
-        "name": "Design do cartão"
+        "name": "Design do cartão",
+        "state": {
+          "classic": "Clássico",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Acessível",
+          "graphite": "Grafite"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} não pode ser feita agora, então ainda não há nada para pedir ajuda."
+    },
+    "help_already_on_its_way": {
+      "message": "A ajuda com {chore} já está a caminho."
+    },
+    "help_cooldown": {
+      "message": "Espere um minuto antes de pedir ajuda de novo."
+    },
+    "rate_limited": {
+      "message": "Muitas solicitações desta conta. Tente de novo em um minuto."
     }
   },
   "issues": {

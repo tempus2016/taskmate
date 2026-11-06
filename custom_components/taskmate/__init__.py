@@ -536,7 +536,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         if await authz.async_context_is_parent(hass, _get_coordinator(hass), call.context):
             return
         await _async_record_service_audit(hass, call, denied=True)
-        raise ServiceValidationError("Too many requests from this account, try again in a minute")
+        raise ServiceValidationError(translation_domain=DOMAIN, translation_key="rate_limited")
 
     def _audited(handler):
         """Wrap a child-facing handler so its mutation is recorded too.

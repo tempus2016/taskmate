@@ -44,7 +44,7 @@ class TaskMateOverviewCardEditor extends LitElement {
           select: {
             options: window.__taskmate_design
               ? window.__taskmate_design.editorOptions(this._t.bind(this))
-              : [{ value: 'global', label: 'Use global default' }],
+              : [{ value: 'global', label: this._t('common.design.use_global') }],
             mode: 'dropdown',
           },
         },

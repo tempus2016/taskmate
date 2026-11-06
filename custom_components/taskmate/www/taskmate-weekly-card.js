@@ -670,9 +670,9 @@ class TaskMateWeeklyCard extends LitElement {
 
     const stats = [
       { k: this._t("weekly.stat_days_active"), v: `${d.daysActive}/7` },
-      { k: d.pointsName, v: d.weekPoints },
-      { k: this._t("weekly.stat_rewards"), v: d.weekRewards },
-      { k: this._t("weekly.stat_chores"), v: d.weekChores },
+      { k: d.pointsName, v: __tmNum(this.hass, d.weekPoints) },
+      { k: this._t("weekly.stat_rewards"), v: __tmNum(this.hass, d.weekRewards) },
+      { k: this._t("weekly.stat_chores"), v: __tmNum(this.hass, d.weekChores) },
     ];
 
     const cnLike = design !== "playroom"; // console + cleanpro use the .stat kit tile
@@ -720,7 +720,7 @@ class TaskMateWeeklyCard extends LitElement {
             const h = isFuture ? 3 : Math.max(pts > 0 ? 8 : 3, pct);
             return html`
               <div class="wk-bcol">
-                ${design === "playroom" ? html`<span class="val">${!isFuture && pts > 0 ? pts : ""}</span>` : ""}
+                ${design === "playroom" ? html`<span class="val">${!isFuture && pts > 0 ? __tmNum(this.hass, pts) : ""}</span>` : ""}
                 <div class="wk-fill ${barsClass} ${isToday ? "today" : ""}" style="height:${h}%"></div>
                 <span class="lbl ${lblMode}">${design === "console" ? day.short.toUpperCase() : day.short}</span>
               </div>`;

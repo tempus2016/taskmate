@@ -717,7 +717,7 @@ class TaskMateApprovalsCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("Please define an entity (pending_approvals sensor)");
+      throw new Error(this._t("approvals.error.entity_required"));
     }
     this.config = {
       title: "",
@@ -1146,7 +1146,7 @@ class TaskMateApprovalsCard extends LitElement {
         title="${this._t('approvals.reference_title')}"><div class="${cls} ap-ref"><img src="${ref}" alt=""><span class="ap-ref-badge">★</span></div></a>` : ""}
       ${photoUrl ? html`<a class="ap-d-photo-link" href="${photoUrl}" target="_blank" rel="noopener"
         @click="${open}"
-        title="${this._t('approvals.view_photo') || 'View photo'}"><div class="${cls}"><img src="${photoUrl}" alt=""></div></a>` : ""}`;
+        title="${this._t('approvals.view_photo')}"><div class="${cls}"><img src="${photoUrl}" alt=""></div></a>` : ""}`;
   }
 
   /* ── Reference photo: "what done looks like" beside the child's photo ── */
@@ -1349,10 +1349,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed_service', {
-            service: service.replace('_', ' '),
-            message: error.message,
-          }),
+          message: this._t('approvals.error_failed', { message: error.message }),
           notification_id: `taskmate_error_${claimId}`,
         });
       }
@@ -1520,10 +1517,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed_service', {
-            service: service.replace(/_/g, ' '),
-            message: error.message,
-          }),
+          message: this._t('approvals.error_failed', { message: error.message }),
           notification_id: `taskmate_error_${missId}`,
         });
       }
@@ -1773,7 +1767,7 @@ class TaskMateApprovalsCard extends LitElement {
                   <img src="${ref}" alt="" loading="lazy"><span class="ap-ref-badge">★</span>
                 </a>` : ''}
               ${photo ? html`<a class="approval-photo" href="${photo}" target="_blank" rel="noopener" @click="${open}"
-                   title="${this._t('approvals.view_photo') || 'View photo'}">
+                   title="${this._t('approvals.view_photo')}">
                   <img src="${photo}" alt="" loading="lazy">
                 </a>` : ''}
             </div>`;
@@ -1967,7 +1961,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService('persistent_notification', 'create', {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed_service', { service: 'approve all', message: error.message }),
+          message: this._t('approvals.error_failed', { message: error.message }),
           notification_id: 'taskmate_error_approve_all',
         });
       }
@@ -2114,7 +2108,7 @@ class TaskMateApprovalsCard extends LitElement {
       if (this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed_service', { service: service.replace("_", " "), message: error.message }),
+          message: this._t('approvals.error_failed', { message: error.message }),
           notification_id: `taskmate_error_${completionId}`,
         });
       }

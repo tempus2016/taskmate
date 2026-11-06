@@ -59,7 +59,7 @@ class TaskMateRaffleCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config || !config.entity) throw new Error("You need to define an entity");
+    if (!config || !config.entity) throw new Error(this._t("common.please_define_entity"));
     this.config = config;
   }
 
@@ -356,11 +356,11 @@ class TaskMateRaffleCard extends LitElement {
         ${mine ? _ltrNums(this._t(mine === 1 ? "raffle.your_tickets_one" : "raffle.your_tickets", { count: mine, chance })) : this._t("raffle.no_tickets_mine")}
       </div>
       <div class="rf-buy">
-        <button class="rf-step" aria-label="−" ?disabled=${n <= 1 || this._busy} @click=${() => this._setQty(r, n - 1, child)}>−</button>
+        <button class="rf-step" aria-label="${this._t("raffle.fewer_tickets")}" ?disabled=${n <= 1 || this._busy} @click=${() => this._setQty(r, n - 1, child)}>−</button>
         <span class="rf-n">${n}</span>
-        <button class="rf-step" aria-label="+" ?disabled=${n >= max || this._busy} @click=${() => this._setQty(r, n + 1, child)}>+</button>
+        <button class="rf-step" aria-label="${this._t("raffle.more_tickets")}" ?disabled=${n >= max || this._busy} @click=${() => this._setQty(r, n + 1, child)}>+</button>
         <button class="rf-btn" ?disabled=${max < 1 || this._busy || closing} @click=${() => this._buy(r, child)}>
-          ${max < 1 ? (r.max && mine >= r.max ? this._t("raffle.cap_reached") : this._t("raffle.not_enough")) : this._t("raffle.buy", { count: n, cost: n * r.cost })}
+          ${max < 1 ? (r.max && mine >= r.max ? this._t("raffle.cap_reached") : this._t("raffle.not_enough", { points_name: this._attrs().points_name || this._t("common.points") })) : this._t("raffle.buy", { count: n, cost: __tmNum(this.hass, n * r.cost) })}
         </button>
       </div>`;
   }

@@ -1964,7 +1964,6 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _confirmDelete(kind, id) {
-    const labels = { child: this._t("panel.entity_child"), chore: this._t("panel.entity_chore"), reward: this._t("panel.entity_reward"), penalty: this._t("panel.entity_penalty"), bonus: this._t("panel.entity_bonus"), group: this._t("panel.entity_group"), quest: this._t("panel.entity_quest"), challenge: this._t("panel.entity_challenge") };
     const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups", quest: "quests", challenge: "challenges" }[kind];
     const item = (this._state[collectionKey] || []).find(x => x.id === id);
     if (!item) return;
@@ -1977,7 +1976,7 @@ class TaskMatePanel extends HTMLElement {
       : "";
     // Chores, rewards and quests wait in Recently deleted, so they can come back.
     const suffix = ["chore", "reward", "quest"].includes(kind) ? "panel.confirm_delete_suffix_restorable" : "panel.confirm_delete_suffix";
-    if (!confirm(`${this._t("panel.confirm_delete_prompt", {kind: labels[kind].toLowerCase(), name: item.name})}${extraWarn}\n\n${this._t(suffix)}`)) return;
+    if (!confirm(`${this._t(`panel.confirm_delete_${kind}`, {name: item.name})}${extraWarn}\n\n${this._t(suffix)}`)) return;
     this._doRemove(kind, id);
   }
 
@@ -2226,7 +2225,7 @@ class TaskMatePanel extends HTMLElement {
     if (!Number.isFinite(ms)) return "—";
     const mins = Math.max(0, Math.round(ms / 60000));
     const h = Math.floor(mins / 60);
-    return h ? `${h}h ${String(mins % 60).padStart(2, "0")}m` : `${mins}m`;
+    return h ? this._t("panel.insp_left_hm", { h, m: String(mins % 60).padStart(2, "0") }) : this._t("panel.insp_left_m", { m: mins });
   }
 
   _inspClock(iso) {
@@ -5122,7 +5121,7 @@ class TaskMatePanel extends HTMLElement {
               return `
               <div class="tm-heat-child">
                 <div class="tm-heat-name">${this._esc(c.name)}
-                  <span class="tm-meta">${this._ltrNums(this._t("panel.insights_calendar_summary", { total: this._fmtNum(c.total), active: c.active_days, days: report.days }))}</span></div>
+                  <span class="tm-meta">${this._ltrNums(this._t(c.total === 1 ? "panel.insights_calendar_summary_one" : "panel.insights_calendar_summary", { total: this._fmtNum(c.total), active: c.active_days, days: report.days }))}</span></div>
                 <div class="tm-heat-grid" role="img" aria-label="${this._esc(c.name)}">
                   ${weekdays.map(w => `<span class="tm-heat-wd">${this._esc(w)}</span>`).join("")}
                   ${"<i class=\"tm-heat-pad\"></i>".repeat(lead)}
@@ -5332,7 +5331,7 @@ class TaskMatePanel extends HTMLElement {
             ${report.issues.map(i => `
               <div class="tm-health-issue tm-health-${i.severity}">
                 <span class="tm-health-sev">${this._t("panel.health_sev_" + i.severity)}</span>
-                <span class="tm-health-msg">${this._esc(i.message)}</span>
+                <span class="tm-health-msg">${this._esc((k => { const t = this._tn(k, i.count, { count: this._fmtNum(i.count) }); return t === k || t === `${k}_one` ? i.message : t; })("panel.health_issue_" + i.code))}</span>
                 <button type="button" class="tm-btn tm-btn-small" data-act="health-goto" data-id="${this._esc(i.where)}">
                   ${this._t("panel.health_goto")}
                 </button>
@@ -5589,7 +5588,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-child">${this._t("panel.btn_add_child")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("👨‍👩‍👧‍👦", this._t("panel.empty_children_title"), this._t("panel.empty_children_copy"), "add-child", this._t("panel.btn_add_child")) :
-        children.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_children").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        children.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_children", {filter: this._esc(this._filter)})}</p></div>` : `
         <div class="tm-grid">
           ${children.map(c => this._renderChildCard(c, pointsName)).join("")}
           <button type="button" class="tm-add-tile" data-act="add-child"><span class="tm-add-plus">＋</span>${this._t("panel.child_add_tile")}</button>
@@ -5684,7 +5683,7 @@ class TaskMatePanel extends HTMLElement {
     const events = [];
     completions.filter(c => c.approved && this._childInScope(c.child_id)).forEach(c => events.push({
       ts: c.approved_at || c.completed_at, kind: "completion", child_id: c.child_id, completion_id: c.id,
-      child: c.child_id === "__parent__" ? "Parent" : ((childById[c.child_id] || {}).name || "?"),
+      child: c.child_id === "__parent__" ? this._t("panel.activity_parent") : ((childById[c.child_id] || {}).name || "?"),
       label: `${this._t("panel.activity_completed_chore", {name: (choreById[c.chore_id] || {}).name || this._t("panel.activity_deleted_chore")})}`,
       points: c.points_awarded,
     }));
@@ -5923,7 +5922,7 @@ class TaskMatePanel extends HTMLElement {
                       <td class="tm-meta">${this._esc(this._timeAgo(t.created_at))}</td>
                       <td>${this._esc((child && child.name) || "?")}</td>
                       <td><strong class="tm-numeric ${t.points >= 0 ? 'tm-pos' : 'tm-neg'}">${t.points >= 0 ? '+' : ''}${this._fmtNum(this._num(t.points))}</strong></td>
-                      <td>${this._esc(this._translateReason(t.reason) || "—")}</td>
+                      <td>${this._esc(this._reasonFor(t) || "—")}</td>
                       <td>${undoable ? `<button type="button" class="tm-icon-btn" data-act="undo-tx" data-id="${this._esc(t.id)}" title="${this._esc(this._t("panel.activity_undo"))}"><ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon></button>` : ""}</td>
                     </tr>
                   `;
@@ -6043,7 +6042,7 @@ class TaskMatePanel extends HTMLElement {
       .filter(b => b.endsMs > now).map(b => ({ ...b, status: b.startsMs > now ? "upcoming" : "active" }));
   }
 
-  _fmtMult(m) { return String(Math.round(Number(m) * 10) / 10); }
+  _fmtMult(m) { return __tmNum(this._hass, Math.round(Number(m) * 10) / 10); }
 
   _boostChoreText(choreIds) {
     if (!choreIds || !choreIds.length) return this._t("panel.boost_all_chores");
@@ -6101,7 +6100,7 @@ class TaskMatePanel extends HTMLElement {
     return `
       <div class="tm-field">
         <span class="tm-field-label">${this._t("panel.boost_pays")}</span>
-        <div class="tm-chip-row">${[1.5, 2, 3].map(m => chip("boost-mult", m, Number(d.multiplier) === m, `×${m}`)).join("")}</div>
+        <div class="tm-chip-row">${[1.5, 2, 3].map(m => chip("boost-mult", m, Number(d.multiplier) === m, `×${this._fmtMult(m)}`)).join("")}</div>
       </div>
       ${kindAct === "boost" ? `
       <div class="tm-field">
@@ -9723,7 +9722,7 @@ class TaskMatePanel extends HTMLElement {
       ${all.length === 0 ? this._emptyState("📋", this._t("panel.empty_chores_title"), this._t("panel.empty_chores_copy"), "add-chore", this._t("panel.btn_add_chore")) :
         `${this._renderChoreFilters(all, chores.length)}${chores.length === 0 ? `<div class="tm-card tm-empty"><p>${filtered && !this._filter
           ? this._t("panel.chore_filt_none")
-          : this._t("panel.empty_no_match", {kind: this._t("panel.tab_chores").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+          : this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr>
@@ -9918,7 +9917,7 @@ class TaskMatePanel extends HTMLElement {
             <button type="button" class="tm-icon-btn" data-act="toggle-row-menu" data-id="${this._esc(c.id)}" title="${this._t("panel.row_menu_more")}" aria-haspopup="menu" aria-label="${this._t("panel.row_menu_more")}">⋮</button>
           </span>`}
         </div></td>
-        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._fmtNum(this._num(c.timed_rate_points))}/${this._fmtNum(this._num(c.timed_rate_minutes, 1))} min` : this._num(c.points)}</strong></td>
+        <td><strong class="tm-numeric">${c.task_type === "timed" ? `${this._t("panel.chore_timed_rate", { points: this._fmtNum(this._num(c.timed_rate_points)), minutes: this._fmtNum(this._num(c.timed_rate_minutes, 1)) })}` : this._num(c.points)}</strong></td>
         <td><span class="tm-pill" ${(c.times || []).length ? `title="${this._esc((c.times || []).map(t => `${t.name || t.start} ${t.start}–${t.end}`).join(" · "))}"` : ""}>${this._esc((c.times || []).length ? this._t("panel.st_list_pill", { count: c.times.length }) : this._timeCategoryLabel(c.time_category))}</span></td>
         <td>${assignedNames}${teamPill}</td>
         <td>${modeBadge || `<span class="tm-text-muted">${this._t("panel.chore_mode_everyone")}</span>`}</td>
@@ -10992,7 +10991,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-reward">${this._t("panel.btn_add_reward")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🎁", this._t("panel.empty_rewards_title"), this._t("panel.empty_rewards_copy", {points_name: pointsName.toLowerCase()}), "add-reward", this._t("panel.btn_add_reward")) :
-        rewards.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_rewards").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        rewards.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
         ${this._renderRewardRatings(all)}
         <div class="tm-grid">
           ${rewards.map(r => this._renderRewardCard(r, pointsName)).join("")}
@@ -11387,7 +11386,7 @@ class TaskMatePanel extends HTMLElement {
       </div>
       ${!haveChores ? `<div class="tm-card tm-empty"><p>${this._t("panel.quest_need_chores")}</p></div>` :
         all.length === 0 ? this._emptyState("🗺️", this._t("panel.empty_quests_title"), this._t("panel.empty_quests_copy"), "add-quest", this._t("panel.btn_add_quest")) :
-        quests.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_quests").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        quests.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
         <div class="tm-grid">
           ${quests.map(q => this._renderQuestCard(q, pointsName)).join("")}
           <button type="button" class="tm-add-tile" data-act="add-quest"><span class="tm-add-plus">＋</span>${this._t("panel.quest_add_tile")}</button>
@@ -11426,7 +11425,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(q.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: this._esc(pointsName)})}</div></div>
         </div>
         <ol class="tm-quest-steps">${stepNames}</ol>
-        <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
+        <div class="tm-meta">${this._t("panel.quest_for_names", { names: this._esc(assigned.join(", ")) })}</div>
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-quest" data-id="${this._esc(q.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-quest" data-id="${this._esc(q.id)}">${this._t("panel.btn_delete")}</button>
@@ -11447,7 +11446,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-challenge">${this._t("panel.btn_add_challenge")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🏆", this._t("panel.empty_challenges_title"), this._t("panel.empty_challenges_copy"), "add-challenge", this._t("panel.btn_add_challenge")) :
-        challenges.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_challenges").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        challenges.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
         <div class="tm-grid">
           ${challenges.map(c => this._renderChallengeCard(c, pointsName)).join("")}
           <button type="button" class="tm-add-tile" data-act="add-challenge"><span class="tm-add-plus">＋</span>${this._t("panel.challenge_add_tile")}</button>
@@ -11482,7 +11481,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(this._num(c.target))}</div><div class="tm-stat-label">${this._esc(metricLabel)}</div></div>
           <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(c.bonus_points || 0)}</div><div class="tm-stat-label">${this._t("panel.quest_stat_bonus", {points_name: this._esc(pointsName)})}</div></div>
         </div>
-        <div class="tm-meta">${this._t("panel.quest_assigned_to")}: ${this._esc(assigned.join(", "))}</div>
+        <div class="tm-meta">${this._t("panel.quest_for_names", { names: this._esc(assigned.join(", ")) })}</div>
         <div class="tm-card-foot">
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-challenge" data-id="${this._esc(c.id)}">${this._t("panel.btn_edit")}</button>
           <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-challenge" data-id="${this._esc(c.id)}">${this._t("panel.btn_delete")}</button>
@@ -11935,6 +11934,19 @@ class TaskMatePanel extends HTMLElement {
   // Reverse auctions on one occurrence of a chore. Live = bidding open, with
   // the sealed bids (parents may see the amounts); Closed = settled or
   // cancelled, with the winner and how the won chore itself is going.
+  // Why the start sheet can't auction ``c``, as a key: the backend's refusal
+  // is English text, so the panel names the reason itself (same order as
+  // auction_refusal in coord_auctions.py) and falls back to a general line.
+  _auctionRefusalKey(c) {
+    if (!c) return "panel.auction_refuse_other";
+    if (c.enabled === false) return "panel.auction_refuse_off";
+    if ((c.assignment_mode || "everyone") === "unassigned") return "panel.auction_refuse_unassigned";
+    if (Number(c.team_size) >= 2) return "panel.auction_refuse_team";
+    if (c.task_type === "timed") return "panel.auction_refuse_timed";
+    if (c.open_ended) return "panel.auction_refuse_open_ended";
+    return "panel.auction_refuse_other";
+  }
+
   _auctionable(c) {
     return !!c && c.enabled !== false
       && (c.assignment_mode || "everyone") !== "unassigned"
@@ -12111,9 +12123,10 @@ class TaskMatePanel extends HTMLElement {
     const { ok, res, err } = await this._callWS({ type: "taskmate/auctions/occurrences", chore_id: choreId });
     if (!this._dialog || this._dialog.kind !== "auction" || this._dialog.data.chore_id !== choreId) return;
     d.loading = false;
-    if (!ok) { d.occurrences = []; d.refusal = err; this._render(); return; }
+    if (!ok) { d.occurrences = []; d.refusal = err; d.refusalKey = ""; this._render(); return; }
     d.occurrences = res.occurrences || [];
     d.refusal = res.refusal || "";
+    d.refusalKey = d.refusal ? this._auctionRefusalKey((this._state.chores || []).find(c => c.id === choreId)) : "";
     if (!d.occurrences.includes(d.occurrence)) d.occurrence = d.occurrences[0] || "";
     d.pool = res.pool || [];
     d.eligible_child_ids = [...d.pool];
@@ -12179,7 +12192,7 @@ class TaskMatePanel extends HTMLElement {
     const occurrences = d.loading
       ? `<div class="tm-meta">${this._t("panel.auction_loading")}</div>`
       : d.refusal
-        ? `<div class="tm-meta tm-auc-warn">${this._esc(d.refusal)}</div>`
+        ? `<div class="tm-meta tm-auc-warn">${this._esc(d.refusalKey ? this._t(d.refusalKey) : d.refusal)}</div>`
         : d.occurrences.length
           ? `<div class="tm-chip-row tm-auc-chips">${d.occurrences.map(o => chip("auction-occ", o, d.occurrence === o, `<ha-icon icon="mdi:calendar-blank-outline"></ha-icon>${this._esc(this._auctionDate(o))}`)).join("")}</div>`
           : `<div class="tm-meta tm-auc-warn">${this._t("panel.auction_no_occurrences")}</div>`;
@@ -12464,7 +12477,7 @@ class TaskMatePanel extends HTMLElement {
                   <td class="tm-meta">${this._esc(when)}</td>
                   <td><span class="tm-badge-src ${srcCls}">${srcLabel}</span></td>
                   <td class="tm-row-actions"><div>
-                    <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(this._badgeName(badge) || "badge")}">${this._t("panel.badge_revoke_btn")}</button>
+                    <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="revoke-badge" data-id="${this._esc(a.id)}" data-name="${this._esc(this._badgeName(badge) || a.badge_id)}">${this._t("panel.badge_revoke_btn")}</button>
                   </div></td>
                 </tr>
               `;
@@ -12630,7 +12643,7 @@ class TaskMatePanel extends HTMLElement {
                     <select class="tm-select tm-badge-op-select" data-badge-criterion-field="operator" data-badge-criterion-idx="${idx}">
                       ${BADGE_OPERATORS.map(sym => { const v = BADGE_OP_VALUES[sym]; return `<option value="${v}"${(c.operator || ">=") === v ? " selected" : ""}>${sym}</option>`; }).join("")}
                     </select>`}
-                    ${isBool ? `<span class="tm-field-hint" style="flex:1">true</span>` : `<input class="tm-input" type="number" min="0" value="${this._num(c.value, 1)}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
+                    ${isBool ? `<span class="tm-field-hint" style="flex:1">${this._t("panel.common_yes")}</span>` : `<input class="tm-input" type="number" min="0" value="${this._num(c.value, 1)}" data-badge-criterion-field="value" data-badge-criterion-idx="${idx}">`}
                     <button type="button" class="tm-icon-btn" data-act="badge-remove-criterion" data-idx="${idx}" title="${this._t("panel.badge_remove_criterion_btn")}">✕</button>
                   </div>
                 `;
@@ -12683,7 +12696,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-${kind}">${labels.add}</button>
       </div>
       ${allItems.length === 0 ? this._emptyState(labels.icon, kind === "penalty" ? this._t("panel.penalty_empty_title") : this._t("panel.bonus_empty_title"), kind === "penalty" ? this._t("panel.penalty_empty_description") : this._t("panel.bonus_empty_description"), `add-${kind}`, labels.add) :
-        items.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: labels.plural.toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        items.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
         <div class="tm-table-wrap">
           <table class="tm-table">
             <thead><tr><th>${this._t("panel.penbon_table_name")}</th><th>${this._t("panel.penbon_table_points")}</th><th>${this._t("panel.penbon_table_assigned")}</th><th></th></tr></thead>
@@ -12724,7 +12737,7 @@ class TaskMatePanel extends HTMLElement {
         <button type="button" class="tm-btn tm-btn-raised" data-act="add-group">${this._t("panel.btn_add_group")}</button>
       </div>
       ${all.length === 0 ? this._emptyState("🔗", this._t("panel.empty_groups_title"), this._t("panel.empty_groups_copy"), "add-group", this._t("panel.btn_add_group")) :
-        groups.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match", {kind: this._t("panel.tab_groups").toLowerCase(), filter: this._esc(this._filter)})}</p></div>` : `
+        groups.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
         <div class="tm-grid">
           ${groups.map(g => `
             <article class="tm-card">
@@ -12784,7 +12797,7 @@ class TaskMatePanel extends HTMLElement {
       <div class="tm-manage-tpl ${locked ? "tm-manage-tpl-locked" : ""}" data-act="tpl-select" data-id="${this._esc(tpl.id)}" style="cursor:pointer">
         <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
         <div class="tm-manage-tpl-info">
-          <div class="tm-manage-tpl-name">${this._esc(tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
+          <div class="tm-manage-tpl-name">${this._esc(locked ? this._wizardPackName(tpl) : tpl.name)}${locked ? ' <span class="tm-text-vfaint" style="font-size:12px">🔒</span>' : ""}</div>
           <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: this._fmtNum(pts), points_name: this._esc(this._pointsName()) })}</div>
         </div>
         <div class="tm-row-actions">
@@ -12826,13 +12839,13 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-tpl-picker-head">
           <div class="tm-tpl-icon"><ha-icon icon="${this._esc(tpl.icon || "mdi:clipboard-list")}"></ha-icon></div>
           <div style="flex:1">
-            <div class="tm-tpl-picker-name">${this._esc(tpl.name)}</div>
+            <div class="tm-tpl-picker-name">${this._esc(tpl.builtin ? this._wizardPackName(tpl) : tpl.name)}</div>
             <div class="tm-meta">${this._tn("panel.template_pts_total", count, { points: this._fmtNum(pts), points_name: this._esc(this._pointsName()) })}</div>
           </div>
           <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         </div>
         <div class="tm-tpl-chore-pills">
-          ${(tpl.chores || []).map(c => `<span class="tm-tpl-chore-pill">${this._esc(c.name)}</span>`).join("")}
+          ${(tpl.chores || []).map((c, i) => `<span class="tm-tpl-chore-pill">${this._esc(tpl.builtin ? this._wizardPackChoreName(tpl, i) : c.name)}</span>`).join("")}
         </div>
       </div>
     `;
@@ -12846,7 +12859,7 @@ class TaskMatePanel extends HTMLElement {
     const totalPts = chores.reduce((s, c) => s + (c.points || 0), 0);
     return `
       <div class="tm-toolbar">
-        <h2 class="tm-toolbar-title">${this._esc(tpl.name)}</h2>
+        <h2 class="tm-toolbar-title">${this._esc(tpl.builtin ? this._wizardPackName(tpl) : tpl.name)}</h2>
         <span class="tm-pill ${tpl.builtin ? "tm-pill-accent" : "tm-pill-success"}" style="margin-inline-start:8px">${tpl.builtin ? this._t("panel.template_builtin") : this._t("panel.template_custom")}</span>
         <span style="flex:1"></span>
         <button type="button" class="tm-btn" data-act="tpl-back">${this._t("panel.btn_back")}</button>
@@ -12983,7 +12996,7 @@ class TaskMatePanel extends HTMLElement {
     const tpl = templates.find(t => t.id === templateId);
     if (!tpl) return;
     this._templateSelected = tpl;
-    this._templateChores = (tpl.chores || []).map(c => ({ ...c, _expanded: false }));
+    this._templateChores = (tpl.chores || []).map((c, i) => ({ ...c, name: tpl.builtin ? this._wizardPackChoreName(tpl, i) : c.name, _expanded: false }));
     this._templateView = "preview";
     this._render();
   }
@@ -14562,7 +14575,7 @@ class TaskMatePanel extends HTMLElement {
           <polyline class="tm-econ-spent" fill="none" points="${line("spent")}"/>
         </svg>
         <div class="tm-econ-weeks tm-meta" dir="ltr">
-          ${weeks.map((w, i) => `<span style="inset-inline-start:${(i * 100 / last).toFixed(2)}%" title="${this._esc(`${label(w.start)} – ${label(w.end)}: ${this._t("panel.economy_earned")} ${w.earned} · ${this._t("panel.economy_spent")} ${__tmNum(this._hass, w.spent)}`)}">${this._esc(label(w.start))}</span>`).join("")}
+          ${weeks.map((w, i) => `<span style="inset-inline-start:${(i * 100 / last).toFixed(2)}%" title="${this._esc(`${label(w.start)} – ${label(w.end)}: ${this._t("panel.economy_earned")} ${__tmNum(this._hass, w.earned)} · ${this._t("panel.economy_spent")} ${__tmNum(this._hass, w.spent)}`)}">${this._esc(label(w.start))}</span>`).join("")}
         </div>
       </div>`;
   }
@@ -14579,8 +14592,8 @@ class TaskMatePanel extends HTMLElement {
     const growth = report.earned_growth_pct > 0 ? this._t("panel.economy_growth", { pct: report.earned_growth_pct }) + " " : "";
     const warn = report.inflating
       ? growth + (names
-        ? this._t("panel.economy_warn", { earned: this._fmtNum(report.recent_earned), spent: report.recent_spent, rewards: names })
-        : this._t("panel.economy_warn_no_rewards", { earned: this._fmtNum(report.recent_earned), spent: report.recent_spent }))
+        ? this._t("panel.economy_warn", { earned: this._fmtNum(report.recent_earned), spent: this._fmtNum(report.recent_spent), rewards: names })
+        : this._t("panel.economy_warn_no_rewards", { earned: this._fmtNum(report.recent_earned), spent: this._fmtNum(report.recent_spent) }))
       : "";
     return `
       <div class="tm-card">
@@ -14595,7 +14608,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-verdict tm-verdict-${report.inflating ? "warn" : "ok"}">
             ${report.inflating ? `⚠️ ${warn}` : this._t("panel.economy_ok")}
           </div>`}
-        <span class="tm-field-hint">${this._t("panel.economy_rule", { ratio: report.ratio, min: this._fmtNum(report.min_earned) })}</span>
+        <span class="tm-field-hint">${this._t("panel.economy_rule", { ratio: this._fmtNum(report.ratio), min: this._fmtNum(report.min_earned) })}</span>
       </div>`;
   }
 
@@ -15049,7 +15062,7 @@ class TaskMatePanel extends HTMLElement {
                   <tr>
                     <td>${this._esc((p.date || "").slice(0, 10))}</td>
                     <td>${this._esc(p.child_name || "")}</td>
-                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(p.currency || "")}${this._esc(String(p.amount))}</td>
+                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(p.currency || "")}${this._esc(this._fmtNum(p.amount))}</td>
                   </tr>
                 `).join("")}
               </tbody></table></div>
@@ -15422,7 +15435,7 @@ class TaskMatePanel extends HTMLElement {
       const child = (this._state.children || []).find(c => c.id === childId);
       this._showToast("ok", this._t("panel.adjust_done", {
         sign: delta > 0 ? "+" : "−",
-        amount,
+        amount: this._fmtNum(amount),
         points: this._state.settings.points_name || this._t("common.points"),
         child: (child && child.name) || "",
       }));
@@ -15837,7 +15850,7 @@ class TaskMatePanel extends HTMLElement {
         this._select(
           this._t("panel.child_link_user_label"), "linked_user_id", d.linked_user_id || "",
           [{ v: "", l: this._t("panel.child_link_user_none") }].concat(
-            (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? `${u.name} (admin)` : u.name }))
+            (this._haUsers || []).map(u => ({ v: u.id, l: u.is_admin ? this._t("panel.child_link_user_admin", { name: u.name }) : u.name }))
           ),
           this._t("panel.child_link_user_hint")),
         // Any entity with a picture: normally the child's person, but an image
@@ -16363,7 +16376,7 @@ class TaskMatePanel extends HTMLElement {
           isTimedTask ? "" : this._renderChoreTeamwork(d),
           memberInGroup ? `
             <div class="tm-field">
-              <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: memberInGroup.policy})}</span>
+              <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: this._esc(this._t(`panel.group_policy_${memberInGroup.policy || "sticky"}_short`))})}</span>
             </div>
           ` : "",
           `<details class="tm-advanced" data-section="bonus_subtasks"${this._dialog._openAdvanced?.has("bonus_subtasks") ? " open" : ""}>
@@ -16502,11 +16515,14 @@ class TaskMatePanel extends HTMLElement {
     const describe = (changes) => Object.entries(changes || {})
       .map(([f, v]) => {
         const label = this._t("panel.sched_field_" + f);
+        const opts = (SCHEDULED_FIELDS.find(s => s.v === f) || {}).options;
         const value = f === "assigned_to"
           ? (v || []).map(id => this._esc((children.find(c => c.id === id) || {}).name || id)).join(", ")
               || this._t("panel.sched_value_nobody")
+          : f === "due_days" && Array.isArray(v) ? this._esc(v.map(day => this._labelOf(DAYS, day)).join(", "))
           : Array.isArray(v) ? this._esc(v.join(", "))
           : typeof v === "boolean" ? this._t(v ? "panel.sched_value_yes" : "panel.sched_value_no")
+          : opts ? this._esc(this._labelOf(opts, v))
           : this._esc(String(v));
         return `${label}: <strong>${value}</strong>`;
       }).join(" · ");
@@ -16998,7 +17014,7 @@ class TaskMatePanel extends HTMLElement {
       : children.filter(c => (item.assigned_to || []).includes(c.id));
     return this._dialogShell(isPenalty ? this._t("panel.dialog_apply_penalty", {name: item.name}) : this._t("panel.dialog_apply_bonus", {name: item.name}),
       `<p>${isPenalty ? this._t("panel.penalty_apply_text", {points: this._fmtNum(item.points)}) : this._t("panel.bonus_apply_text", {points: this._fmtNum(item.points)})}</p>
-       ${eligible.length === 0 ? `<p class="tm-meta">${this._t("panel.penbon_no_eligible", {kind})}</p>` : `
+       ${eligible.length === 0 ? `<p class="tm-meta">${this._t(isPenalty ? "panel.penalty_no_eligible" : "panel.bonus_no_eligible")}</p>` : `
         <div class="tm-chip-row" style="margin-top: 12px;">
           ${eligible.map(c => `
             <button type="button" class="tm-btn" data-act="do-apply-${kind}" data-id="${this._esc(item.id)}" data-child="${this._esc(c.id)}">
@@ -17306,7 +17322,10 @@ class TaskMatePanel extends HTMLElement {
   /** Built-in + uploaded sounds, as <select> options. */
   _soundOptions() {
     return [
-      ...COMPLETION_SOUNDS.map(v => ({ v, l: v })),
+      ...COMPLETION_SOUNDS.map(v => {
+        const fart = /^fart(\d+)$/.exec(v);
+        return { v, l: fart ? this._t("panel.sound_opt_fart", { n: fart[1] }) : this._t(`panel.sound_opt_${v}`) };
+      }),
       ...this._customSounds().map(s => ({ v: s.value, l: s.name })),
     ];
   }

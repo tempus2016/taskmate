@@ -121,6 +121,13 @@ DEFAULTS: dict[str, str] = {
     "voice_needs_card": "{chore_name} needs a photo, a number or a few words, so do that one on your card.",
     "voice_done": "Done! {chore_name} is ticked off for {child_name}: +{points} {points_name}.",
     "voice_done_pending": "Done! {chore_name} is waiting for a grown-up to check it.",
+    # Read-aloud defaults (coord_tts.py), used when no custom template is set.
+    "read_aloud_many": "{name}, you have {count} things left: {chores}.",
+    "read_aloud_one": "{name}, you have one thing left: {chores}.",
+    "read_aloud_done": "{name}, you're all done. Nice one!",
+    # Printable weekly chart (printable.py).
+    "print_chart_empty": "No chores to show for this week.",
+    "print_chart_footer": "Tick each box as it's done. {points_name} are still awarded in TaskMate.",
     # Pieces that callers assemble into the messages above.
     "auction_won": "{child_name} won '{chore_name}' on {date} for {points} {points_name}.",
     "auction_no_bids": "no bids for '{chore_name}', so it goes back to the normal rota.",

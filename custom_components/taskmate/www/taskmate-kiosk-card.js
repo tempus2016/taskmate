@@ -205,9 +205,9 @@ class TaskMateKioskCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config) throw new Error("Invalid configuration");
+    if (!config) throw new Error(this._t("kiosk.error.invalid_config"));
     if (config.children !== undefined && !Array.isArray(config.children)) {
-      throw new Error("children must be a list of { child_id, require_pin }");
+      throw new Error(this._t("kiosk.error.children_list"));
     }
     this.config = { entity: "sensor.taskmate_overview", ...config };
   }
@@ -629,13 +629,26 @@ class TaskMateKioskCard extends LitElement {
             ${opts.map(o => html`
               <button class="km-av-opt ${o.unlocked ? "" : "locked"} ${o.icon === child.avatar ? "current" : ""}"
                       ?disabled=${!o.unlocked || !!this._busy}
-                      title="${o.unlocked ? (o.label || "") : (this._t("child.avatar_locked") + (o.requirement ? " — " + o.requirement : ""))}"
+                      title="${o.unlocked ? (o.label || "") : (o.requirement ? this._t("kiosk.avatar_locked_req", { requirement: this._avatarReq(o.requirement) }) : this._t("child.avatar_locked"))}"
                       @click=${() => this._chooseAvatar(child, o.icon)}>
                 <ha-icon icon="${o.unlocked ? o.icon : "mdi:lock"}"></ha-icon>
                 ${o.label ? html`<span>${o.label}</span>` : ""}
               </button>`)}
           </div>` : ""}
       </div>`;
+  }
+
+  // The server words an unlock requirement in English ("Level 5", "120 earned",
+  // "7-day streak"; coord_avatars.py); say it in the tablet's language.
+  _avatarReq(req) {
+    const s = String(req || "");
+    let m = /^Level (\d+)$/.exec(s);
+    if (m) return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, Number(m[1])) });
+    m = /^(\d+) earned$/.exec(s);
+    if (m) return this._t("kiosk.avatar_req_points", { value: __tmNum(this.hass, Number(m[1])), pointsName: this._pointsName() });
+    m = /^(\d+)-day streak$/.exec(s);
+    if (m) return this._t(Number(m[1]) === 1 ? "kiosk.avatar_req_streak_one" : "kiosk.avatar_req_streak", { value: __tmNum(this.hass, Number(m[1])) });
+    return s;
   }
 
   async _chooseAvatar(child, icon) {
@@ -779,7 +792,7 @@ class TaskMateKioskCard extends LitElement {
     return m > 1 ? m : 0;
   }
 
-  _fmtMult(m) { return String(Math.round(Number(m) * 10) / 10); }
+  _fmtMult(m) { return __tmNum(this.hass, Math.round(Number(m) * 10) / 10); }
 
   _boostWhat(b) {
     const names = b.chore_names || [];
@@ -1883,7 +1896,7 @@ class TaskMateKioskCard extends LitElement {
             <span>${_ltrNums(this._t("child.set_time_of", { n: row.setTime.all.indexOf(row.setTime.entry) + 1, total: __tmNum(this.hass, row.setTime.all.length) }))}</span></div>` : ""}
           ${row.setTime && this._setTimeLayout() === "pills" ? this._renderSetTimePills(child, row) : ""}
           <div class="km-row-meta">
-            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${this._pointsFor(chore, child.id)}</span>
+            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, this._pointsFor(chore, child.id))}</span>
             ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
             ${needsCheck ? html`<span class="km-tag"><ha-icon icon="mdi:account-check-outline"></ha-icon>${this._t("kiosk.needs_check")}</span>` : ""}
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
@@ -1970,7 +1983,7 @@ class TaskMateKioskCard extends LitElement {
       action = box("is-elsewhere", "mdi:account-clock", this._t("bounty.sibling_checking", { name: sibling }));
     } else {
       state = "done";
-      action = box("is-done", "mdi:check-bold", this._t("bounty.you_earned", { points: b.points_awarded ?? b.points, pointsName: this._pointsName() }));
+      action = box("is-done", "mdi:check-bold", this._t("bounty.you_earned", { points: __tmNum(this.hass, b.points_awarded ?? b.points), pointsName: this._pointsName() }));
     }
     return html`
       <div class="km-row km-bounty ${state}" data-bounty="${b.id}">
@@ -2002,7 +2015,7 @@ class TaskMateKioskCard extends LitElement {
       inner = html`
         <div class="km-bdlg-ic"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></div>
         <h2>${this._t("bounty.claim_title", { title: b.title })}</h2>
-        <p>${this._t("bounty.claim_body", { hours: b.claim_hours })}</p>
+        <p>${this._t(Number(b.claim_hours) === 1 ? "bounty.claim_body_one" : "bounty.claim_body", { hours: b.claim_hours })}</p>
         <div class="km-bdlg-acts">
           <button class="km-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
           <button class="km-primary" ?disabled=${!!this._busy} @click=${() => this._claimBounty(child, b)}>

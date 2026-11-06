@@ -521,10 +521,10 @@ class TaskMateReorderCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("Please define an entity (TaskMate overview sensor)");
+      throw new Error(this._t("reorder.error.entity_required"));
     }
     if (!config.child_id) {
-      throw new Error("Please define a child_id");
+      throw new Error(this._t("reorder.error.child_id_required"));
     }
     this.config = {
       title: "",

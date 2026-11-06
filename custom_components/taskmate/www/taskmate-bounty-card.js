@@ -56,8 +56,8 @@ class TaskMateBountyCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config || !config.entity) throw new Error("You need to define an entity");
-    if (!config.child_id) throw new Error("You need to define a child_id");
+    if (!config || !config.entity) throw new Error(this._t("bounty.error.entity_required"));
+    if (!config.child_id) throw new Error(this._t("bounty.error.child_required"));
     this.config = config;
   }
 
@@ -427,13 +427,13 @@ class TaskMateBountyCard extends LitElement {
       body = html`<div class="bb-sib">${this._avatar(b.claimed_by, 20)}<span>${this._t("bounty.sibling_checking", { name: this._childName(b.claimed_by) })}</span></div>`;
     } else if (b.status === "completed") {
       body = mine
-        ? html`<div class="bb-act"><span class="bb-tag good"><ha-icon icon="mdi:check"></ha-icon>${this._t("bounty.you_earned", { points: b.points_awarded ?? b.points, pointsName: this._pointsName() })}</span></div>`
+        ? html`<div class="bb-act"><span class="bb-tag good"><ha-icon icon="mdi:check"></ha-icon>${this._t("bounty.you_earned", { points: __tmNum(this.hass, b.points_awarded ?? b.points), pointsName: this._pointsName() })}</span></div>`
         : html`<div class="bb-sib">${this._avatar(b.claimed_by, 20)}<span>${this._t("bounty.done_by", { name: this._childName(b.claimed_by) })}</span></div>`;
     }
 
     return html`
       <div class="bb-row ${cls}">
-        <div class="bb-cost" title="${b.points} ${this._pointsName()}"><b>${__tmNum(this.hass, b.points)}</b><ha-icon class="bb-cost-ic" icon="${this._pointsIcon()}"></ha-icon></div>
+        <div class="bb-cost" title="${__tmNum(this.hass, b.points)} ${this._pointsName()}"><b>${__tmNum(this.hass, b.points)}</b><ha-icon class="bb-cost-ic" icon="${this._pointsIcon()}"></ha-icon></div>
         <div class="bb-main">
           <div class="bb-title-row">
             <span class="bb-ic"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></span>
@@ -462,7 +462,7 @@ class TaskMateBountyCard extends LitElement {
         <div class="bb-dlg" style="--bb-dlg:var(--bb-accent)">
           <div class="bb-big-ic"><ha-icon icon="${b.icon || "mdi:flag-outline"}"></ha-icon></div>
           <h3>${this._t("bounty.claim_title", { title: b.title })}</h3>
-          <p>${this._t("bounty.claim_body", { hours: b.claim_hours })}</p>
+          <p>${this._t(Number(b.claim_hours) === 1 ? "bounty.claim_body_one" : "bounty.claim_body", { hours: b.claim_hours })}</p>
           <div class="bb-dlg-acts">
             <button class="bb-btn bb-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
             <button class="bb-btn bb-claim" ?disabled=${this._busy} @click=${() => this._claim(b)}>${this._t("bounty.claim_it", { points: __tmNum(this.hass, b.points), pointsName: this._pointsName() })}</button>

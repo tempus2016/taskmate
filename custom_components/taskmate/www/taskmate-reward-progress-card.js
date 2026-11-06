@@ -651,7 +651,7 @@ class TaskMateRewardProgressCard extends LitElement {
             <span class="progress-have">${_ltrRatio(__tmNum(this.hass, have), __tmNum(this.hass, cost))} ${pointsName}</span>
             ${canAfford
               ? html`<span class="progress-need">${this._t('reward_progress.ready_to_claim_emoji')}</span>`
-              : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - have })}</span>`}
+              : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, cost - have) })}</span>`}
             <span class="progress-pct ${pctCls}">${pct}%</span>
           </div>
         </div>
@@ -717,7 +717,7 @@ class TaskMateRewardProgressCard extends LitElement {
               <span class="progress-have">${_ltrRatio(__tmNum(this.hass, totalHave), __tmNum(this.hass, cost))} ${pointsName}</span>
               ${canAfford
                 ? html`<span class="progress-need">${this._t('reward_progress.ready')}</span>`
-                : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: cost - totalHave })}</span>`}
+                : html`<span class="progress-need">${this._t('reward_progress.more_needed', { amount: __tmNum(this.hass, cost - totalHave) })}</span>`}
               <span class="progress-pct ${pctCls}">${pct}%</span>
             </div>
           </div>

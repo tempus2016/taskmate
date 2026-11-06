@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Fast tidspunkt",
           "description": "For en oppgave med faste tider: hvilket tidspunkt som hakes av. La stå tomt for det som er åpent nå."
+        },
+        "as_parent": {
+          "name": "Som forelder",
+          "description": "Fullfør på vegne av barnet og gi poeng med en gang, uten godkjenning."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Valgfri URL eller sti til et bilde som sendes som bevis (f.eks. et kamerabilde). Vises til forelderen ved godkjenning."
+        },
+        "completed_date": {
+          "name": "Utført den",
+          "description": "Registrer oppgaven på en tidligere dag (opptil 7 dager tilbake, ikke i dag) da den ble gjort, men ikke krysset av. Bare foreldre; godkjennes med en gang. Dagens grense gjelder fortsatt."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Daglig grense",
           "description": "Hvor mange ganger om dagen oppgaven kan gjøres. Engangsoppgaver er alltid 1."
+        },
+        "difficulty": {
+          "name": "Vanskelighetsgrad",
+          "description": "Vanskelighetsnivå; ganger poengene med nivåets multiplikator (middels = ×1,0 som utgangspunkt)"
+        },
+        "expires_in_minutes": {
+          "name": "Utløper om (minutter)",
+          "description": "Gjør dette til en reaktiv oppgave med frist så mange minutter fra nå, f.eks. vaskemaskinen er ferdig, tøm den innen 30 minutter. Oppgaven forsvinner og slås av når fristen er ute. 0 = ingen frist."
+        },
+        "speed_bonus_points": {
+          "name": "Fartsbonuspoeng",
+          "description": "Ekstra poeng hvis oppgaven fullføres før fristen. Krever expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Varsle ved oppnåelse",
           "description": "Send et varsel når merket oppnås"
+        },
+        "combinator": {
+          "name": "Kombinasjon",
+          "description": "Hvordan flere kriterier kombineres: AND (alle må oppfylles) eller OR (ett av dem). Standard er AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Varsle ved oppnåelse",
           "description": "Send et varsel når merket oppnås"
+        },
+        "combinator": {
+          "name": "Kombinasjon",
+          "description": "Hvordan flere kriterier kombineres: AND (alle må oppfylles) eller OR (ett av dem). Standard er AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "TT:MM, f.eks. 17:30. Tomt fjerner påminnelsen."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Les oppgaver høyt",
+      "description": "Les opp et barns gjenstående oppgaver på en mediespiller, f.eks. «Ella, du har tre ting igjen …». Bruker opplesingsteksten på Home Assistants språk, med mindre egne maler er satt.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID-en til barnet som får oppgavene sine lest opp"
+        },
+        "media_player": {
+          "name": "Mediespiller",
+          "description": "Hvor det skal leses opp. Bruker standarden fra Innstillinger hvis tom."
+        },
+        "tts_entity": {
+          "name": "Tekst-til-tale-entitet",
+          "description": "Hvilken TTS-tjeneste som brukes. Ellers den fra Innstillinger, så den eneste installerte."
+        },
+        "message": {
+          "name": "Egen melding",
+          "description": "Si dette i stedet for det automatiske sammendraget."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Snurr oppgaverulett",
+      "description": "Velg en tilfeldig gjenstående oppgave for et barn med poengmultiplikator. Må slås på: aktiver den og angi multiplikator og antall daglige snurr i innstillingene i TaskMate-panelet.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID-en til barnet som snurrer"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Tilbakestillingsmodus for rekke"
+        "name": "Tilbakestillingsmodus for rekke",
+        "state": {
+          "reset": "Nullstill — rekken går til 0 ved tapt dag",
+          "pause": "Pause — rekken bevares til neste fullføring"
+        }
       },
       "card_design": {
-        "name": "Kortdesign"
+        "name": "Kortdesign",
+        "state": {
+          "classic": "Klassisk",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Tilgjengelig",
+          "graphite": "Grafitt"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} kan ikke gjøres akkurat nå, så det er ingenting å be om hjelp til ennå."
+    },
+    "help_already_on_its_way": {
+      "message": "Hjelpen med {chore} er allerede på vei."
+    },
+    "help_cooldown": {
+      "message": "Vent et minutt før du ber om hjelp igjen."
+    },
+    "rate_limited": {
+      "message": "For mange forespørsler fra denne kontoen. Prøv igjen om et minutt."
     }
   },
   "issues": {

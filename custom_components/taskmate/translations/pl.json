@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Stała pora",
           "description": "Przy obowiązku o stałych porach: którą porę odhaczyć. Zostaw puste dla otwartej teraz."
+        },
+        "as_parent": {
+          "name": "Jako rodzic",
+          "description": "Wykonaj w imieniu dziecka i przyznaj punkty od razu, bez zatwierdzania."
+        },
+        "photo_url": {
+          "name": "URL zdjęcia",
+          "description": "Opcjonalny URL lub ścieżka do zdjęcia jako dowodu wykonania (np. zrzut z kamery). Widoczne dla rodzica podczas zatwierdzania."
+        },
+        "completed_date": {
+          "name": "Wykonano dnia",
+          "description": "Zapisz obowiązek z wcześniejszego dnia (do 7 dni wstecz, nie dziś), który był zrobiony, ale nie odhaczony. Tylko rodzice; zatwierdzany od razu. Dzienny limit tego dnia nadal obowiązuje."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Dzienny limit",
           "description": "Ile razy dziennie można wykonać obowiązek. Obowiązki jednorazowe zawsze 1."
+        },
+        "difficulty": {
+          "name": "Trudność",
+          "description": "Poziom trudności; mnoży przyznane punkty przez mnożnik poziomu (średni = ×1,0 bazowo)"
+        },
+        "expires_in_minutes": {
+          "name": "Wygasa za (minuty)",
+          "description": "Uczyń z tego obowiązek z terminem za tyle minut od teraz, np. pralka skończyła, opróżnij ją w ciągu 30 minut. Po terminie obowiązek znika i zostaje wyłączony. 0 = bez terminu."
+        },
+        "speed_bonus_points": {
+          "name": "Punkty premii za szybkość",
+          "description": "Dodatkowe punkty, jeśli obowiązek zostanie wykonany przed terminem. Wymaga expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Powiadom po zdobyciu",
           "description": "Wyślij powiadomienie, gdy odznaka zostanie zdobyta"
+        },
+        "combinator": {
+          "name": "Łączenie",
+          "description": "Jak łączą się kryteria: AND (wszystkie muszą być spełnione) lub OR (wystarczy jedno). Domyślnie AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Powiadom po zdobyciu",
           "description": "Wyślij powiadomienie, gdy odznaka zostanie zdobyta"
+        },
+        "combinator": {
+          "name": "Łączenie",
+          "description": "Jak łączą się kryteria: AND (wszystkie muszą być spełnione) lub OR (wystarczy jedno). Domyślnie AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "GG:MM, np. 17:30. Puste usuwa przypomnienie."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Przeczytaj obowiązki na głos",
+      "description": "Odczytuje pozostałe obowiązki dziecka na odtwarzaczu multimediów, np. „Ella, zostały ci trzy rzeczy…”. Używa tekstu w języku Home Assistant, chyba że ustawiono własne szablony.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "ID dziecka, którego obowiązki są odczytywane"
+        },
+        "media_player": {
+          "name": "Odtwarzacz multimediów",
+          "description": "Gdzie odczytać. Domyślnie ten ustawiony w Ustawieniach."
+        },
+        "tts_entity": {
+          "name": "Encja zamiany tekstu na mowę",
+          "description": "Której usługi TTS użyć. Domyślnie tej z Ustawień, a potem jedynej zainstalowanej."
+        },
+        "message": {
+          "name": "Własna wiadomość",
+          "description": "Powiedz to zamiast wygenerowanego podsumowania."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Zakręć ruletką obowiązków",
+      "description": "Losuje pozostały obowiązek dla dziecka z mnożnikiem punktów. Trzeba włączyć: włącz ją i ustaw mnożnik oraz dzienny limit zakręceń w ustawieniach panelu TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "ID dziecka, które kręci ruletką"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Tryb resetu serii"
+        "name": "Tryb resetu serii",
+        "state": {
+          "reset": "Zeruj — seria spada do 0 po pominiętym dniu",
+          "pause": "Wstrzymaj — seria zostaje zachowana do następnego wykonania"
+        }
       },
       "card_design": {
-        "name": "Wygląd karty"
+        "name": "Wygląd karty",
+        "state": {
+          "classic": "Klasyczny",
+          "playroom": "Bawialnia",
+          "console": "Konsola",
+          "cleanpro": "Clean Pro",
+          "accessible": "Dostępny",
+          "graphite": "Grafit"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} nie da się teraz zrobić, więc nie ma jeszcze z czym prosić o pomoc."
+    },
+    "help_already_on_its_way": {
+      "message": "Pomoc przy „{chore}” jest już w drodze."
+    },
+    "help_cooldown": {
+      "message": "Odczekaj minutę, zanim znowu poprosisz o pomoc."
+    },
+    "rate_limited": {
+      "message": "Zbyt wiele żądań z tego konta. Spróbuj ponownie za minutę."
     }
   },
   "issues": {

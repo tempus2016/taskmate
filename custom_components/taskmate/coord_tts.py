@@ -3,10 +3,10 @@
 Speak a child's outstanding chores to a media player: "Ella, you have three
 things left: make your bed, brush your teeth and pack your bag."
 
-The sentence is built from parent-editable templates rather than translated
-strings. TaskMate's frontend locales don't reach the backend, and a family may
-well want wording that isn't any of the eight shipped languages — so the
-templates are settings, documented with their placeholders.
+The sentence comes from parent-editable templates when they are set (a
+family may well want wording that isn't any of the shipped languages), and
+otherwise from the ``notify.read_aloud_*`` strings in Home Assistant's
+language, like the push notifications.
 """
 
 from __future__ import annotations
@@ -33,11 +33,14 @@ class ReadAloudMixin:
 
     def _join_chore_names(self, names: list[str]) -> str:
         """ "a, b and c" — spoken lists need a conjunction, not commas."""
-        joiner = self._tts_setting("read_aloud_joiner", DEFAULT_JOINER)
+        joiner = self._tts_setting("read_aloud_joiner", "")
         if not names:
             return ""
         if len(names) == 1:
             return names[0]
+        if not joiner:
+            # No custom joiner: the language's own "a, b and c".
+            return notify_strings.join_names(self.hass, names)
         return f"{', '.join(names[:-1])} {joiner} {names[-1]}"
 
     def build_read_aloud_message(self, child_id: str) -> str:
@@ -50,11 +53,12 @@ class ReadAloudMixin:
         names = [c.name for c in chores]
 
         if not names:
-            template = self._tts_setting("read_aloud_done_template", DEFAULT_DONE_TEMPLATE)
+            setting, key = "read_aloud_done_template", "read_aloud_done"
         elif len(names) == 1:
-            template = self._tts_setting("read_aloud_one_template", DEFAULT_ONE_TEMPLATE)
+            setting, key = "read_aloud_one_template", "read_aloud_one"
         else:
-            template = self._tts_setting("read_aloud_template", DEFAULT_TEMPLATE)
+            setting, key = "read_aloud_template", "read_aloud_many"
+        template = self._tts_setting(setting, "") or notify_strings.text(self.hass, key)
 
         try:
             return notify_strings.safe_format(

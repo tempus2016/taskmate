@@ -646,7 +646,7 @@ class TaskMateActivityCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("Please define an entity");
+    if (!config.entity) throw new Error(this._t("common.please_define_entity"));
     this.config = {
       title: "",
       max_items: 30,
@@ -1085,8 +1085,8 @@ class TaskMateActivityCard extends LitElement {
     if (!id || this.config.show_undo === false) return '';
     const loading = !!this._loading[id];
     const message = kind === 'chore'
-      ? this._t('activity.undo_confirm_chore', { detail, child, points })
-      : this._t('activity.undo_confirm_txn', { detail, child, points });
+      ? this._t('activity.undo_confirm_chore', { detail, child, points: __tmNum(this.hass, points) })
+      : this._t('activity.undo_confirm_txn', { detail, child, points: __tmNum(this.hass, points) });
     return html`
       <button
         class="undo-btn"
@@ -1342,7 +1342,7 @@ class TaskMateActivityCard extends LitElement {
 
     const rows = filteredEvents.map(e => this._describeEvent(e, childNames, pointsIcon, chorePointsMap));
 
-    const sub = design === 'console' ? 'LIVE · STREAM' : this._t('activity.recent_events');
+    const sub = design === 'console' ? this._t('activity.console_stream') : this._t('activity.recent_events');
     const pill = design === 'console' ? this._t(filteredEvents.length === 1 ? 'activity.events_count_one' : 'activity.events_count', { count: filteredEvents.length }) : '';
     const body = html`
       ${this.config.show_filter_chips !== false ? this._designFilterChips() : ''}

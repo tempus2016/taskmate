@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Feste Zeit",
           "description": "Bei einer Aufgabe mit festen Zeiten: welche Zeit abgehakt wird. Leer lassen für die gerade offene."
+        },
+        "as_parent": {
+          "name": "Als Elternteil",
+          "description": "Im Namen des Kindes erledigen und die Punkte sofort vergeben, ohne Genehmigung."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Optionale URL oder Pfad zu einem Foto als Nachweis (z. B. ein Kamera-Schnappschuss). Wird den Eltern bei der Genehmigung angezeigt."
+        },
+        "completed_date": {
+          "name": "Erledigt am",
+          "description": "Trägt die Aufgabe für einen früheren Tag ein (bis zu 7 Tage zurück, nicht heute), an dem sie erledigt, aber nicht abgehakt wurde. Nur Eltern; wird sofort genehmigt. Das Tageslimit gilt weiterhin."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Tageslimit",
           "description": "Wie oft am Tag die Aufgabe erledigt werden kann. Einmalige Aufgaben immer 1."
+        },
+        "difficulty": {
+          "name": "Schwierigkeit",
+          "description": "Schwierigkeitsstufe; multipliziert die vergebenen Punkte mit dem Faktor der Stufe (mittel = ×1,0 als Basis)"
+        },
+        "expires_in_minutes": {
+          "name": "Läuft ab in (Minuten)",
+          "description": "Macht daraus eine spontane Aufgabe mit Frist in so vielen Minuten ab jetzt, z. B. Waschmaschine fertig, innerhalb von 30 Minuten ausräumen. Nach Ablauf der Frist verschwindet die Aufgabe und wird deaktiviert. 0 = keine Frist."
+        },
+        "speed_bonus_points": {
+          "name": "Tempo-Bonuspunkte",
+          "description": "Extrapunkte, wenn die Aufgabe vor der Frist erledigt wird. Benötigt expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Benachrichtigung beim Verdienen",
           "description": "Eine Benachrichtigung senden, wenn das Abzeichen verdient wird"
+        },
+        "combinator": {
+          "name": "Verknüpfung",
+          "description": "Wie mehrere Kriterien verknüpft werden: AND (alle müssen erfüllt sein) oder OR (eines genügt). Standard: AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Benachrichtigung beim Verdienen",
           "description": "Eine Benachrichtigung senden, wenn das Abzeichen verdient wird"
+        },
+        "combinator": {
+          "name": "Verknüpfung",
+          "description": "Wie mehrere Kriterien verknüpft werden: AND (alle müssen erfüllt sein) oder OR (eines genügt). Standard: AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "HH:MM, z. B. 17:30. Leer löscht die Erinnerung."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Aufgaben vorlesen",
+      "description": "Liest die offenen Aufgaben eines Kindes auf einem Mediaplayer vor, z. B. „Ella, du hast noch drei Dinge zu tun …“. Nutzt den Vorlesetext in der Sprache von Home Assistant, außer es sind eigene Vorlagen gesetzt.",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, dessen Aufgaben vorgelesen werden"
+        },
+        "media_player": {
+          "name": "Mediaplayer",
+          "description": "Wo vorgelesen wird. Ohne Angabe gilt die Vorgabe aus den Einstellungen."
+        },
+        "tts_entity": {
+          "name": "Text-to-Speech-Entität",
+          "description": "Welcher TTS-Dienst verwendet wird. Sonst der aus den Einstellungen, dann der einzige installierte."
+        },
+        "message": {
+          "name": "Eigener Text",
+          "description": "Sagt dies statt der erzeugten Zusammenfassung."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Aufgaben-Roulette drehen",
+      "description": "Wählt eine zufällige offene Aufgabe für ein Kind mit Punktemultiplikator. Muss aktiviert werden: Schalte es in den Einstellungen des TaskMate-Panels ein und lege Multiplikator und tägliche Drehungen fest.",
+      "fields": {
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das dreht"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Streak-Zurücksetzmodus"
+        "name": "Streak-Zurücksetzmodus",
+        "state": {
+          "reset": "Zurücksetzen – Serie geht am verpassten Tag auf 0",
+          "pause": "Pause – die Serie bleibt bis zum nächsten Abschluss erhalten"
+        }
       },
       "card_design": {
-        "name": "Kartendesign"
+        "name": "Kartendesign",
+        "state": {
+          "classic": "Klassisch",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Barrierefrei",
+          "graphite": "Graphit"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} kann gerade nicht erledigt werden, daher gibt es noch nichts, wobei du Hilfe brauchst."
+    },
+    "help_already_on_its_way": {
+      "message": "Hilfe bei {chore} ist schon unterwegs."
+    },
+    "help_cooldown": {
+      "message": "Warte eine Minute, bevor du wieder um Hilfe bittest."
+    },
+    "rate_limited": {
+      "message": "Zu viele Anfragen von diesem Konto. Versuch es in einer Minute noch einmal."
     }
   },
   "issues": {

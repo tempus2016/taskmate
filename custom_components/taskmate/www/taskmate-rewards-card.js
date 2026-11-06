@@ -1678,7 +1678,7 @@ class TaskMateRewardsCard extends LitElement {
     if (isAllocLoading) return this._t('rewards.deposit_disabled_loading');
     if (!child) return this._t('rewards.deposit_disabled_no_child');
     if (spendable < amt) {
-      return this._t('rewards.deposit_disabled_insufficient', { spendable });
+      return this._t('rewards.deposit_disabled_insufficient', { spendable: __tmNum(this.hass, spendable) });
     }
     return this._t('rewards.deposit_points', { amount: __tmNum(this.hass, amt) });
   }
@@ -1846,8 +1846,7 @@ class TaskMateRewardsCard extends LitElement {
       if (this.hass && this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed_service', {
-            service: "claim reward",
+          message: this._t('approvals.error_failed', {
             message: e && e.message ? e.message : String(e),
           }),
           notification_id: `taskmate_reward_claim_${reward.id}`,
@@ -1876,8 +1875,7 @@ class TaskMateRewardsCard extends LitElement {
       if (this.hass && this.hass.callService) {
         this.hass.callService("persistent_notification", "create", {
           title: this._t('approvals.error_title'),
-          message: this._t('approvals.error_failed_service', {
-            service: "allocate_points_to_pool",
+          message: this._t('approvals.error_failed', {
             message: e && e.message ? e.message : String(e),
           }),
           notification_id: `taskmate_pool_alloc_${reward.id}`,
@@ -2173,7 +2171,7 @@ class TaskMateRewardsCard extends LitElement {
         <div class="rw-sel-name">${child.name}</div>
         <span class="chip soft">
           <ha-icon style="color:var(--tmd-gold);--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${pointsIcon}"></ha-icon>
-          ${this._t('rewards.spendable_balance')}: ${spendable}
+          ${this._t('rewards.spendable_chip', { points: __tmNum(this.hass, spendable) })}
         </span>
       </div>`;
   }

@@ -587,7 +587,7 @@ class TaskMatePointsDisplayCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config.entity) throw new Error("TaskMate Points Display: 'entity' is required.");
+    if (!config.entity) throw new Error(this._t("points_display.error.entity_required"));
     this.config = {
       mode: "single",
       primary_display: "current_points",

@@ -16,6 +16,13 @@ const __tmDateArgs = (hass, opts, kind) => (window.__taskmate_dates
   ? window.__taskmate_dates.args(hass, opts, kind)
   : [(hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts]);
 
+// Numbers follow Home Assistant's language and number format, not the
+// browser's (#771): one shared rule in taskmate-localize.js. The fallback only
+// covers a cold load before that module has run.
+const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
+  ? window.__taskmate_numbers.format(hass, value, opts)
+  : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
+
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -253,9 +260,9 @@ class TaskMatePersonalBestsCard extends LitElement {
           ${tiles.map((t) => html`
             <div class="pb-tile ${t.fresh ? "new" : ""} ${t.value == null ? "empty" : ""}" title="${t.label}">
               <div class="pb-tile-k"><ha-icon icon="${t.icon}"></ha-icon><span class="pb-tile-label">${t.label}</span>${t.fresh ? html`<span class="pb-new-tag">${this._t('bests.new_tag')}</span>` : ""}</div>
-              <div class="pb-tile-v">${t.value == null ? "—" : t.value}</div>
+              <div class="pb-tile-v">${t.value == null ? "—" : __tmNum(this.hass, t.value)}</div>
               <div class="pb-tile-d">${t.fresh && t.previous != null
-                ? this._t('bests.beat_previous', { previous: t.previous })
+                ? this._t('bests.beat_previous', { previous: __tmNum(this.hass, t.previous) })
                 : (t.date || (t.value == null ? this._t('bests.not_yet') : ""))}</div>
             </div>`)}
         </div>
@@ -329,9 +336,9 @@ class TaskMatePersonalBestsCard extends LitElement {
           ${tiles.map((t) => html`
             <div class="pb-d-tile stat ${t.fresh ? "new" : ""} ${t.value == null ? "empty" : ""}" title="${t.label}">
               <div class="k"><span class="pb-d-label">${emoji ? html`${t.emoji} ` : html`<ha-icon style="--mdc-icon-size:14px;vertical-align:-2px" icon="${t.icon}"></ha-icon> `}${t.label}</span>${t.fresh ? html`<span class="chip soft pb-d-new">${this._t('bests.new_tag')}</span>` : ""}</div>
-              <div class="v">${t.value == null ? "—" : t.value}</div>
+              <div class="v">${t.value == null ? "—" : __tmNum(this.hass, t.value)}</div>
               <div class="pb-d-date">${t.fresh && t.previous != null
-                ? this._t('bests.beat_previous', { previous: t.previous })
+                ? this._t('bests.beat_previous', { previous: __tmNum(this.hass, t.previous) })
                 : (t.date || (t.value == null ? this._t('bests.not_yet') : ""))}</div>
             </div>`)}
         </div>

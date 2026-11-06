@@ -252,13 +252,27 @@ class TaskMateChildCard extends LitElement {
       : html`<ha-icon icon="${face.kind === "icon" ? face.icon : "mdi:account-circle"}"></ha-icon>`;
   }
 
+  // The server words an unlock requirement in English ("Level 5", "120 earned",
+  // "7-day streak"; coord_avatars.py); say it in the child's language, as the
+  // kiosk does.
+  _avatarReq(req) {
+    const s = String(req || "");
+    let m = /^Level (\d+)$/.exec(s);
+    if (m) return this._t("kiosk.avatar_req_level", { value: __tmNum(this.hass, Number(m[1])) });
+    m = /^(\d+) earned$/.exec(s);
+    if (m) return this._t("kiosk.avatar_req_points", { value: __tmNum(this.hass, Number(m[1])), pointsName: this._pointsNameFor() });
+    m = /^(\d+)-day streak$/.exec(s);
+    if (m) return this._t(Number(m[1]) === 1 ? "kiosk.avatar_req_streak_one" : "kiosk.avatar_req_streak", { value: __tmNum(this.hass, Number(m[1])) });
+    return s;
+  }
+
   _renderAvatarPicker(child, options) {
     return html`
       <div class="avatar-picker">
         ${options.map(o => html`
           <button class="avatar-opt ${o.unlocked ? '' : 'locked'} ${o.icon === child.avatar ? 'current' : ''}"
                   ?disabled=${!o.unlocked}
-                  title="${o.unlocked ? (o.label || '') : (this._t('child.avatar_locked') + (o.requirement ? ' — ' + o.requirement : ''))}"
+                  title="${o.unlocked ? (o.label || '') : (o.requirement ? this._t('kiosk.avatar_locked_req', { requirement: this._avatarReq(o.requirement) }) : this._t('child.avatar_locked'))}"
                   @click=${o.unlocked ? () => this._chooseAvatar(child, o.icon) : null}>
             <ha-icon icon="${o.unlocked ? o.icon : 'mdi:lock'}"></ha-icon>
             ${o.label ? html`<span>${o.label}</span>` : ''}
@@ -2560,10 +2574,10 @@ class TaskMateChildCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("Please define an entity");
+      throw new Error(this._t("child.error.entity_required"));
     }
     if (!config.child_id) {
-      throw new Error("Please define a child_id");
+      throw new Error(this._t("child.error.child_id_required"));
     }
     // An explicit header_color beats the child's own colour; the default
     // merged in below must not count as one.
@@ -4809,7 +4823,7 @@ class TaskMateChildCard extends LitElement {
             ? this._t('child.recurrence_locked')
           : setTimeLocked
             ? (chore._setTimeEntry && chore._setTimeEntry.opens
-                ? this._t('child.set_time_opens', { time: chore._setTimeEntry.opens })
+                ? this._t('child.set_time_opens', { time: __tmClock(this.hass, chore._setTimeEntry.opens) })
                 : '')
           : isCompletedForToday
             ? this._t('child.click_to_undo')
@@ -5893,7 +5907,11 @@ class TaskMateChildCard extends LitElement {
       await this.hass.callService("taskmate", "request_help", { child_id: child.id, chore_id: chore.id });
     } catch (err) {
       // "Already on its way" is fine to swallow; anything else un-marks the row.
-      if (!/on its way/i.test(String(err?.message || err))) {
+      // The backend now sends a translated message, so match its key; the
+      // English text match stays as a fallback for older backends.
+      const alreadyOnItsWay = err?.translation_key === "help_already_on_its_way"
+        || /on its way/i.test(String(err?.message || err));
+      if (!alreadyOnItsWay) {
         this._helpSent = { ...this._helpSent, [key]: false };
         this.requestUpdate();
       }
@@ -5911,7 +5929,7 @@ class TaskMateChildCard extends LitElement {
     const day = Math.max(0, Math.min(6, Number(jar.day) || 0));
     const d = new Date(2024, 0, 1 + day);
     const name = d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }));
-    return `${name} ${jar.at || ""}`.trim();
+    return `${name} ${jar.at ? __tmClock(this.hass, jar.at) : ""}`.trim();
   }
 
   async _saveScreenTime(child, minutes) {
@@ -6182,7 +6200,7 @@ class TaskMateChildCard extends LitElement {
       ${streak >= 2 ? html`<span class="${cls} tm-streak-tag" title="${this._t("child.chore_streak_title", { count: streak })}">🔥 ${this._t("child.chore_streak_days", { count: streak })}</span>` : ""}
       ${!done && this._remindersOn() ? html`<button type="button" class="${cls} tm-help-btn tm-remind-btn"
         aria-label="${this._t("child.reminder_title", { chore: chore.name })}"
-        @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${time}` : ""}</button>` : ""}`;
+        @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${__tmClock(this.hass, time)}` : ""}</button>` : ""}`;
   }
 
   _toMinutes(hhmm) {
@@ -6220,10 +6238,10 @@ class TaskMateChildCard extends LitElement {
       <div class="photo-overlay" @click=${close}>
         <div class="photo-sheet tm-remind-sheet" role="dialog" aria-modal="true" aria-label="${this._t("child.reminder_title", { chore: sheet.chore.name })}" @click=${(e) => e.stopPropagation()}>
           <div class="photo-title">🔔 ${this._t("child.reminder_title", { chore: sheet.chore.name })}</div>
-          <div class="photo-dropzone-hint">${this._t("child.reminder_hint", { earliest: bounds.earliest || "", latest: bounds.latest || "" })}</div>
+          <div class="photo-dropzone-hint">${this._t("child.reminder_hint", { earliest: bounds.earliest ? __tmClock(this.hass, bounds.earliest) : "", latest: bounds.latest ? __tmClock(this.hass, bounds.latest) : "" })}</div>
           <div class="tm-goal-chips">
             ${this._reminderPresets(bounds).map(t => html`<button type="button" class="tm-goal-chip ${t === sheet.current ? "on" : ""}"
-              ?disabled=${sheet.saving} @click=${() => this._saveReminder(t)}>${t}</button>`)}
+              ?disabled=${sheet.saving} @click=${() => this._saveReminder(t)}>${__tmClock(this.hass, t)}</button>`)}
           </div>
           <div class="tm-remind-custom">
             <label>${this._t("child.reminder_pick")}
@@ -6288,7 +6306,7 @@ class TaskMateChildCard extends LitElement {
         <div class="tm-tomorrow-row" aria-disabled="true" title="${this._t("child.tomorrow_locked")}">
           <span class="tm-tomorrow-glyph">${this._choreGlyph(c)}</span>
           <span class="tm-tomorrow-mid"><span class="tm-tomorrow-name">${c.name}</span>
-            <small>+${__tmNum(this.hass, c.effective_points ?? c.points)}${(child.reminders || {})[c.id] ? ` · 🔔 ${child.reminders[c.id]}` : ""}</small></span>
+            <small>+${__tmNum(this.hass, c.effective_points ?? c.points)}${(child.reminders || {})[c.id] ? ` · 🔔 ${__tmClock(this.hass, child.reminders[c.id])}` : ""}</small></span>
           <ha-icon class="tm-tomorrow-lock" icon="mdi:lock-outline"></ha-icon>
         </div>`)}
       <div class="tm-tomorrow-hint">🔒 ${this._t("child.tomorrow_locked")}</div>
@@ -6329,7 +6347,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _fmtMult(m) {
-    return String(Math.round(Number(m) * 10) / 10);
+    return String(__tmNum(this.hass, Math.round(Number(m) * 10) / 10));
   }
 
   _clock(ms) {
@@ -6699,7 +6717,7 @@ class TaskMateChildCard extends LitElement {
           ${cap.step === "preview" ? html`
             <div class="photo-preview">
               <img src="${cap.previewUrl}" alt="">
-              <span class="photo-size-tag">~${cap.sizeKb} KB</span>
+              <span class="photo-size-tag">${this._t("child.photo_size_kb", { size: __tmNum(this.hass, cap.sizeKb) })}</span>
             </div>
             <div class="photo-btn-row">
               <button class="photo-btn ghost" @click="${() => this._retakePhoto()}">
@@ -6954,8 +6972,8 @@ class TaskMateChildCard extends LitElement {
     const ms = new Date(iso).getTime() - Date.now();
     if (!Number.isFinite(ms)) return "";
     const mins = Math.max(0, Math.ceil(ms / 60000));
-    const h = Math.floor(mins / 60);
-    return h ? `${h}h ${String(mins % 60).padStart(2, "0")}m` : `${mins}m`;
+    // "1 h 5 min" in the child's language (the screen-time duration words).
+    return this._screenTime(mins);
   }
 
   _renderInspectionBanners(child, designed, pointsName) {

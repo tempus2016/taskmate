@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Set time",
           "description": "For a chore with set times, which time this ticks off. Leave blank for the one open now."
+        },
+        "as_parent": {
+          "name": "As parent",
+          "description": "Complete on behalf of the child and award points immediately, bypassing approval."
+        },
+        "photo_url": {
+          "name": "Photo URL",
+          "description": "Optional URL or path to a photo submitted as evidence for the completion (e.g. a camera snapshot). Shown to the parent during approval."
+        },
+        "completed_date": {
+          "name": "Done on",
+          "description": "Log the job for an earlier day (up to 7 days back, not today) that was done but not ticked. Parents only; approved straight away. The day's daily limit still applies."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Daily limit",
           "description": "How many times a day the chore can be completed. One-shot chores are always 1."
+        },
+        "difficulty": {
+          "name": "Difficulty",
+          "description": "Difficulty tier; scales awarded points by the tier multiplier (medium = ×1.0 baseline)"
+        },
+        "expires_in_minutes": {
+          "name": "Expires in (minutes)",
+          "description": "Make this a reactive chore with a deadline this many minutes from now, e.g. the washing machine finished, empty it within 30 minutes. The chore disappears and is disabled once the deadline passes. 0 = no deadline."
+        },
+        "speed_bonus_points": {
+          "name": "Speed bonus points",
+          "description": "Extra points awarded if the chore is completed before the deadline. Needs expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Notify on earn",
           "description": "Send a notification when the badge is earned"
+        },
+        "combinator": {
+          "name": "Combinator",
+          "description": "How multiple criteria combine: AND (all must pass) or OR (any). Default AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Notify on earn",
           "description": "Send a notification when the badge is earned"
+        },
+        "combinator": {
+          "name": "Combinator",
+          "description": "How multiple criteria combine: AND (all must pass) or OR (any). Default AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "HH:MM, e.g. 17:30. Empty clears the reminder."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Read Chores Aloud",
+      "description": "Speak a child's outstanding chores on a media player, for example \"Ella, you have three things left…\". Uses the read-aloud wording in Home Assistant's language unless custom read-aloud templates are set.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child whose chores are read out"
+        },
+        "media_player": {
+          "name": "Media player",
+          "description": "Where to speak. Falls back to the default set in Settings."
+        },
+        "tts_entity": {
+          "name": "Text-to-speech entity",
+          "description": "Which TTS service to use. Falls back to Settings, then to the only one installed."
+        },
+        "message": {
+          "name": "Message override",
+          "description": "Say this instead of the generated summary."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Spin Chore Roulette",
+      "description": "Pick a random outstanding chore for a child at a points multiplier. Opt-in: turn it on and set the multiplier and daily spin allowance in the TaskMate panel settings.",
+      "fields": {
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child spinning"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Streak reset mode"
+        "name": "Streak reset mode",
+        "state": {
+          "reset": "Reset — streak goes to 0 on missed day",
+          "pause": "Pause — streak preserved until next completion"
+        }
       },
       "card_design": {
-        "name": "Card design"
+        "name": "Card design",
+        "state": {
+          "classic": "Classic",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Accessible",
+          "graphite": "Graphite"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} can't be done right now, so there's nothing to ask for help with yet."
+    },
+    "help_already_on_its_way": {
+      "message": "Help with {chore} is already on its way."
+    },
+    "help_cooldown": {
+      "message": "Give it a minute before asking for help again."
+    },
+    "rate_limited": {
+      "message": "Too many requests from this account. Try again in a minute."
     }
   },
   "issues": {

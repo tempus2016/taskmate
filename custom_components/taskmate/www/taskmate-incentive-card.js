@@ -556,7 +556,7 @@ export function createIncentiveCard(P) {
           [P.idKey]: bonus.id,
           child_id: child.id,
         });
-        this._showToast(this._tp('toast_applied', { points: bonus.points, pointsName: this._getPointsName(), childName: child.name }));
+        this._showToast(this._tp('toast_applied', { points: __tmNum(this.hass, Math.abs(Number(bonus.points) || 0)), pointsName: this._getPointsName(), childName: child.name }));
         // Flash the row
         const row = this.shadowRoot.querySelector(`[data-bonus-id="${bonus.id}"]`);
         if (row) {

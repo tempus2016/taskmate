@@ -1301,10 +1301,11 @@ async def _ws_templates_import(hass, connection, msg, coordinator):
 @_admin_only
 async def _ws_print_chart(hass, connection, msg, coordinator):
     from datetime import date as _date
+    from datetime import timedelta as _timedelta
 
     from homeassistant.util import dt as dt_util
 
-    from . import printable
+    from . import notify_strings, printable
 
     raw = msg.get("week_start", "")
     try:
@@ -1314,13 +1315,29 @@ async def _ws_print_chart(hass, connection, msg, coordinator):
         return
 
     data = coordinator.storage.data
+    start = printable.week_start(anchor)
+    end = start + _timedelta(days=6)
+    points_name = coordinator.storage.get_points_name()
+    # The page is in HA's language, like the push notifications.
+    await notify_strings.async_load(hass)
+
+    def _day_month(day) -> str:
+        return f"{day.day} {notify_strings.text(hass, f'month_short_{day.month}')}"
+
     html = printable.build_chart(
         children=list(data.get("children", [])),
         chores=list(data.get("chores", [])),
-        start=printable.week_start(anchor),
+        start=start,
         orientation=msg.get("orientation", "portrait"),
         title=msg.get("title") or "This week",
-        points_name=coordinator.storage.get_points_name(),
+        points_name=points_name,
+        day_names=[notify_strings.text(hass, f"weekday_short_{i}") for i in range(1, 8)],
+        week_label=notify_strings.render(
+            hass, "period_range", {"start": _day_month(start), "end": f"{_day_month(end)} {end.year}"}
+        ),
+        empty_text=notify_strings.text(hass, "print_chart_empty"),
+        footer_text=notify_strings.render(hass, "print_chart_footer", {"points_name": points_name}),
+        lang=notify_strings._language(hass),
     )
     connection.send_result(msg["id"], {"html": html})
 

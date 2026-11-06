@@ -660,8 +660,8 @@ class TaskMatePetCard extends LitElement {
   }
 
   setConfig(config) {
-    if (!config || !config.entity) throw new Error("You need to define an entity");
-    if (!config.child_id) throw new Error("You need to define a child_id");
+    if (!config || !config.entity) throw new Error(this._t("common.please_define_entity"));
+    if (!config.child_id) throw new Error(this._t("pet.error.child_id_required"));
     this.config = config;
   }
 
@@ -925,7 +925,7 @@ class TaskMatePetCard extends LitElement {
       } else {
         const short = (Number(item.cost) || 0) > spendable;
         action = html`<button type="button" class="pt-btn pt-btn-sm" ?disabled=${this._shopBusy || short}
-          title="${short ? this._t("pet.shop_need_more", { count: (Number(item.cost) || 0) - spendable }) : ""}"
+          title="${short ? this._t("pet.shop_need_more", { count: __tmNum(this.hass, (Number(item.cost) || 0) - spendable) }) : ""}"
           @click=${() => { this._confirm = item; this._shopMsg = ""; }}>${this._t("pet.shop_buy")}</button>`;
       }
       return html`
@@ -954,7 +954,7 @@ class TaskMatePetCard extends LitElement {
         ${shop && this._shopMsg ? html`<div class="pt-shop-msg" role="status">${this._shopMsg}</div>` : ""}
         <div class="pt-shop-foot">
           ${this._t(carry ? "pet.shop_carry_on" : "pet.shop_carry_off")}
-          ${over ? html` ${this._t("pet.shop_ask_over", { cost: `${over} ${this._attrs().points_name || "⭐"}` })}` : ""}
+          ${over ? html` ${this._t("pet.shop_ask_over", { cost: `${__tmNum(this.hass, over)} ${this._attrs().points_name || "⭐"}` })}` : ""}
         </div>
         ${this._confirm ? this._renderConfirm(this._confirm, spendable, over) : ""}
       </div>`;
@@ -964,7 +964,7 @@ class TaskMatePetCard extends LitElement {
     const cost = Number(item.cost) || 0;
     const ask = over > 0 && cost > over;
     const icon = this._pointsIcon();
-    const pts = (n) => html`<span class="pt-price"><ha-icon icon="${icon}"></ha-icon>${n}</span>`;
+    const pts = (n) => html`<span class="pt-price"><ha-icon icon="${icon}"></ha-icon>${__tmNum(this.hass, n)}</span>`;
     return html`
       <div class="pt-sheet-scrim" @click=${() => { this._confirm = null; }}></div>
       <div class="pt-sheet" role="dialog" aria-modal="true" aria-label="${this._t("pet.shop_confirm_title", { name: this._itemName(item) })}">
@@ -974,7 +974,7 @@ class TaskMatePetCard extends LitElement {
             <div class="pt-sheet-q">${this._t("pet.shop_confirm_title", { name: this._itemName(item) })} ${pts(cost)}?</div>
             <div class="pt-sheet-sub">${ask
               ? this._t("pet.shop_confirm_ask")
-              : this._t("pet.shop_confirm_left", { remaining: Math.max(0, spendable - cost) })}</div>
+              : this._t("pet.shop_confirm_left", { remaining: __tmNum(this.hass, Math.max(0, spendable - cost)) })}</div>
           </div>
         </div>
         <div class="pt-sheet-btns">

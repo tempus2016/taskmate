@@ -158,6 +158,18 @@
         "time_id": {
           "name": "Fast tidspunkt",
           "description": "For en opgave med faste tidspunkter: hvilket tidspunkt der krydses af. Lad stå tomt for det, der er åbent nu."
+        },
+        "as_parent": {
+          "name": "Som forælder",
+          "description": "Fuldfør på barnets vegne og giv point med det samme uden godkendelse."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Valgfri URL eller sti til et foto, der sendes som bevis (f.eks. et kamerabillede). Vises for forælderen ved godkendelse."
+        },
+        "completed_date": {
+          "name": "Udført den",
+          "description": "Registrér pligten på en tidligere dag (op til 7 dage tilbage, ikke i dag), hvor den blev lavet men ikke krydset af. Kun forældre; godkendes med det samme. Dagens grænse gælder stadig."
         }
       }
     },
@@ -638,6 +650,18 @@
         "daily_limit": {
           "name": "Daglig grænse",
           "description": "Hvor mange gange om dagen pligten kan laves. Engangspligter er altid 1."
+        },
+        "difficulty": {
+          "name": "Sværhedsgrad",
+          "description": "Sværhedsgrad; ganger de tildelte point med niveauets multiplikator (medium = ×1,0 som udgangspunkt)"
+        },
+        "expires_in_minutes": {
+          "name": "Udløber om (minutter)",
+          "description": "Gør pligten reaktiv med en frist så mange minutter fra nu, f.eks. vaskemaskinen er færdig, tøm den inden for 30 minutter. Pligten forsvinder og slås fra, når fristen er gået. 0 = ingen frist."
+        },
+        "speed_bonus_points": {
+          "name": "Fartbonus-point",
+          "description": "Ekstra point, hvis pligten fuldføres inden fristen. Kræver expires_in_minutes."
         }
       }
     },
@@ -1088,6 +1112,10 @@
         "notify_on_earn": {
           "name": "Giv besked ved optjening",
           "description": "Send en notifikation, når badget optjenes"
+        },
+        "combinator": {
+          "name": "Kombination",
+          "description": "Hvordan flere kriterier kombineres: AND (alle skal opfyldes) eller OR (et af dem). Standard er AND."
         }
       }
     },
@@ -1134,6 +1162,10 @@
         "notify_on_earn": {
           "name": "Giv besked ved optjening",
           "description": "Send en notifikation, når badget optjenes"
+        },
+        "combinator": {
+          "name": "Kombination",
+          "description": "Hvordan flere kriterier kombineres: AND (alle skal opfyldes) eller OR (et af dem). Standard er AND."
         }
       }
     },
@@ -1864,6 +1896,38 @@
           "description": "TT:MM, f.eks. 17:30. Tomt fjerner påmindelsen."
         }
       }
+    },
+    "read_aloud": {
+      "name": "Læs pligter højt",
+      "description": "Læs et barns resterende pligter op på en medieafspiller, f.eks. \"Ella, du har tre ting tilbage…\". Bruger oplæsningsteksten på Home Assistants sprog, medmindre der er sat egne skabeloner.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, hvis pligter læses op"
+        },
+        "media_player": {
+          "name": "Medieafspiller",
+          "description": "Hvor der skal læses op. Bruger standarden fra Indstillinger, hvis tom."
+        },
+        "tts_entity": {
+          "name": "Tekst-til-tale-entitet",
+          "description": "Hvilken TTS-tjeneste der bruges. Ellers den fra Indstillinger, og ellers den eneste installerede."
+        },
+        "message": {
+          "name": "Egen besked",
+          "description": "Sig dette i stedet for den automatiske opsummering."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Drej pligt-ruletten",
+      "description": "Vælg en tilfældig resterende pligt til et barn med en pointmultiplikator. Skal slås til: aktivér den, og angiv multiplikator og antal daglige drej i TaskMate-panelets indstillinger.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID'et på det barn, der drejer"
+        }
+      }
     }
   },
   "entity": {
@@ -1892,10 +1956,22 @@
     },
     "select": {
       "streak_reset_mode": {
-        "name": "Nulstilling af streak"
+        "name": "Nulstilling af streak",
+        "state": {
+          "reset": "Nulstil — streak går til 0 ved en misset dag",
+          "pause": "Pause — streak bevares indtil næste fuldførelse"
+        }
       },
       "card_design": {
-        "name": "Kortdesign"
+        "name": "Kortdesign",
+        "state": {
+          "classic": "Klassisk",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Tilgængelig",
+          "graphite": "Grafit"
+        }
       }
     },
     "event": {
@@ -2011,6 +2087,15 @@
     },
     "help_chore_not_available": {
       "message": "{chore} kan ikke gøres lige nu, så der er ikke noget at bede om hjælp til endnu."
+    },
+    "help_already_on_its_way": {
+      "message": "Hjælpen med {chore} er allerede på vej."
+    },
+    "help_cooldown": {
+      "message": "Vent et minut, før du beder om hjælp igen."
+    },
+    "rate_limited": {
+      "message": "For mange forespørgsler fra denne konto. Prøv igen om et minut."
     }
   },
   "issues": {

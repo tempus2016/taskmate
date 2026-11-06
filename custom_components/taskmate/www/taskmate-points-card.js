@@ -677,7 +677,7 @@ class TaskMatePointsCard extends LitElement {
 
   setConfig(config) {
     if (!config.entity) {
-      throw new Error("Please define an entity (taskmate overview sensor)");
+      throw new Error(this._t("points_card.please_define_entity"));
     }
     this.config = {
       title: "",
@@ -1098,7 +1098,7 @@ class TaskMatePointsCard extends LitElement {
         points: amount,
       });
       const sign = action === 'add' ? '+' : '−';
-      this._showNotification(this._t('points_card.notification_quick', { sign, amount, pointsName, childName: child.name }), 'success');
+      this._showNotification(this._t('points_card.notification_quick', { sign, amount: __tmNum(this.hass, amount), pointsName, childName: child.name }), 'success');
     } catch (error) {
       this._showNotification(this._t('points_card.notification_failed', { message: error.message }), 'error');
     } finally {
@@ -1190,7 +1190,9 @@ class TaskMatePointsCard extends LitElement {
       // Get points name from entity
       const entity = this.hass.states[this.config.entity];
       const pointsName = entity?.attributes?.points_name || this._t("common.points");
-      const pointsLabel = points === 1 ? pointsName.replace(/s$/, "") : pointsName;
+      // The family's own name as set, never English-singularised by
+      // dropping a trailing "s" (that turned "Bonus" into "Bonu").
+      const pointsLabel = pointsName;
 
       const message =
         action === "add"
@@ -1202,7 +1204,7 @@ class TaskMatePointsCard extends LitElement {
     } catch (error) {
       console.error(`Failed to ${action} points:`, error);
       this._showNotification(
-        this._t('points_card.notification_failed_action', { action, message: error.message }),
+        this._t(action === 'add' ? 'points_card.notification_failed_add' : 'points_card.notification_failed_remove', { message: error.message }),
         "error"
       );
     } finally {

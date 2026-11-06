@@ -9,6 +9,7 @@ import pytest
 
 from custom_components.taskmate.models import Penalty
 
+from .conftest import FakeServiceValidationError
 from .test_completion_eligibility import _make_system, _now, run
 
 
@@ -50,8 +51,9 @@ class TestHelp:
         coord, _storage, mod, kid, chore = _family()
         with patch("custom_components.taskmate.coord_wellbeing.dt_util.now", return_value=_now()):
             run(coord.async_request_help(kid.id, chore.id))
-            with pytest.raises(ValueError, match="on its way"):
+            with pytest.raises(FakeServiceValidationError) as refused:
                 run(coord.async_request_help(kid.id, chore.id))
+            assert refused.value.translation_key == "help_already_on_its_way"
 
     def test_answering_closes_it_and_old_requests_lapse(self):
         coord, _storage, mod, kid, chore = _family()
