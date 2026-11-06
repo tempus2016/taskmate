@@ -49,6 +49,7 @@ const findLitBase = () => {
   return null;
 };
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = findLitBase();
 // The attr resolver defines window.__taskmate_badge_id, but on a cold load a
 // card can render before that module has run; read the id directly then.
@@ -2733,7 +2734,7 @@ class TaskMateChildCard extends LitElement {
             <div class="child-name-container">
               <div class="child-name">${child.name}</div>
               ${child.level ? html`
-                <div class="child-level" title="${_ltrNums(`${child.level_progress || 0} / ${child.level_target || 100}`)} XP">
+                <div class="child-level" title="${_ltrNums(`${__tmNum(this.hass, child.level_progress || 0)} / ${__tmNum(this.hass, child.level_target || 100)}`)} ${this._t("common.xp")}">
                   <span class="level-badge">${this._t('child.level_label', { level: child.level })}</span>
                   <div class="level-xp-track">
                     <div class="level-xp-fill" style="width: ${Math.max(0, Math.min(100, Math.round(((child.level_progress || 0) / (child.level_target || 100)) * 100)))}%"></div>
@@ -2940,7 +2941,7 @@ class TaskMateChildCard extends LitElement {
     const c = best.badge.closest_criterion;
     // Older backends (and criteria-free, manual-award badges) have no
     // closest_criterion — fall back to the percentage.
-    best.label = c && c.target ? _ltrNums(`${__tmNum(this.hass, c.current)} / ${__tmNum(this.hass, c.target)}`) : `${best.pct}%`;
+    best.label = c && c.target ? _ltrNums(`${__tmNum(this.hass, c.current)} / ${__tmNum(this.hass, c.target)}`) : __tmPct(this.hass, best.pct);
     best.name = _ltrNums(this._badgeName(best.badge));
     return best;
   }
@@ -3550,7 +3551,7 @@ class TaskMateChildCard extends LitElement {
             <div class="q-name">${r.chore.name}</div>
             ${r.done
               ? html`<div class="num q-cleared">${this._t("child.console_cleared")}</div>`
-              : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} XP</div>`}
+              : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} ${this._t("common.xp")}</div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done

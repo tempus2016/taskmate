@@ -14,6 +14,7 @@ const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
   ? window.__taskmate_numbers.format(hass, value, opts)
   : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -689,7 +690,7 @@ class TaskMateOverviewCard extends LitElement {
 
   _ovKid(design, k, isParent, _pointsIcon) {
     const cls = design === "console" ? "cn" : design === "cleanpro" ? "cp" : "";
-    const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${k.pct}%` : k.child.name;
+    const nameUpper = design === "console" ? `${k.child.name.toUpperCase()} · ${__tmPct(this.hass, k.pct)}` : k.child.name;
     const isOpen = !!this._expanded[k.child.id];
     const expandable = isParent;
     return html`

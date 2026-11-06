@@ -1072,7 +1072,7 @@ class TaskMatePointsDisplayCard extends LitElement {
             </div>
             <div class="cn-right">
               <div class="num cn-pts ${r.rank === 0 ? "lead" : ""}">${__tmNum(this.hass, r.points)}</div>
-              <div class="cn-sub muted">XP${showWeekly ? html` · +${__tmNum(this.hass, r.weekly)}` : ""}${showStreak && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
+              <div class="cn-sub muted">${this._t("common.xp")}${showWeekly ? html` · +${__tmNum(this.hass, r.weekly)}` : ""}${showStreak && r.streak ? html` · \u{1F525}${r.streak}` : ""}</div>
             </div>
           </div>`)}
       </div>`;

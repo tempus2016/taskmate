@@ -2228,6 +2228,22 @@ class TaskMatePanel extends HTMLElement {
     return h ? this._t("panel.insp_left_hm", { h, m: String(mins % 60).padStart(2, "0") }) : this._t("panel.insp_left_m", { m: mins });
   }
 
+  /**
+   * A stored date ("2026-11-06" or a full ISO timestamp) in Home Assistant's
+   * language and date format, rather than the raw ISO string.
+   */
+  _fmtIsoDate(iso, opts = { day: "numeric", month: "short", year: "numeric" }) {
+    if (!iso) return "";
+    const plain = /^\d{4}-\d{2}-\d{2}$/.test(String(iso));
+    const d = plain ? new Date(`${iso}T12:00:00`) : new Date(iso);
+    return isNaN(d) ? String(iso) : d.toLocaleDateString(...__tmDateArgs(this._hass, opts));
+  }
+
+  /** A stored "HH:MM" in Home Assistant's time format (12- or 24-hour). */
+  _clock(hhmm) {
+    return window.__taskmate_dates ? window.__taskmate_dates.clock(this._hass, hhmm) : String(hhmm || "");
+  }
+
   _inspClock(iso) {
     const d = new Date(iso);
     return isNaN(d) ? "" : d.toLocaleTimeString(...__tmDateArgs(this._hass, { hour: "2-digit", minute: "2-digit" }, "time"));
@@ -2238,7 +2254,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _inspWindowLabel(w, bed = null) {
-    if (w === "bed") return this._t("panel.insp_window_bed", { time: bed ? bed.time : this._inspBedtime() });
+    if (w === "bed") return this._t("panel.insp_window_bed", { time: this._clock(bed ? bed.time : this._inspBedtime()) });
     return this._t(`panel.insp_window_${w}`);
   }
 
@@ -2405,7 +2421,7 @@ class TaskMatePanel extends HTMLElement {
     const d = this._dialog.data;
     const bed = this._inspBedUntil();
     const bedSoon = d.window === "bed" && bed.fallback
-      ? `<p class="tm-field-hint tm-insp-hint"><ha-icon icon="mdi:information-outline"></ha-icon>${this._esc(this._t("panel.insp_window_bed_soon", { bedtime: this._inspBedtime(), minutes: bed.minutes, time: bed.time }))}</p>`
+      ? `<p class="tm-field-hint tm-insp-hint"><ha-icon icon="mdi:information-outline"></ha-icon>${this._esc(this._t("panel.insp_window_bed_soon", { bedtime: this._clock(this._inspBedtime()), minutes: bed.minutes, time: this._clock(bed.time) }))}</p>`
       : "";
     const body = `
       ${this._inspDialogCtx(d)}
@@ -5186,7 +5202,7 @@ class TaskMatePanel extends HTMLElement {
             `).join("")}
           </div>
         </div>
-        <span class="tm-field-hint">${this._t("panel.insights_friction_intro", { start: report.start, end: report.end })}</span>
+        <span class="tm-field-hint">${this._t("panel.insights_friction_intro", { start: this._fmtIsoDate(report.start), end: this._fmtIsoDate(report.end) })}</span>
 
         ${report.chores.length === 0 ? `
           <div class="tm-empty">${this._t("panel.insights_friction_none")}</div>
@@ -5211,7 +5227,7 @@ class TaskMatePanel extends HTMLElement {
                   <td><strong>${this._esc(c.name)}</strong>${c.outstanding_misses
                     ? ` <span class="tm-fric-misses" title="${this._t("panel.insights_outstanding_misses")}">⚠ ${c.outstanding_misses}</span>` : ""}</td>
                   <td>${c.completed}${c.expected ? ` / ${c.expected}` : ""}</td>
-                  <td>${c.rate === null ? "—" : c.rate + "%"}</td>
+                  <td>${c.rate === null ? "—" : this._esc(window.__taskmate_numbers ? window.__taskmate_numbers.percent(this._hass, c.rate) : c.rate + "%")}</td>
                   <td>${c.days_since === null
                     ? this._t("panel.insights_never")
                     : this._t("panel.insights_days_ago", { days: c.days_since })}</td>
@@ -5256,7 +5272,7 @@ class TaskMatePanel extends HTMLElement {
             `).join("")}
           </div>
         </div>
-        <span class="tm-field-hint">${this._t("panel.insights_projection_intro", { start: report.start, end: report.end })}</span>
+        <span class="tm-field-hint">${this._t("panel.insights_projection_intro", { start: this._fmtIsoDate(report.start), end: this._fmtIsoDate(report.end) })}</span>
 
         <div class="tm-proj-totals">
           ${kids.map(k => `
@@ -5285,7 +5301,7 @@ class TaskMatePanel extends HTMLElement {
           <tbody>
             ${report.by_day.map(d => `
               <tr>
-                <td><strong>${this._t("panel.day_" + d.weekday.slice(0, 3))}</strong> <span class="tm-proj-date">${d.date.slice(5)}</span></td>
+                <td><strong>${this._t("panel.day_" + d.weekday.slice(0, 3))}</strong> <span class="tm-proj-date">${this._fmtIsoDate(d.date, { day: "numeric", month: "short" })}</span></td>
                 ${kids.map(k => {
                   const cell = d.children.find(c => c.id === k.id) || { points: 0, chores: 0 };
                   return `<td>${cell.chores ? `${this._fmtNum(this._num(cell.points))} <span class="tm-proj-count">(${this._fmtNum(this._num(cell.chores))})</span>` : "—"}</td>`;
@@ -5411,7 +5427,7 @@ class TaskMatePanel extends HTMLElement {
           </div>
         </div>
         <span class="tm-field-hint">${this._t("panel.insights_fairness_intro", {
-          start: report.start, end: report.end, fair: report.fair_share,
+          start: this._fmtIsoDate(report.start), end: this._fmtIsoDate(report.end), fair: report.fair_share,
         })}</span>
 
         ${report.total_completions === 0 ? `
@@ -5500,7 +5516,7 @@ class TaskMatePanel extends HTMLElement {
             `).join("")}
           </div>
         </div>
-        <span class="tm-field-hint">${this._t("panel.insights_quality_intro", { start: report.start, end: report.end })}</span>
+        <span class="tm-field-hint">${this._t("panel.insights_quality_intro", { start: this._fmtIsoDate(report.start), end: this._fmtIsoDate(report.end) })}</span>
         ${report.enabled ? "" : `<div class="tm-verdict tm-verdict-warn">${this._t("panel.insights_quality_disabled")}</div>`}
         ${!report.rated_completions ? `
           <div class="tm-empty">${this._t("panel.insights_quality_none")}</div>
@@ -6154,10 +6170,10 @@ class TaskMatePanel extends HTMLElement {
     const mult = this._fmtMult(d.multiplier);
     if (this._dialog.kind === "boost-rule") {
       const dayNames = (d.days || []).map(i => this._weekdayShort(i)).join(", ") || "—";
-      return this._t("panel.boost_preview_rule", { what, who, multiplier: mult, days: dayNames, start: d.start || "", end: d.end || "" });
+      return this._t("panel.boost_preview_rule", { what, who, multiplier: mult, days: dayNames, start: this._clock(d.start || ""), end: this._clock(d.end || "") });
     }
     const minutes = Number(d.minutes) || 0;
-    if (d.when === "later") return this._t("panel.boost_preview_later", { what, who, multiplier: mult, time: d.later || "", minutes });
+    if (d.when === "later") return this._t("panel.boost_preview_later", { what, who, multiplier: mult, time: this._clock(d.later || ""), minutes });
     return this._t("panel.boost_preview_now", { what, who, multiplier: mult, minutes, until: this._hm(Date.now() + minutes * 60000) });
   }
 
@@ -11055,7 +11071,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr ${r.expires_at ? "1fr" : ""};">
           <div class="tm-stat"><div class="tm-stat-value tm-numeric tm-cost">${this._fmtNum(r.cost)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_cost", {points_name: this._esc(pointsName)})}</div></div>
           ${r.quantity != null ? `<div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(this._num(r.quantity))}</div><div class="tm-stat-label">${this._t("panel.reward_stat_remaining")}</div></div>` : `<div class="tm-stat"><div class="tm-stat-value">∞</div><div class="tm-stat-label">${this._t("panel.reward_stat_unlimited")}</div></div>`}
-          ${r.expires_at ? `<div class="tm-stat"><div class="tm-stat-value" style="font-size: 14px;">${this._esc(r.expires_at)}</div><div class="tm-stat-label">${this._t("panel.reward_stat_expires")}</div></div>` : ""}
+          ${r.expires_at ? `<div class="tm-stat"><div class="tm-stat-value" style="font-size: 14px;">${this._esc(this._fmtIsoDate(r.expires_at))}</div><div class="tm-stat-label">${this._t("panel.reward_stat_expires")}</div></div>` : ""}
         </div>
         ${showProgress ? `
           <div class="tm-progress"><span style="width:${pct}%"></span></div>
@@ -15062,7 +15078,7 @@ class TaskMatePanel extends HTMLElement {
                   <tr>
                     <td>${this._esc((p.date || "").slice(0, 10))}</td>
                     <td>${this._esc(p.child_name || "")}</td>
-                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(p.currency || "")}${this._esc(this._fmtNum(p.amount))}</td>
+                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(this._t("panel.allowance_money", { currency: p.currency || "", amount: this._fmtNum(p.amount) }).trim())}</td>
                   </tr>
                 `).join("")}
               </tbody></table></div>

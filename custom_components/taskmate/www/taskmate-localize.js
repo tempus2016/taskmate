@@ -430,6 +430,16 @@ function formatNumber(hass, value, opts) {
 }
 
 /**
+ * A whole-number percentage (12 → "12%" / "12 %") in HA's language: the
+ * spacing and sign placement follow the locale, as Intl does.
+ */
+function formatPercent(hass, pct) {
+  const n = Number(pct);
+  if (!Number.isFinite(n)) return pct == null ? '' : String(pct);
+  return formatNumber(hass, n / 100, { style: 'percent', maximumFractionDigits: 0 });
+}
+
+/**
  * A wall-clock time ("17:00", as chores, periods and set times store it) in
  * HA's time format: "17:00" on a 24-hour profile, "5:00 PM" on a 12-hour
  * one. Anything that isn't H:MM comes back unchanged.
@@ -488,7 +498,7 @@ function pickerText(key, fallback) {
 window.__taskmate_badge_name = badgeName;
 window.__taskmate_badge_count = badgeCount;
 window.__taskmate_dates = { args: dateArgs, clock, hourNow };
-window.__taskmate_numbers = { args: numberArgs, format: formatNumber };
+window.__taskmate_numbers = { args: numberArgs, format: formatNumber, percent: formatPercent };
 window.__taskmate_picker_text = pickerText;
 window.__taskmate_time_lock_label = timeLockLabel;
 window.__taskmate_localize = localize;

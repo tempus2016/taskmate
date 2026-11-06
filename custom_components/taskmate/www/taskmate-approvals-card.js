@@ -1229,7 +1229,7 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
-          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${__tmNum(this.hass, it.points)} XP`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
+          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${__tmNum(this.hass, it.points)} ${this._t('common.xp')}`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
           ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
         ${this._apPhotoDesigned(it, "ap-cn-photo")}

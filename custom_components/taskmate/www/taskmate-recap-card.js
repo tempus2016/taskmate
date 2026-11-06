@@ -24,6 +24,7 @@ const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
   ? window.__taskmate_numbers.format(hass, value, opts)
   : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
 
+const __tmPct = (hass, n) => (window.__taskmate_numbers && window.__taskmate_numbers.percent ? window.__taskmate_numbers.percent(hass, n) : `${n}%`);
 const LitElement = customElements.get("hui-masonry-view")
   ? Object.getPrototypeOf(customElements.get("hui-masonry-view"))
   : Object.getPrototypeOf(customElements.get("hui-view"));
@@ -609,7 +610,7 @@ class TaskMateRecapCard extends LitElement {
               <div>${label}<span class="was">${this._t("recap.cmp.was", { value: this._num(was) })}</span></div>
               <div class="v">${this._num(now)}</div>
               <span class="delta ${d >= 0 ? "up" : "dn"}">
-                <ha-icon icon="${d >= 0 ? "mdi:arrow-up" : "mdi:arrow-down"}"></ha-icon>${pct === null ? this._num(Math.abs(d)) : `${pct}%`}
+                <ha-icon icon="${d >= 0 ? "mdi:arrow-up" : "mdi:arrow-down"}"></ha-icon>${pct === null ? this._num(Math.abs(d)) : __tmPct(this.hass, pct)}
               </span>
             </div>`;
         })}
