@@ -319,7 +319,7 @@ const FEEDBACK_FEATURE_AREAS = [
   ["rewards", "Reward management (config flow)"], ["children", "Children management (config flow)"],
   ["settings", "Settings / configuration"], ["bonus", "Bonus points system"], ["streaks", "Streaks / milestones"],
   ["notifications", "Notifications / alerts"], ["services", "Services / automations"],
-  ["sensors", "Sensors / entity attributes"], ["install", "Installation / HACS"],
+  ["sensors", "Sensors / entity attributes"], ["install", "Installation / Marketplace"],
   ["new_card", "New card (not listed above)"], ["other", "Other / not sure"],
 ].map(([k, v]) => ({ v, lk: `panel.fb_area_${k}` }));
 
@@ -342,8 +342,8 @@ const FEEDBACK_INSTALL_TYPES = [
   { id: "unknown", v: "Not sure", lk: "panel.fb_not_sure" },
 ];
 const FEEDBACK_INSTALL_METHODS = [
-  { id: "hacs_default", v: "HACS (default)", lk: "panel.fb_method_hacs_default" },
-  { id: "hacs_custom", v: "HACS (custom repository)", lk: "panel.fb_method_hacs_custom" },
+  { id: "hacs_default", v: "Marketplace / HACS (default)", lk: "panel.fb_method_hacs_default" },
+  { id: "hacs_custom", v: "Marketplace / HACS (custom repository)", lk: "panel.fb_method_hacs_custom" },
   { id: "manual", v: "Manual (copied files)", lk: "panel.fb_method_manual" },
 ];
 const FEEDBACK_LOVELACE_MODES = [
@@ -13274,7 +13274,7 @@ class TaskMatePanel extends HTMLElement {
     const info = this._fbInfo || {};
     return {
       install_type: d.env.install_type || info.installation_type || "unknown",
-      // "unknown" means HACS couldn't be read: leave it for the parent to pick.
+      // "unknown" means the Marketplace/HACS couldn't be read: leave it for the parent to pick.
       install_method: d.env.install_method || (info.install_method !== "unknown" && info.install_method) || "",
       lovelace_mode: d.env.lovelace_mode || info.lovelace_mode || "unknown",
     };

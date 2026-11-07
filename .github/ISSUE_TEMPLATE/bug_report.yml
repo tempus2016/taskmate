@@ -49,8 +49,8 @@ body:
     id: install_method
     attributes:
       label: TaskMate Installation Method
-      description: "One of: HACS (default), HACS (custom repository), Manual (copied files)"
-      placeholder: e.g. HACS (default)
+      description: "One of: Marketplace / HACS (default), Marketplace / HACS (custom repository), Manual (copied files)"
+      placeholder: e.g. Marketplace / HACS (default)
     validations:
       required: true
 

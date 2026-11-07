@@ -86,7 +86,7 @@ body:
         - Notifications / alerts
         - Services / automations
         - Sensors / entity attributes
-        - Installation / HACS
+        - Installation / Marketplace
         - New card (not listed above)
         - Other / not sure
     validations:

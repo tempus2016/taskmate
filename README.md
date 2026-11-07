@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/v/release/tempus2016/taskmate" alt="Latest Release"></a>
-  <a href="https://github.com/hacs/default"><img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg" alt="HACS Default"></a>
+  <a href="https://github.com/hacs/default"><img src="https://img.shields.io/badge/Marketplace-Default-41BDF5.svg" alt="Home Assistant Marketplace Default"></a>
   <a href="https://github.com/tempus2016/taskmate/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2024.7+-blue" alt="HA Version">
   <a href="https://github.com/tempus2016/taskmate/releases"><img src="https://img.shields.io/github/downloads/tempus2016/taskmate/total" alt="Downloads"></a>
@@ -52,14 +52,21 @@ All data stays inside your Home Assistant instance. Nothing is sent to any exter
 
 ## Install
 
-TaskMate is a **default HACS integration** — no custom repository needed.
+TaskMate is in the default catalogue of the **Home Assistant Marketplace** (formerly HACS) — no custom repository needed.
+
+**Home Assistant 2026.11 or newer**
+
+1. **Settings → Marketplace** → search **"TaskMate"** → **Install**
+2. TaskMate's setup opens straight away — pick your points name (Stars, Coins, Bucks…) and icon. That's the whole config flow.
+
+**Older Home Assistant (HACS)**
 
 1. Open **HACS** → search **"TaskMate"** → **Download**
 2. **Restart Home Assistant**
 3. **Settings → Devices & Services → Add Integration → TaskMate**
-4. Pick your points name (Stars, Coins, Bucks…) and icon — that's the whole config flow
+4. Pick your points name and icon
 
-[![Open TaskMate in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tempus2016&repository=taskmate&category=integration)
+[![Open TaskMate in the Marketplace](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tempus2016&repository=taskmate&category=integration)
 &nbsp;
 [![Add TaskMate integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=taskmate)
 

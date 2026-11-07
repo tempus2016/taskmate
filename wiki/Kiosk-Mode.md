@@ -39,7 +39,7 @@ children:
     require_pin: true
 ```
 
-The card works best in a **Panel** view, so it fills the screen. The full-screen button in its top bar hides the browser's own chrome. To also hide Home Assistant's sidebar and header on the tablet, pair it with the *kiosk-mode* plugin from HACS.
+The card works best in a **Panel** view, so it fills the screen. The full-screen button in its top bar hides the browser's own chrome. To also hide Home Assistant's sidebar and header on the tablet, pair it with the *kiosk-mode* plugin from the Marketplace (HACS on Home Assistant before 2026.11).
 
 ### Configuration
 

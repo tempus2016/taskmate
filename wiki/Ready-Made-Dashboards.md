@@ -59,7 +59,7 @@ Every address is checked before anything is written. If a dashboard or panel alr
 
 - **It's a starting point.** TaskMate doesn't keep a dashboard in sync once it's made. Add a child later and either add their tab by hand, or delete the dashboard and create it again.
 - **Badges cards point at each child's own badges sensor.** TaskMate looks the sensor up rather than guessing its name, so it keeps working with Home Assistant 2026.6+, which puts the device's area in front of new entity ids.
-- **Wall tablet tips.** The kiosk card fills the screen in a panel view. Its full-screen button hides the browser chrome. To also hide Home Assistant's sidebar and header, pair it with the *kiosk-mode* plugin from HACS. Turn on **Bounty Board** in the kiosk card's editor if you use [bounties](Bounty-Board.md).
+- **Wall tablet tips.** The kiosk card fills the screen in a panel view. Its full-screen button hides the browser chrome. To also hide Home Assistant's sidebar and header, pair it with the *kiosk-mode* plugin from the Marketplace (HACS on Home Assistant before 2026.11). Turn on **Bounty Board** in the kiosk card's editor if you use [bounties](Bounty-Board.md).
 - **Card designs.** The cards follow your default [card design](Card-Design-Styles.md), and you can change any card's design afterwards in the dashboard editor.
 
 ---
