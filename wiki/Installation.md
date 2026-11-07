@@ -1,10 +1,24 @@
 # Installation
 
-## Via HACS (Recommended)
+## Via the Marketplace (Recommended)
 
 ![TaskMate installed, shown on its Home Assistant integration page](images/ha-integration-entry.png)
 
-TaskMate is a **default HACS integration** — no custom repository is needed:
+Since Home Assistant 2026.11, HACS is built into Home Assistant as the
+**Marketplace**. TaskMate is in its default catalogue — no custom repository is
+needed:
+
+1. Go to **Settings** → **Marketplace**
+2. Search for **TaskMate**
+3. Select **Install** — TaskMate's setup opens straight away, no restart needed
+
+The first time you open the Marketplace, Home Assistant asks you to select
+**I understand the risks and agree** before you can install anything.
+
+If you already had TaskMate through HACS, there is nothing to do: the upgrade
+to 2026.11 moves it into the Marketplace for you.
+
+### Via HACS (Home Assistant before 2026.11)
 
 1. Open **HACS** in your Home Assistant sidebar
 2. Search for **TaskMate**
@@ -14,13 +28,14 @@ TaskMate is a **default HACS integration** — no custom repository is needed:
 <details>
 <summary>Installing as a custom repository (legacy)</summary>
 
-TaskMate was accepted into the HACS default list, so this is no longer required.
+TaskMate is in the default catalogue, so this is no longer required.
 It is kept here only for reference — existing custom-repository installs keep
 working and keep receiving releases.
 
-1. **HACS** → ⋮ menu → **Custom repositories**
-2. Enter `https://github.com/tempus2016/taskmate`
-3. Set category to **Integration** → **Add**
+- **Marketplace:** **Add from link** → enter `https://github.com/tempus2016/taskmate`
+  (needs a GitHub connection)
+- **HACS:** ⋮ menu → **Custom repositories** → enter
+  `https://github.com/tempus2016/taskmate` → category **Integration** → **Add**
 
 </details>
 
@@ -127,9 +142,9 @@ lovelace:
 
 ## Upgrading
 
-### Via HACS
+### Via the Marketplace or HACS
 
-HACS will show a notification when a new version is available. Click **Update** and restart Home Assistant.
+A new version shows up under **Settings** → **Updates**, next to Home Assistant's own updates. Select **Update**, then restart Home Assistant — on the Marketplace, a repair tells you when the restart is needed and can do it for you.
 
 ### Manual
 

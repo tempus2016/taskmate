@@ -143,7 +143,7 @@ test("a bug link fills every text field the template has, with its own option te
   assert.equal(q.get("taskmate_version"), "test");
   assert.equal(q.get("ha_version"), "2026.10.2");
   assert.equal(q.get("ha_install_type"), "Home Assistant Container (Docker)");
-  assert.equal(q.get("install_method"), "HACS (default)");
+  assert.equal(q.get("install_method"), "Marketplace / HACS (default)");
   assert.equal(q.get("lovelace_mode"), "Storage (default — managed via UI)");
   assert.equal(q.get("reproducible"), "Sometimes — happens intermittently");
   assert.equal(q.get("affected_area"), "Child Card");
@@ -381,7 +381,7 @@ test("Copy as Markdown carries the whole report, logs fenced", () => {
   assert.ok(md.includes("### What happened?\n\nMalia's points went to 0"));
   assert.ok(md.includes("### Home Assistant Logs\n\n```text\na\nb\n```"));
   assert.ok(md.includes("- TaskMate: test"));
-  assert.ok(md.includes("- TaskMate installed via: HACS (default)"), "markdown has no separate fields, so it keeps the install answers");
+  assert.ok(md.includes("- TaskMate installed via: Marketplace / HACS (default)"), "markdown has no separate fields, so it keeps the install answers");
 });
 
 test("Help & feedback sits in the Settings section, which opens on Settings", () => {

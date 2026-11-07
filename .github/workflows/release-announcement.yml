@@ -41,8 +41,8 @@ jobs:
               `### Upgrading`,
               ``,
               isPrerelease
-                ? `This is a pre-release — it may contain bugs. Install manually or via HACS custom repository if you want to test early.`
-                : `Update via **HACS** or by downloading the [latest release](${url}) and copying to \`/config/custom_components/taskmate/\`.`,
+                ? `This is a pre-release — it may contain bugs. Install manually, or turn on the Pre-release switch on TaskMate's Marketplace device (HACS: show beta versions), if you want to test early.`
+                : `Update from **Settings → Updates** (Marketplace, or HACS on Home Assistant before 2026.11) or by downloading the [latest release](${url}) and copying to \`/config/custom_components/taskmate/\`.`,
               ``,
               `After updating, **restart Home Assistant**. Lovelace resources will update automatically on restart.`,
               ``,

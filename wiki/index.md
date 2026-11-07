@@ -10,7 +10,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 
 | Topic | Description |
 |-------|-------------|
-| [Installation](Installation.md) | How to install via HACS or manually |
+| [Installation](Installation.md) | How to install from the Marketplace (formerly HACS) or manually |
 | [Getting Started](Getting-Started.md) | First-time setup walkthrough |
 | [Setup Wizard](Setup-Wizard.md) | A guided start: add children, pick age-suggested chores and starter rewards |
 | [Ready-Made Dashboards](Ready-Made-Dashboards.md) | Dashboards for the kids, the parents and a wall tablet, built from your family in one click |
