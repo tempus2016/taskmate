@@ -982,7 +982,7 @@ class ChoresMixin:
 
         # Check recurrence window for Mode B chores
         if getattr(chore, "schedule_mode", "specific_days") == "recurring" and not self.is_chore_available_for_child(
-            chore, child_id
+            chore, child_id, ignore_assignment=as_parent
         ):
             _LOGGER.debug(
                 "complete_chore no-op: '%s' not available yet (recurrence window)",
@@ -992,7 +992,7 @@ class ChoresMixin:
 
         # Check availability for one-shot chores
         if getattr(chore, "schedule_mode", "specific_days") == "one_shot" and not self.is_chore_available_for_child(
-            chore, child_id
+            chore, child_id, ignore_assignment=as_parent
         ):
             _LOGGER.debug(
                 "complete_chore no-op: '%s' not available (one-shot done or expired)",
@@ -2370,7 +2370,7 @@ class ChoresMixin:
             )
         ]
 
-    def is_chore_available_for_child(self, chore, child_id: str) -> bool:
+    def is_chore_available_for_child(self, chore, child_id: str, *, ignore_assignment: bool = False) -> bool:
         """Check if a recurring chore is available for a child to complete.
 
         Mode A (specific_days): day filtering is handled by the child card.
@@ -2378,7 +2378,10 @@ class ChoresMixin:
         Mode B (recurring): checks rolling window from last completion date
         (midnight-rounded). Window lengths in days per recurrence type.
 
-        Both modes also check visibility_entity if configured.
+        Both modes also check visibility_entity if configured, and a chore
+        with a non-empty ``assigned_to`` is unavailable to every child not in it.
+        ``ignore_assignment`` skips only that last check, for a parent completing
+        on behalf of a child outside the list (the schedule window still applies).
         """
 
         # Vacation / pause mode: while away, all chores are hidden. Covers the
@@ -2411,6 +2414,15 @@ class ChoresMixin:
         # already done, or one won at auction by someone else, stays shut.
         if self.open_redemption_for(chore.id, child_id) is not None:
             return True
+
+        # Assignment (#1240): a chore assigned to named children is never
+        # available to anyone else, whatever its mode. Rotation modes already
+        # draw their pool from assigned_to, but an "everyone" chore used to be
+        # available to every child, so the chore_availability matrix offered a
+        # sibling's chore to any card that trusted it (the Routine card did).
+        assigned = getattr(chore, "assigned_to", []) or []
+        if assigned and child_id not in assigned and not ignore_assignment:
+            return False
 
         # Dynamic assignment — only the active child(ren) see alternating/random chores
         if getattr(chore, "assignment_mode", "everyone") != "everyone":
@@ -2473,6 +2485,24 @@ class ChoresMixin:
 
         return self._recurrence_open_on(chore, child_id, dt_util.as_local(dt_util.now()).date(), override)
 
+    def _first_come_last_completed(self, chore, own: dict) -> dict:
+        """The latest last_completed record across a first_come chore's pool.
+
+        A child's completion only stamps their own record, so without this a
+        weekly first_come chore stayed open for the rest of the pool the day
+        after one of them did it (#1239). A parent's completion already stamps
+        every pool member. Rejecting or undoing a completion rewinds that
+        child's own record, so the shared window reopens with it.
+        """
+        best = own or {}
+        best_dt = parse_datetime(best.get("current") or "")
+        for cid in self._chore_assignment_pool(chore):
+            rec = self.storage.get_last_completed(chore.id, cid) or {}
+            rec_dt = parse_datetime(rec.get("current") or "")
+            if rec_dt is not None and (best_dt is None or rec_dt > best_dt):
+                best, best_dt = rec, rec_dt
+        return best
+
     def _recurrence_open_on(self, chore, child_id: str, today: date, override) -> bool:
         """Whether a recurring chore's window is open for ``child_id`` on ``today``.
 
@@ -2489,6 +2519,10 @@ class ChoresMixin:
         window_days = interval_days or {"weekly": 7, "every_2_weeks": 14}.get(recurrence, 7)
 
         record = self.storage.get_last_completed(chore.id, child_id)
+        if getattr(chore, "assignment_mode", "everyone") == "first_come":
+            # One shared job (#1239): whoever in the pool did it last closes the
+            # window for everyone, not just for themselves.
+            record = self._first_come_last_completed(chore, record)
         current_iso = record.get("current")
 
         if override is True:

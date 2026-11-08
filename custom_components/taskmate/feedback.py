@@ -47,24 +47,43 @@ async def _installation_type(hass: HomeAssistant) -> tuple[str, str]:
     return _INSTALL_TYPES.get(raw, "unknown"), raw
 
 
+def _store_repositories(hass: HomeAssistant):
+    """The Marketplace's or HACS's repository list, or None when neither is loaded.
+
+    Home Assistant 2026.11 replaced the HACS custom integration with the built-in
+    Marketplace, which keeps the same repository list on its config entry's
+    runtime_data. Older installs still have HACS in hass.data["hacs"].
+    """
+    if "marketplace" in hass.config.components:
+        for entry in hass.config_entries.async_entries("marketplace"):
+            manager = getattr(entry, "runtime_data", None)
+            if manager is not None:
+                return manager.repositories
+        raise LookupError("Marketplace is loaded but has no runtime data")
+    if "hacs" in hass.config.components:
+        return hass.data.get("hacs").repositories
+    return None
+
+
 def _install_method(hass: HomeAssistant) -> str:
     """How TaskMate itself was installed: hacs_default, hacs_custom, manual or unknown.
 
-    Reads HACS's in-memory repository list. That is HACS's internal API, so
-    any surprise in its shape degrades to "unknown" rather than failing.
+    hacs_default/hacs_custom cover both the Marketplace and HACS (the panel
+    labels them "Marketplace / HACS"). Both expose only internal APIs, so any
+    surprise in their shape degrades to "unknown" rather than failing.
     """
-    if "hacs" not in hass.config.components:
-        return "manual"
     try:
-        hacs = hass.data.get("hacs")
-        repo = hacs.repositories.get_by_full_name(REPO_FULL_NAME)
+        repositories = _store_repositories(hass)
+        if repositories is None:
+            return "manual"
+        repo = repositories.get_by_full_name(REPO_FULL_NAME)
         if repo is None:
             return "manual"
         if not getattr(repo.data, "installed", True):
             return "manual"
-        return "hacs_default" if hacs.repositories.is_default(str(repo.data.id)) else "hacs_custom"
+        return "hacs_default" if repositories.is_default(str(repo.data.id)) else "hacs_custom"
     except Exception:  # noqa: BLE001
-        _LOGGER.debug("TaskMate feedback: could not read HACS repositories", exc_info=True)
+        _LOGGER.debug("TaskMate feedback: could not read Marketplace/HACS repositories", exc_info=True)
         return "unknown"
 
 

@@ -64,7 +64,7 @@ The number of children you use TaskMate with is filled in for you.
 |--------|---------------------|
 | TaskMate and Home Assistant versions | The integration |
 | Home Assistant installation | Home Assistant's system info (OS, Supervised, Container or Core) |
-| How TaskMate was installed | HACS, if HACS is installed and knows about TaskMate; otherwise manual |
+| How TaskMate was installed | The Marketplace (or HACS before Home Assistant 2026.11), if it knows about TaskMate; otherwise manual |
 | Dashboard (Lovelace) mode | Storage (edited in the UI) or YAML |
 | Family | How many children, adults, chores and rewards. **Counts only** |
 | Browser | A summary like "Chrome 141 on Windows", never the full browser string |
