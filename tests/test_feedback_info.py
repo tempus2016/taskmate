@@ -139,6 +139,34 @@ def test_hacs_internals_changing_shape_is_unknown():
     assert feedback._install_method(_hass(["hacs"], {})) == "unknown"
 
 
+def _marketplace_hass(store, *, data=None):
+    hass = _hass(["marketplace"], data)
+    entry = SimpleNamespace(runtime_data=store)
+    hass.config_entries.async_entries.return_value = [entry]
+    return hass
+
+
+def test_install_method_reads_the_marketplace():
+    # HA 2026.11+: HACS is gone, the Marketplace keeps the list on runtime_data.
+    assert feedback._install_method(_marketplace_hass(_hacs(default=True))) == "hacs_default"
+    assert feedback._install_method(_marketplace_hass(_hacs(default=False))) == "hacs_custom"
+    assert feedback._install_method(_marketplace_hass(_hacs(found=False))) == "manual"
+    assert feedback._install_method(_marketplace_hass(_hacs(installed=False))) == "manual"
+
+
+def test_marketplace_wins_over_a_leftover_hacs():
+    hass = _marketplace_hass(_hacs(default=True), data={"hacs": _hacs(default=False)})
+    hass.config.components.add("hacs")
+    assert feedback._install_method(hass) == "hacs_default"
+
+
+def test_marketplace_internals_changing_shape_is_unknown():
+    assert feedback._install_method(_marketplace_hass(object())) == "unknown"
+    hass = _hass(["marketplace"])
+    hass.config_entries.async_entries.return_value = []
+    assert feedback._install_method(hass) == "unknown"
+
+
 def test_lovelace_mode_dataclass_and_legacy_dict():
     assert feedback._lovelace_mode(_hass(data={"lovelace": SimpleNamespace(resource_mode="storage")})) == "storage"
     # Before the rename the dataclass called it `mode`.
