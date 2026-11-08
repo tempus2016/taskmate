@@ -683,6 +683,10 @@ def _build_chore_next_open(coordinator: TaskMateCoordinator, common: dict, avail
             for child in common["children"]:
                 if (availability.get(c.id) or {}).get(child.id, True):
                     continue
+                # Not this child's chore at all (#1240): it never "opens" for them.
+                assigned = getattr(c, "assigned_to", []) or []
+                if assigned and child.id not in assigned:
+                    continue
                 day = coordinator.recurrence_next_open(c, child.id)
                 if day is not None:
                     per_child[child.id] = day.isoformat()

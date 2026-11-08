@@ -235,6 +235,9 @@ class TaskMateRoutineCard extends LitElement {
       // Anything finished in this run stays visible as a completed step.
       if (this._runCompleted.has(id)) return true;
       if (!availability[id] || availability[id][childId] !== true) return false;
+      // Only this child's chores (#1240), as the child card filters.
+      const assigned = Array.isArray(chore.assigned_to) ? chore.assigned_to.map(String) : [];
+      if (assigned.length && !assigned.includes(childId)) return false;
       if (completedToday.has(id)) return false;
       if (period !== "all" && chore.time_category !== period) return false;
       return true;
