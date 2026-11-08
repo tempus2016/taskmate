@@ -217,6 +217,7 @@ The parent dashboard applies the same filters.
 - **Shared daily limit** — from **v7.6.0** a first-come chore's daily limit is shared by the whole pool. A limit of `2` means two completions in total today, whoever makes them: one each, or both by the same child. Every completion pays the child who made it, and once the limit is used up the chore locks for everyone. A pool-wide **Parent did it** from the admin panel uses one of the slots.
 - **Race losers** — if another child tries to complete it after the limit is used up, the attempt is rejected with *"Chore '…' was already completed by another child."* No points are awarded to the loser.
 - **Daily reset** — the lock is per-day; the chore opens up to the pool again the next day.
+- **Recurring first-come chores** — with a **Recurring** schedule (for example weekly or every 2 weeks), one completion closes the chore for the **whole pool** until the recurrence window ends, whoever did it. A weekly chore Ava does on Saturday stays off everyone's list until the next Saturday. A completion still waiting for approval counts; rejecting or undoing it reopens the chore for everyone.
 
 For example, to have the dishwasher emptied twice a day by whichever child gets there first, set the chore up in the admin panel's chore dialog like this:
 

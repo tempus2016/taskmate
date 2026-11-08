@@ -2473,6 +2473,24 @@ class ChoresMixin:
 
         return self._recurrence_open_on(chore, child_id, dt_util.as_local(dt_util.now()).date(), override)
 
+    def _first_come_last_completed(self, chore, own: dict) -> dict:
+        """The latest last_completed record across a first_come chore's pool.
+
+        A child's completion only stamps their own record, so without this a
+        weekly first_come chore stayed open for the rest of the pool the day
+        after one of them did it (#1239). A parent's completion already stamps
+        every pool member. Rejecting or undoing a completion rewinds that
+        child's own record, so the shared window reopens with it.
+        """
+        best = own or {}
+        best_dt = parse_datetime(best.get("current") or "")
+        for cid in self._chore_assignment_pool(chore):
+            rec = self.storage.get_last_completed(chore.id, cid) or {}
+            rec_dt = parse_datetime(rec.get("current") or "")
+            if rec_dt is not None and (best_dt is None or rec_dt > best_dt):
+                best, best_dt = rec, rec_dt
+        return best
+
     def _recurrence_open_on(self, chore, child_id: str, today: date, override) -> bool:
         """Whether a recurring chore's window is open for ``child_id`` on ``today``.
 
@@ -2489,6 +2507,10 @@ class ChoresMixin:
         window_days = interval_days or {"weekly": 7, "every_2_weeks": 14}.get(recurrence, 7)
 
         record = self.storage.get_last_completed(chore.id, child_id)
+        if getattr(chore, "assignment_mode", "everyone") == "first_come":
+            # One shared job (#1239): whoever in the pool did it last closes the
+            # window for everyone, not just for themselves.
+            record = self._first_come_last_completed(chore, record)
         current_iso = record.get("current")
 
         if override is True:
