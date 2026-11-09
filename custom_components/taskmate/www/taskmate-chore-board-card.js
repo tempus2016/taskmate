@@ -273,7 +273,10 @@ class TaskMateChoreBoardCard extends LitElement {
       if (latest.child_undo_pending === true || (Number.isFinite(until) && until > Date.now())) {
         service = "undo_chore";
       } else {
-        this._showToast(this._t("child.undo_not_allowed"));
+        // A parent here only lands outside the window because the card hides
+        // parent actions; say so instead of "only a parent can undo" (#1243).
+        const parent = window.__taskmate_is_parent && window.__taskmate_is_parent(this.hass);
+        this._showToast(this._t(parent ? "child.undo_parent_actions_hidden" : "child.undo_not_allowed"));
         return;
       }
     }

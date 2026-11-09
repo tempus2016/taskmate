@@ -23,7 +23,10 @@ class CustomEvent {
 
 const ENTITY = "sensor.taskmate_overview";
 const DESIGNS = ["classic", "playroom", "console", "cleanpro", "accessible", "graphite"];
+// The viewer is a parent, so a refusal must say the card has parent actions
+// off, never "only a parent can undo" (#1243).
 const NOT_ALLOWED = localize("child.undo_not_allowed");
+const HIDDEN = localize("child.undo_parent_actions_hidden");
 const future = (s = 60) => new Date(Date.now() + s * 1000).toISOString();
 
 // ── child card ───────────────────────────────────────────────────────────
@@ -83,7 +86,8 @@ test("child card: with parent actions off, a done chore outside the window can't
   const card = childCard({ show_parent_actions: false }, [comp]);
   await card._handleUndo(dishes, { id: "kid1" }, [comp]);
   assert.deepEqual(card.calls, [], "no reject_chore");
-  assert.equal(card.dispatched.at(-1)?.detail?.message, NOT_ALLOWED);
+  assert.equal(card.dispatched.at(-1)?.detail?.message, HIDDEN);
+  assert.notEqual(HIDDEN, NOT_ALLOWED);
 });
 
 test("child card: with parent actions off, a locked bonus sub-task can't be undone", async () => {
@@ -91,7 +95,7 @@ test("child card: with parent actions off, a locked bonus sub-task can't be undo
   const card = childCard({ show_parent_actions: false }, [bonus]);
   await card._handleUndoBonusSubtask(dishes, { id: "dry" }, { id: "kid1" }, [bonus]);
   assert.deepEqual(card.calls, []);
-  assert.equal(card.dispatched.at(-1)?.detail?.message, NOT_ALLOWED);
+  assert.equal(card.dispatched.at(-1)?.detail?.message, HIDDEN);
 });
 
 // ── chore board ──────────────────────────────────────────────────────────
@@ -124,6 +128,7 @@ test("chore board: with parent actions off, a closed window refuses instead of r
   const card = choreBoard({ show_parent_actions: false }, [comp]);
   await card._undo({ chore_id: "cat", child_id: "k2" });
   assert.deepEqual(card.calls, []);
+  assert.equal(card._toast?.message, HIDDEN);
 });
 
 test("chore board editor: the default (on) is saved as the absence of the key", () => {
@@ -188,3 +193,39 @@ for (const [file, tag] of [
     assert.equal(editor._computeHelper(field), localize("common.editor.show_parent_actions_helper"));
   });
 }
+
+// ── guard (#1243) ────────────────────────────────────────────────────────
+// A card that honours show_parent_actions: false and refuses an undo with
+// "only a parent can undo" must also tell a parent the real reason (parent
+// actions are off on this card). Any new card that adds the option and the
+// refusal without the second message fails here.
+
+test("every card that hides parent actions and refuses undo explains it to a parent", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const dir = path.join(__dirname, "..", "..", "custom_components", "taskmate", "www");
+  const offenders = fs.readdirSync(dir)
+    .filter((f) => f.endsWith(".js"))
+    .filter((f) => {
+      const src = fs.readFileSync(path.join(dir, f), "utf8");
+      return src.includes("show_parent_actions") && src.includes("child.undo_not_allowed")
+        && !src.includes("child.undo_parent_actions_hidden");
+    });
+  assert.deepEqual(offenders, []);
+});
+
+test("the child card still tells a real child that only a parent can undo", async () => {
+  const Child = loadCard("taskmate-child-card.js", {
+    window: { __taskmate_is_parent: () => false, __taskmate_badge_id: (b) => b.badge_id },
+    sandbox: { CustomEvent },
+  }).get("taskmate-child-card");
+  const comp = completion();
+  const card = new Child();
+  card.setConfig({ entity: ENTITY, child_id: "kid1", show_parent_actions: false });
+  card.calls = [];
+  card.hass = childCard({}, [comp]).hass;
+  card.hass.callService = async (domain, service, data) => card.calls.push({ domain, service, data });
+  await card._handleUndo(dishes, { id: "kid1" }, [comp]);
+  assert.deepEqual(card.calls, []);
+  assert.equal(card.dispatched.at(-1)?.detail?.message, NOT_ALLOWED);
+});

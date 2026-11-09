@@ -5277,7 +5277,7 @@ class TaskMateChildCard extends LitElement {
         await this._childUndo(own, chore, child);
         return;
       }
-      this._notifyUndo(this._t("child.undo_not_allowed"));
+      this._notifyUndo(this._undoDeniedMessage());
       return;
     }
 
@@ -5315,7 +5315,7 @@ class TaskMateChildCard extends LitElement {
     } catch (error) {
       console.error("Failed to undo bonus sub-task completion:", error);
       const message = this._isUnauthorized(error)
-        ? this._t("child.undo_not_allowed")
+        ? this._undoDeniedMessage()
         : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
@@ -6788,6 +6788,18 @@ class TaskMateChildCard extends LitElement {
     return this.config?.show_parent_actions !== false && window.__taskmate_is_parent(this.hass);
   }
 
+  /**
+   * Why a tap on a done chore was refused. A parent on a card with
+   * show_parent_actions: false (the dashboard wizard's "Hide parent buttons",
+   * on by default) is told the card has parent buttons off — never "only a
+   * parent can undo", which reads as a broken permission to a parent (#1243).
+   */
+  _undoDeniedMessage() {
+    const hidden = this.config?.show_parent_actions === false
+      && window.__taskmate_is_parent && window.__taskmate_is_parent(this.hass);
+    return this._t(hidden ? "child.undo_parent_actions_hidden" : "child.undo_not_allowed");
+  }
+
   /** True if an error from reject_chore is an authorization/admin rejection. */
   _isUnauthorized(error) {
     const text = `${error?.message || ""} ${error?.code || ""}`.toLowerCase();
@@ -6890,7 +6902,7 @@ class TaskMateChildCard extends LitElement {
     } catch (error) {
       console.error("Failed to undo chore completion:", error);
       const message = this._isUnauthorized(error)
-        ? this._t("child.undo_not_allowed")
+        ? this._undoDeniedMessage()
         : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
@@ -6918,7 +6930,7 @@ class TaskMateChildCard extends LitElement {
         await this._childUndo(latest, chore, child);
         return;
       }
-      this._notifyUndo(this._t("child.undo_not_allowed"));
+      this._notifyUndo(this._undoDeniedMessage());
       return;
     }
 
@@ -6970,7 +6982,7 @@ class TaskMateChildCard extends LitElement {
       // notification. An auth rejection gets the same friendly wording as the
       // pre-check above.
       const message = this._isUnauthorized(error)
-        ? this._t("child.undo_not_allowed")
+        ? this._undoDeniedMessage()
         : this._t("child.error_undo", { message: this._errText(error) });
       this._notifyUndo(message);
     } finally {
