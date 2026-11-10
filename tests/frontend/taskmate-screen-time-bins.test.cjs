@@ -113,13 +113,18 @@ test("panel: a failed adjust shows the error", async () => {
   assert.deepEqual(plain(p._sent), [{ toast: "err", msg: "Child nope not found" }]);
 });
 
-test("panel: bin-day settings list calendars, children (no adults) and the preview", async () => {
+test("panel: bin-day settings list calendars, children, adults (#1244) and the preview", async () => {
   const p = panel();
   let html = p._renderBinDaySettings(p._state.settings);
   assert.match(html, /data-act="st-list-remove" data-field="_list:bin_day_calendars" data-id="calendar\.bins"/);
   assert.match(html, /data-bin-kid="kid2"/);
   assert.match(html, /tm-chip-btn tm-chip-on" aria-pressed="true" data-act="bin-kid" data-bin-kid="kid2"/);
-  assert.doesNotMatch(html, /data-bin-kid="dad"/);
+  // #1244: adults are offered too, after the children and marked Adult.
+  assert.match(html, /aria-pressed="false" data-act="bin-kid" data-bin-kid="dad">.*Dad <span class="tm-pill tm-pill-accent">panel\.child_adult_pill<\/span><\/button>/);
+  assert.ok(html.indexOf('data-bin-kid="kid2"') < html.indexOf('data-bin-kid="dad"'), "adults come after the children");
+  assert.doesNotMatch(html.split('data-bin-kid="kid1"')[1].split("</button>")[0], /tm-pill/, "children carry no Adult pill");
+  const withDad = p._renderBinDaySettings({ ...p._state.settings, bin_day_children: ["kid2", "dad"] });
+  assert.match(withDad, /tm-chip-on" aria-pressed="true" data-act="bin-kid" data-bin-kid="dad"/, "a stored adult shows as picked, so saving keeps it");
   assert.match(html, /data-setting="bin_day_put_out_time" value="18:00"/);
   assert.match(html, /<option value="first_come" selected>/);
   await p._loadBinPreview();

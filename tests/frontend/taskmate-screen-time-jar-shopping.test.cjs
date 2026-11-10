@@ -127,5 +127,6 @@ test("panel: shopping-list jobs settings", () => {
   assert.match(html, /<option value="rotate" selected>/);
   assert.match(html, /panel\.shopping_jobs_mode_rotate_hint/);
   assert.match(html, /tm-chip-on" aria-pressed="true" data-act="shop-kid" data-shop-kid="kid2"/);
-  assert.doesNotMatch(html, /data-shop-kid="dad"/);
+  // #1244: adults are offered too, marked Adult.
+  assert.match(html, /data-act="shop-kid" data-shop-kid="dad">.*Dad <span class="tm-pill tm-pill-accent">panel\.child_adult_pill<\/span><\/button>/);
 });
