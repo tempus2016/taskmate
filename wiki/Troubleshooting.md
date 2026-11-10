@@ -55,6 +55,17 @@ This was a known issue that has been fixed across two releases:
 
 ---
 
+## "Only a Parent Can Undo" or "Parent Actions Are Turned Off" When a Parent Taps a Done Chore
+
+The card has `show_parent_actions: false`. That is what **Hide parent buttons** sets on every child's card when you make a kids' dashboard from the panel, and it's on by default. On such a card undo works the way it does for a child: only inside the [undo window](Child-Undo-Window.md), whoever is signed in.
+
+- Undo the chore from a parents' dashboard (the Chore Board or Activity card), or
+- open the card's settings and turn on **Show parent actions**, or remove `show_parent_actions: false` from its YAML.
+
+Leave it off on a tablet the children use, so they can't undo finished chores. See [Shared kids' dashboards](Dashboard-Cards.md#shared-kids-dashboards-show_parent_actions-v620).
+
+---
+
 ## Chore Description Not Showing
 
 **Checklist:**

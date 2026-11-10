@@ -76,7 +76,7 @@ Set `show_parent_actions: false` on a card and it behaves exactly as it would fo
 
 | Card | With `show_parent_actions: false` |
 |------|-----------------------------------|
-| [Child](#child-card) | Tapping a done chore (or a done bonus sub-task) uses the child's own undo window. Outside it, the card says "Only a parent can undo a completed chore." |
+| [Child](#child-card) | Tapping a done chore (or a done bonus sub-task) uses the child's own undo window. Outside it, the card says so: a child is told only a parent can undo, and a signed-in parent is told parent actions are off on this card. |
 | [Chore Board](#chore-board-card) | The same: **Undo** follows the child's undo window |
 | [Overview](#overview-card) | Child tiles don't expand to offer completing chores on the child's behalf |
 | [Bonuses](#bonuses-card) / [Penalties](#penalties-card) | No Apply buttons and no edit or manage controls |

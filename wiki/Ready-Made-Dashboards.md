@@ -42,7 +42,7 @@ Once a preset exists, its tile shows **Created** with an **Open** button. **Crea
 | **Address** | all | see above | Lower-case letters, numbers and dashes, with at least one dash |
 | **Children** | Kids | all children | Which children get a tab. Guest profiles are left out |
 | **Layout** | Kids | One dashboard, a tab each | **One dashboard, a tab each** suits a shared tablet: every child is a tab away. **A dashboard per child** suits a child's own phone: each child gets their own dashboard at the address followed by their name, e.g. `/taskmate-kids-malia` |
-| **Hide parent buttons** | Kids | on | Sets the cards' `show_parent_actions: false`, so nobody can approve, or complete a chore for a child, from these cards, even if a parent is signed in. See [Parent Access](Parent-Access.md) |
+| **Hide parent buttons** | Kids | on | Sets the cards' `show_parent_actions: false`, so nobody can approve, undo a finished chore, or complete a chore for a child, from these cards, even if a parent is signed in. A child can still take back their own chore inside the [undo window](Child-Undo-Window.md). See [Parent Access](Parent-Access.md) |
 | **Admins only** | Parents | off | Hides the dashboard from users who aren't Home Assistant admins. Leave it off if a parent isn't an admin; the cards still check parent rights before any action |
 | **Add a chore board tab** | Wall tablet | on | The whole family's day at a glance, one swipe away from the kiosk |
 | **Show in the sidebar** | all | on (off for Wall tablet) | Whether the dashboard appears in Home Assistant's sidebar |

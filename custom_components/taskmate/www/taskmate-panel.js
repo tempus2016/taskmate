@@ -6382,8 +6382,20 @@ class TaskMatePanel extends HTMLElement {
         </div>`;
   }
 
+  // Bin-day and shopping-list jobs (#1244): the backend takes any profile, so
+  // the picker lists adults too (after the children, marked Adult). None
+  // picked still means every child, never the adults.
+  _jobPickerPeople() {
+    const all = this._state.children || [];
+    return [...all.filter(c => !c.is_adult), ...all.filter(c => c.is_adult)];
+  }
+
+  _jobPickerAdultPill(c) {
+    return c.is_adult ? ` <span class="tm-pill tm-pill-accent">${this._t("panel.child_adult_pill")}</span>` : "";
+  }
+
   _renderBinDaySettings(s) {
-    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const kids = this._jobPickerPeople();
     const picked = Array.isArray(s.bin_day_children) ? s.bin_day_children : [];
     const mode = s.bin_day_mode === "rotate" ? "rotate" : "first_come";
     const preview = this._binPreview;
@@ -6428,7 +6440,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-chip-row">
                 ${kids.map(c => {
                   const on = picked.includes(c.id);
-                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="bin-kid" data-bin-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="bin-kid" data-bin-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}${this._jobPickerAdultPill(c)}</button>`;
                 }).join("")}
               </div>
             </div>
@@ -6638,7 +6650,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _renderShoppingJobsSettings(s) {
-    const kids = (this._state.children || []).filter(c => !c.is_adult);
+    const kids = this._jobPickerPeople();
     const picked = Array.isArray(s.shopping_jobs_children) ? s.shopping_jobs_children : [];
     const mode = s.shopping_jobs_mode === "rotate" ? "rotate" : "first_come";
     const entity = this._settingsEntityDraft?.shopping_jobs_entity ?? (s.shopping_jobs_entity || "todo.shopping_list");
@@ -6674,7 +6686,7 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-chip-row">
                 ${kids.map(c => {
                   const on = picked.includes(c.id);
-                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="shop-kid" data-shop-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}</button>`;
+                  return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="shop-kid" data-shop-kid="${this._esc(c.id)}">${this._childAvatar(c)} ${this._esc(c.name)}${this._jobPickerAdultPill(c)}</button>`;
                 }).join("")}
               </div>
             </div>
