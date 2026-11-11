@@ -2411,8 +2411,16 @@ class TaskMateKioskCard extends LitElement {
         border-color: var(--tmd-warn, #e67e22);
         background: color-mix(in srgb, var(--tmd-warn, #e67e22) 14%, var(--tmd-surface, var(--card-background-color, #fff)));
       }
+      /* Tinted, not solid, like .km-tag: the design's own text colour on a
+         warn tint passes 4.5:1 in every design (a fixed dark ink on a solid
+         warn fill only reached 3.7:1 on Graphite). A stronger tint and a
+         dashed border, matching the row's, tell it apart from "A grown-up
+         will check" when both sit in the same row. */
       .km-tag.km-grab-tag {
-        background: var(--tmd-warn, #e67e22); color: #2b1700;
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 28%, transparent);
+        color: var(--tmd-text, var(--primary-text-color));
+        border: 1.5px dashed var(--tmd-warn, #e67e22);
+        padding: 1px 8px;
       }
       .km-row-icon {
         width: 50px; height: 50px; min-width: 50px; border-radius: 50%;

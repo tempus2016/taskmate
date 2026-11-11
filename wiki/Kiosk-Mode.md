@@ -237,6 +237,8 @@ Chores that need approval show **A grown-up will check** and change to **Waiting
 
 A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border and a tinted row, to tell it apart from the child's own chores.
 
+![A first-come chore on the kiosk: dashed row and tag, and one that also needs a grown-up's check](images/kiosk-up-for-grabs.png)
+
 ---
 
 ## Linked Accounts
