@@ -3311,6 +3311,7 @@
   "kiosk.all_done": "Tout est fait pour aujourd'hui — bravo, {name} !",
   "kiosk.waiting": "En attente d'un adulte",
   "kiosk.needs_check": "Un adulte vérifiera",
+  "kiosk.up_for_grabs": "Au premier arrivé — le plus rapide gagne",
   "kiosk.do_on_phone": "Fais celle-ci sur ton téléphone",
   "kiosk.phone_group": "Fais-les sur ton téléphone",
   "kiosk.nothing_here": "Rien à cocher ici aujourd'hui",

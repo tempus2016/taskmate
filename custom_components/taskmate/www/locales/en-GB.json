@@ -3311,6 +3311,7 @@
   "kiosk.all_done": "All done for today — amazing, {name}!",
   "kiosk.waiting": "Waiting for a grown-up",
   "kiosk.needs_check": "A grown-up will check",
+  "kiosk.up_for_grabs": "Up for grabs — first one wins",
   "kiosk.do_on_phone": "Do this one on your phone",
   "kiosk.phone_group": "Do these on your phone",
   "kiosk.nothing_here": "Nothing to tick off here today",

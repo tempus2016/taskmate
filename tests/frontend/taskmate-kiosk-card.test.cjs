@@ -254,6 +254,16 @@ test("done and waiting chores show their state; approval chores say a grown-up c
   assert.match(markup, new RegExp(localize("kiosk.needs_check")));
 });
 
+test("a first-come chore is marked up for grabs", async () => {
+  const card = await childView({
+    chores: [chore("dishes"), chore("bins", { assignment_mode: "first_come", requires_approval: false })],
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes", "bins"] }] },
+  });
+  const { markup } = view(card);
+  assert.equal((markup.match(/km-row todo grab/g) || []).length, 1, "only the first-come chore");
+  assert.equal((markup.match(new RegExp(localize("kiosk.up_for_grabs"), "g")) || []).length, 1);
+});
+
 test("undo follows the #918 window and goes through undo_chore", async () => {
   const card = await childView({
     status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: [] }] },
