@@ -235,6 +235,8 @@ These don't count against "all done", so a child with one of them still gets the
 
 Chores that need approval show **A grown-up will check** and change to **Waiting for a grown-up** once ticked. A [teamwork chore](Teamwork-Chores.md) shows **Waiting for your team** after the child joins. If the [child undo window](Child-Undo-Window.md) is switched on, a child can take back a mistaken tap from the kiosk too.
 
+A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border and a tinted row, to tell it apart from the child's own chores.
+
 ---
 
 ## Linked Accounts

@@ -1886,6 +1886,10 @@ class TaskMateKioskCard extends LitElement {
     // missed-chore mode says, so it never offers a Done button.
     const dimMissed = row.missed && (this._missedMode() === "dim" || (!!row.setTime && state === "todo"));
     const needsCheck = state === "todo" && !dimMissed && chore.requires_approval !== false;
+    // First come: it sits on every sibling's list until one of them finishes
+    // it, so mark it as a race rather than as this child's own chore.
+    const upForGrabs = chore.assignment_mode === "first_come" && !dimMissed
+      && (state === "todo" || state === "elsewhere" || state === "later");
     let action;
     if (dimMissed) {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><span>${this._t("kiosk.missed")}</span></div>`;
@@ -1910,7 +1914,7 @@ class TaskMateKioskCard extends LitElement {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:cellphone"></ha-icon><span>${this._t("kiosk.do_on_phone")}</span></div>`;
     }
     return html`
-      <div class="km-row ${dimMissed ? "missed" : state}">
+      <div class="km-row ${dimMissed ? "missed" : state}${upForGrabs ? " grab" : ""}">
         <div class="km-row-icon">
           ${visual.kind === "image"
             ? html`<img src="${visual.url}" alt="" loading="lazy">`
@@ -1924,6 +1928,7 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-row-meta">
             <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, this._pointsFor(chore, child.id))}</span>
             ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
+            ${upForGrabs ? html`<span class="km-tag km-grab-tag"><ha-icon icon="mdi:hand-back-right"></ha-icon>${this._t("kiosk.up_for_grabs")}</span>` : ""}
             ${needsCheck ? html`<span class="km-tag"><ha-icon icon="mdi:account-check-outline"></ha-icon>${this._t("kiosk.needs_check")}</span>` : ""}
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
                                       aria-label="${this._t("child.undo_named", { name: chore.name })}"
@@ -2399,6 +2404,16 @@ class TaskMateKioskCard extends LitElement {
       .km-row.done .km-row-name { text-decoration: line-through; text-decoration-thickness: 2px; }
       .km-row.elsewhere { opacity: 0.55; }
       .km-row.missed { opacity: 0.5; }
+      /* A first-come chore: whoever finishes it first gets it. A dashed accent
+         border and a tinted background set it apart from this child's own. */
+      .km-row.grab {
+        border-style: dashed;
+        border-color: var(--tmd-warn, #e67e22);
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 14%, var(--tmd-surface, var(--card-background-color, #fff)));
+      }
+      .km-tag.km-grab-tag {
+        background: var(--tmd-warn, #e67e22); color: #2b1700;
+      }
       .km-row-icon {
         width: 50px; height: 50px; min-width: 50px; border-radius: 50%;
         display: grid; place-items: center; overflow: hidden;
