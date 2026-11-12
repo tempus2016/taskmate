@@ -884,9 +884,10 @@ class TaskMateKioskCard extends LitElement {
       </div>`;
   }
 
-  /** The cheapest reward this child can't afford yet — what they're saving for. */
+  /** The cheapest reward this child can't afford yet — what they're saving for.
+   *  Counts only what they can spend, as the rewards list does (#1248). */
   _nextReward(child) {
-    const balance = Number(child.points) || 0;
+    const balance = Math.max(0, this._spendable(child));
     const id = String(child.id);
     let best = null;
     for (const r of this._attrs().rewards || []) {
@@ -895,7 +896,7 @@ class TaskMateKioskCard extends LitElement {
       if (assigned.length && !assigned.includes(id)) continue;
       const cost = Number(r.calculated_costs?.[id] ?? r.cost) || 0;
       if (cost <= balance) continue;
-      if (!best || cost < best.cost) best = { reward: r, cost };
+      if (!best || cost < best.cost) best = { reward: r, cost, have: balance };
     }
     return best;
   }
@@ -1913,10 +1914,10 @@ class TaskMateKioskCard extends LitElement {
                 <div class="km-reward-row">
                   <ha-icon icon="${next.reward.icon || "mdi:gift"}"></ha-icon>
                   <b class="km-grow">${next.reward.name}</b>
-                  <span class="km-dim">${_ltrRatio(__tmNum(this.hass, child.points ?? 0), __tmNum(this.hass, next.cost))}</span>
+                  <span class="km-dim">${_ltrRatio(__tmNum(this.hass, next.have), __tmNum(this.hass, next.cost))}</span>
                 </div>
-                <div class="km-bar"><i style="width:${Math.min(100, Math.round(((Number(child.points) || 0) / next.cost) * 100))}%"></i></div>
-                <div class="km-dim km-small">${this._t("kiosk.to_go", { points: __tmNum(this.hass, next.cost - (Number(child.points) || 0)) })}</div>
+                <div class="km-bar"><i style="width:${Math.min(100, Math.round((next.have / next.cost) * 100))}%"></i></div>
+                <div class="km-dim km-small">${this._t("kiosk.to_go", { points: __tmNum(this.hass, next.cost - next.have) })}</div>
               </div>` : ""}
             ${this._adventTile(child, attrs)}
             ${this._badgesTile(child)}

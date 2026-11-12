@@ -703,6 +703,16 @@ async function rewardView({ rewards = REWARDS, pending = [], config = {} } = {})
 
 const rewardRows = (markup) => Array.from(markup.matchAll(/class="km-row km-reward ([a-z]+)" data-reward="([^"]+)"/g), (m) => `${m[2]}:${m[1]}`);
 
+test("the next-reward tile counts only the points a child can spend", async () => {
+  const card = await childView();
+  // Vaiha has 215, 200 of them set aside for a claim: the Sweet (50) isn't affordable any more.
+  card.hass.states[ENTITY].attributes.children.find((c) => c.id === "vaiha").spendable_balance = 15;
+  const next = card._nextReward(card._entry("vaiha").child);
+  assert.equal(next.reward.id, "sweet");
+  assert.equal(next.have, 15);
+  assert.match(view(card).markup, new RegExp(localize("kiosk.to_go", { points: 35 })));
+});
+
 test("rewards stay off the kiosk unless show_rewards is on", async () => {
   const card = await childView();
   assert.deepEqual(rewardRows(view(card).markup), []);
