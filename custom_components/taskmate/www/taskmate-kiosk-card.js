@@ -8,8 +8,13 @@
  * (and straight after an "all done" celebration) it goes back to the picker.
  *
  * What it deliberately does NOT have: any parent action. No approve/reject,
- * no complete-on-behalf, no points adjustments, no reward claiming, no
- * settings — there is no option to turn them on.
+ * no complete-on-behalf, no points adjustments, no settings — there is no
+ * option to turn them on.
+ *
+ * Rewards (#1248), off unless `show_rewards: true`: the unlocked child sees
+ * the rewards they can spend their points on and claims one. A claim goes to
+ * the grown-ups for approval like any other, and names the child, so the
+ * backend's linked-child check decides, as for chores.
  *
  * Bounties (#1054), off unless `show_bounties: true`: the unlocked child sees
  * the bounty board's child side — claim, give back, finish (taking a photo
@@ -139,6 +144,7 @@ class TaskMateKioskCard extends LitElement {
       _confetti: { type: Array },
       _fullscreen: { type: Boolean },
       _bountyDlg: { type: Object },
+      _rewardDlg: { type: Object },
       _ambient: { type: Boolean },
       _queue: { type: Array },
       _rafReveal: { type: Object },
@@ -165,6 +171,7 @@ class TaskMateKioskCard extends LitElement {
     this._confetti = [];
     this._fullscreen = false;
     this._bountyDlg = null;
+    this._rewardDlg = null;
     // The bounty a photo is being taken for; outlives a return to the picker
     // so a photo that comes back late still lands on the right child.
     this._photoFor = null;
@@ -950,6 +957,7 @@ class TaskMateKioskCard extends LitElement {
     this._popup = null;
     this._confetti = [];
     this._bountyDlg = null;
+    this._rewardDlg = null;
     this._avatarPicker = false;
     this._screen = "picker";
     this._kid = null;
@@ -1283,6 +1291,71 @@ class TaskMateKioskCard extends LitElement {
 
   _pointsName() { return this._attrs().points_name || this._t("common.points"); }
 
+  // ── Rewards (#1248) ──────────────────────────────────────────────────────
+  // The rewards card's claim for the unlocked child. Shared jars (jackpots and
+  // pool rewards) and streak freezes stay on the Rewards card: they need its
+  // deposit controls or its own rules.
+
+  _showRewards() { return this.config.show_rewards === true; }
+
+  /** What this child could spend: points less any already set aside. */
+  _spendable(child) {
+    if (typeof child.spendable_balance === "number") return child.spendable_balance;
+    return (Number(child.points) || 0) - (Number(child.committed_points) || 0);
+  }
+
+  /** Every reward this child may claim, cheapest first, with its state. */
+  _rewardsFor(child) {
+    const id = String(child.id);
+    const attrs = this._attrs();
+    const pending = (Array.isArray(attrs.pending_reward_claims) ? attrs.pending_reward_claims : [])
+      .filter(c => String(c.child_id) === id);
+    const balance = this._spendable(child);
+    const out = [];
+    for (const r of Array.isArray(attrs.rewards) ? attrs.rewards : []) {
+      if (r.is_jackpot || r.pool_enabled || r.streak_freeze) continue;
+      if (r.is_sold_out || r.is_expired) continue;
+      const assigned = Array.isArray(r.assigned_to) ? r.assigned_to.map(String) : [];
+      if (assigned.length && !assigned.includes(id)) continue;
+      const cost = Number(r.calculated_costs?.[id] ?? r.cost) || 0;
+      const again = (r.limit_reached && r.limit_reached[id]) || null;
+      let state;
+      if (pending.some(c => c.reward_id === r.id)) state = "wait";
+      else if (again) state = "limit";
+      else if (r.is_time_locked) state = "locked";
+      else if (cost > balance) state = "save";
+      else state = "claim";
+      out.push({ reward: r, cost, state, again });
+    }
+    return out.sort((a, b) => a.cost - b.cost);
+  }
+
+  /** "Monday" within the week, else "12 Nov" — as on the Rewards card. */
+  _dayLabel(iso) {
+    const d = new Date(`${iso}T12:00:00`);
+    if (isNaN(d)) return String(iso || "");
+    const days = Math.round((d - new Date().setHours(12, 0, 0, 0)) / 86400000);
+    return days >= 0 && days <= 6
+      ? d.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long" }))
+      : d.toLocaleDateString(...__tmDateArgs(this.hass, { day: "numeric", month: "short" }));
+  }
+
+  async _claimReward(child, r) {
+    if (this._busy) return;
+    this._busy = `reward:${r.id}`;
+    try {
+      await this.hass.callService("taskmate", "claim_reward", { reward_id: r.id, child_id: child.id });
+      this._rewardDlg = { kind: "sent", id: r.id };
+      if (this.config.play_sounds !== false) this._playSound(this.config.default_sound || "coin");
+    } catch (err) {
+      this._rewardDlg = null;
+      this._notify(this._errText(err) || String(err));
+    } finally {
+      this._busy = "";
+      this.requestUpdate();
+    }
+  }
+
   async _bountyAction(b, run) {
     if (this._busy) return false;
     this._busy = `bounty:${b.id}`;
@@ -1595,8 +1668,8 @@ class TaskMateKioskCard extends LitElement {
       design: (this.getAttribute && this.getAttribute("data-tm-design")) || "classic",
       dark: !!(d && d.isDark && d.isDark(this.hass, this)),
       // The completion popup, the all-done party, confetti and the bounty
-      // dialog sit below the tour's layer: step aside while one is up.
-      paused: !!(this._popup || this._celebrating || (this._confetti && this._confetti.length) || this._bountyDlg),
+      // and reward dialogs sit below the tour's layer: step aside while one is up.
+      paused: !!(this._popup || this._celebrating || (this._confetti && this._confetti.length) || this._bountyDlg || this._rewardDlg),
       onSpeak: (k) => T.speak(this.hass, childId, k),
       onActivity: () => { this._idle = 0; },
       onFinish: (status, step) => this._finishTour(childId, status, step),
@@ -1821,6 +1894,7 @@ class TaskMateKioskCard extends LitElement {
                 ${phoneRows.map(row => this._renderRow(child, row, icon))}
               </div>` : ""}
             ${this._showBounties() ? this._renderBounties(child, icon) : ""}
+            ${this._showRewards() ? this._renderRewards(child, icon) : ""}
           </div>
           <div class="km-side">
             <div class="km-tile km-center">
@@ -1851,6 +1925,7 @@ class TaskMateKioskCard extends LitElement {
         </div>
 
         ${this._showBounties() ? this._renderBountyDialog(child) : ""}
+        ${this._showRewards() ? this._renderRewardDialog(child, icon) : ""}
         ${warn ? html`
           <div class="km-idle">
             <div class="km-idle-n" style="--p:${left / WARN_SECONDS}"><span>${left}</span></div>
@@ -2030,6 +2105,89 @@ class TaskMateKioskCard extends LitElement {
           </div>
         </div>
         ${action}
+      </div>
+    `;
+  }
+
+  _renderRewards(child, icon) {
+    const list = this._rewardsFor(child);
+    if (!list.length) return "";
+    return html`
+      <div class="km-reward-group">
+        <h3><ha-icon icon="mdi:gift-outline"></ha-icon> ${this._t("kiosk.rewards_title")}</h3>
+        ${list.map(item => this._renderRewardRow(child, item, icon))}
+      </div>
+    `;
+  }
+
+  _renderRewardRow(child, item, icon) {
+    const { reward: r, cost, state, again } = item;
+    const pic = typeof r.image_url === "string" && r.image_url.startsWith("/api/taskmate/image/") ? r.image_url : "";
+    const box = (cls, ic, text) => html`<div class="km-done ${cls}"><ha-icon icon="${ic}"></ha-icon><span>${text}</span></div>`;
+    let action;
+    if (state === "claim") {
+      action = html`<button class="km-done km-reward-claim" ?disabled=${!!this._busy}
+                            @click=${() => { this._rewardDlg = { kind: "confirm", id: r.id }; }}>
+        <ha-icon icon="mdi:gift"></ha-icon> ${this._t("kiosk.reward_claim")}</button>`;
+    } else if (state === "wait") {
+      action = box("is-wait", "mdi:timer-sand", this._t("kiosk.waiting"));
+    } else if (state === "limit") {
+      action = box("is-elsewhere", "mdi:calendar-clock", this._t("kiosk.reward_again", { day: this._dayLabel(again) }));
+    } else if (state === "locked") {
+      action = box("is-elsewhere", "mdi:lock-clock", this._t("kiosk.reward_locked"));
+    } else {
+      const have = Math.max(0, this._spendable(child));
+      action = html`<div class="km-done is-elsewhere km-reward-save">
+        <span>${this._t("kiosk.to_go", { points: __tmNum(this.hass, cost - have) })}</span>
+        <span class="km-bar"><i style="width:${cost > 0 ? Math.min(100, Math.round((have / cost) * 100)) : 0}%"></i></span>
+      </div>`;
+    }
+    return html`
+      <div class="km-row km-reward ${state}" data-reward="${r.id}">
+        <div class="km-row-icon">
+          ${pic ? html`<img src="${pic}" alt="" loading="lazy">` : html`<ha-icon icon="${r.icon || "mdi:gift"}"></ha-icon>`}
+        </div>
+        <div class="km-row-body">
+          <div class="km-row-name">${r.name}</div>
+          <div class="km-row-meta">
+            <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, cost)}</span>
+          </div>
+        </div>
+        ${action}
+      </div>
+    `;
+  }
+
+  _renderRewardDialog(child, icon) {
+    const d = this._rewardDlg;
+    if (!d) return "";
+    const item = this._rewardsFor(child).find(x => x.reward.id === d.id);
+    if (!item) return "";
+    const r = item.reward;
+    const close = () => { this._rewardDlg = null; };
+    const points = __tmNum(this.hass, item.cost);
+    const pointsName = this._pointsName();
+    let inner;
+    if (d.kind === "confirm") {
+      inner = html`
+        <div class="km-bdlg-ic"><ha-icon icon="${r.icon || "mdi:gift"}"></ha-icon></div>
+        <h2>${this._t("kiosk.reward_confirm_title", { name: r.name })}</h2>
+        <p>${this._t("kiosk.reward_confirm_body", { points, pointsName })}</p>
+        <div class="km-bdlg-acts">
+          <button class="km-ghost" @click=${close}>${this._t("bounty.not_now")}</button>
+          <button class="km-primary" ?disabled=${!!this._busy || item.state !== "claim"} @click=${() => this._claimReward(child, r)}>
+            <ha-icon icon="${icon}"></ha-icon> ${this._t("kiosk.reward_confirm_btn", { points, pointsName })}</button>
+        </div>`;
+    } else {
+      inner = html`
+        <div class="km-bdlg-ic good"><ha-icon icon="mdi:check-bold"></ha-icon></div>
+        <h2>${this._t("kiosk.reward_sent_title")}</h2>
+        <p>${this._t("kiosk.reward_sent_body", { name: r.name })}</p>
+        <div class="km-bdlg-acts"><button class="km-primary" @click=${close}>${this._t("bounty.ok")}</button></div>`;
+    }
+    return html`
+      <div class="km-idle km-bdlg" role="dialog" aria-modal="true" @click=${e => { if (e.target === e.currentTarget) close(); }}>
+        <div class="km-bdlg-card">${inner}</div>
       </div>
     `;
   }
@@ -2535,6 +2693,19 @@ class TaskMateKioskCard extends LitElement {
       .km-claim-left ha-icon { --mdc-icon-size: 16px; }
       button.km-done.km-claim { background: var(--tmd-warn, #e67e22); }
       :host([data-tm-design]:not([data-tm-design="classic"])) button.km-done.km-claim { color: #2b1700; }
+      /* Rewards (#1248) */
+      .km-reward-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+      .km-reward-group h3 { color: var(--tmd-gold, #e67e22); }
+      .km-row.km-reward .km-row-icon {
+        background: color-mix(in srgb, var(--tmd-gold, #e67e22) 18%, transparent); color: var(--tmd-gold, #e67e22);
+      }
+      .km-row.km-reward.claim { border-color: var(--tmd-gold, #e67e22); }
+      .km-row.km-reward.locked, .km-row.km-reward.limit { opacity: 0.62; }
+      button.km-done.km-reward-claim { background: var(--tmd-gold, #e67e22); color: #2b1700; }
+      :host([data-tm-design="graphite"]) button.km-done.km-reward-claim { background: var(--tmd-text); color: var(--tmd-surface); }
+      .km-done.km-reward-save { flex-direction: column; align-items: stretch; justify-content: center; gap: 6px; }
+      .km-done.km-reward-save .km-bar { height: 8px; }
+      .km-done.km-reward-save .km-bar > i { background: var(--tmd-gold, #e67e22); }
       /* The overlay spans the whole child view, which can run far past the
          screen outside full screen: the card sticks to where the child is. */
       .km-bdlg { z-index: 3; justify-content: flex-start; }
