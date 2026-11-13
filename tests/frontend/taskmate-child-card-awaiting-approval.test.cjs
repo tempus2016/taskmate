@@ -164,3 +164,11 @@ test("celebration: approval chores don't claim the points as earned", () => {
   assert.ok(!paid.includes(localize("child.celebration_pending_note")));
   assert.match(paid, /\+5/);
 });
+
+test("playroom: the undo chip on a waiting row doesn't celebrate", () => {
+  const waiting = render(makeCard({ design: "playroom", completions: [done(false)] }).render()).markup;
+  assert.ok(!waiting.includes("! 🎉"), "no party popper on the chip while a grown-up still has to check");
+  assert.ok(waiting.includes("⏳"));
+  const approved = render(makeCard({ design: "playroom", completions: [done(true)] }).render()).markup;
+  assert.ok(approved.includes("! 🎉"), "an approved chore still celebrates");
+});
