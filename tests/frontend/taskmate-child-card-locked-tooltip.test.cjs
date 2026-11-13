@@ -59,7 +59,7 @@ function rowTitle(card) {
   return row.attr("title");
 }
 
-const CLICK = localize("child.click_to_complete");
+const CLICK = localize("child.tap_to_complete");
 
 const REASONS = [
   {
