@@ -2414,6 +2414,29 @@ class TaskMateChildCard extends LitElement {
         font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
         background: rgba(255,255,255,.22); color: #fff;
       }
+      /* Designed: the child's balance on the header's end edge, with any
+         points awaiting approval stacked under it so the title keeps its
+         room on a phone. */
+      .tmd-hd-end {
+        margin-inline-start: auto; flex: none;
+        display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+      }
+      .tmd-hd-end .tmd-pending {
+        margin-inline-start: 0; padding: 2px 8px; gap: 3px; white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .tmd-hd-end .tmd-pending ha-icon { --mdc-icon-size: 13px; }
+      .tmd-bal {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-family: var(--tmd-font-display); font-size: 15px; font-weight: 800;
+        padding: 5px 11px; border-radius: 999px;
+        background: rgba(255,255,255,.25); color: #fff; white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .tmd-bal ha-icon { --mdc-icon-size: 18px; }
+      /* Clean Pro / Graphite: an open-ended chore has no price chip; say who
+         sets it under the name instead of "+0". */
+      .tmd-check .c-oe { font-size: 12px; font-weight: 600; color: var(--tmd-dim); margin-top: 2px; }
       .tmd-section {
         display: flex; align-items: center; gap: 8px; margin-bottom: 11px;
         flex-wrap: wrap; row-gap: 4px;
@@ -3400,13 +3423,11 @@ class TaskMateChildCard extends LitElement {
 
   /** Designed header: avatar/title, remaining pill, pending-points chip. */
   _designHeaderFull(child, design, remaining, total, tone, pendingPoints, season = null) {
-    const title = design === "console"
-      ? `${(child.name || "").toUpperCase()} · ${this._t("child.todays_chores").toUpperCase()}`
-      : this._t("points_display.single_title", { name: child.name });
+    const choresTitle = this._t("child.chores_title", { name: child.name });
+    const title = design === "console" ? choresTitle.toUpperCase() : choresTitle;
     const sub = design === "console"
       ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${this._t("child.console_active", { count: __tmNum(this.hass, remaining) })}` : this._t("child.console_active", { count: __tmNum(this.hass, remaining) }))
-      : design === "cleanpro" ? _ltrNums(`${__tmNum(this.hass, remaining)} / ${total}`)
-      : `${__tmNum(this.hass, remaining)} · ${this._t("child.todays_chores")}`;
+      : _ltrNums(this._t("child.remaining_of_total", { remaining: __tmNum(this.hass, remaining), total: __tmNum(this.hass, total) }));
     // Avatar picker: classic makes the avatar tappable; the designed header
     // must too, or the picker only ever works on classic. Same eligibility
     // rule (allow_avatar_change + more than one unlocked option).
@@ -3427,8 +3448,13 @@ class TaskMateChildCard extends LitElement {
         <span class="tt">${title}<small>${sub}</small></span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
         ${this._renderFreezeBadge(child, "tmd-freeze")}
-        ${pendingPoints > 0 ? html`<span class="tmd-pending">
-          <ha-icon icon="mdi:timer-sand"></ha-icon>+${__tmNum(this.hass, pendingPoints)}</span>` : ""}
+        <span class="tmd-hd-end">
+          <span class="tmd-bal" role="img" title="${this._pointsNameFor()}"
+                aria-label="${__tmNum(this.hass, child.points || 0)} ${this._pointsNameFor()}">
+            <ha-icon icon="${this._pointsIcon()}"></ha-icon>${__tmNum(this.hass, child.points || 0)}</span>
+          ${pendingPoints > 0 ? html`<span class="tmd-pending">
+            <ha-icon icon="mdi:timer-sand"></ha-icon>+${__tmNum(this.hass, pendingPoints)}</span>` : ""}
+        </span>
         ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ""}
       </div>`;
   }
@@ -3551,7 +3577,7 @@ class TaskMateChildCard extends LitElement {
           <span class="ch-emoji">${r.glyph}</span>
           <div class="ch-mid">
             <div class="ch-name">${r.chore.name}</div>
-            ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${__tmNum(this.hass, r.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
+            ${r.done ? "" : r.openEnded ? html`<div class="chip soft" style="margin-top:3px">${this._t("child.open_ended_points")}</div>` : html`<div class="chip soft" style="margin-top:3px">+${__tmNum(this.hass, r.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
@@ -3573,7 +3599,9 @@ class TaskMateChildCard extends LitElement {
             <div class="q-name">${r.chore.name}</div>
             ${r.done
               ? html`<div class="num q-cleared">${this._t("child.console_cleared")}</div>`
-              : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} ${this._t("common.xp")}</div>`}
+              : r.openEnded
+                ? html`<div class="num q-xp">${this._t("child.open_ended_points")}</div>`
+                : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} ${this._pointsNameFor()}</div>`}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
@@ -3593,11 +3621,12 @@ class TaskMateChildCard extends LitElement {
           <span class="c-emoji">${r.glyph}</span>
           <div class="c-mid">
             <div class="c-name">${r.chore.name}</div>
+            ${r.openEnded && !r.done ? html`<div class="c-oe">${this._t("child.open_ended_points")}</div>` : ""}
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
             ? this._designUndoChip(r, this._t("child.done") || "Completed", "c-done")
-            : html`<span class="chip c-pts">+${__tmNum(this.hass, r.points)}</span>
+            : html`${r.openEnded ? "" : html`<span class="chip c-pts">+${__tmNum(this.hass, r.points)}</span>`}
                 ${this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"), "sm")}`}
         </div>
         ${this._designBonus(r)}`)}
@@ -4849,10 +4878,10 @@ class TaskMateChildCard extends LitElement {
                 ? this._t('child.set_time_opens', { time: __tmClock(this.hass, chore._setTimeEntry.opens) })
                 : '')
           : isCompletedForToday
-            ? this._t('child.click_to_undo')
+            ? this._t('child.tap_to_undo')
           : team
             ? this._t(team.mine ? 'child.team_tap_to_leave' : 'child.team_tap_to_join')
-            : this._t('child.click_to_complete');
+            : this._t('child.tap_to_complete');
 
     return html`
       <div
@@ -4902,7 +4931,7 @@ class TaskMateChildCard extends LitElement {
             ` : ''}
             <div class="chore-points">
               <ha-icon icon="${pointsIcon}"></ha-icon>
-              ${isCompletedForToday ? html`+${__tmNum(this.hass, chore.effective_points ?? chore.points)}` : this._boostedPoints(chore, child)}
+              ${isCompletedForToday ? html`+${__tmNum(this.hass, chore.effective_points ?? chore.points)}` : chore.open_ended ? this._t('child.open_ended_points') : this._boostedPoints(chore, child)}
               ${isFirstCome && (chore.daily_limit || 1) > 1
                 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${Math.min(sharedToday, chore.daily_limit)}/${chore.daily_limit})</span>`
                 : dailyLimit > 1 ? html`<span style="font-size: 0.8em; opacity: 0.7;">(${completionsToday}/${dailyLimit})</span>` : ''}
@@ -5196,7 +5225,7 @@ class TaskMateChildCard extends LitElement {
           role="button"
           tabindex="0"
           @click="${handleClick}"
-          title="${bonusDone ? this._t('child.click_to_undo') : this._t('child.bonus_tooltip', {name: subtask.name})}"
+          title="${bonusDone ? this._t('child.tap_to_undo') : this._t('child.bonus_tooltip', {name: subtask.name})}"
         >
           <div class="chore-info">
             <div class="chore-number-wrapper">
