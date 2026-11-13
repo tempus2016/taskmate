@@ -3953,7 +3953,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? this._designUndoChip(r, html`${this._t("child.done") || "Done"}! 🎉`)
+            ? this._designUndoChip(r, r.awaiting ? html`${this._t("child.done") || "Done"} ⏳` : html`${this._t("child.done") || "Done"}! 🎉`)
             : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "DONE"}` : (this._t("child.done") || "DONE"), "good")}
         </div>
         ${this._designBonus(r)}`)}
