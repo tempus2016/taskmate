@@ -684,25 +684,27 @@ class TaskMateChildCard extends LitElement {
         box-sizing: border-box;
       }
 
-      .chore-card:nth-child(odd) {
+      /* nth-of-type, not nth-child: the span.tm-row-acts strip under a row
+         must not shift the colour cycle (every other sibling here is a div). */
+      .chore-card:nth-of-type(odd) {
         border-color: var(--fun-blue);
         background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-blue) 10%, var(--card-background-color, #fff));
       }
 
-      .chore-card:nth-child(even) {
+      .chore-card:nth-of-type(even) {
         border-color: var(--fun-pink);
         background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-pink) 10%, var(--card-background-color, #fff));
       }
 
-      .chore-card:nth-child(3n) {
+      .chore-card:nth-of-type(3n) {
         border-color: var(--fun-green);
         background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-green) 10%, var(--card-background-color, #fff));
       }
 
-      .chore-card:nth-child(4n) {
+      .chore-card:nth-of-type(4n) {
         border-color: var(--fun-orange);
         background: var(--card-background-color, #fff);
         background: color-mix(in srgb, var(--fun-orange) 10%, var(--card-background-color, #fff));
@@ -1615,6 +1617,41 @@ class TaskMateChildCard extends LitElement {
       .tm-tag-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
       .tm-help-btn { border: 0; cursor: pointer; font-family: inherit; line-height: inherit; }
       .tm-help-on { opacity: .85; }
+      /* Touch targets: every control a child taps reaches 44x44 CSS px. Where
+         a visibly bigger control would crowd the row, an invisible ::after
+         grows the hit area to 44px around the centre instead (only on the
+         axes where the control is smaller than 44px, so neighbours that sit
+         far enough apart never share a tap). The selectors outrank the
+         kit's pointer:coarse extenders in taskmate-design.js. */
+      .tm-day-tab, .avatar-clickable, .tmd-chore .btn, .tmd-quest .btn, .tmd-check .btn,
+      button.chip.tmd-undochip, .tm-row-acts .tm-help-btn, .tmd-meta .tm-help-btn { position: relative; }
+      .tm-day-tab::after, .avatar-clickable::after, .tmd-chore .btn::after, .tmd-quest .btn::after,
+      .tmd-check .btn::after, button.chip.tmd-undochip::after,
+      .tm-row-acts button.tm-help-btn::after, .tmd-meta button.tm-help-btn::after {
+        content: ""; position: absolute;
+        inset-block: min(0px, calc(50% - 22px)); inset-inline: min(0px, calc(50% - 22px));
+      }
+      /* Classic: "I'm stuck" and the reminder bell live in their own strip just
+         under the row, outside its tap-to-complete surface. The strip keeps
+         2px clear of the row above and 14px of the next row below once each
+         chip's hit area is grown to 44px. */
+      .tm-row-acts { display: flex; flex-wrap: wrap; gap: 12px 8px; margin-block: -2px 8px; padding-inline: 14px; }
+      .tm-row-acts .photo-badge { min-block-size: 32px; min-inline-size: 44px; justify-content: center; padding-block: 0; padding-inline: 12px; font-size: 0.78rem; }
+      /* Designed rows: the bell and "I'm stuck" sit together and are drawn
+         32px tall, so each grows only 6px up and down to reach 44px. The 12px
+         row gap keeps a wrapped bell and chip from sharing a tap, and the 8px
+         column gap beats the bell's 7px sideways growth (30px -> 44px). A
+         translation too long for the whole line wraps inside its chip. */
+      .tm-meta-acts { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 12px 8px; max-inline-size: 100%; min-inline-size: 0; }
+      .tmd-meta .tm-help-btn { min-block-size: 32px; justify-content: center; }
+      .tmd-meta .tm-remind-btn { min-inline-size: 30px; }
+      .tm-meta-acts .tm-help-btn:not(.tm-remind-btn) { white-space: normal; text-align: start; min-inline-size: 0; }
+      /* Accessible: Done is the biggest primary button of any style (Console's
+         is 62x32, Playroom's 59x32), drawn at the full 44px. */
+      :host([data-tm-design="accessible"]) .tmd-check .btn { min-block-size: 44px; min-inline-size: 62px; padding-block: 0; padding-inline: 12px; font-size: 15px; }
+      /* Secondary controls drawn small elsewhere in the card. */
+      .tm-goal-change, .tm-goal-chip, .swap-btn, .roulette-btn, .tm-insp-cele-btn, .photo-cancel, .tm-advent-today button { min-block-size: 44px; }
+      .tm-rate-star { min-block-size: 44px; min-inline-size: 44px; }
       .tm-care-wrap { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }
       /* Season event packs: the advent calendar strip (Christmas pack). */
       .tm-advent { margin: 8px 16px 12px; border-radius: 14px; overflow: hidden; background: var(--secondary-background-color, #f3f3f3); color: var(--primary-text-color, #33373d); }
@@ -3556,6 +3593,13 @@ class TaskMateChildCard extends LitElement {
       </div>`;
   }
 
+  /** Designed rows: the reminder bell and "I'm stuck" side by side (see .tm-meta-acts). */
+  _designMetaActs(r) {
+    const bell = this._choreReminderBtn(r.chore, r.child, r.done, "tmd-tag");
+    const help = r.done ? "" : this._renderHelp(r.chore, r.child, "tmd-tag");
+    return bell || help ? html`<span class="tm-meta-acts">${bell}${help}</span>` : "";
+  }
+
   /** Shared meta tags (mandatory / photo / description) for a designed chore row. */
   _designChoreMeta(r) {
     const showDesc = this.config.show_description === true && r.chore.description;
@@ -3590,9 +3634,9 @@ class TaskMateChildCard extends LitElement {
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
           ${r.boost && !r.done ? html`<span class="tmd-tag tm-boost-tag">⚡ ×${this._fmtMult(r.boost)}</span>` : ""}
-          ${this._choreStreakReminderTags(r.chore, r.child, r.done, "tmd-tag")}
+          ${this._choreStreakTag(r.chore, r.child, "tmd-tag")}
+          ${this._designMetaActs(r)}
           ${this._choreExtraTags(r.chore, r.done, "tmd-tag")}
-          ${r.done ? "" : this._renderHelp(r.chore, r.child, "tmd-tag")}
           ${r.mandatory ? html`<span class="tmd-tag mandatory">⚠ ${this._t("child.mandatory")}</span>` : ""}
           ${r.auction ? html`<span class="tmd-tag auction">🔨 ${this._t("child.won_at_auction")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
@@ -5061,11 +5105,12 @@ class TaskMateChildCard extends LitElement {
                 <span class="photo-badge">✍️ ${this._t('child.open_ended_tag')}</span>
               </div>
             ` : ''}
-            ${this._hasStreakOrReminder(chore, child, isCompletedForToday) ? html`
-              <div class="tm-tag-wrap">${this._choreStreakReminderTags(chore, child, isCompletedForToday, 'photo-badge')}</div>
-            ` : ''}
-            ${(chore.estimated_minutes || chore.quantity_unit || this._helpEnabled()) && !isCompletedForToday ? html`
-              <div class="tm-tag-wrap">${this._choreExtraTags(chore, false, 'photo-badge')}${this._renderHelp(chore, child, 'photo-badge')}</div>
+            ${(() => {
+              const streak = this._choreStreakTag(chore, child, 'photo-badge');
+              return streak ? html`<div class="tm-tag-wrap">${streak}</div>` : '';
+            })()}
+            ${(chore.estimated_minutes || chore.quantity_unit) && !isCompletedForToday ? html`
+              <div class="tm-tag-wrap">${this._choreExtraTags(chore, false, 'photo-badge')}</div>
             ` : ''}
             ${team ? html`<div>${this._renderTeamProgress(team, 'team-label')}</div>` : ''}
           </div>
@@ -5080,6 +5125,7 @@ class TaskMateChildCard extends LitElement {
                 : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
         </div>
       </div>
+      ${this._classicRowActions(chore, child, isCompletedForToday)}
     `;
   }
 
@@ -6360,15 +6406,31 @@ class TaskMateChildCard extends LitElement {
     return !done && this._remindersOn();
   }
 
-  /** "🔥 4 days" and "🔔 17:30" on a chore row — shared by the classic and designed rows. */
-  _choreStreakReminderTags(chore, child, done, cls) {
+  /** "🔥 4 days" on a chore row — shared by the classic and designed rows. */
+  _choreStreakTag(chore, child, cls) {
     const streak = Number((child.chore_streaks || {})[chore.id]) || 0;
+    return streak >= 2 ? html`<span class="${cls} tm-streak-tag" title="${this._t("child.chore_streak_title", { count: streak })}">🔥 ${this._t("child.chore_streak_days", { count: streak })}</span>` : "";
+  }
+
+  /** "🔔 17:30" on an outstanding chore row — shared by the classic and designed rows. */
+  _choreReminderBtn(chore, child, done, cls) {
+    if (done || !this._remindersOn()) return "";
     const time = (child.reminders || {})[chore.id] || "";
-    return html`
-      ${streak >= 2 ? html`<span class="${cls} tm-streak-tag" title="${this._t("child.chore_streak_title", { count: streak })}">🔥 ${this._t("child.chore_streak_days", { count: streak })}</span>` : ""}
-      ${!done && this._remindersOn() ? html`<button type="button" class="${cls} tm-help-btn tm-remind-btn"
-        aria-label="${this._t("child.reminder_title", { chore: chore.name })}"
-        @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${__tmClock(this.hass, time)}` : ""}</button>` : ""}`;
+    return html`<button type="button" class="${cls} tm-help-btn tm-remind-btn"
+      aria-label="${this._t("child.reminder_title", { chore: chore.name })}"
+      @click=${(e) => { e.stopPropagation(); this._openReminderSheet(chore, child); }}>🔔${time ? ` ${__tmClock(this.hass, time)}` : ""}</button>`;
+  }
+
+  /**
+   * Classic: the reminder bell and "I'm stuck" in a strip of their own under
+   * the row. Inside the row they sat on its tap-to-complete surface, so a
+   * near miss completed the chore. A span, so the rows' colour cycle holds.
+   */
+  _classicRowActions(chore, child, done) {
+    if (done) return "";
+    const bell = this._choreReminderBtn(chore, child, done, "photo-badge");
+    const help = this._renderHelp(chore, child, "photo-badge");
+    return bell || help ? html`<span class="tm-row-acts">${bell}${help}</span>` : "";
   }
 
   _toMinutes(hhmm) {
