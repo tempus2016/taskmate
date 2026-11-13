@@ -1416,12 +1416,13 @@ class TaskMateChildCard extends LitElement {
         --mdc-icon-size: 80px;
         color: var(--fun-green);
         margin-bottom: 16px;
-        animation: bounce 1s ease infinite;
+        animation: bounce 0.7s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
+      /* One landing on arrival, then still: no loops on kiosk tablets. */
       @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
+        from { transform: translateY(-14px) scale(0.92); }
+        to { transform: none; }
       }
 
       .empty-state .message {
@@ -1470,7 +1471,7 @@ class TaskMateChildCard extends LitElement {
         border-radius: 22px; width: 100%; max-width: 330px;
         padding: 20px 18px 18px; text-align: center;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        animation: pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .photo-title { font-size: 1.15rem; font-weight: 800; color: var(--fun-purple); }
       .photo-for { font-size: 0.85rem; color: var(--secondary-text-color, #6b7280); margin: 2px 0 16px; }
@@ -1595,7 +1596,7 @@ class TaskMateChildCard extends LitElement {
       .tm-care-forecast { background: #ecf3ff; color: #1e3a6e; }
       .tm-care-forecast .ic ha-icon { --mdc-icon-size: 26px; }
       .tm-reward-pic { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex: none; display: block; }
-      .tm-screen-live { width: 10px; height: 10px; border-radius: 50%; background: #e53935; flex: none; animation: tm-boost-pulse 1.6s ease-in-out infinite; }
+      .tm-screen-live { width: 10px; height: 10px; border-radius: 50%; background: #e53935; flex: none; animation: tm-boost-pulse 1.6s ease-in-out 2; }
       .tm-care-appealable { background: #eef2ff; color: #2b3a7a; }
       .tm-care-appealable .tm-appeal-body { flex: 1; min-width: 0; }
       .tm-care-appeal { background: #eef2ff; color: #2b3a7a; }
@@ -1607,7 +1608,7 @@ class TaskMateChildCard extends LitElement {
       ha-card:has(.tm-boost-take) { min-height: 460px; }
       .tm-care-boost { position: relative; overflow: hidden; background: linear-gradient(120deg, #ffe2bf, #fff1c2); color: #4a2600; border: 1px solid #ffc778; }
       .tm-care-boost .tm-boost-body { flex: 1; min-width: 0; }
-      .tm-boost-bolt { animation: tm-boost-pulse 1.6s ease-in-out infinite; }
+      .tm-boost-bolt { animation: tm-boost-pulse 1.6s ease-in-out 2; }
       .tm-boost-clock { font: 700 1.2rem/1 ui-monospace, Menlo, monospace; color: #b34f00; text-align: end; flex: none; }
       .tm-boost-clock small { display: block; font: 600 .62rem sans-serif; color: #8a5a2a; text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
       .tm-boost-bar { position: absolute; inset-inline-start: 0; bottom: 0; height: 4px; background: #ff7a00; transition: width 1s linear; }
@@ -1619,7 +1620,7 @@ class TaskMateChildCard extends LitElement {
       .tm-boost-take { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 20px; cursor: pointer;
         background: radial-gradient(circle at 50% 35%, #ffb300 0%, #ff7a00 55%, #d84b00 100%); color: #fff; text-align: center; border-radius: inherit; animation: tm-boost-in .4s ease-out; }
       .tm-boost-take-in { cursor: default; display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 360px; }
-      .tm-boost-take-bolt { font-size: 4rem; line-height: 1; animation: tm-boost-pulse 1.2s ease-in-out infinite; filter: drop-shadow(0 6px 12px rgba(0,0,0,.25)); }
+      .tm-boost-take-bolt { font-size: 4rem; line-height: 1; animation: tm-boost-pulse 1.2s ease-in-out 2; filter: drop-shadow(0 6px 12px rgba(0,0,0,.25)); }
       .tm-boost-take-title { font-size: 2rem; font-weight: 800; letter-spacing: .02em; }
       .tm-boost-take-mult { font: 900 3.6rem/1 sans-serif; text-shadow: 0 4px 0 rgba(0,0,0,.15); }
       .tm-boost-take-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
@@ -1629,7 +1630,6 @@ class TaskMateChildCard extends LitElement {
       .tm-boost-take-name { opacity: .85; font-size: .9rem; }
       .tm-boost-take-go { margin-top: 12px; background: #fff; color: #c24a00; border: 0; border-radius: 999px; padding: 12px 28px; font: 800 1.05rem sans-serif; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,.2); }
       @keyframes tm-boost-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
-      @media (prefers-reduced-motion: reduce) { .tm-boost-bolt, .tm-boost-take-bolt, .tm-boost-take, .tm-screen-live { animation: none; } }
       .tm-care-goal.reached { background: #d9f5df; }
       .tm-care-praise { background: #eaf7ff; color: #0f4060; }
       .tm-care-praise .tm-praise-body { flex: 1; min-width: 0; overflow-wrap: anywhere; }
@@ -1693,7 +1693,7 @@ class TaskMateChildCard extends LitElement {
         border-radius: 30px;
         padding: 40px 50px;
         text-align: center;
-        animation: pop-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        animation: pop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         position: relative;
         overflow: hidden;
       }
@@ -1712,12 +1712,14 @@ class TaskMateChildCard extends LitElement {
       .celebration-stars {
         font-size: 4rem;
         margin-bottom: 16px;
-        animation: star-bounce 0.6s ease infinite;
+        animation: star-bounce 0.9s cubic-bezier(0.16, 1, 0.3, 1);
       }
 
+      /* The celebration's one authored moment: the stars swing past and settle once. */
       @keyframes star-bounce {
-        0%, 100% { transform: scale(1) rotate(0deg); }
-        50% { transform: scale(1.2) rotate(10deg); }
+        0% { transform: scale(0.6) rotate(-12deg); }
+        55% { transform: scale(1.15) rotate(6deg); }
+        100% { transform: none; }
       }
 
       .celebration-title {
@@ -1911,7 +1913,7 @@ class TaskMateChildCard extends LitElement {
         height: 10px;
         border-radius: 50%;
         background: var(--fun-green);
-        animation: pulse-dot 1.5s ease-in-out infinite;
+        animation: pulse-dot 1.5s ease-in-out 2;
       }
       @keyframes pulse-dot {
         0%, 100% { opacity: 1; transform: scale(1); }
@@ -2589,6 +2591,24 @@ class TaskMateChildCard extends LitElement {
       :host([data-tm-design="graphite"]) .compact .tmd-check .c-name { font-size: 14px; }
       :host([data-tm-design="graphite"]) .compact .tmd-check + .tmd-check::before { inset-inline-start: 40px; }
       :host([data-tm-design="accessible"]) .compact .tmd-check .c-name { font-size: 15px; }
+      /* Reduced motion: the card's only reduce block. It sits last so it beats
+         every earlier animation and transition rule of equal specificity. */
+      @media (prefers-reduced-motion: reduce) {
+        .tm-boost-bolt, .tm-boost-take-bolt, .tm-boost-take, .tm-screen-live { animation: none; }
+        .empty-state ha-icon, .celebration-stars, .chore-card.celebrating,
+        .badge-mini.just-earned, .recording-dot { animation: none; }
+        /* Busy spinners stop rotating; the loading icon and label stay. */
+        .photo-spinner, .roulette-btn.is-spinning ha-icon,
+        ha-icon[icon="mdi:loading"] { animation: none !important; }
+        /* Sheets fade in without the scale-up. */
+        .photo-sheet, .celebration-content { animation-name: fade-in; }
+        /* Colour and shadow feedback stay; movement snaps instead of sliding. */
+        .chore-card, .chore-number-badge, .pre-tile, .timed-chore-card, .timer-btn {
+          transition-property: box-shadow, background, border-color;
+        }
+        .chore-checkbox, .chore-checkbox ha-icon { transition-property: background, border-color, color, box-shadow; }
+        .level-xp-fill, .cap-fill, .next-badge-bar i, .tmd-next-badge .bar i, .tm-boost-bar { transition: none; }
+      }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
