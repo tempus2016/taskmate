@@ -33,6 +33,18 @@ The rate is fixed: 50 points is always the same payout. TaskMate never adjusts t
 
 ## Recording a payout
 
+### From the admin panel
+
+The quickest way: hand the money over, then record it in the **TaskMate** panel.
+
+1. Open a child's drawer (tap their name in the child chips at the top of the panel) and press **Pay out**, or press **Record a payout** in **Settings** → **Allowance**
+2. Pick the child if asked. **Points to pay out** starts at their whole balance — lower it for a part payout
+3. Check the cash line underneath (for example `50 points = £5`) and press **Record payout**
+
+The buttons only appear once **Enable allowance payouts** is switched on and saved.
+
+### From an automation or a dashboard button
+
 When a child wants to cash in points — say a weekly Friday pocket-money — record the payout from an automation or a dashboard button using the `record_allowance_payout` service.
 
 ```yaml
@@ -55,7 +67,34 @@ What happens when it runs:
 - A ledger entry is stored capturing the child, the points, the cash amount, the currency, and the date
 - A `taskmate_allowance_paid` event is fired — handy for triggering a notification or logging the cash you handed over
 
-The service is **admin-gated** and recorded in the [Admin Audit Log](Admin-Audit-Log.md). It is rejected if allowance is disabled, the child is unknown, or `points` is below 1.
+The service is **admin-gated** and recorded in the [Admin Audit Log](Admin-Audit-Log.md). It is rejected if allowance is disabled, the child is unknown, `points` is below 1, or `points` is more than the child's balance.
+
+### Paying out the whole balance from a button
+
+A dashboard button's `tap_action` does **not** render templates: a `points:` template there reaches TaskMate as text and fails with `expected int at 'points'`. Put the template in a script, which does render it, and point the button at the script:
+
+```yaml
+script:
+  emily_allowance_payout:
+    alias: Emily allowance payout
+    sequence:
+      - condition: template
+        value_template: "{{ states('sensor.taskmate_emily_points') | int(0) > 0 }}"
+      - action: taskmate.record_allowance_payout
+        data:
+          child_id: <child id>
+          points: "{{ states('sensor.taskmate_emily_points') | int(0) }}"
+```
+
+```yaml
+type: button
+entity: sensor.taskmate_emily_points
+tap_action:
+  action: perform-action
+  perform_action: script.emily_allowance_payout
+```
+
+Your points sensor's entity id may carry an area prefix (for example `sensor.office_taskmate_emily_points`) — use the id shown in Home Assistant.
 
 ### A weekly payout
 

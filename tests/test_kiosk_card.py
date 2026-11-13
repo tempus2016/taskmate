@@ -68,8 +68,8 @@ def test_every_string_the_card_uses_is_translated_everywhere():
 
 
 def test_no_parent_action_in_the_kiosk():
-    """Approve/reject, complete-as-parent, points and reward claims have no
-    place on a shared child-facing tablet, and there's no toggle for them."""
+    """Approve/reject, complete-as-parent and points changes have no place on
+    a shared child-facing tablet, and there's no toggle for them."""
     services = set(re.findall(r'callService\("(\w+)",\s*"(\w+)"', SOURCE))
     assert services == {
         ("button", "press"),
@@ -81,12 +81,14 @@ def test_no_parent_action_in_the_kiosk():
         ("taskmate", "complete_bounty"),
         # The child picking one of their own unlocked avatars (#1112).
         ("taskmate", "choose_avatar"),
+        # The child claiming one of their own rewards (#1248); the claim
+        # still waits for a parent's approval like any other.
+        ("taskmate", "claim_reward"),
     }
     for forbidden in (
         "as_parent",
         "approve_",
         "reject_",
-        "claim_reward",
         "apply_penalty",
         "adjust_points",
         "show_parent_actions",
