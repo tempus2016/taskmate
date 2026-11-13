@@ -1299,9 +1299,14 @@ class TaskMateChildCard extends LitElement {
         border-color: var(--warning-color, #ff9800);
         background: color-mix(in srgb, var(--warning-color, #ff9800) 12%, transparent);
       }
-      .pre-tile.awaiting .pre-tile-tick ha-icon {
-        color: color-mix(in srgb, var(--warning-color, #ff9800) 75%, var(--primary-text-color, #212121));
+      /* Waiting: a small hourglass badge in the corner, not the full-tile
+         tick, so the chore's own picture stays readable to a non-reader. */
+      .pre-tile.awaiting .pre-tile-tick {
+        inset: auto; inset-block-start: 8px; inset-inline-start: 8px;
+        width: 34px; height: 34px; border-radius: 50%;
+        background: var(--warning-color, #ff9800);
       }
+      .pre-tile.awaiting .pre-tile-tick ha-icon { --mdc-icon-size: 20px; color: #3a2600; }
       .pre-tile.locked { opacity: 0.4; cursor: default; }
       .pre-tile.loading { opacity: 0.6; }
 
@@ -2349,6 +2354,11 @@ class TaskMateChildCard extends LitElement {
       .tmd-awaiting ha-icon {
         --mdc-icon-size: 14px;
         color: color-mix(in srgb, var(--tmd-warn) 65%, var(--tmd-text));
+      }
+      /* Graphite strips chips to plain text; the waiting note follows suit
+         so it never outweighs the chore name. */
+      :host([data-tm-design="graphite"]) .tmd-awaiting {
+        background: transparent; padding: 0; font-weight: 500; font-size: 13px;
       }
 
       /* Designed: timed task card. The designed lists reuse the classic timed
@@ -3720,7 +3730,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? this._designUndoChip(r, this._t("child.done") || "Completed", "c-done")
+            ? this._designUndoChip(r, r.awaiting ? `${this._t("child.done") || "Completed"} ⏳` : (this._t("child.done") || "Completed"), "c-done")
             : html`<span class="chip c-pts">+${__tmNum(this.hass, r.points)}</span>
                 ${this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"), "sm")}`}
         </div>
