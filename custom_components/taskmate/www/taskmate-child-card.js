@@ -36,6 +36,54 @@ const __tmNum = (hass, value, opts) => (window.__taskmate_numbers
   ? window.__taskmate_numbers.format(hass, value, opts)
   : (typeof value === "number" ? (value === 0 ? 0 : value).toLocaleString((hass && hass.locale && hass.locale.language) || (hass && hass.language) || undefined, opts) : (value == null ? "" : String(value))));
 
+// A picture for a chore that has none, guessed from its name (and icon id).
+// Shared by the designed rows and the pre-reader tiles, so "Bins" and
+// "Plants" get a bin and a plant on both instead of two identical clocks.
+//
+// Keywords cover every shipped locale and are written folded (see
+// __tmFoldWords), so "Zähne", "Müll", "łóżko" and "Støvsuge" match "zahne",
+// "mull", "lozk*" and "stovsug*". A keyword matches a whole word; a trailing *
+// lets it match the start of a word (German and Dutch compounds, plurals).
+// The first category that matches wins, so the specific ones sit before the
+// catch-alls: cat before "feed", car before "clean" and "wash", laundry
+// before "wash".
+const __TM_CHORE_EMOJI = [
+  ["🪥", "teeth, tooth*, brush*, zahn*, zahne*, dent*, tand*, taend*, tann*, tenner, tennene, zeby, zebow, zab"],
+  ["🛏️", "bed, beds, sleep*, bett*, schlaf*, lit, dormir, sommeil, slap*, seng*, sove, sova, lozk*, posciel*, spac, cama*"],
+  ["🐱", "cat, cats, kitten*, litter*, katze*, chat, chats, chaton*, litiere, kat, katten*, poes, katte*, katt, kot, kota, kotu, kotek, kuweta, gato*, gata*"],
+  ["🐶", "dog*, pet, pets, puppy, feed*, hund*, futter*, haustier*, chien*, nourrir, animal, animaux, hond*, voer*, huisdier*, fodr*, kaeledyr*, kjaeledyr*, mate, mata, fore, psa, psem, psu, karm*, zwierz*, cao, caes, cachorro*, alimentar, racao"],
+  ["🚗", "car, cars, auto*, wagen, voiture*, bil, bilen, bilvask*, samochod*, carro*"],
+  ["🧹", "tidy*, clean*, sweep*, broom*, aufraum*, putz*, sauber*, fegen, kehren, ranger, rangement, nettoy*, balay*, menage, opruim*, schoonmak*, schoon*, vegen, ryd*, gor rent, rengor*, fej*, gjor rent, rengjor*, feie, feia, sprzat*, porzad*, zamiat*, arrum*, limpar*, limpeza, varrer"],
+  ["🧺", "laundry, clothes, fold*, washing machine, wasche, waschmaschine*, kleidung*, falten, linge, vetement*, plier, was, wasgoed, kleren, kleding, vouw*, vasketoj, toj, folde, klaer, kler, klesvask*, pranie, pran*, ubrani*, sklada*, roupa*, lavandaria, dobrar"],
+  ["🍽️", "dish*, wash*, plate*, geschirr*, abwasch*, spul*, teller, wasch*, vaisselle, assiette*, laver, afwas*, vaat*, borden, wassen, opvask*, tallerken*, vask*, oppvask*, naczyn*, zmywa*, talerz*, myc, louca, loica, prato*, lavar"],
+  ["🗑️", "trash, bin, bins, rubbish, garbage, recycl*, mull*, abfall*, tonne*, poubelle*, dechet*, ordure*, afval*, vuilnis*, prullenbak*, kliko, skrald*, affald*, soppel*, boss, avfall*, smiec*, kosz*, lixo*, caixote*"],
+  ["📚", "homework, study*, read, reading, book*, hausaufgabe*, lesen, buch, bucher, lern*, devoir*, lire, lecture, livre*, etud*, huiswerk*, lezen, boek*, studeren, leren, lektie*, laes*, bog, boger, lekse*, lese, lesa, lesing, bok, boker, lekcj*, czyta*, ksiazk*, nauk*, zadanie domowe, licao, licoes, trabalho de casa, dever de casa, tpc, estud*, ler, leitura, livro*"],
+  ["🪴", "water*, plant*, garden*, flower*, pflanz*, blume*, garten*, giessen, plante*, arros*, jardin*, fleur*, tuin*, bloem*, vand, vande, vanding, blomst*, hage*, vann, vanne, vanna, rosli*, kwiat*, ogrod*, podlew*, planta*, jardim, flor, flores, regar"],
+  ["🛁", "shower*, bath*, dusch*, bad, baden, badewanne*, douche*, bain*, bade*, brus*, dusj*, prysznic*, kapiel*, wanna, banho*, duche*, chuveiro*"],
+  ["🍳", "cook*, food, kitchen*, koch*, kuche, essen, cuisin*, repas, kok*, keuken*, eten, mad, lav mad, lag mat, lage mat, laga mat, kjokken*, gotow*, kuchni*, jedzeni*, cozinh*, comida, refeic*"],
+  ["🧸", "toy*, play*, spielzeug*, spiel*, jouet*, jouer, jeu, jeux, speelgoed*, spel*, spelen, legetoj*, lege, leik*, leke*, zabawk*, bawi*, brinquedo*, brincar"],
+  ["🎵", "music*, practi*, piano*, guitar*, violin*, musik*, uben, klavier*, musique*, pratique, muziek*, oefenen, ove, ova, musikk*, muzyk*, pianin*, musica*, praticar"],
+  ["🏃", "exercise*, run, running, sport*, workout*, lauf*, training*, joggen, courir, exercice*, rennen, hardlop*, oefening*, lob, lobe, traen*, lope, lop, trening*, bieg*, cwicz*, exercicio*, desporto*, esporte*, correr"],
+  ["🧽", "vacuum*, hoover*, staubsaug*, saug*, aspirateur*, aspirer, stofzuig*, stovsug*, odkurz*, aspirar, aspirador*"],
+].map(([emoji, words]) => [emoji, words.split(", ")]);
+
+/** Lower-case, accent-free, single-spaced words padded with a space each side. */
+const __tmFoldWords = (text) => ` ${String(text || "").toLowerCase()
+  .replace(/ß/g, "ss").replace(/æ/g, "ae").replace(/[øœ]/g, "o").replace(/ł/g, "l")
+  .normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .replace(/[^a-z0-9]+/g, " ").trim()} `;
+
+/** The guessed emoji for a chore's words, or null when nothing matches. */
+const __tmGuessChoreEmoji = (text) => {
+  const hay = __tmFoldWords(text);
+  for (const [emoji, words] of __TM_CHORE_EMOJI) {
+    for (const w of words) {
+      if (w.endsWith("*") ? hay.includes(` ${w.slice(0, -1)}`) : hay.includes(` ${w} `)) return emoji;
+    }
+  }
+  return null;
+};
+
 const LIT_HOST_TAGS = ["hui-masonry-view", "hui-view", "home-assistant-main", "ha-card"];
 
 const findLitBase = () => {
@@ -1264,7 +1312,33 @@ class TaskMateChildCard extends LitElement {
         --mdc-icon-size: 72px;
         color: var(--success-color, #2ecc71);
       }
-      .pre-tile.locked { opacity: 0.4; cursor: default; }
+      .pre-tile-emoji { display: block; font-size: 60px; line-height: 64px; height: 64px; }
+      .pre-tile.done .pre-tile-emoji { opacity: 0.35; }
+      /* Corner badge: a padlock on a locked tile, a curved "back" arrow on a
+         done tile a tap will undo. Pictures, so a child who can't read still
+         sees why the tile is faded and what tapping a finished one does. */
+      .pre-tile-badge {
+        position: absolute; inset-block-start: 8px; inset-inline-end: 8px;
+        display: grid; place-items: center;
+        width: 34px; height: 34px; border-radius: 50%;
+        pointer-events: none;
+      }
+      .pre-tile-badge ha-icon { --mdc-icon-size: 20px; }
+      /* Same colour source as the tile itself (HA's card background), so the
+         badge contrasts with the tile under every style and theme. */
+      .pre-tile-badge.lock {
+        background: var(--primary-text-color, #212121);
+        color: var(--card-background-color, #fff);
+      }
+      .pre-tile-badge.undo {
+        background: var(--card-background-color, #fff);
+        color: var(--success-color, #2ecc71);
+        border: 2px solid currentColor;
+      }
+      /* Fade the picture, not the padlock: a uniformly faded tile reads as
+         broken rather than "not yet". */
+      .pre-tile.locked { cursor: default; border-style: dashed; }
+      .pre-tile.locked > :not(.pre-tile-badge) { opacity: 0.4; }
       .pre-tile.loading { opacity: 0.6; }
 
       /* Chore roulette (#677) */
@@ -3107,19 +3181,13 @@ class TaskMateChildCard extends LitElement {
   }
 
   _choreEmoji(chore) {
-    const n = `${chore.name || ""} ${chore.icon || ""}`.toLowerCase();
-    const map = [
-      [/(teeth|brush|tooth)/, "🪥"], [/(bed|sleep)/, "🛏️"],
-      [/(dog|pet|cat|feed)/, "🐶"], [/(tidy|clean|sweep|broom)/, "🧹"],
-      [/(dish|wash|plate)/, "🍽️"], [/(trash|bin|rubbish|garbage)/, "🗑️"],
-      [/(homework|study|read|book)/, "📚"], [/(water|plant|garden)/, "🪴"],
-      [/(laundry|clothes|fold)/, "🧺"], [/(shower|bath)/, "🛁"],
-      [/(cook|food|kitchen)/, "🍳"], [/(toy|play)/, "🧸"],
-      [/(music|practice|piano)/, "🎵"], [/(car|wash)/, "🚗"],
-      [/(exercise|run|sport)/, "🏃"], [/(vacuum)/, "🧽"],
-    ];
-    for (const [re, e] of map) if (re.test(n)) return e;
-    return "⭐";
+    return this._choreEmojiGuess(chore) || "⭐";
+  }
+
+  /** The keyword guess alone (null when nothing matches), so the pre-reader
+   *  tile can fall back to its time-of-day picture instead of a star. */
+  _choreEmojiGuess(chore) {
+    return __tmGuessChoreEmoji(`${chore.name || ""} ${chore.icon || ""}`);
   }
 
   /** What a designed chore row shows in its glyph slot.
@@ -4671,10 +4739,20 @@ class TaskMateChildCard extends LitElement {
     const stars = Math.max(1, Math.min(5, Math.round(points / 2) || 1));
     const showPoints = this.config.pre_reader_points === true;
 
+    // The same picture order as the designed rows (_choreGlyph): the chore's
+    // own picture or icon, then the keyword guess, and only then the
+    // time-of-day icon. Going straight to time of day drew "Bins" and
+    // "Plants" as two identical clocks.
     const v = window.__taskmate_chore_visual(chore);
+    const emoji = v.kind === "image" || v.kind === "icon" ? null : this._choreEmojiGuess(chore);
     const icon = (v.kind === "icon" ? v.icon : "")
       || this._getTimeCategoryIcon(chore.time_category)
       || 'mdi:checkbox-marked-circle-outline';
+    // A second tap on a done tile undoes it. Show that as a picture, but only
+    // when the tap will actually undo: always for a parent, and for a child
+    // only inside their undo window (_handleUndo refuses it otherwise).
+    const canUndo = isDone && !isLoading && (this._isParent()
+      || this._childCanUndo(this._latestCompletion(childCompletionsToday)));
 
     return html`
       <button
@@ -4691,9 +4769,16 @@ class TaskMateChildCard extends LitElement {
         <div class="pre-tile-icon">
           ${v.kind === "image"
             ? html`<img src="${v.url}" alt="" loading="lazy">`
-            : html`<ha-icon icon="${icon}"></ha-icon>`}
+            : emoji
+              ? html`<span class="pre-tile-emoji" aria-hidden="true">${emoji}</span>`
+              : html`<ha-icon icon="${icon}"></ha-icon>`}
         </div>
         ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
+        ${!available
+          ? html`<span class="pre-tile-badge lock" aria-hidden="true"><ha-icon icon="mdi:lock"></ha-icon></span>`
+          : canUndo
+            ? html`<span class="pre-tile-badge undo" aria-hidden="true"><ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon></span>`
+            : ''}
         ${showPoints
           ? html`
             <div class="pre-tile-points">
