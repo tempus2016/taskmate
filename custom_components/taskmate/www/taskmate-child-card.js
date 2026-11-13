@@ -1157,6 +1157,37 @@ class TaskMateChildCard extends LitElement {
         opacity: 0.6;
       }
 
+      /* Done but waiting for a parent to approve: amber, not the paid green. */
+      .chore-card.completed.awaiting {
+        opacity: 0.9;
+        filter: none;
+        border-color: var(--warning-color, #ff9800) !important;
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 14%, var(--card-background-color, #fff)) !important;
+      }
+      .chore-card.completed.awaiting .chore-checkbox {
+        border-color: var(--warning-color, #ff9800);
+        background: var(--warning-color, #ff9800);
+        box-shadow: none;
+      }
+      .chore-card.completed.awaiting .chore-checkbox ha-icon { color: #3a2600; }
+      .awaiting-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        align-self: flex-start;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--primary-text-color);
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 22%, transparent);
+        border-radius: 8px;
+        padding: 2px 8px;
+      }
+      .awaiting-label ha-icon {
+        --mdc-icon-size: 14px;
+        color: color-mix(in srgb, var(--warning-color, #ff9800) 65%, var(--primary-text-color, #212121));
+      }
+      .empty-state.none ha-icon { color: var(--fun-yellow); }
+
       /* Bonus sub-task cards */
       .chore-card.bonus-subtask {
         margin-inline-start: 24px;
@@ -1263,6 +1294,13 @@ class TaskMateChildCard extends LitElement {
       .pre-tile-tick ha-icon {
         --mdc-icon-size: 72px;
         color: var(--success-color, #2ecc71);
+      }
+      .pre-tile.done.awaiting {
+        border-color: var(--warning-color, #ff9800);
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 12%, transparent);
+      }
+      .pre-tile.awaiting .pre-tile-tick ha-icon {
+        color: color-mix(in srgb, var(--warning-color, #ff9800) 75%, var(--primary-text-color, #212121));
       }
       .pre-tile.locked { opacity: 0.4; cursor: default; }
       .pre-tile.loading { opacity: 0.6; }
@@ -1753,6 +1791,21 @@ class TaskMateChildCard extends LitElement {
       .celebration-points ha-icon {
         --mdc-icon-size: 28px;
         color: var(--fun-yellow);
+      }
+      .celebration-points.awaiting { opacity: 0.75; }
+      .celebration-pending {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .celebration-pending ha-icon {
+        --mdc-icon-size: 18px;
+        color: color-mix(in srgb, var(--warning-color, #ff9800) 65%, var(--primary-text-color, #212121));
       }
 
       /* Confetti */
@@ -2269,6 +2322,33 @@ class TaskMateChildCard extends LitElement {
       .tmd-check .c-pts { background: transparent; }
       .tmd-check .c-done {
         background: transparent; border-color: transparent; color: var(--tmd-good);
+      }
+
+      /* Done, but a parent still has to approve it: the warn role and an
+         hourglass instead of the paid green tick. The :host prefix outranks
+         graphite's .tmd-check.done rules in taskmate-design.js. */
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-chore.done.awaiting,
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-quest.done.awaiting,
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting { opacity: 0.9; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-chore.done.awaiting .ch-name,
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-quest.done.awaiting .q-name,
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting .c-name { text-decoration: none; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting .c-num {
+        background: var(--tmd-warn); border-color: var(--tmd-warn);
+      }
+      .tmd-chore.awaiting .num-badge ha-icon,
+      .tmd-check.awaiting .c-num ha-icon { --mdc-icon-size: 16px; color: #3a2600; }
+      :host([data-tm-design="graphite"]:not([data-tm-dark])) .tmd-check.awaiting .c-num ha-icon { color: #fff; }
+      .tmd-quest.awaiting .q-num ha-icon { --mdc-icon-size: 16px; }
+      .tmd-awaiting {
+        display: inline-flex; align-items: center; gap: 4px;
+        margin-top: 3px; padding: 2px 8px; border-radius: var(--tmd-radius-sm);
+        font-size: 12px; font-weight: 700; color: var(--tmd-text);
+        background: color-mix(in srgb, var(--tmd-warn) 20%, transparent);
+      }
+      .tmd-awaiting ha-icon {
+        --mdc-icon-size: 14px;
+        color: color-mix(in srgb, var(--tmd-warn) 65%, var(--tmd-text));
       }
 
       /* Designed: timed task card. The designed lists reuse the classic timed
@@ -2847,7 +2927,7 @@ class TaskMateChildCard extends LitElement {
           ${this._showingTomorrow(child, allChores)
             ? this._renderTomorrow(child, allChores, "classic")
             : childChores.length === 0
-            ? this._renderEmptyState()
+            ? this._renderEmptyState(this._emptyIsAllDone(child, todaysCompletions))
             : html`
                 <div class="section-title">
                   <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
@@ -3184,6 +3264,46 @@ class TaskMateChildCard extends LitElement {
     return { done, completions: childCompletionsToday };
   }
 
+  // Whether a completion of this chore by this child goes to a parent rather
+  // than paying at once. Mirrors the backend's auto_approve rule: a grown-up's
+  // own tick, or a chore that skips approval with no photo, no open-ended
+  // description and no uncapped quantity, pays straight away.
+  _needsApproval(chore, child) {
+    if (!chore || child?.is_adult) return false;
+    const uncappedQuantity = !!chore.quantity_unit && !(Number(chore.quantity_max) > 0);
+    return chore.requires_approval !== false || !!chore.require_photo || !!chore.open_ended || uncappedQuantity;
+  }
+
+  // A done row whose completion still waits for a parent. Today's completions
+  // carry `approved`; a tap still in flight has no completion yet, so it is
+  // judged by the chore's own approval rule until the sensor catches up.
+  _isAwaitingApproval(chore, child, completions) {
+    const mine = completions || [];
+    if (mine.some((c) => c.approved === false)) return true;
+    const opt = this._optimisticCompletions?.[`${chore.id}_${child.id}`];
+    if (!opt) return false;
+    const actual = mine.map((c) => (c.completed_at ? new Date(c.completed_at).getTime() : 0));
+    const inFlight = (opt.timestamps || [opt.timestamp || Date.now()])
+      .some((t) => !actual.some((a) => Math.abs(a - t) < 2000));
+    return inFlight && this._needsApproval(chore, child);
+  }
+
+  // An empty chore list is "All done" only when the child ticked something
+  // today; with nothing ticked there was simply nothing to do.
+  _emptyIsAllDone(child, todaysCompletions) {
+    return (todaysCompletions || []).some((c) => !c.bonus_subtask_id
+      && (c.child_id === child.id || this._parentDidItFor(c, child.id)));
+  }
+
+  _designEmpty(child) {
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    const todays = this._filterCompletionsForToday(attrs.todays_completions || attrs.completions || []);
+    return this._emptyIsAllDone(child, todays)
+      ? html`<div class="tmd-empty">${this._t("child.all_done")}</div>`
+      : html`<div class="tmd-empty tmd-empty-none">${this._t("child.nothing_to_do")}</div>`;
+  }
+
   _renderDesigned(design) {
     const entity = this.hass.states[this.config.entity];
     const hd = _safeColor(this.config.header_color, "#ff7043");
@@ -3270,6 +3390,7 @@ class TaskMateChildCard extends LitElement {
       );
       return {
         chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked, locked, shared,
+        awaiting: done && this._isAwaitingApproval(chore, child, completions),
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
         points: this._boostPoints(chore, child),
@@ -3309,7 +3430,9 @@ class TaskMateChildCard extends LitElement {
     // silently ignored under every designed style — including accessible,
     // which is the one a child who needs picture tiles is most likely on.
     // The tiles keep the designed shell (header, tokens) around them.
-    const body = this.config.pre_reader === true
+    const body = this.config.pre_reader === true && childChores.length === 0
+      ? this._designEmpty(child)
+      : this.config.pre_reader === true
       ? html`
         <div class="pre-reader-grid">
           ${childChores.map((chore) =>
@@ -3462,6 +3585,7 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: __tmNum(this.hass, r.chore._weeklyTarget) })
       : "";
     return html`
+      ${r.awaiting ? html`<div class="tmd-awaiting"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("child.awaiting_approval")}</div>` : ""}
       ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
@@ -3543,11 +3667,11 @@ class TaskMateChildCard extends LitElement {
   }
 
   _designPlayroom(child, rows, _remaining, _tone) {
-    if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
+    if (rows.length === 0) return this._designEmpty(child);
     return html`<div class="tmd-chores">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
-        <div class="tmd-chore ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
-          <div class="num-badge" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
+        <div class="tmd-chore ${r.done ? "done" : ""} ${r.awaiting ? "awaiting" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
+          <div class="num-badge" style="${r.awaiting ? "--ac:var(--tmd-warn)" : r.done ? "--ac:var(--tmd-good)" : ""}">${r.awaiting ? html`<ha-icon icon="mdi:timer-sand"></ha-icon>` : r.done ? "✓" : r.index + 1}</div>
           <span class="ch-emoji">${r.glyph}</span>
           <div class="ch-mid">
             <div class="ch-name">${r.chore.name}</div>
@@ -3563,15 +3687,15 @@ class TaskMateChildCard extends LitElement {
   }
 
   _designConsole(child, rows, _remaining, _tone) {
-    if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
+    if (rows.length === 0) return this._designEmpty(child);
     return html`<div class="grid tmd-quests">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
-        <div class="tmd-quest ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
-          <div class="num q-num" style="${r.done ? "color:var(--tmd-good)" : ""}">${r.done ? "✓" : String(r.index + 1).padStart(2, "0")}</div>
+        <div class="tmd-quest ${r.done ? "done" : ""} ${r.awaiting ? "awaiting" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
+          <div class="num q-num" style="${r.awaiting ? "color:var(--tmd-warn)" : r.done ? "color:var(--tmd-good)" : ""}">${r.awaiting ? html`<ha-icon icon="mdi:timer-sand"></ha-icon>` : r.done ? "✓" : String(r.index + 1).padStart(2, "0")}</div>
           <span class="q-emoji">${r.glyph}</span>
           <div class="q-mid">
             <div class="q-name">${r.chore.name}</div>
-            ${r.done
+            ${r.awaiting ? "" : r.done
               ? html`<div class="num q-cleared">${this._t("child.console_cleared")}</div>`
               : html`<div class="num q-xp">+${__tmNum(this.hass, r.points)} ${this._t("common.xp")}</div>`}
             ${this._designChoreMeta(r)}
@@ -3585,11 +3709,11 @@ class TaskMateChildCard extends LitElement {
   }
 
   _designCleanpro(child, rows, _remaining, _tone) {
-    if (rows.length === 0) return html`<div class="tmd-empty">${this._t("child.all_done")}</div>`;
+    if (rows.length === 0) return this._designEmpty(child);
     return html`<div class="tmd-checklist">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
-        <div class="tmd-check ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
-          <div class="c-num" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
+        <div class="tmd-check ${r.done ? "done" : ""} ${r.awaiting ? "awaiting" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
+          <div class="c-num" style="${r.awaiting ? "--ac:var(--tmd-warn)" : r.done ? "--ac:var(--tmd-good)" : ""}">${r.awaiting ? html`<ha-icon icon="mdi:timer-sand"></ha-icon>` : r.done ? "✓" : r.index + 1}</div>
           <span class="c-emoji">${r.glyph}</span>
           <div class="c-mid">
             <div class="c-name">${r.chore.name}</div>
@@ -4476,7 +4600,18 @@ class TaskMateChildCard extends LitElement {
     return { label, soon };
   }
 
-  _renderEmptyState() {
+  _renderEmptyState(allDone = true) {
+    // "All Done!" is earned: it shows only when the child finished something
+    // today. With nothing ticked, the list was simply empty.
+    if (!allDone) {
+      return html`
+        <div class="empty-state none">
+          <ha-icon icon="mdi:weather-sunny"></ha-icon>
+          <div class="message">${this._t('child.nothing_to_do')}</div>
+          <div class="submessage">${this._t('child.nothing_to_do_sub')}</div>
+        </div>
+      `;
+    }
     return html`
       <div class="empty-state">
         <ha-icon icon="mdi:party-popper"></ha-icon>
@@ -4598,6 +4733,7 @@ class TaskMateChildCard extends LitElement {
     const isDone = chore.assignment_mode === "first_come"
       ? this._isChoreDone(chore, child, todaysCompletions).done
       : childCompletionsToday.length >= dailyLimit;
+    const isAwaiting = isDone && this._isAwaitingApproval(chore, child, childCompletionsToday);
     const isLoading = this._loading[chore.id];
     // The same locks the classic row refuses a tap for — a recurring chore in
     // its cooldown, a later period, a missed window, a sibling's first-come
@@ -4620,10 +4756,10 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <button
-        class="pre-tile ${isDone ? 'done' : ''} ${isLoading ? 'loading' : ''} ${available ? '' : 'locked'}"
+        class="pre-tile ${isDone ? 'done' : ''} ${isAwaiting ? 'awaiting' : ''} ${isLoading ? 'loading' : ''} ${available ? '' : 'locked'}"
         ?disabled=${isLoading || !available}
-        aria-label="${chore.name}"
-        title="${chore.name}"
+        aria-label="${isAwaiting ? `${chore.name}, ${this._t('child.awaiting_approval')}` : chore.name}"
+        title="${isAwaiting ? `${chore.name}, ${this._t('child.awaiting_approval')}` : chore.name}"
         @click=${() => {
           if (isLoading || !available) return;
           if (isDone) this._handleUndo(chore, child, childCompletionsToday);
@@ -4635,7 +4771,7 @@ class TaskMateChildCard extends LitElement {
             ? html`<img src="${v.url}" alt="" loading="lazy">`
             : html`<ha-icon icon="${icon}"></ha-icon>`}
         </div>
-        ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
+        ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="${isAwaiting ? 'mdi:timer-sand' : 'mdi:check-bold'}"></ha-icon></div>` : ''}
         ${showPoints
           ? html`
             <div class="pre-tile-points">
@@ -4773,6 +4909,9 @@ class TaskMateChildCard extends LitElement {
     const isCompletedForToday = isFirstCome
       ? this._firstComeDone(chore, child, completionsToday, sharedToday)
       : completionsToday >= dailyLimit;
+    // Done, but a parent still has to check it: the row says so instead of
+    // looking exactly like a paid one. Undo works the same either way.
+    const isAwaiting = isCompletedForToday && this._isAwaitingApproval(chore, child, childCompletionsToday);
 
     // Chore number (1-indexed for display) and color class (cycle through 8 colors)
     const choreNumber = choreIndex + 1;
@@ -4856,7 +4995,7 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div
-        class="chore-card ${chore._setTime ? `tm-set-time st-row-${chore._setTimeState}` : ""} ${setTimeLocked && chore._setTimeState === 'missed' ? "time-elapsed" : ""} ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""} ${this._inspectionRowClass(chore, child)}"
+        class="chore-card ${chore._setTime ? `tm-set-time st-row-${chore._setTimeState}` : ""} ${setTimeLocked && chore._setTimeState === 'missed' ? "time-elapsed" : ""} ${chore.mandatory ? "mandatory" : ""} ${isLoading ? "loading" : ""} ${isCelebrating ? "celebrating" : ""} ${isCompletedForToday ? "completed" : ""} ${isAwaiting ? "awaiting" : ""} ${notDueToday ? "not-due-today" : ""} ${notAvailableRecurrence || weeklyDone ? "recurrence-unavailable" : ""} ${notAvailableFirstCome ? "first-come-unavailable" : ""} ${timeElapsed ? "time-elapsed" : ""} ${isLockedPreview ? "chore-locked" : ""} ${depDimmed ? "dependency-blocked" : ""} ${this._inspectionRowClass(chore, child)}"
         role="button"
         tabindex="${isInteractive ? '0' : '-1'}"
         aria-disabled="${isInteractive ? 'false' : 'true'}"
@@ -4871,6 +5010,12 @@ class TaskMateChildCard extends LitElement {
           </div>
           <div class="chore-details">
             <div class="chore-name">${chore.name}${chore.mandatory ? html`<span class="mandatory-badge">⚠ ${this._t('child.mandatory')}</span>` : ''}${chore.auction && chore.auction.child_id ? html`<span class="auction-badge">🔨 ${this._t('child.won_at_auction')}</span>` : ''}</div>
+            ${isAwaiting ? html`
+              <div class="awaiting-label">
+                <ha-icon icon="mdi:timer-sand"></ha-icon>
+                ${this._t('child.awaiting_approval')}
+              </div>
+            ` : ''}
             ${this._renderDeadlineBadge(chore, isCompletedForToday)}
             ${this._renderSetTimeInfo(chore, child, 'classic')}
             ${isCompletedForToday ? '' : this._renderRejectNote(chore, child, 'tm-reject-note')}
@@ -4934,7 +5079,7 @@ class TaskMateChildCard extends LitElement {
               ? html`<ha-icon icon="mdi:lock-clock" class="chore-lock-icon"></ha-icon>`
               : team
                 ? html`<ha-icon icon="${team.mine ? 'mdi:account-multiple-minus' : 'mdi:account-multiple-plus'}"></ha-icon>`
-                : html`<ha-icon icon="mdi:check-bold"></ha-icon>`}
+                : html`<ha-icon icon="${isAwaiting ? 'mdi:timer-sand' : 'mdi:check-bold'}"></ha-icon>`}
         </div>
       </div>
     `;
@@ -5339,6 +5484,13 @@ class TaskMateChildCard extends LitElement {
       : (latestCompletion && latestCompletion.points != null)
         ? latestCompletion.points
         : (celebratingChore?.points || 0);
+    // A chore a parent still has to approve hasn't paid yet, so the overlay
+    // must not say it has. Auto-approved chores keep the plain "+N".
+    const child = (attrs.children || []).find(c => c.id === this.config.child_id);
+    // A set-time row celebrates as "<chore>@<time>"; the rule lives on the chore.
+    const approvalChore = celebratingChore
+      || (attrs.chores || []).find(c => c.id === String(this._celebrating || "").split("@")[0]);
+    const awaiting = approvalChore ? this._needsApproval(approvalChore, child) : false;
 
     return html`
       <div class="celebration-overlay" @click="${this._closeCelebration}">
@@ -5346,10 +5498,16 @@ class TaskMateChildCard extends LitElement {
           <div class="celebration-stars">&#127775;&#127775;&#127775;</div>
           <div class="celebration-title">${this._t('child.celebration_title')}</div>
           <div class="celebration-message">${this._t('child.celebration_message')}</div>
-          <div class="celebration-points">
+          <div class="celebration-points ${awaiting ? "awaiting" : ""}">
             <ha-icon icon="${pointsIcon}"></ha-icon>
             +${__tmNum(this.hass, points)}
           </div>
+          ${awaiting ? html`
+            <div class="celebration-pending">
+              <ha-icon icon="mdi:timer-sand"></ha-icon>
+              ${this._t('child.celebration_pending_note')}
+            </div>
+          ` : ''}
           ${this._celebrationWeeklyBonus ? html`
             <div class="celebration-weekly-bonus">${this._t('child.weekly_target_bonus_reached', { points: __tmNum(this.hass, this._celebrationWeeklyBonus) })}</div>
           ` : ''}
