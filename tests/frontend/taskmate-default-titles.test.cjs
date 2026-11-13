@@ -17,7 +17,7 @@ const CARDS = [
 ];
 
 const BASE_CONFIG = { entity: "sensor.taskmate_overview", child_id: "kid1" };
-const LOCALES = ["en", "en-GB", "da", "de", "fr", "nb", "nn", "pt", "pt-BR"];
+const LOCALES = ["en", "en-GB", "da", "de", "fr", "nb", "nn", "pt", "pt-BR", "es", "it", "ja", "ko", "ru", "sv", "tr", "uk", "zh-Hans"];
 
 for (const { file, tag, legacy, key } of CARDS) {
   const Card = loadCard(file).get(tag);

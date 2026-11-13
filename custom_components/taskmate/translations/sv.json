@@ -1,0 +1,3551 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Välkommen till TaskMate!",
+        "description": "Ställ in familjens system för sysslor. Du kan anpassa poängvalutan som barnen tjänar.",
+        "data": {
+          "points_name": "Namn på poängvalutan (t.ex. Stjärnor, Mynt, Kronor)",
+          "points_icon": "Poängikon"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Namn krävs"
+    },
+    "abort": {
+      "already_configured": "TaskMate är redan konfigurerat"
+    },
+    "create_entry": {
+      "default": "TaskMate är redo. [Öppna TaskMate-panelen](/taskmate-admin) för att lägga till dina barn med installationsguiden, som föreslår sysslor för deras ålder."
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Spara ändringar",
+        "re_enable": "Aktivera syssla igen",
+        "disable": "Inaktivera syssla",
+        "delete": "Ta bort den här sysslan"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Spara ändringar",
+        "delete": "Ta bort belöning"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Morgon",
+        "afternoon": "Eftermiddag",
+        "evening": "Kväll",
+        "night": "Natt",
+        "anytime": "När som helst"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Vissa veckodagar",
+        "recurring": "Återkommande (var N:e dag/vecka/månad)",
+        "one_shot": "Engångsuppgift (en dag)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Måndag",
+        "tuesday": "Tisdag",
+        "wednesday": "Onsdag",
+        "thursday": "Torsdag",
+        "friday": "Fredag",
+        "saturday": "Lördag",
+        "sunday": "Söndag"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Varannan dag",
+        "weekly": "Varje vecka",
+        "every_2_weeks": "Varannan vecka",
+        "monthly": "Varje månad",
+        "every_3_months": "Var 3:e månad",
+        "every_6_months": "Var 6:e månad"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Måndag",
+        "tuesday": "Tisdag",
+        "wednesday": "Onsdag",
+        "thursday": "Torsdag",
+        "friday": "Fredag",
+        "saturday": "Lördag",
+        "sunday": "Söndag",
+        "any_day": "Valfri dag"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Tillgänglig direkt",
+        "wait_for_first_occurrence": "Vänta på första schemalagda tillfället"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Nollställ — sviten går till 0 en missad dag",
+        "pause": "Pausa — sviten bevaras till nästa gjorda syssla"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Inget filter — visa alltid sysslan",
+        "equals": "Lika med — visa när entitetens tillstånd matchar exakt",
+        "not_equals": "Inte lika med — visa när entitetens tillstånd inte matchar",
+        "gte": "Större än eller lika med (≥) — visa när det numeriska värdet är ≥ målet",
+        "lte": "Mindre än eller lika med (≤) — visa när det numeriska värdet är ≤ målet",
+        "gt": "Större än (>) — visa när det numeriska värdet är > målet",
+        "lt": "Mindre än (<) — visa när det numeriska värdet är < målet"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Alla — alla tilldelade barn ser sysslan",
+        "alternating": "Turvis — de tilldelade barnen turas om, ett per dag",
+        "random": "Slumpvis — ett tilldelat barn väljs slumpvis varje dag",
+        "balanced": "Balanserad — dagens balanserade sysslor fördelas jämnt mellan de tilldelade barnen",
+        "first_come": "Först till kvarn — första barnet som gör den vinner; den döljs för de andra",
+        "unassigned": "Ej tilldelad — inget barn ser sysslan"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Fast — samma barn för alla sysslor i gruppen",
+        "spread": "Spridd — olika barn för gruppen idag"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Spara ändringar",
+        "delete": "Ta bort grupp"
+      }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Inget ljud",
+        "coin": "Mynt",
+        "levelup": "Ny nivå",
+        "fanfare": "Fanfar",
+        "chime": "Klockspel",
+        "powerup": "Power-up",
+        "undo": "Ångra",
+        "fart1": "Prutt 1",
+        "fart2": "Prutt 2",
+        "fart3": "Prutt 3",
+        "fart4": "Prutt 4",
+        "fart5": "Prutt 5",
+        "fart6": "Prutt 6",
+        "fart7": "Prutt 7",
+        "fart8": "Prutt 8",
+        "fart9": "Prutt 9",
+        "fart10": "Prutt 10",
+        "fart_random": "Slumpvis prutt"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Lätt",
+        "medium": "Medel",
+        "hard": "Svår"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Alla får hela poängen",
+        "split": "Dela poängen lika (avrundat nedåt)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Varje gång den ska göras",
+        "week": "Varje vecka",
+        "month": "Varje månad"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Brons",
+        "silver": "Silver",
+        "gold": "Guld",
+        "platinum": "Platina"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Kräv alla (OCH)",
+        "or": "Kräv något (ELLER)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 timme",
+        "2h": "2 timmar",
+        "4h": "4 timmar",
+        "bed": "Till läggdags"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Toppen",
+        "good": "Bra",
+        "ok": "Okej",
+        "sad": "Ledsen",
+        "upset": "Arg"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Syssla",
+        "reward": "Belöning",
+        "penalty": "Avdrag"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Drake",
+        "cat": "Katt",
+        "dog": "Hund",
+        "bunny": "Kanin",
+        "dino": "Dino",
+        "unicorn": "Enhörning"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Ser klar ut",
+        "not_yet": "Inte än"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Gör syssla klar",
+      "description": "Markera en syssla som gjord av ett barn",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan som ska markeras klar"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som gör sysslan"
+        },
+        "note": {
+          "name": "Anteckning",
+          "description": "Vad barnet gjorde, med egna ord. Krävs när sysslan är öppen och visas för föräldern vid godkännandet."
+        },
+        "suggested_points": {
+          "name": "Föreslagna poäng",
+          "description": "Vad barnet tycker att jobbet var värt. Ett tips till föräldern som godkänner — ger inget i sig självt."
+        },
+        "quantity": {
+          "name": "Antal",
+          "description": "Hur många enheter barnet gjorde, för en mängdsyssla (\"läs 20 sidor\"). Krävs från ett barn på sådana sysslor; sysslans poäng betalas per enhet."
+        },
+        "time_id": {
+          "name": "Bestämd tid",
+          "description": "För en syssla med bestämda tider: vilken tid som bockas av. Lämna tomt för den som är öppen nu."
+        },
+        "as_parent": {
+          "name": "Som förälder",
+          "description": "Gör klar åt barnet och ge poäng direkt, utan godkännande."
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Valfri URL eller sökväg till ett foto som bevis för den gjorda sysslan (t.ex. en kamerabild). Visas för föräldern vid godkännandet."
+        },
+        "completed_date": {
+          "name": "Gjord den",
+          "description": "Logga jobbet för en tidigare dag (upp till 7 dagar bakåt, inte idag) som gjordes men inte bockades av. Bara föräldrar; godkänns direkt. Dagens dagliga gräns gäller fortfarande."
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "Gör bonusdeluppgift klar",
+      "description": "Gör en bonusdeluppgift klar efter att huvudsysslan är gjord",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för huvudsysslan"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonusdeluppgift-ID",
+          "description": "ID för bonusdeluppgiften som ska göras klar"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som gör bonusdeluppgiften"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Godkänn syssla",
+      "description": "Godkänn en gjord syssla och ge poäng",
+      "fields": {
+        "completion_id": {
+          "name": "Utförande-ID",
+          "description": "ID för den gjorda sysslan som ska godkännas"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Ge så här många poäng i stället för sysslans eget värde. Lämna tomt för att använda sysslans poäng."
+        },
+        "rating": {
+          "name": "Kvalitetsbetyg",
+          "description": "Valfritt betyg på 1–3 stjärnor för hur bra sysslan gjordes. När kvalitetsbetyg är aktiverade skalas poängen med stjärnans multiplikator; lämna tomt för att betala 100 %."
+        },
+        "note": {
+          "name": "Beröm",
+          "description": "Valfritt kort meddelande till barnet, visas på deras kort idag (upp till 120 tecken)."
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "Godkänn alla sysslor",
+      "description": "Godkänn alla väntande gjorda sysslor (eller vissa) och ge poäng",
+      "fields": {
+        "completion_ids": {
+          "name": "Utförande-ID:n",
+          "description": "Specifika utförande-ID:n att godkänna; utelämna för att godkänna alla väntande"
+        },
+        "rating": {
+          "name": "Kvalitetsbetyg",
+          "description": "Valfritt betyg på 1–3 stjärnor som används för alla sysslor som godkänns i det här anropet (kvalitetsbetyg måste vara aktiverade)."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Avvisa syssla",
+      "description": "Avvisa en gjord syssla",
+      "fields": {
+        "completion_id": {
+          "name": "Utförande-ID",
+          "description": "ID för den gjorda sysslan som ska avvisas"
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "Valfri anledning som visas för barnet"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "Ångra syssla",
+      "description": "Låt ett barn ta tillbaka sin egen syssla — en inskickad syssla tills en förälder granskat den, eller en automatiskt godkänd inom ångra-fönstret. Av om inte fönstret är satt över 0 i TaskMates inställningar; allt som en förälder har granskat måste en förälder ångra.",
+      "fields": {
+        "completion_id": {
+          "name": "Utförande-ID",
+          "description": "ID för barnets gjorda syssla som ska tas tillbaka"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "Ångra godkännande av syssla",
+      "description": "Återkalla ett godkännande av misstag — tar bort de givna poängen och sätter sysslan som väntande igen så att den kan godkännas på nytt.",
+      "fields": {
+        "completion_id": {
+          "name": "Utförande-ID",
+          "description": "ID för den godkända sysslan som ska återställas till väntande"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Ångra transaktion",
+      "description": "Återför en poängtransaktion via dess ID — avdrag, bonusar, manuella justeringar och gåvor (båda leden). Automatiska transaktioner (helg-/svit-/perfekt vecka-bonusar, pottflyttar, förfall, ränta) kan inte ångras.",
+      "fields": {
+        "transaction_id": {
+          "name": "Transaktions-ID",
+          "description": "ID för poängtransaktionen som ska återföras"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Lös in belöning",
+      "description": "Barnet löser in en belöning med sina poäng",
+      "fields": {
+        "reward_id": {
+          "name": "Belönings-ID",
+          "description": "ID för belöningen som ska lösas in"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som löser in belöningen"
+        },
+        "recipient_id": {
+          "name": "Mottagar-ID",
+          "description": "Köp den till ett syskon i stället. Barnet som löser in betalar; kräver att \"Barnen kan köpa belöningar åt varandra\" är påslaget."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Godkänn belöning",
+      "description": "Godkänn en belöningsinlösen",
+      "fields": {
+        "claim_id": {
+          "name": "Inlösen-ID",
+          "description": "ID för belöningsinlösen som ska godkännas"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Avsätt poäng till pott",
+      "description": "Flytta poäng från ett barns saldo till en belönings sparpott (låst).",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som gör avsättningen"
+        },
+        "reward_id": {
+          "name": "Belönings-ID",
+          "description": "ID för belöningspotten att sätta in i"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Antal poäng att avsätta (begränsat av pottens kapacitet och saldot)"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Lägg till poäng",
+      "description": "Ge ett barn bonuspoäng",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som ska få poäng"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Antal poäng att lägga till"
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "Valfri anledning till bonusen"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Ta bort poäng",
+      "description": "Ta bort poäng från ett barn (avdrag)",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet att ta bort poäng från"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Antal poäng att ta bort"
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "Valfri anledning till avdraget"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Avvisa belöning",
+      "description": "Avvisa en belöningsinlösen",
+      "fields": {
+        "claim_id": {
+          "name": "Inlösen-ID",
+          "description": "ID för belöningsinlösen som ska avvisas"
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "Valfri anledning som visas för barnet"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Förhandslyssna på ljud",
+      "description": "Förhandslyssna på ett klar-ljud i webbläsaren",
+      "fields": {
+        "sound": {
+          "name": "Ljud",
+          "description": "Ljudet att förhandslyssna på"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Ange sysslornas ordning",
+      "description": "Ange i vilken ordning ett barns sysslor visas",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars sysslors ordning ska anges"
+        },
+        "chore_order": {
+          "name": "Sysslornas ordning",
+          "description": "Ordnad lista med syssla-ID:n"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Lägg till avdrag",
+      "description": "Skapa en ny avdragsdefinition",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Avdragets namn"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Antal poäng att dra av när det ges"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfri beskrivning av avdraget"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon för avdraget"
+        },
+        "assigned_to": {
+          "name": "Tilldelat",
+          "description": "Lista med barn-ID:n som avdraget gäller"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Uppdatera avdrag",
+      "description": "Uppdatera en befintlig avdragsdefinition",
+      "fields": {
+        "penalty_id": {
+          "name": "Avdrags-ID",
+          "description": "ID för avdraget som ska uppdateras"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt namn på avdraget"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Nytt poängvärde"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Ny beskrivning"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Ny ikon"
+        },
+        "assigned_to": {
+          "name": "Tilldelat",
+          "description": "Ny lista med barn-ID:n"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Ta bort avdrag",
+      "description": "Ta bort en avdragsdefinition",
+      "fields": {
+        "penalty_id": {
+          "name": "Avdrags-ID",
+          "description": "ID för avdraget som ska tas bort"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Ge avdrag",
+      "description": "Ge ett barn ett avdrag som drar av poäng",
+      "fields": {
+        "penalty_id": {
+          "name": "Avdrags-ID",
+          "description": "ID för avdraget som ska ges"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som ska få avdraget"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Lägg till bonus",
+      "description": "Skapa en ny bonusdefinition",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Bonusens namn"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Antal poäng att ge när den ges"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfri beskrivning av bonusen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon för bonusen"
+        },
+        "assigned_to": {
+          "name": "Tilldelad",
+          "description": "Lista med barn-ID:n som bonusen gäller"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Uppdatera bonus",
+      "description": "Uppdatera en befintlig bonusdefinition",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID för bonusen som ska uppdateras"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt namn på bonusen"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Nytt poängvärde"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Ny beskrivning"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Ny ikon"
+        },
+        "assigned_to": {
+          "name": "Tilldelad",
+          "description": "Ny lista med barn-ID:n"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Ta bort bonus",
+      "description": "Ta bort en bonusdefinition",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID för bonusen som ska tas bort"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Ge bonus",
+      "description": "Ge ett barn en bonus som ger poäng",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus-ID",
+          "description": "ID för bonusen som ska ges"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som ska få bonusen"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Lägg till syssla",
+      "description": "Skapa en ny syssla dynamiskt, oftast från en automation eller ett skript",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Sysslans namn"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfri beskrivning av sysslan"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Poäng som ges när sysslan är gjord"
+        },
+        "assigned_to": {
+          "name": "Tilldelad",
+          "description": "Barn som sysslan ska tilldelas, via namn eller ID. Lämna tomt för att tilldela alla barn"
+        },
+        "time_category": {
+          "name": "Tidskategori",
+          "description": "När sysslan ska göras: morning, afternoon, evening, night eller anytime"
+        },
+        "one_shot": {
+          "name": "Engångs",
+          "description": "Om true är det en engångssyssla som går ut när den gjorts eller i slutet av dagen"
+        },
+        "requires_approval": {
+          "name": "Kräver godkännande",
+          "description": "Om true måste en förälder godkänna innan poäng ges"
+        },
+        "team_size": {
+          "name": "Lagstorlek",
+          "description": "Gör det här till en lagsyssla som bara räknas när så här många olika barn har gått med. När laget är fullt skickas den in för alla. 0 = en vanlig syssla."
+        },
+        "team_points_mode": {
+          "name": "Lagpoäng",
+          "description": "Hur en lagsyssla betalar ut: \"each\" ger varje deltagare hela poängen, \"split\" delar dem lika (avrundat nedåt)."
+        },
+        "team_bonus": {
+          "name": "Lagbonus",
+          "description": "Extrapoäng som varje deltagare tjänar när en lagsyssla är gjord."
+        },
+        "times": {
+          "name": "Bestämda tider",
+          "description": "Gör det här till en syssla som återkommer vid bestämda tider på dagen, t.ex. tvätta händerna vid frukost, lunch och middag. En lista med upp till 5 tider, var och en med namn, start och slut (\"HH:MM\", samma dag, utan överlapp) och poäng."
+        },
+        "times_bonus": {
+          "name": "Bonus för alla tider",
+          "description": "Extrapoäng som betalas en gång om dagen när alla bestämda tider är gjorda."
+        },
+        "assignment_mode": {
+          "name": "Tilldelningsläge",
+          "description": "Vem som gör sysslan varje dag: everyone, alternating (turas om), random, balanced (den som gjort den minst), first_come (första barnet som tar den) eller unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Turordningsperiod",
+          "description": "För turvisa sysslor: each_time (nästa barn varje gång sysslan dyker upp), week (ett barn har den hela veckor) eller month (hela månader)."
+        },
+        "assignment_rotation_every": {
+          "name": "Byt var",
+          "description": "Hur många veckor eller månader varje barn har en turvis syssla som har en turordningsperiod (2 = varannan vecka)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Överlämningsdag",
+          "description": "Veckodagen då en veckovis turordning går vidare till nästa barn."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Överlämningsdag i månaden",
+          "description": "Dagen i månaden då en månadsvis turordning går vidare till nästa barn (sista dagen i kortare månader)."
+        },
+        "schedule_mode": {
+          "name": "Schema",
+          "description": "specific_days (veckodagarna i Dagar, eller varje dag om inga), recurring (enligt Upprepning) eller one_shot (bara idag)."
+        },
+        "due_days": {
+          "name": "Dagar",
+          "description": "Veckodagar då sysslan ska göras, för schemat specific_days. Lämna tomt för varje dag."
+        },
+        "recurrence": {
+          "name": "Upprepning",
+          "description": "Hur ofta en återkommande syssla kommer tillbaka: weekly, every_2_weeks, monthly, every_3_months, every_6_months, eller every_N_days med N från 2 till 365 (t.ex. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Upprepningsdag",
+          "description": "Veckodagen som en weekly- eller every_2_weeks-syssla infaller på."
+        },
+        "recurrence_start": {
+          "name": "Upprepningsstart",
+          "description": "Datumet som en återkommande sysslas rytm räknas från (ÅÅÅÅ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Klockslag",
+          "description": "Tid på dagen då sysslan ska vara gjord (\"HH:MM\"). Klar senast då ger tidig-bonusen, efter det dras senavdraget. Tomt för inget klockslag."
+        },
+        "daily_limit": {
+          "name": "Daglig gräns",
+          "description": "Hur många gånger om dagen sysslan kan göras. Engångssysslor är alltid 1."
+        },
+        "difficulty": {
+          "name": "Svårighetsgrad",
+          "description": "Svårighetsnivå; skalar givna poäng med nivåns multiplikator (medium = ×1.0 utgångsläge)"
+        },
+        "expires_in_minutes": {
+          "name": "Går ut om (minuter)",
+          "description": "Gör det här till en reaktiv syssla med en deadline så här många minuter från nu, t.ex. tvättmaskinen är klar, töm den inom 30 minuter. Sysslan försvinner och inaktiveras när deadline passerat. 0 = ingen deadline."
+        },
+        "speed_bonus_points": {
+          "name": "Snabbhetsbonus",
+          "description": "Extrapoäng om sysslan görs före deadline. Kräver expires_in_minutes."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Uppdatera syssla",
+      "description": "Ändra en befintlig syssla via dess ID. Bara fälten du anger ändras; allt annat förblir som det är.",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan som ska ändras"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt namn på sysslan"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Ny beskrivning av sysslan"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Poäng som ges när sysslan är gjord"
+        },
+        "assigned_to": {
+          "name": "Tilldelad",
+          "description": "Barn som sysslan ska tilldelas, via namn eller ID. En tom lista tilldelar den alla barn"
+        },
+        "time_category": {
+          "name": "Tidskategori",
+          "description": "När sysslan ska göras: morning, afternoon, evening, night eller anytime"
+        },
+        "difficulty": {
+          "name": "Svårighetsgrad",
+          "description": "Svårighetsnivå: easy, medium eller hard. Skalar poängen (medium = ×1.0)."
+        },
+        "requires_approval": {
+          "name": "Kräver godkännande",
+          "description": "Om true måste en förälder godkänna innan poäng ges"
+        },
+        "enabled": {
+          "name": "Aktiverad",
+          "description": "Stäng av sysslan (false) för att dölja den överallt utan att ta bort den, eller slå på den igen (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Snabbhetsbonus",
+          "description": "Extrapoäng om sysslan görs före sin deadline."
+        },
+        "team_size": {
+          "name": "Lagstorlek",
+          "description": "Gör det här till en lagsyssla som bara räknas när så här många olika barn har gått med. När laget är fullt skickas den in för alla. 0 = en vanlig syssla."
+        },
+        "team_points_mode": {
+          "name": "Lagpoäng",
+          "description": "Hur en lagsyssla betalar ut: \"each\" ger varje deltagare hela poängen, \"split\" delar dem lika (avrundat nedåt)."
+        },
+        "team_bonus": {
+          "name": "Lagbonus",
+          "description": "Extrapoäng som varje deltagare tjänar när en lagsyssla är gjord."
+        },
+        "times": {
+          "name": "Bestämda tider",
+          "description": "Ersätt sysslans bestämda tider på dagen. En lista med upp till 5 tider, var och en med namn, start och slut (\"HH:MM\", samma dag, utan överlapp) och poäng. En tom lista tar bort dem."
+        },
+        "times_bonus": {
+          "name": "Bonus för alla tider",
+          "description": "Extrapoäng som betalas en gång om dagen när alla bestämda tider är gjorda."
+        },
+        "assignment_mode": {
+          "name": "Tilldelningsläge",
+          "description": "Vem som gör sysslan varje dag: everyone, alternating (turas om), random, balanced (den som gjort den minst), first_come (första barnet som tar den) eller unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Turordningsperiod",
+          "description": "För turvisa sysslor: each_time (nästa barn varje gång sysslan dyker upp), week (ett barn har den hela veckor) eller month (hela månader)."
+        },
+        "assignment_rotation_every": {
+          "name": "Byt var",
+          "description": "Hur många veckor eller månader varje barn har en turvis syssla som har en turordningsperiod (2 = varannan vecka)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Överlämningsdag",
+          "description": "Veckodagen då en veckovis turordning går vidare till nästa barn."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Överlämningsdag i månaden",
+          "description": "Dagen i månaden då en månadsvis turordning går vidare till nästa barn (sista dagen i kortare månader)."
+        },
+        "schedule_mode": {
+          "name": "Schema",
+          "description": "specific_days (veckodagarna i Dagar, eller varje dag om inga), recurring (enligt Upprepning) eller one_shot (bara idag)."
+        },
+        "due_days": {
+          "name": "Dagar",
+          "description": "Veckodagar då sysslan ska göras, för schemat specific_days. Lämna tomt för varje dag."
+        },
+        "recurrence": {
+          "name": "Upprepning",
+          "description": "Hur ofta en återkommande syssla kommer tillbaka: weekly, every_2_weeks, monthly, every_3_months, every_6_months, eller every_N_days med N från 2 till 365 (t.ex. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Upprepningsdag",
+          "description": "Veckodagen som en weekly- eller every_2_weeks-syssla infaller på."
+        },
+        "recurrence_start": {
+          "name": "Upprepningsstart",
+          "description": "Datumet som en återkommande sysslas rytm räknas från (ÅÅÅÅ-MM-DD)."
+        },
+        "due_time": {
+          "name": "Klockslag",
+          "description": "Tid på dagen då sysslan ska vara gjord (\"HH:MM\"). Klar senast då ger tidig-bonusen, efter det dras senavdraget. Tomt för inget klockslag."
+        },
+        "daily_limit": {
+          "name": "Daglig gräns",
+          "description": "Hur många gånger om dagen sysslan kan göras. Engångssysslor är alltid 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Ta bort syssla",
+      "description": "Ta bort en syssla via dess ID, med samma upprensning som panelen. Den hamnar i Nyligen borttagna i panelen i 7 dagar, så den kan återställas.",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan som ska tas bort"
+        },
+        "confirm": {
+          "name": "Bekräfta",
+          "description": "Måste vara true. Ett skydd så att en syssla aldrig tas bort av misstag."
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Hoppa över syssla",
+      "description": "Flytta dagens turordning förbi den nuvarande tilldelade. Tillfälligt — imorgon fortsätter turordningen som vanligt.",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan som ska hoppas över"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Ange startbarn manuellt",
+      "description": "Ange vilket barn som börjar en roterande syssla. För turvis läge ändras gruppens ordning; för slumpvis/balanserad ändras bara dagens tilldelade.",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan som ska uppdateras"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som ska börja turordningen"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Lägg till uppgiftsgrupp",
+      "description": "Skapa en uppgiftsgrupp (sticky = samma barn, spread = olika barn).",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Gruppens visningsnamn"
+        },
+        "policy": {
+          "name": "Regel",
+          "description": "sticky (samma barn) eller spread (olika barn)"
+        },
+        "chore_ids": {
+          "name": "Syssla-ID:n",
+          "description": "Lista med syssla-ID:n i gruppen. För sticky leder den första sysslan."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Uppdatera uppgiftsgrupp",
+      "description": "Uppdatera en uppgiftsgrupps namn, regel eller medlemmar.",
+      "fields": {
+        "group_id": {
+          "name": "Grupp-ID",
+          "description": "ID för gruppen som ska uppdateras"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Nytt visningsnamn"
+        },
+        "policy": {
+          "name": "Regel",
+          "description": "Ny regel (sticky eller spread)"
+        },
+        "chore_ids": {
+          "name": "Syssla-ID:n",
+          "description": "Ny lista med syssla-ID:n. För sticky leder den första sysslan."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Ta bort uppgiftsgrupp",
+      "description": "Ta bort en uppgiftsgrupp. Medlemssysslorna påverkas inte.",
+      "fields": {
+        "group_id": {
+          "name": "Grupp-ID",
+          "description": "ID för gruppen som ska tas bort"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "Starta tidtagen uppgift",
+      "description": "Starta eller återuppta timern på en tidtagen uppgift",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för den tidtagna sysslan"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som startar timern"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Lämna lagsyssla",
+      "description": "Ta ut ett barn ur en lagsyssla som de gått med i idag, innan laget är fullt",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för lagsysslan"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som lämnar laget"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "Gör nästa syssla klar",
+      "description": "Gör barnets nästa kvarvarande syssla klar, i den ordning barnkortet visar dem. Sysslor som behöver ett foto, en anteckning, en timer eller ett lag hoppas över. Gjord för klockknappar och genvägar; vanliga regler för godkännande gäller.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars nästa syssla ska göras klar"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "Lägg upp extrajobb",
+      "description": "Lägg upp ett engångsjobb på extrajobbstavlan för ett fast antal poäng. Alla behöriga barn kan ta det; när det är klart går det genom den vanliga godkännandekön.",
+      "fields": {
+        "title": {
+          "name": "Titel",
+          "description": "Vad jobbet är, t.ex. \"Tvätta bilen\""
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Fasta poäng som betalas när en förälder godkänner det färdiga jobbet"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfria extra detaljer för barnen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon som visas på tavlan"
+        },
+        "expires_at": {
+          "name": "Går ut",
+          "description": "Valfritt datum och tid då extrajobbet försvinner från tavlan om ingen har tagit det. Lämna tomt för att det inte ska gå ut."
+        },
+        "eligible_child_ids": {
+          "name": "Behöriga barn",
+          "description": "ID:n för barnen som får ta det. Tomt = alla barn."
+        },
+        "claim_hours": {
+          "name": "Låstid (timmar)",
+          "description": "Hur länge ett tagande varar innan extrajobbet går tillbaka på tavlan"
+        },
+        "require_photo": {
+          "name": "Kräv foto",
+          "description": "Barnet måste bifoga ett foto när det markeras som klart"
+        },
+        "notify_children": {
+          "name": "Meddela barnen",
+          "description": "Skicka aviseringen \"Nytt extrajobb\" till de behöriga barnen"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Uppdatera extrajobb",
+      "description": "Redigera ett extrajobb. När det har tagits kan bara poäng och slutdatum ändras.",
+      "fields": {
+        "bounty_id": {
+          "name": "Extrajobbs-ID",
+          "description": "ID för extrajobbet som ska redigeras"
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Vad jobbet är, t.ex. \"Tvätta bilen\""
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Fasta poäng som betalas när en förälder godkänner det färdiga jobbet"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfria extra detaljer för barnen"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "MDI-ikon som visas på tavlan"
+        },
+        "expires_at": {
+          "name": "Går ut",
+          "description": "Valfritt datum och tid då extrajobbet försvinner från tavlan om ingen har tagit det. Lämna tomt för att det inte ska gå ut."
+        },
+        "eligible_child_ids": {
+          "name": "Behöriga barn",
+          "description": "ID:n för barnen som får ta det. Tomt = alla barn."
+        },
+        "claim_hours": {
+          "name": "Låstid (timmar)",
+          "description": "Hur länge ett tagande varar innan extrajobbet går tillbaka på tavlan"
+        },
+        "require_photo": {
+          "name": "Kräv foto",
+          "description": "Barnet måste bifoga ett foto när det markeras som klart"
+        },
+        "notify_children": {
+          "name": "Meddela barnen",
+          "description": "Skicka aviseringen \"Nytt extrajobb\" till de behöriga barnen"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Ta bort extrajobb",
+      "description": "Ta bort ett extrajobb från tavlan. Inte tillåtet medan ett färdigt jobb väntar på godkännande.",
+      "fields": {
+        "bounty_id": {
+          "name": "Extrajobbs-ID",
+          "description": "ID för extrajobbet som ska tas bort"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Ta extrajobb",
+      "description": "Ta ett extrajobb åt ett barn, låst till dem under låstiden. Ett barn kan ha ett tagande i taget.",
+      "fields": {
+        "bounty_id": {
+          "name": "Extrajobbs-ID",
+          "description": "ID för extrajobbet som ska tas"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som tar det"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Lämna tillbaka extrajobb",
+      "description": "Lämna tillbaka ett taget extrajobb till tavlan så att ett annat barn kan ta det",
+      "fields": {
+        "bounty_id": {
+          "name": "Extrajobbs-ID",
+          "description": "ID för det tagna extrajobbet"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som tog det"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Gör extrajobb klart",
+      "description": "Markera ett taget extrajobb som klart. Det går till godkännandekön som en syssla.",
+      "fields": {
+        "bounty_id": {
+          "name": "Extrajobbs-ID",
+          "description": "ID för det tagna extrajobbet"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som tog det"
+        },
+        "photo_url": {
+          "name": "Foto-URL",
+          "description": "Foto på det färdiga jobbet (krävs när extrajobbet ber om ett)"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Pausa tidtagen uppgift",
+      "description": "Pausa en pågående timer för en tidtagen uppgift",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för den tidtagna sysslan"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som pausar timern"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Stoppa tidtagen uppgift",
+      "description": "Stoppa timern för en tidtagen uppgift och skicka in för godkännande",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för den tidtagna sysslan"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som stoppar timern"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Lägg till märke",
+      "description": "Skapa ett eget märke.",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Märkets visningsnamn"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Beskrivning av hur märket tjänas"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Ikon för märket (t.ex. mdi:beach)"
+        },
+        "tier": {
+          "name": "Nivå",
+          "description": "Märkets nivå: bronze, silver, gold eller platinum"
+        },
+        "point_bonus": {
+          "name": "Poängbonus",
+          "description": "Poäng som ges till barnet när märket tjänas"
+        },
+        "criteria": {
+          "name": "Kriterier",
+          "description": "Lista med metric / operator / value-objekt. Tomt = delas bara ut manuellt."
+        },
+        "assigned_to": {
+          "name": "Tilldelat",
+          "description": "Lista med barn-ID:n (tomt = alla)"
+        },
+        "notify_on_earn": {
+          "name": "Avisera när det tjänas",
+          "description": "Skicka en avisering när märket tjänas"
+        },
+        "combinator": {
+          "name": "Kombination",
+          "description": "Hur flera kriterier kombineras: AND (alla måste uppfyllas) eller OR (något). Standard AND."
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Uppdatera märke",
+      "description": "Uppdatera ett befintligt märke. För inbyggda kan bara point_bonus, tier, assigned_to, enabled, notify_on_earn redigeras.",
+      "fields": {
+        "badge_id": {
+          "name": "Märkes-ID",
+          "description": "ID för märket som ska uppdateras"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Märkets nya visningsnamn"
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Ny beskrivning av märket"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Ny ikon för märket"
+        },
+        "tier": {
+          "name": "Nivå",
+          "description": "Märkets nivå: bronze, silver, gold eller platinum"
+        },
+        "point_bonus": {
+          "name": "Poängbonus",
+          "description": "Poäng som ges till barnet när märket tjänas"
+        },
+        "criteria": {
+          "name": "Kriterier",
+          "description": "Lista med metric / operator / value-objekt. Tomt = delas bara ut manuellt."
+        },
+        "assigned_to": {
+          "name": "Tilldelat",
+          "description": "Lista med barn-ID:n (tomt = alla)"
+        },
+        "enabled": {
+          "name": "Aktiverat",
+          "description": "Om märket är aktivt"
+        },
+        "notify_on_earn": {
+          "name": "Avisera när det tjänas",
+          "description": "Skicka en avisering när märket tjänas"
+        },
+        "combinator": {
+          "name": "Kombination",
+          "description": "Hur flera kriterier kombineras: AND (alla måste uppfyllas) eller OR (något). Standard AND."
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Ta bort märke",
+      "description": "Ta bort ett eget märke. Inbyggda kan inte tas bort.",
+      "fields": {
+        "badge_id": {
+          "name": "Märkes-ID",
+          "description": "ID för märket som ska tas bort"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Dela ut märke manuellt",
+      "description": "Dela ut ett märke manuellt till ett barn.",
+      "fields": {
+        "badge_id": {
+          "name": "Märkes-ID",
+          "description": "ID för märket som ska delas ut"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som får märket"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Återkalla märke",
+      "description": "Återkalla ett utdelat märke. Om en poängbonus gavs återförs den.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID för utdelat märke",
+          "description": "ID för posten med det utdelade märket som ska återkallas"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Bygg om märken",
+      "description": "Utvärdera alla märken för alla barn igen i tysthet (inga aviseringar, inga poängbonusar)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Ge avdrag för obligatorisk syssla",
+      "description": "Dra av de inställda avdragspoängen för en missad obligatorisk syssla och rensa granskningsposten.",
+      "fields": {
+        "miss_id": {
+          "name": "Miss-ID",
+          "description": "ID för granskningsposten för den missade obligatoriska sysslan"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Välj avatar",
+      "description": "Ett barn byter till en avatar som det har låst upp.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnets ID"
+        },
+        "icon": {
+          "name": "Avatarikon",
+          "description": "mdi-ikonen för en upplåst avatar i katalogen (t.ex. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Avfärda obligatorisk syssla",
+      "description": "Rensa granskningsposten för en missad obligatorisk syssla utan avdrag.",
+      "fields": {
+        "miss_id": {
+          "name": "Miss-ID",
+          "description": "ID för granskningsposten för den missade obligatoriska sysslan"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Ge bort poäng",
+      "description": "Flytta poäng från ett barn till ett annat (styrs av föräldern).",
+      "fields": {
+        "from_child_id": {
+          "name": "Från barn-ID",
+          "description": "ID för barnet som skickar poäng"
+        },
+        "to_child_id": {
+          "name": "Till barn-ID",
+          "description": "ID för barnet som får poäng"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Antal poäng att flytta"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Justera svitfrysar",
+      "description": "Ge ett barn svitfrysar (positivt antal) eller ta bort några (negativt). En tilldelning går aldrig över taket streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars polletter ändras"
+        },
+        "amount": {
+          "name": "Antal",
+          "description": "Polletter att lägga till (positivt) eller ta bort (negativt)"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Skjut upp obligatorisk syssla",
+      "description": "Ge en missad obligatorisk syssla en period till (eller imorgon) utan avdrag, och rensa granskningsposten.",
+      "fields": {
+        "miss_id": {
+          "name": "Miss-ID",
+          "description": "ID för granskningsposten för den missade obligatoriska sysslan"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Be om sysslobyte",
+      "description": "Ett barn ber om att ta över dagens tilldelning av en syssla i turordningen (väntar på förälders godkännande).",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan som ska tas över"
+        },
+        "requester_id": {
+          "name": "Barn-ID för den som ber",
+          "description": "ID för barnet som ber om bytet"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Testa avisering",
+      "description": "Skicka en exempelavisering av angiven typ till dess aktiverade mottagare (ignorerar huvudreglaget så att routningen kan kontrolleras).",
+      "fields": {
+        "type_id": {
+          "name": "Aviseringstyp",
+          "description": "Aviseringstypens id, t.ex. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "Registrera utbetalning av veckopeng",
+      "description": "Dra av poäng och registrera en utbetalning av riktig veckopeng i reskontran (fast växelkurs; styrs av föräldern).",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som får utbetalningen"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Poäng att växla till pengar och dra av"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "Lägg till önskan",
+      "description": "Ett barn lägger till något det vill spara till. Den väntar på att en förälder godkänner den.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som önskar"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Vad barnet vill ha"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Föreslaget antal poäng det kostar. Föräldern kan ändra det vid godkännandet."
+        },
+        "link": {
+          "name": "Länk",
+          "description": "Valfri webbadress (http eller https) till saken"
+        },
+        "photo_url": {
+          "name": "Bild",
+          "description": "Valfri bild som just laddats upp via TaskMates fotoändpunkt"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Dra tillbaka önskan",
+      "description": "Ett barn tar tillbaka en önskan som fortfarande väntar på godkännande, eller rensar en som nekats.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars önskan det är"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Flytta poäng till önskan",
+      "description": "Flytta poäng från ett barns saldo till en av deras godkända önskningar.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars önskan det är"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Hur många poäng som ska flyttas (begränsat av saldot och vad önskan fortfarande behöver)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Ta poäng från önskan",
+      "description": "Ge tillbaka en del av barnets egna sparade poäng från en önskan. Bidragna poäng tas aldrig ut.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars önskan det är"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Hur många sparade poäng som ska tas tillbaka (begränsat av vad barnet sparat)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Be om att lösa in önskan",
+      "description": "En helt ihopsparad önskan blir en belöningsinlösen som väntar på förälderns godkännande.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars önskan det är"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Godkänn önskan",
+      "description": "Gör en väntande önskan till ett sparmål, eventuellt med ett annat mål.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Poäng som önskan kostar. Lämna tomt för att behålla barnets förslag."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Neka önskan",
+      "description": "Säg nej till en önskan. Sparade poäng går tillbaka till barnet och bidrag ogiltigförklaras.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "Valfri anledning som visas för barnet"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Bidra till önskan",
+      "description": "Registrera poäng som en släkting bidrar med till ett barns önskan. De påverkar aldrig något saldo.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "name": {
+          "name": "Från",
+          "description": "Vem bidraget är från, t.ex. Mormor"
+        },
+        "points": {
+          "name": "Poäng",
+          "description": "Hur många poäng som ska bidras med (begränsat av vad önskan fortfarande behöver)"
+        },
+        "message": {
+          "name": "Meddelande",
+          "description": "Valfritt meddelande till barnet"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Ta bort bidrag till önskan",
+      "description": "Ångra ett bidrag. Tillåtet tills önskan är inlöst.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        },
+        "pledge_id": {
+          "name": "Bidrags-ID",
+          "description": "ID för bidraget som ska tas bort"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Ta bort önskan",
+      "description": "Ta bort en önskan. Sparade poäng går tillbaka till barnet och bidrag ogiltigförklaras.",
+      "fields": {
+        "wish_id": {
+          "name": "Önskans ID",
+          "description": "Önskans ID"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "Starta inspektion",
+      "description": "Flagga en syssla som godkänts de senaste 24 timmarna för en överraskningsinspektion. Godkänn eller underkänn innan fönstret stänger; en obeslutad inspektion stängs i tysthet.",
+      "fields": {
+        "completion_id": {
+          "name": "Utförande-ID",
+          "description": "ID för den godkända sysslan som ska inspekteras"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Poäng som betalas om den godkänns. Standard är värdet i Inställningar."
+        },
+        "window": {
+          "name": "Fönster",
+          "description": "Hur länge du har på dig att kontrollera: 1h, 2h, 4h eller bed (till läggdags). Standard är värdet i Inställningar."
+        },
+        "tell_child": {
+          "name": "Berätta för barnet",
+          "description": "Visa \"Inspektion på väg\" på barnets kort nu. Stäng av för en hemlig kontroll."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Godkänn inspektion",
+      "description": "Den inspekterade sysslan godkändes. Betalar bonusen som en vanlig poängpost och firar på barnets kort.",
+      "fields": {
+        "inspection_id": {
+          "name": "Inspektions-ID",
+          "description": "ID för den öppna inspektionen"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Poäng att betala. Standard är bonusen som angavs när inspektionen startade."
+        },
+        "note": {
+          "name": "Kommentar",
+          "description": "Valfri kommentar som visas för barnet"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Underkänn inspektion",
+      "description": "Den inspekterade sysslan godkändes inte. Inga poäng dras. Den kan skickas tillbaka för att göras om; att göra om den ger inget extra.",
+      "fields": {
+        "inspection_id": {
+          "name": "Inspektions-ID",
+          "description": "ID för den öppna inspektionen"
+        },
+        "redo": {
+          "name": "Skicka tillbaka för att göras om",
+          "description": "Lägg tillbaka sysslan på barnets lista som inte gjord idag. Standard är värdet i Inställningar."
+        },
+        "note": {
+          "name": "Kommentar",
+          "description": "Valfri kommentar som visas för barnet (vad som behöver fixas)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Avbryt inspektion",
+      "description": "Ställ in en öppen inspektion, som om den aldrig startat.",
+      "fields": {
+        "inspection_id": {
+          "name": "Inspektions-ID",
+          "description": "ID för den öppna inspektionen"
+        }
+      }
+    },
+    "request_help": {
+      "name": "Be om hjälp",
+      "description": "Ett barn säger att det har fastnat på en syssla. Skickar en push-avisering till föräldrarna; inget görs klart eller hoppas över.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som ber om hjälp"
+        },
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "Sysslan de har fastnat på"
+        },
+        "message": {
+          "name": "Meddelande",
+          "description": "Valfria ord från barnet, t.ex. \"Jag når inte hyllan\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Besvara en hjälpförfrågan",
+      "description": "Markera ett barns hjälpförfrågan som besvarad, så att deras kort slutar säga att hjälp är på väg.",
+      "fields": {
+        "request_id": {
+          "name": "Förfrågans ID",
+          "description": "Hjälpförfrågan som ska stängas"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrera humör",
+      "description": "Ett barn berättar hur dagen gick. En per dag; att registrera igen ersätter den.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "mood": {
+          "name": "Humör",
+          "description": "great, good, ok, sad eller upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Ange sjukdag",
+      "description": "Ge ett barn en sjukdag. Sysslorna döljs, sviten fryses och ingen obligatorisk syssla missas.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som är sjukt"
+        },
+        "date": {
+          "name": "Datum",
+          "description": "Dagen (standard idag). Från en vecka bakåt till en månad framåt."
+        },
+        "sick": {
+          "name": "Sjuk",
+          "description": "Stäng av för att ta tillbaka sjukdagen."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Ange veckomål",
+      "description": "Ange ett barns eget poängmål för veckan. Att nå det betalar familjens veckomålsbonus en gång i veckan. 0 rensar det.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "target": {
+          "name": "Mål",
+          "description": "Poäng att tjäna den här veckan"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Köp lotter",
+      "description": "Ett barn spenderar poäng på lotter till ett lotteri. Varje lott är en chans i dragningen.",
+      "fields": {
+        "raffle_id": {
+          "name": "Lotteri-ID",
+          "description": "Lotteriet"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som köper"
+        },
+        "tickets": {
+          "name": "Lotter",
+          "description": "Hur många lotter som ska köpas"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Dra lotteri",
+      "description": "Dra ett lotteris vinnare nu i stället för att vänta på dragningstiden.",
+      "fields": {
+        "raffle_id": {
+          "name": "Lotteri-ID",
+          "description": "Lotteriet som ska dras"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adoptera ett husdjur",
+      "description": "Ett barn adopterar (eller byter namn på) sitt virtuella husdjur. Det växer med varje syssla barnet gör från och med nu.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "species": {
+          "name": "Art",
+          "description": "dragon, cat, dog, bunny, dino eller unicorn"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Husdjurets namn"
+        },
+        "hatch_egg": {
+          "name": "Kläck ägget",
+          "description": "Kläck ägget som det fullvuxna husdjuret lade till ett nytt husdjur. Det gamla husdjuret går med i husdjursfamiljen."
+        }
+      }
+    },
+    "buy_pet_item": {
+      "name": "Köp en husdjurssak",
+      "description": "Ett barn köper en sak i husdjursbutiken med sina poäng. Över föräldrarnas godkännandegräns väntar köpet i stället på en förälder.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som köper"
+        },
+        "item_id": {
+          "name": "Sak-ID",
+          "description": "Saken i husdjursbutiken"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Klä husdjuret",
+      "description": "Sätt på en ägd eller nivåupplåst sak på barnets husdjur (ersätter det som finns på den platsen), eller ta av den.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet"
+        },
+        "item_id": {
+          "name": "Sak-ID",
+          "description": "En sak från husdjursbutiken, eller bow, top_hat, scarf eller crown"
+        },
+        "wear": {
+          "name": "Bär den",
+          "description": "På sätter på den; av tar av den."
+        }
+      }
+    },
+    "mark_reward_delivered": {
+      "name": "Markera belöning som utlämnad",
+      "description": "En inlöst belöning har lämnats ut, så den försvinner från listan över skulder. Ange child_id när barnet själv bekräftar.",
+      "fields": {
+        "claim_id": {
+          "name": "Inlösen-ID",
+          "description": "Den godkända belöningsinlösen"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som bekräftar att det fått den (lämna tomt när en förälder markerar)"
+        }
+      }
+    },
+    "start_boost": {
+      "name": "Starta en boost",
+      "description": "Öppna ett boost-fönster. Sysslor som görs inom det ger multiplikatorn. Lämna chore_ids eller child_ids tomma för alla.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplikator",
+          "description": "Vad sysslorna som omfattas ger, t.ex. 2 för dubbelt (1.1 till 5)"
+        },
+        "minutes": {
+          "name": "Minuter",
+          "description": "Hur länge boosten varar"
+        },
+        "chore_ids": {
+          "name": "Syssla-ID:n",
+          "description": "Sysslorna den omfattar (tomt = alla sysslor)"
+        },
+        "child_ids": {
+          "name": "Barn-ID:n",
+          "description": "Barnen den omfattar (tomt = alla)"
+        },
+        "starts_at": {
+          "name": "Startar",
+          "description": "Starta senare i stället för nu (upp till en vecka framåt)"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Valfri etikett som visas på korten, t.ex. \"Gäster kl. sex\""
+        },
+        "notify": {
+          "name": "Avisera",
+          "description": "Skicka boost-aviseringen till barnen den omfattar (när den aviseringen är påslagen)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Avsluta en boost",
+      "description": "Stoppa en boost i förtid, eller ställ in en som inte har startat än.",
+      "fields": {
+        "boost_id": {
+          "name": "Boost-ID",
+          "description": "Boosten, från attributet boosts på sensor.taskmate_overview"
+        }
+      }
+    },
+    "appeal": {
+      "name": "Överklaga",
+      "description": "Ett barn ber om en ny bedömning av en avvisad syssla, en avvisad belöningsinlösen eller ett avdrag från de senaste 48 timmarna. Kräver att överklaganden är påslagna.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som överklagar"
+        },
+        "kind": {
+          "name": "Typ",
+          "description": "Vad som överklagas"
+        },
+        "target_id": {
+          "name": "Mål-ID",
+          "description": "Posten, från attributet appealable i barnets post i sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Meddelande",
+          "description": "Valfria ord från barnet, upp till 200 tecken"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Avgör en överklagan",
+      "description": "Godkänn en överklagan (betala sysslan, godkänn belöningen eller ångra avdraget) eller stå fast vid det ursprungliga beslutet.",
+      "fields": {
+        "appeal_id": {
+          "name": "Överklagans ID",
+          "description": "Överklagan"
+        },
+        "overturn": {
+          "name": "Ändra beslutet",
+          "description": "true för att ändra beslutet, false för att stå fast"
+        },
+        "note": {
+          "name": "Kommentar",
+          "description": "Valfria ord till barnet, upp till 200 tecken"
+        }
+      }
+    },
+    "adjust_screen_time": {
+      "name": "Justera skärmtid",
+      "description": "Lägg till minuter till ett barns skärmtidssaldo, eller ta bort några med ett negativt tal.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet vars saldo ändras"
+        },
+        "minutes": {
+          "name": "Minuter",
+          "description": "Minuter att lägga till; negativt för att ta bort. Saldot går aldrig under noll."
+        },
+        "reason": {
+          "name": "Anledning",
+          "description": "En kort anteckning till saldohistoriken"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Spara skärmtid",
+      "description": "Flytta ett barns oanvända skärmtidsminuter till helgburken. Dagens fria tid läggs i först, sedan sparade minuter, upp till burkens tak.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som sparar minuterna"
+        },
+        "minutes": {
+          "name": "Minuter",
+          "description": "Hur många minuter som ska sparas. Lämna tomt för att spara allt som får plats."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Betygsätt en belöning",
+      "description": "Barnet ger en belöning det har fått 1 till 3 stjärnor. När belöningen har lämnats ut (eller godkänts, när utlämning inte följs), i 3 dagar.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som fick belöningen"
+        },
+        "claim_id": {
+          "name": "Inlösen-ID",
+          "description": "Belöningsinlösen som betygsätts"
+        },
+        "stars": {
+          "name": "Stjärnor",
+          "description": "1 till 3 stjärnor"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Syskonkontroll",
+      "description": "Ett barn kontrollerar ett syskons syssla som väntar på godkännande. done godkänner den och betalar syskonkontrollbonusen till den som kontrollerar; not_yet låter den vänta på en förälder, med en kommentar.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID för den som kontrollerar",
+          "description": "Barnet som kontrollerar (inte den som gjorde sysslan)"
+        },
+        "completion_id": {
+          "name": "Utförande-ID",
+          "description": "Den väntande sysslan, från attributet sibling_checks i kontrollantens post i sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Bedömning",
+          "description": "done (ser klar ut) eller not_yet"
+        },
+        "note": {
+          "name": "Kommentar",
+          "description": "Valfria ord till föräldern vid not_yet, upp till 120 tecken"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Ställ in sysslopåminnelse",
+      "description": "Ett barn väljer när det vill bli påmint om en av sina sysslor, inom den tidigaste och senaste tiden som anges i TaskMates inställningar. Lämna tiden tom för att rensa den.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "Barnet som vill bli påmint"
+        },
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "Sysslan att bli påmind om"
+        },
+        "time": {
+          "name": "Tid",
+          "description": "HH:MM, t.ex. 17:30. Tomt rensar påminnelsen."
+        }
+      }
+    },
+    "read_aloud": {
+      "name": "Läs upp sysslor",
+      "description": "Läs upp ett barns kvarvarande sysslor på en mediaspelare, till exempel \"Ella, du har tre saker kvar…\". Använder uppläsningstexten på Home Assistants språk om inga egna uppläsningsmallar är inställda.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet vars sysslor läses upp"
+        },
+        "media_player": {
+          "name": "Mediaspelare",
+          "description": "Var det ska läsas upp. Faller tillbaka på standard i Inställningar."
+        },
+        "tts_entity": {
+          "name": "Text-till-tal-entitet",
+          "description": "Vilken TTS-tjänst som ska användas. Faller tillbaka på Inställningar, sedan på den enda installerade."
+        },
+        "message": {
+          "name": "Eget meddelande",
+          "description": "Säg det här i stället för den genererade sammanfattningen."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Snurra syssloroulette",
+      "description": "Välj en slumpvis kvarvarande syssla åt ett barn med en poängmultiplikator. Valfritt: slå på det och ställ in multiplikator och antal snurr per dag i TaskMate-panelens inställningar.",
+      "fields": {
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som snurrar"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "sysslor",
+        "name": "{child} statistik"
+      },
+      "child_badges": {
+        "unit_of_measurement": "märken",
+        "name": "{child} märken"
+      },
+      "child_watch": {
+        "state": {
+          "left": "# kvar",
+          "all_done": "Allt klart",
+          "no_chores": "Inga sysslor"
+        },
+        "name": "{child} klocka"
+      },
+      "overview": {
+        "name": "TaskMate Översikt"
+      },
+      "chores": {
+        "name": "TaskMate Sysslor"
+      },
+      "chore_availability": {
+        "name": "TaskMate Sysslornas tillgänglighet"
+      },
+      "rewards": {
+        "name": "TaskMate Belöningar"
+      },
+      "activity": {
+        "name": "TaskMate Aktivitet"
+      },
+      "incentives": {
+        "name": "TaskMate Incitament"
+      },
+      "bounties": {
+        "name": "TaskMate Extrajobb"
+      },
+      "auctions": {
+        "name": "TaskMate Auktioner"
+      },
+      "chore_board": {
+        "name": "TaskMate Sysslotavla"
+      },
+      "child_points": {
+        "name": "{child} poäng"
+      },
+      "child_wishlist": {
+        "name": "{child} önskelista"
+      },
+      "pending_approvals": {
+        "name": "Väntande godkännanden"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Helgmultiplikator"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonus för perfekt vecka"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Nollställning av svit",
+        "state": {
+          "reset": "Nollställ — sviten går till 0 en missad dag",
+          "pause": "Pausa — sviten bevaras till nästa gjorda syssla"
+        }
+      },
+      "card_design": {
+        "name": "Kortdesign",
+        "state": {
+          "classic": "Klassisk",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Tillgänglig",
+          "graphite": "Graphite"
+        }
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "{child} aktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Syssla gjord",
+              "chore_approved": "Syssla godkänd",
+              "chore_rejected": "Syssla avvisad",
+              "chore_approval_undone": "Godkännande av syssla ångrat",
+              "reward_claimed": "Belöning inlöst",
+              "reward_approved": "Belöning godkänd",
+              "reward_rejected": "Belöning avvisad",
+              "badge_earned": "Märke intjänat",
+              "level_up": "Ny nivå",
+              "streak_updated": "Svit uppdaterad",
+              "streak_freeze_used": "Svitfrys använd",
+              "perfect_week": "Perfekt vecka",
+              "weekly_target_reached": "Veckomål nått",
+              "quest_completed": "Uppdrag klart",
+              "challenge_completed": "Utmaning klarad",
+              "bonus_applied": "Bonus given",
+              "penalty_applied": "Avdrag givet",
+              "surprise_bonus": "Överraskningsbonus",
+              "mandatory_missed": "Obligatorisk syssla missad",
+              "team_chore_completed": "Lagsyssla klar",
+              "points_gifted": "Poäng bortgivna",
+              "help_requested": "Hjälp begärd",
+              "mood_logged": "Humör registrerat",
+              "weekly_goal_reached": "Veckomål nått",
+              "sick_day": "Sjukdag",
+              "chore_auto_approved": "Syssla automatiskt godkänd",
+              "penalty_redeemed": "Avdrag tillbakatjänat",
+              "raffle_won": "Lotteri vunnet",
+              "pet_evolved": "Husdjuret växte",
+              "pet_item_bought": "Husdjurssak köpt",
+              "reward_delivered": "Belöning utlämnad",
+              "personal_best": "Personbästa",
+              "appeal_submitted": "Överklagan inskickad",
+              "appeal_decided": "Överklagan avgjord",
+              "screen_time_low": "Skärmtiden börjar ta slut",
+              "screen_time_out": "Skärmtiden tog slut",
+              "screen_time_changed": "Skärmtid ändrad",
+              "screen_time_saved": "Skärmtid sparad",
+              "screen_time_jar_opened": "Skärmtidsburken öppnad",
+              "points_expired": "Poäng gick ut",
+              "points_expiring": "Poäng som snart går ut",
+              "reward_rated": "Belöning betygsatt",
+              "penalty_warning": "Varning om avdrag",
+              "sibling_check": "Syskonkontroll"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Familjeaktivitet",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Familjemål nått",
+              "season_champion": "Säsongens mästare",
+              "bounty_posted": "Extrajobb upplagt",
+              "scheduled_change_applied": "Schemalagd ändring verkställd",
+              "raffle_drawn": "Lotteri draget",
+              "boost_started": "Boost startad",
+              "boost_ended": "Boost avslutad",
+              "bin_day": "Sopdagssyssla",
+              "shopping_job": "Jobb från inköpslistan"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Har väntande godkännanden"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Gör klart {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Lös in {reward}"
+      }
+    }
+  },
+  "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} kan inte startas än — gör {chores} först."
+    },
+    "calendar_unknown_event": {
+      "message": "Den här händelsen är ingen TaskMate-syssla i barnets kalender."
+    },
+    "calendar_series_not_supported": {
+      "message": "En återkommande syssla kan bara flyttas eller tas bort en dag i taget från kalendern. Redigera sysslan i TaskMate för att ändra hela serien."
+    },
+    "calendar_repeating_create": {
+      "message": "Återkommande händelser kan inte läggas till från kalendern. Skapa en återkommande syssla i TaskMate i stället."
+    },
+    "calendar_rename_series": {
+      "message": "Byt namn på en återkommande syssla i TaskMate. Från kalendern kan du bara flytta eller ta bort en enskild dag."
+    },
+    "calendar_time_follows_chore": {
+      "message": "En återkommande syssla behåller sin tid på dygnet. Bara datumet för ett enskilt tillfälle kan ändras från kalendern."
+    },
+    "calendar_past_date": {
+      "message": "Sysslor kan inte läggas till på, flyttas till eller flyttas från en dag som har passerat."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} är redan på {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Ge sysslan en titel."
+    },
+    "calendar_own_event": {
+      "message": "Den här händelsen publicerades av TaskMate självt, så den läggs inte till som en ny syssla."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} är inte öppen än — be om hjälp när det är dags att göra den."
+    },
+    "help_chore_time_passed": {
+      "message": "Tiden för {chore} har passerat, så det finns inget att be om hjälp med nu."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} kan inte göras just nu, så det finns inget att be om hjälp med än."
+    },
+    "help_already_on_its_way": {
+      "message": "Hjälp med {chore} är redan på väg."
+    },
+    "help_cooldown": {
+      "message": "Vänta en minut innan du ber om hjälp igen."
+    },
+    "rate_limited": {
+      "message": "För många förfrågningar från det här kontot. Försök igen om en minut."
+    },
+    "child_not_found": {
+      "message": "Barnet {child_id} hittades inte"
+    },
+    "chore_not_found": {
+      "message": "Sysslan {chore_id} hittades inte"
+    },
+    "reward_not_found": {
+      "message": "Belöningen {reward_id} hittades inte"
+    },
+    "teamwork_size_not_number": {
+      "message": "Lagstorleken måste vara ett heltal."
+    },
+    "teamwork_size_range": {
+      "message": "En lagsyssla behöver mellan 2 och {max} barn (eller 0 för en vanlig syssla)."
+    },
+    "teamwork_points_mode": {
+      "message": "Lagpoäng måste vara 'each' eller 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "En lagsyssla kan inte också vara öppen."
+    },
+    "teamwork_assignment_mode": {
+      "message": "En lagsyssla måste vara tilldelad alla — inte först till kvarn eller turordning."
+    },
+    "teamwork_timed": {
+      "message": "En tidtagen uppgift kan inte vara en lagsyssla."
+    },
+    "teamwork_not_team_chore": {
+      "message": "Sysslan ”{name}” är ingen lagsyssla"
+    },
+    "swap_only_rotation": {
+      "message": "Bara sysslor i turordning kan bytas"
+    },
+    "swap_won_at_auction": {
+      "message": "Den här sysslan vanns på auktion idag, så den kan inte bytas"
+    },
+    "swap_already_assigned": {
+      "message": "Sysslan är redan tilldelad det barnet idag"
+    },
+    "swap_already_pending": {
+      "message": "En bytesförfrågan för den här sysslan väntar redan"
+    },
+    "swap_too_many_pending": {
+      "message": "För många väntande bytesförfrågningar"
+    },
+    "swap_request_not_found": {
+      "message": "Bytesförfrågan {request_id} hittades inte"
+    },
+    "bulk_unknown_action": {
+      "message": "Okänd massåtgärd {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Kan inte massredigera {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Okänt barn {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Okänd tidsperiod {period}"
+    },
+    "chore_unknown": {
+      "message": "Okänd syssla: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Hoppa över stöds inte för tilldelningsläget 'everyone'"
+    },
+    "skip_sticky_follower": {
+      "message": "Kan inte hoppa över en följare i en fast grupp; hoppa över den ledande sysslan i stället"
+    },
+    "skip_pool_too_small": {
+      "message": "Hoppa över kräver en turordning med 2 eller fler barn"
+    },
+    "manual_start_everyone_mode": {
+      "message": "Manuell start stöds inte för tilldelningsläget 'everyone'"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Barnet {child_id} ingår inte i sysslans grupp"
+    },
+    "chore_photo_required": {
+      "message": "Den här sysslan kräver ett foto som bevis."
+    },
+    "chore_note_required": {
+      "message": "Skriv vad du gjorde för att skicka in den här."
+    },
+    "chore_quantity_required": {
+      "message": "Skriv hur många {unit} du gjorde."
+    },
+    "backdate_day_range": {
+      "message": "Välj en dag de senaste {days} dagarna, före idag."
+    },
+    "backdate_switched_off": {
+      "message": "”{name}” är avstängd."
+    },
+    "backdate_not_assigned": {
+      "message": "”{name}” är inte ett av {child}s jobb."
+    },
+    "backdate_rotation_team": {
+      "message": "”{name}” går i turordning eller kräver ett lag, så den kan inte loggas för en tidigare dag."
+    },
+    "backdate_open_ended": {
+      "message": "”{name}” är öppen, så den behöver barnets anteckning och ett pris. Använd barnets kort."
+    },
+    "backdate_set_times": {
+      "message": "”{name}” har bestämda tider, så den kan inte loggas för en tidigare dag."
+    },
+    "backdate_holiday": {
+      "message": "{weekday} var en ledig dag, så inga jobb skulle göras."
+    },
+    "backdate_sick_day": {
+      "message": "{weekday} var {child}s sjukdag, så inga jobb skulle göras."
+    },
+    "backdate_birthday": {
+      "message": "{weekday} var {child}s födelsedag, en ledig dag från jobb."
+    },
+    "backdate_auction": {
+      "message": "”{name}” vanns på auktion den dagen, så den kan inte loggas i efterhand."
+    },
+    "backdate_weekly_target_met": {
+      "message": "”{name}” nådde redan sitt mål {target} den veckan."
+    },
+    "backdate_not_due": {
+      "message": "”{name}” skulle inte göras {weekday}."
+    },
+    "backdate_daily_limit": {
+      "message": "”{name}” var redan gjord {done}/{limit} gånger {weekday}."
+    },
+    "chore_disabled": {
+      "message": "Sysslan ”{name}” är inaktiverad"
+    },
+    "parent_complete_one_shot": {
+      "message": "Sysslan ”{name}” är en engångssyssla och kan inte göras av en förälder"
+    },
+    "parent_complete_no_children": {
+      "message": "Sysslan ”{name}” har inga barn att dölja den för"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "Sysslan ”{name}” delas i en turordning och kan bara göras för alla"
+    },
+    "parent_complete_not_assigned": {
+      "message": "Sysslan ”{name}” är inte tilldelad det barnet"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Bonusdeluppgiften {subtask_id} hittades inte på sysslan ”{name}”"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "Bonusdeluppgiften ”{subtask}” är inte tilldelad {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Kan inte göra bonusdeluppgiften ”{subtask}” klar — huvudsysslan ”{name}” måste göras först idag."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Bonusdeluppgiften ”{subtask}” är redan gjord idag."
+    },
+    "undo_window_passed": {
+      "message": "Den här sysslan kan inte ångras längre. Be en förälder ångra den."
+    },
+    "undo_points_spent": {
+      "message": "Den här sysslan kan inte ångras nu: dess poäng har redan spenderats. Fråga en förälder."
+    },
+    "completion_not_found": {
+      "message": "Utförandet {completion_id} hittades inte"
+    },
+    "completion_not_approved": {
+      "message": "Utförandet är inte godkänt; inget att ångra"
+    },
+    "chore_sort_unknown": {
+      "message": "Okänd sortering ”{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Dubblettsyssla i gruppen: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "Sysslan ”{name}” använder läget 'everyone' och kan inte gå med i en grupp"
+    },
+    "task_group_already_member": {
+      "message": "Sysslan ”{name}” tillhör redan gruppen ”{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "Okänd regel för uppgiftsgrupp: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Okänd uppgiftsgrupp: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "amount får inte vara 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Svitfrysar är avstängda (streak_freeze_max är 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} har redan max {cap} svitfrysar"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} har redan max {cap} svitfrysar"
+    },
+    "streak_freeze_off": {
+      "message": "Svitfrysar är avstängda"
+    },
+    "points_non_negative": {
+      "message": "points får inte vara negativt"
+    },
+    "transaction_not_found": {
+      "message": "Transaktionen {transaction_id} hittades inte"
+    },
+    "undo_not_undoable": {
+      "message": "Den här åtgärden kan inte ångras"
+    },
+    "gift_undo_too_old": {
+      "message": "Den här gåvan är äldre än stödet för att ångra och kan inte återföras automatiskt."
+    },
+    "gift_undo_spent": {
+      "message": "{child} har redan spenderat en del av gåvan, så den kan inte ångras."
+    },
+    "gift_amount_positive": {
+      "message": "Gåvans belopp måste vara positivt"
+    },
+    "gift_same_child": {
+      "message": "Kan inte ge en gåva till samma barn"
+    },
+    "gift_child_not_found": {
+      "message": "Avsändare eller mottagare hittades inte"
+    },
+    "gift_not_enough_points": {
+      "message": "Inte tillräckligt med poäng: {child} har {points}, gåva {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "”{name}” är en gemensam jackpott och potten är inte full. Behöver {cost}, har {saved} sparat"
+    },
+    "reward_not_available_to": {
+      "message": "Belöningen ”{name}” är inte tillgänglig för {child}"
+    },
+    "reward_sold_out": {
+      "message": "Belöningen ”{name}” är slut"
+    },
+    "reward_expired": {
+      "message": "Belöningen ”{name}” har gått ut"
+    },
+    "reward_not_available_now": {
+      "message": "Belöningen ”{name}” är inte tillgänglig just nu"
+    },
+    "reward_claim_already_waiting": {
+      "message": "En inlösen av ”{name}” väntar redan på godkännande"
+    },
+    "reward_claims_too_many": {
+      "message": "För många belöningsinlösen väntar redan på godkännande"
+    },
+    "reward_not_enough_points": {
+      "message": "Inte tillräckligt med poäng. Behöver {cost}, har {available} tillgängligt"
+    },
+    "reward_spending_cap": {
+      "message": "Utgiftstaket nått: {cap} per period redan använt"
+    },
+    "reward_claim_target_missing": {
+      "message": "Belöning eller barn hittades inte för inlösen {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Inte tillräckligt med poäng för att godkänna. Behöver {cost}, har {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "”{name}” har redan godkänts och kan inte längre avvisas"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "'Den här belöningen' har redan godkänts och kan inte längre avvisas"
+    },
+    "pool_allocate_min": {
+      "message": "Poäng att avsätta måste vara minst 1"
+    },
+    "pool_no_spendable": {
+      "message": "Inga poäng att spendera för {child}"
+    },
+    "pool_full": {
+      "message": "Potten för belöningen ”{name}” är redan full"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} kan få {name} en gång om dagen. Den är tillgänglig igen {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} kan få {name} en gång i veckan. Den är tillgänglig igen {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} kan få {name} en gång i månaden. Den är tillgänglig igen {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} kan få {name} {count} gånger om dagen. Den är tillgänglig igen {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} kan få {name} {count} gånger i veckan. Den är tillgänglig igen {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} kan få {name} {count} gånger i månaden. Den är tillgänglig igen {date}"
+    },
+    "reward_gift_off": {
+      "message": "Att köpa belöningar åt varandra är avstängt"
+    },
+    "reward_gift_children_only": {
+      "message": "Belöningar kan bara köpas åt barn"
+    },
+    "reward_gift_not_giftable": {
+      "message": "”{name}” kan inte köpas åt någon annan"
+    },
+    "reward_rating_stars": {
+      "message": "Välj 1 till 3 stjärnor"
+    },
+    "reward_rating_not_yet": {
+      "message": "Den belöningen kan inte betygsättas än"
+    },
+    "reward_rating_not_holder": {
+      "message": "Bara barnet som fick belöningen kan betygsätta den"
+    },
+    "reward_rating_already": {
+      "message": "Den belöningen har redan betygsatts"
+    },
+    "service_unknown_child": {
+      "message": "Okänt barn ”{ref}”. Giltiga barn: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Fler än ett barn heter ”{ref}”; använd barnets id i stället ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Inget att uppdatera: ange minst ett fält att ändra"
+    },
+    "service_confirm_delete": {
+      "message": "Ange confirm: true för att ta bort sysslan"
+    },
+    "penalty_already_earned_back": {
+      "message": "Det avdraget har redan tjänats tillbaka."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Den belöningen väntar inte på att lämnas ut."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Den belöningen har redan markerats som utlämnad."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Den belöningen tillhör {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "”{field}” kan inte ändras enligt schema"
+    },
+    "scheduled_expects_bool": {
+      "message": "”{field}” förväntar sig true eller false"
+    },
+    "scheduled_expects_int": {
+      "message": "”{field}” förväntar sig ett heltal"
+    },
+    "scheduled_negative": {
+      "message": "”{field}” kan inte vara negativt"
+    },
+    "scheduled_expects_list": {
+      "message": "”{field}” förväntar sig en lista"
+    },
+    "scheduled_expects_text": {
+      "message": "”{field}” förväntar sig text"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on måste vara ett ISO-datum, t.ex. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on måste vara ett framtida datum"
+    },
+    "scheduled_no_fields": {
+      "message": "En schemalagd ändring måste ändra minst ett fält"
+    },
+    "scheduled_change_not_found": {
+      "message": "Den schemalagda ändringen {change_id} hittades inte"
+    },
+    "timed_not_timed": {
+      "message": "Sysslan ”{name}” är ingen tidtagen uppgift"
+    },
+    "timed_already_running": {
+      "message": "Timern går redan"
+    },
+    "timed_daily_cap": {
+      "message": "Dagligt tak nått ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "”{name}” är inte tillgänglig för {child} just nu"
+    },
+    "timed_no_running": {
+      "message": "Ingen pågående timer att pausa"
+    },
+    "timed_no_active": {
+      "message": "Ingen aktiv timer att stoppa"
+    },
+    "set_time_unknown": {
+      "message": "Den tiden är inte en av sysslans bestämda tider."
+    },
+    "sick_day_range": {
+      "message": "Välj en dag från en vecka bakåt till en månad framåt."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Inget att återställa: den togs aldrig bort eller har rensats"
+    },
+    "trash_id_exists": {
+      "message": "Något med id {item_id} finns redan"
+    },
+    "wish_not_found": {
+      "message": "Önskan hittades inte"
+    },
+    "wish_target_not_whole": {
+      "message": "Målet måste vara ett heltal"
+    },
+    "wish_target_range": {
+      "message": "Målet måste vara mellan 1 och {max}"
+    },
+    "wish_name_required": {
+      "message": "Ge önskan ett namn"
+    },
+    "wish_link_invalid": {
+      "message": "Länkar måste vara en webbadress som börjar med http:// eller https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} har redan {max} önskningar på gång"
+    },
+    "wish_picture_unusable": {
+      "message": "Den bilden kan inte användas"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Bara en önskan som väntar eller har nekats kan dras tillbaka"
+    },
+    "wish_not_open_for_saving": {
+      "message": "”{name}” är inte öppen för sparande"
+    },
+    "wish_move_min": {
+      "message": "Poäng att flytta måste vara minst 1"
+    },
+    "wish_fully_funded": {
+      "message": "”{name}” är redan helt ihopsparad"
+    },
+    "wish_no_spendable": {
+      "message": "Inga poäng att spendera för {child_name}"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Poäng kan inte tas ut ur ”{name}” just nu"
+    },
+    "wish_take_back_min": {
+      "message": "Poäng att ta tillbaka måste vara minst 1"
+    },
+    "wish_nothing_saved": {
+      "message": "Inget sparat i ”{name}” att ta tillbaka"
+    },
+    "wish_cannot_redeem": {
+      "message": "”{name}” kan inte lösas in just nu"
+    },
+    "wish_needs_more_points": {
+      "message": "”{name}” behöver {points} poäng till först"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "För många belöningsinlösen väntar redan på godkännande"
+    },
+    "wish_not_waiting_approval": {
+      "message": "”{name}” väntar inte på godkännande"
+    },
+    "wish_cannot_decline": {
+      "message": "”{name}” kan inte längre nekas"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "”{name}” är inte öppen för bidrag"
+    },
+    "wish_pledge_name_required": {
+      "message": "Ange vem bidraget är från"
+    },
+    "wish_pledge_min": {
+      "message": "Ett bidrag måste vara minst 1 poäng"
+    },
+    "wish_too_many_pledges": {
+      "message": "”{name}” har redan {max} bidrag"
+    },
+    "wish_pledges_locked": {
+      "message": "Bidrag till ”{name}” kan inte längre ändras"
+    },
+    "wish_pledge_not_found": {
+      "message": "Bidraget hittades inte"
+    },
+    "wish_claim_missing": {
+      "message": "Önskan eller barn hittades inte för inlösen {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "”{name}” väntar inte längre på att lösas in"
+    },
+    "wish_not_funded": {
+      "message": "”{name}” är inte helt ihopsparad längre"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "Bilden måste vara en emoji (upp till {max} tecken)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "En färg måste se ut som #ff8800, eller vara 'rainbow'."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Den saken finns inte i butiken."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Håll namnet inom {max} tecken."
+    },
+    "pet_shop_name_required": {
+      "message": "Ge saken ett namn."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Okänd plats ”{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "Pris och nivå måste vara heltal."
+    },
+    "pet_shop_cost_range": {
+      "message": "Priset måste vara mellan 1 och {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "Nivån måste vara mellan 0 och {max}."
+    },
+    "pet_shop_full": {
+      "message": "Butiken rymmer högst {max} saker."
+    },
+    "pets_switched_off": {
+      "message": "Husdjur är avstängda."
+    },
+    "pet_adopt_first": {
+      "message": "Adoptera ett husdjur först."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Det är inte upplåst än."
+    },
+    "pet_shop_closed": {
+      "message": "Husdjursbutiken är stängd."
+    },
+    "pet_shop_buy_first": {
+      "message": "Köp den först."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Den saken är inte till salu."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Den låses upp på nivå {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Du har redan den."
+    },
+    "pet_shop_already_pending": {
+      "message": "Den väntar redan på en förälder."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Inte tillräckligt med poäng för den än."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Det köpet väntar inte längre."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Det barnet eller den saken finns inte längre; neka köpet i stället."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} har inte tillräckligt med poäng för den nu."
+    },
+    "pet_unknown_species": {
+      "message": "Okänt husdjur ”{species}”"
+    },
+    "pet_name_required": {
+      "message": "Ge ditt husdjur ett namn."
+    },
+    "pet_no_egg": {
+      "message": "Det finns inget ägg att kläcka än."
+    },
+    "auction_not_found": {
+      "message": "Den auktionen finns inte längre. Uppdatera kortet."
+    },
+    "auction_refuse_off": {
+      "message": "Den sysslan är avstängd."
+    },
+    "auction_refuse_unassigned": {
+      "message": "En ej tilldelad syssla kan inte ges till någon, så den kan inte auktioneras ut."
+    },
+    "auction_refuse_team": {
+      "message": "En lagsyssla delas av ett lag, så den kan inte auktioneras ut."
+    },
+    "auction_refuse_timed": {
+      "message": "En tidtagen syssla betalas per minut, så den kan inte auktioneras ut."
+    },
+    "auction_refuse_open_ended": {
+      "message": "En öppen syssla prissätts av föräldern, så den kan inte auktioneras ut."
+    },
+    "auction_invalid_date": {
+      "message": "Ogiltigt datum: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Välj ett tillfälle från och med imorgon."
+    },
+    "auction_not_scheduled": {
+      "message": "”{chore}” är inte schemalagd {date}."
+    },
+    "auction_already_exists": {
+      "message": "Det tillfället har redan en auktion."
+    },
+    "auction_points_not_whole": {
+      "message": "Poäng måste vara heltal."
+    },
+    "auction_max_range": {
+      "message": "Högsta budet ligger mellan 1 och {max} poäng."
+    },
+    "auction_min_range": {
+      "message": "Lägsta budet måste ligga mellan 1 och högsta budet."
+    },
+    "auction_needs_close": {
+      "message": "En auktion behöver en stängningstid."
+    },
+    "auction_close_in_past": {
+      "message": "Stängningstiden har redan passerat."
+    },
+    "auction_close_before_day": {
+      "message": "Budgivningen måste stänga före sysslans dag."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Bara barn som kan göra sysslan kan bjuda på den."
+    },
+    "auction_no_bidders": {
+      "message": "Välj minst ett barn som kan bjuda."
+    },
+    "auction_already_closed": {
+      "message": "Den här auktionen har redan stängt."
+    },
+    "auction_already_cancelled": {
+      "message": "Den här auktionen var redan avbruten."
+    },
+    "auction_occurrence_passed": {
+      "message": "Det tillfället har redan varit."
+    },
+    "auction_still_live": {
+      "message": "Den här auktionen pågår fortfarande. Avbryt den i stället."
+    },
+    "auction_not_for_you": {
+      "message": "Den här auktionen är inte för dig."
+    },
+    "auction_bidding_closed": {
+      "message": "Budgivningen på den här auktionen har stängt."
+    },
+    "auction_bid_not_whole": {
+      "message": "Ett bud är ett helt antal poäng."
+    },
+    "auction_bid_range": {
+      "message": "Bjud mellan {min} och {max} poäng."
+    },
+    "auction_no_bid": {
+      "message": "Du har inte bjudit på den här."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Ogiltig sluttid: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Det extrajobbet finns inte längre. Uppdatera kortet."
+    },
+    "bounty_title_required": {
+      "message": "Ett extrajobb behöver en titel."
+    },
+    "bounty_points_not_whole": {
+      "message": "Poäng måste vara ett heltal."
+    },
+    "bounty_points_range": {
+      "message": "Ett extrajobb är värt mellan 1 och {max} poäng."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Låstiden måste vara ett helt antal timmar."
+    },
+    "bounty_claim_hours_range": {
+      "message": "Låstiden ligger mellan 1 och {max} timmar."
+    },
+    "bounty_expiry_in_past": {
+      "message": "Sluttiden har redan passerat."
+    },
+    "bounty_finished_locked": {
+      "message": "Ett klart extrajobb kan inte redigeras."
+    },
+    "bounty_claimed_locked": {
+      "message": "När ett extrajobb har tagits kan bara poäng och sluttid ändras."
+    },
+    "bounty_review_before_remove": {
+      "message": "Godkänn eller avvisa det färdiga jobbet innan du tar bort extrajobbet."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Bara ett taget extrajobb kan släppas."
+    },
+    "bounty_not_for_you": {
+      "message": "Det här extrajobbet är inte för dig."
+    },
+    "bounty_taken": {
+      "message": "Någon annan hann först — extrajobbet finns inte på tavlan längre."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Gör klart ”{title}” först — du kan bara ha ett extrajobb i taget."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Du har inte tagit det här extrajobbet."
+    },
+    "bounty_claim_expired": {
+      "message": "Din tid för det här extrajobbet tog slut."
+    },
+    "bounty_photo_required": {
+      "message": "Det här extrajobbet behöver ett foto på det färdiga jobbet."
+    },
+    "raffle_name_required": {
+      "message": "Ge lotteriet ett namn."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "En lott kostar 1 till {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Välj när lotteriet ska dras."
+    },
+    "raffle_field_required": {
+      "message": "{field} krävs"
+    },
+    "raffle_draw_in_past": {
+      "message": "Dragningen måste vara i framtiden."
+    },
+    "raffle_not_found": {
+      "message": "Lotteriet hittades inte"
+    },
+    "raffle_not_open_edit": {
+      "message": "Bara ett öppet lotteri kan ändras."
+    },
+    "raffle_price_locked": {
+      "message": "Lotter har köpts, så priset kan inte ändras."
+    },
+    "raffle_closed": {
+      "message": "Det här lotteriet har stängt."
+    },
+    "raffle_drawing": {
+      "message": "Det här lotteriet dras just nu."
+    },
+    "raffle_not_open_to": {
+      "message": "Det här lotteriet är inte öppet för {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Köp minst en lott."
+    },
+    "raffle_max_tickets": {
+      "message": "Du kan ha högst {max} lotter."
+    },
+    "raffle_not_enough_points": {
+      "message": "Inte tillräckligt med poäng för så många lotter."
+    },
+    "raffle_already_closed": {
+      "message": "Det här lotteriet har redan stängt."
+    },
+    "roulette_off": {
+      "message": "Syssloroulette är avstängd"
+    },
+    "roulette_no_spins": {
+      "message": "Inga snurr kvar idag"
+    },
+    "roulette_nothing_left": {
+      "message": "Inget kvar att snurra om"
+    },
+    "unlock_not_allowed": {
+      "message": "”{entity_id}” finns inte bland tillåtna för upplåsning. Lägg till den i Inställningar innan du använder den som belöning."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Upplåsningsminuter måste vara ett heltal"
+    },
+    "unlock_minutes_negative": {
+      "message": "Upplåsningsminuter kan inte vara negativa"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Upplåsningsminuter kan inte överstiga {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Den avataren finns inte i katalogen"
+    },
+    "avatar_locked": {
+      "message": "Den avataren är inte upplåst än"
+    },
+    "weekly_goals_off": {
+      "message": "Veckomål är avstängda."
+    },
+    "weekly_goal_range": {
+      "message": "Välj ett mål från 0 till {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Ett mål måste vara minst {bonus}, bonusen det ger."
+    },
+    "weekly_goal_locked": {
+      "message": "Veckans mål har redan nåtts och betalats, så det kan inte ändras förrän på måndag."
+    },
+    "challenge_name_required": {
+      "message": "Utmaningens namn krävs"
+    },
+    "challenge_target_min": {
+      "message": "Målet måste vara minst 1"
+    },
+    "challenge_not_found": {
+      "message": "Utmaningen {challenge_id} hittades inte"
+    },
+    "quest_name_required": {
+      "message": "Uppdragets namn krävs"
+    },
+    "quest_needs_step": {
+      "message": "Ett uppdrag behöver minst ett steg"
+    },
+    "quest_not_found": {
+      "message": "Uppdraget {quest_id} hittades inte"
+    },
+    "admin_only": {
+      "message": "Bara för administratörer"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate är inte initierat"
+    },
+    "not_allowed": {
+      "message": "Inte tillåtet"
+    },
+    "handler_failed": {
+      "message": "Något gick fel; se Home Assistant-loggen"
+    },
+    "chore_one_off_past_day": {
+      "message": "En engångssyssla kan inte läggas på en dag som redan har passerat"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start måste vara ett ISO-datum"
+    },
+    "penalty_not_found": {
+      "message": "Avdraget {penalty_id} hittades inte"
+    },
+    "bonus_not_found": {
+      "message": "Bonusen {bonus_id} hittades inte"
+    },
+    "group_not_found": {
+      "message": "Gruppen {group_id} hittades inte"
+    },
+    "chores_bulk_no_names": {
+      "message": "Minst ett sysslonamn krävs"
+    },
+    "notif_child_not_found": {
+      "message": "Barnet hittades inte"
+    },
+    "notif_parent_not_found": {
+      "message": "Föräldern hittades inte"
+    },
+    "recap_not_found": {
+      "message": "Sammanfattningen hittades inte"
+    },
+    "voucher_not_approved": {
+      "message": "Bara en godkänd belöning kan skrivas ut"
+    },
+    "voucher_missing": {
+      "message": "Den belöningen eller det barnet finns inte längre"
+    },
+    "setup_invalid_birthday": {
+      "message": "Födelsedagen ”{value}” är inget giltigt datum"
+    },
+    "kiosk_pin_invalid": {
+      "message": "En kiosk-PIN måste vara exakt 4 siffror"
+    },
+    "time_periods_empty": {
+      "message": "time_periods måste vara en lista som inte är tom"
+    },
+    "time_periods_too_many": {
+      "message": "för många perioder (max {max})"
+    },
+    "time_periods_not_object": {
+      "message": "varje period måste vara ett objekt"
+    },
+    "time_periods_duplicate_id": {
+      "message": "dubblerat period-id: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "varje egen period behöver ett namn"
+    },
+    "time_periods_invalid_time": {
+      "message": "ogiltig tid för perioden ”{name}” (använd HH:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "perioden ”{name}” måste börja innan den slutar"
+    },
+    "time_periods_overlap": {
+      "message": "”{name}” överlappar ”{other}” — perioder kan inte överlappa"
+    },
+    "time_periods_in_use": {
+      "message": "kan inte ta bort en period som fortfarande används av sysslor: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods måste vara en lista"
+    },
+    "vacation_periods_too_many": {
+      "message": "för många semesterperioder (max {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "varje semesterperiod måste vara ett objekt"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "varje semesterperiod behöver giltiga start- och slutdatum (ÅÅÅÅ-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Kan inte använda en mall utan sysslor"
+    },
+    "template_none_selected": {
+      "message": "Minst en syssla måste väljas"
+    },
+    "template_no_valid_chores": {
+      "message": "Inga giltiga sysslor hittades för valda ID:n"
+    },
+    "template_needs_chore": {
+      "message": "Mallen måste ha minst en syssla"
+    },
+    "template_builtin_modify": {
+      "message": "Kan inte ändra den inbyggda mallen ”{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "Kan inte ta bort den inbyggda mallen ”{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "Det ser inte ut som ett TaskMate-paket"
+    },
+    "template_pack_wrong_format": {
+      "message": "Inte ett TaskMate-mallpaket"
+    },
+    "template_pack_version_nan": {
+      "message": "Paketversionen är inget tal"
+    },
+    "template_pack_too_new": {
+      "message": "Det här paketet kräver en nyare TaskMate (paketversion {version}, den här förstår {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Paketet innehåller inga mallar"
+    },
+    "template_pack_too_many": {
+      "message": "Paketet har för många mallar (max {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Paketet innehåller en felaktig mall"
+    },
+    "template_pack_unnamed_template": {
+      "message": "En mall i paketet saknar namn"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Mallen ”{name}” har inga sysslor"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Mallen ”{name}” har för många sysslor"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Mallen ”{name}” har en felaktig syssla"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "En syssla i ”{name}” saknar namn"
+    },
+    "boost_bad_time": {
+      "message": "”{value}” är ingen tid som 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "Multiplikatorn måste vara ett tal."
+    },
+    "boost_multiplier_range": {
+      "message": "Välj en multiplikator från ×{min} till ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Sysslan {chore_id} hittades inte."
+    },
+    "boost_child_not_found": {
+      "message": "Barnet {child_id} hittades inte."
+    },
+    "boost_start_past": {
+      "message": "En boost kan inte starta bakåt i tiden."
+    },
+    "boost_too_far_ahead": {
+      "message": "En boost kan schemaläggas upp till en vecka framåt."
+    },
+    "boost_minutes_nan": {
+      "message": "Minuterna måste vara ett heltal."
+    },
+    "boost_minutes_range": {
+      "message": "Välj från 1 till {max} minuter."
+    },
+    "boost_already_ended": {
+      "message": "Den boosten har redan avslutats."
+    },
+    "boost_rule_no_days": {
+      "message": "Välj minst en dag."
+    },
+    "boost_rule_end_before_start": {
+      "message": "Sluttiden måste vara efter starttiden."
+    },
+    "boost_rules_max": {
+      "message": "Upp till {max} återkommande boostar."
+    },
+    "boost_rule_gone": {
+      "message": "Den återkommande boosten finns inte längre."
+    },
+    "season_pack_unknown": {
+      "message": "Okänt säsongspaket: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Okänt barn: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Den här sysslan har redan ångrats. Uppdatera kortet."
+    },
+    "import_invalid_payload": {
+      "message": "Ogiltig TaskMate-export"
+    },
+    "import_data_not_object": {
+      "message": "importdata måste vara ett objekt"
+    },
+    "allowance_points_min": {
+      "message": "points måste vara >= 1"
+    },
+    "allowance_not_enabled": {
+      "message": "Veckopeng är inte aktiverad"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} har bara {points} {points_name} att betala ut."
+    },
+    "appeals_off": {
+      "message": "Överklaganden är avstängda."
+    },
+    "appeals_already_appealed": {
+      "message": "Det har redan överklagats."
+    },
+    "appeals_not_appealable": {
+      "message": "Det kan inte överklagas."
+    },
+    "appeals_not_found": {
+      "message": "Den överklagan finns inte längre."
+    },
+    "appeals_already_decided": {
+      "message": "Den överklagan har redan avgjorts."
+    },
+    "appeals_child_gone": {
+      "message": "Barnet finns inte längre."
+    },
+    "appeals_reward_gone": {
+      "message": "Den belöningen finns inte längre."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Det avdraget har redan tagits tillbaka."
+    },
+    "appeals_unknown_kind": {
+      "message": "Okänd typ av överklagan {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Födelsedagen måste vara ÅÅÅÅ-MM-DD eller MM-DD, fick ”{value}”"
+    },
+    "birthday_in_future": {
+      "message": "Födelsedagen kan inte ligga i framtiden"
+    },
+    "chore_reminders_off": {
+      "message": "Påminnelser är avstängda"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} är inte en av {child}s sysslor"
+    },
+    "chore_reminder_time_format": {
+      "message": "Välj en tid som 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Välj en tid mellan {earliest} och {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on måste vara ett ISO-datum, t.ex. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Den inspektionen finns inte längre. Uppdatera och försök igen."
+    },
+    "inspection_already_decided": {
+      "message": "Den inspektionen har redan avgjorts eller stängts."
+    },
+    "inspections_off": {
+      "message": "Överraskningsinspektioner är avstängda i Inställningar."
+    },
+    "inspection_chore_gone": {
+      "message": "Den sysslan finns inte längre."
+    },
+    "inspection_not_approved": {
+      "message": "Bara godkända sysslor kan inspekteras."
+    },
+    "inspection_not_child_chore": {
+      "message": "Bara ett barns egen syssla kan inspekteras."
+    },
+    "inspection_child_gone": {
+      "message": "Det barnet finns inte längre."
+    },
+    "inspection_too_old": {
+      "message": "Bara sysslor som godkänts de senaste {hours} timmarna kan inspekteras."
+    },
+    "inspection_already_inspected": {
+      "message": "Den sysslan har redan inspekterats."
+    },
+    "inspection_redo_today_only": {
+      "message": "Bara en syssla som gjorts idag kan skickas tillbaka för att göras om."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url måste vara en /sökväg, en http(s)-URL eller noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group får inte innehålla mellanslag (prova family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group får inte innehålla kontrolltecken"
+    },
+    "notification_group_too_long": {
+      "message": "group får vara högst 64 tecken"
+    },
+    "notification_unknown_type": {
+      "message": "Okänd aviseringstyp {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Okänd aviseringsmottagare {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Minuter måste vara ett heltal"
+    },
+    "screen_time_minutes_max": {
+      "message": "Minuter kan inte överstiga {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "Skärmtidsburken är avstängd"
+    },
+    "screen_time_jar_full": {
+      "message": "Burken är full"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Inga minuter att spara"
+    },
+    "setup_unknown_age_group": {
+      "message": "Okänd åldersgrupp ”{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Varje nytt barn behöver en egen ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Ett barn behöver ett namn"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Sysslan är tilldelad ett okänt barn ”{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "En syssla behöver ett namn"
+    },
+    "setup_reward_needs_name": {
+      "message": "En belöning behöver ett namn"
+    },
+    "sibling_checks_off": {
+      "message": "Syskonkontroller är avstängda"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Okänd bedömning {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Den sysslan har redan kontrollerats. Uppdatera kortet."
+    },
+    "sibling_check_own_chore": {
+      "message": "Du kan inte kontrollera din egen syssla"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} kan inte kontrollera det här barnets sysslor"
+    },
+    "sound_invalid_file_name": {
+      "message": "Inget giltigt namn på ljudfil: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Ljudet {file} är redan registrerat"
+    },
+    "sound_unknown_custom": {
+      "message": "Okänt eget ljud: {file}"
+    },
+    "tour_adult": {
+      "message": "Vuxenprofiler får ingen introduktion"
+    },
+    "tour_bad_status": {
+      "message": "status måste vara 'done' eller 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Okänt introduktionssteg {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Pratar redan; försök igen om en stund"
+    },
+    "tts_no_media_player": {
+      "message": "Ingen mediaspelare angiven och ingen standard inställd i Inställningar"
+    },
+    "tts_no_entity": {
+      "message": "Ingen text-till-tal-entitet hittades. Ställ in en i Inställningar eller ange tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} är inte en av {child}s sysslor idag."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Okänt humör ”{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Bestämda tider måste vara en lista."
+    },
+    "set_times_too_many": {
+      "message": "En syssla kan ha högst {max} bestämda tider."
+    },
+    "set_times_timed": {
+      "message": "En tidtagen syssla kan inte ha bestämda tider."
+    },
+    "set_times_open_ended": {
+      "message": "En öppen syssla kan inte ha bestämda tider."
+    },
+    "set_times_quantity": {
+      "message": "En mängdsyssla kan inte ha bestämda tider."
+    },
+    "set_times_teamwork": {
+      "message": "En lagsyssla kan inte ha bestämda tider."
+    },
+    "set_times_need_start_end": {
+      "message": "Varje bestämd tid behöver en start och ett slut."
+    },
+    "set_times_bad_format": {
+      "message": "Bestämda tider behöver en start och ett slut som 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "En bestämd tid måste stänga efter att den öppnar, samma dag."
+    },
+    "set_times_overlap": {
+      "message": "Två bestämda tider överlappar. Flytta en så att de inte gör det."
+    },
+    "template_not_found": {
+      "message": "Mallen {template_id} hittades inte"
+    },
+    "upload_admin_required": {
+      "message": "Administratör krävs"
+    },
+    "upload_file_too_large": {
+      "message": "Filen är för stor"
+    },
+    "upload_expected_multipart": {
+      "message": "Förväntade multipart-formulär"
+    },
+    "upload_too_many_parts": {
+      "message": "För många formulärdelar"
+    },
+    "upload_no_file": {
+      "message": "Ingen fil angiven"
+    },
+    "upload_image_unsupported": {
+      "message": "Bildformatet stöds inte (JPEG, PNG eller WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Bildlagringen är full"
+    },
+    "upload_image_store_failed": {
+      "message": "Kunde inte spara bilden"
+    },
+    "upload_photo_rate_limited": {
+      "message": "För många uppladdningar, försök igen snart"
+    },
+    "upload_photo_busy": {
+      "message": "För många uppladdningar samtidigt, försök igen om en stund"
+    },
+    "upload_photo_storage_full": {
+      "message": "Fotolagringen är full"
+    },
+    "upload_photo_timeout": {
+      "message": "Uppladdningen tog för lång tid"
+    },
+    "upload_photo_invalid": {
+      "message": "Ingen giltig bild"
+    },
+    "upload_photo_store_failed": {
+      "message": "Kunde inte spara fotot"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Du har för många foton som väntar på att kopplas till en syssla. Skicka in eller ta bort dem först."
+    },
+    "upload_sound_unsupported": {
+      "message": "Ljudformatet stöds inte (MP3, OGG, WAV eller M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Ljudlagringen är full"
+    },
+    "upload_sound_store_failed": {
+      "message": "Kunde inte spara ljudet"
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate kan inte skicka aviseringar till {who}",
+      "description": "TaskMate är inställt på att avisera {who} via `{service}`, men den tjänsten finns inte längre — oftast för att mobilen togs bort eller bytte namn i integrationen Mobile App.\n\nÖppna TaskMates adminpanel → Aviseringar och välj den aktuella tjänsten för {who}. Den här reparationen försvinner av sig själv när tjänsten finns."
+    },
+    "child_entity_missing": {
+      "title": "{child}s profil använder en saknad entitet",
+      "description": "{child}s profil använder `{entity}`, som inte finns längre. Tillgänglighet, närvarostyrda påminnelser eller profilbilden som är beroende av den fungerar inte.\n\nÖppna TaskMates adminpanel → Barn, redigera {child} och välj en entitet som finns (eller rensa fältet)."
+    },
+    "chore_entity_missing": {
+      "title": "”{chore}” använder en saknad entitet",
+      "description": "”{chore}” kontrollerar `{entity}` för att avgöra när den visas, men den entiteten finns inte längre, så kontrollen hoppas över.\n\nÖppna TaskMates adminpanel → Sysslor, redigera ”{chore}” och välj en entitet som finns (eller rensa den)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "Sysslan ”{chore}” är inte tilldelad någon",
+      "description": "Alla barn som ”{chore}” var tilldelad har tagits bort, så ingen kommer någonsin att se den.\n\nÖppna TaskMates adminpanel → Sysslor och tilldela ”{chore}” ett barn, eller ta bort den."
+    },
+    "chore_dependency_missing": {
+      "title": "Sysslan ”{chore}” kan aldrig låsas upp",
+      "description": "”{chore}” väntar på att en annan syssla ska göras först, men den sysslan har tagits bort, så ”{chore}” förblir låst för alltid.\n\nÖppna TaskMates adminpanel → Sysslor, redigera ”{chore}” och ta bort det saknade beroendet."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Inget barn kan lösa in belöningen ”{reward}”",
+      "description": "Alla barn som ”{reward}” var avsedd för har tagits bort, så ingen kan lösa in den.\n\nÖppna TaskMates adminpanel → Belöningar och välj vem ”{reward}” är till, eller ta bort den."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "Belöningen ”{reward}” låser inte upp något",
+      "description": "”{reward}” är inställd på att slå på `{entity}`, men den entiteten finns inte längre bland TaskMates tillåtna för upplåsning, så inget händer när belöningen godkänns.\n\nÖppna TaskMates adminpanel → Inställningar och lägg till `{entity}` bland tillåtna för upplåsning, eller redigera ”{reward}”."
+    }
+  }
+}
