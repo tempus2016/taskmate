@@ -353,6 +353,7 @@
   "child.done_chore_aria": "Zrobione: {chore}",
   "child.action_chore_aria": "{action}: {chore}",
   "child.sr_completed": "{chore} zrobione! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} zrobione! +{points} {points_name}, gdy dorosły to sprawdzi",
   "child.sr_undone": "Cofnięto {chore}",
   "child.sr_help_sent": "Poproszono o pomoc przy {chore}",
   "child.undo_recent": "Cofnij obowiązek, który właśnie wykonałeś(-aś)",

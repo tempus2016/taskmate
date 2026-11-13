@@ -353,6 +353,7 @@
   "child.done_chore_aria": "Done: {chore}",
   "child.action_chore_aria": "{action}: {chore}",
   "child.sr_completed": "{chore} done! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} done! +{points} {points_name} when a grown-up checks it",
   "child.sr_undone": "{chore} undone",
   "child.sr_help_sent": "Asked for help with {chore}",
   "child.undo_recent": "Undo a chore you just did",

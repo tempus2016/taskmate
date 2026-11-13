@@ -347,6 +347,7 @@
   "child.done_chore_aria": "Ferdig: {chore}",
   "child.action_chore_aria": "{action}: {chore}",
   "child.sr_completed": "{chore} er gjort! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} er gjort! +{points} {points_name} når ein vaksen har sjekka det",
   "child.sr_undone": "{chore} er angra",
   "child.sr_help_sent": "Bad om hjelp med {chore}",
   "child.undo_recent": "Angra ei oppgåve du nettopp gjorde",

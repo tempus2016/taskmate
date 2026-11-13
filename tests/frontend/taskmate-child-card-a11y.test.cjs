@@ -169,3 +169,14 @@ test("a completion is announced with the chore, points and points name", async (
   await new Promise((r) => setTimeout(r, 200));
   assert.equal(region.textContent, localize("child.sr_completed", { chore: "Feed the cat", points: "5", points_name: "Stars" }));
 });
+
+test("a chore a grown-up still has to check is announced as pending, not earned", async () => {
+  const card = makeCard({ chores: [chore()] });
+  card.hass.states[ENTITY].attributes.points_name = "Stars";
+  card._needsApproval = () => true;
+  const region = { textContent: "" };
+  card.renderRoot = { querySelector: (sel) => (sel === ".tm-live" ? region : null) };
+  card._announceCompleted(chore(), 5, { id: "kid1" });
+  await new Promise((r) => setTimeout(r, 200));
+  assert.equal(region.textContent, localize("child.sr_completed_pending", { chore: "Feed the cat", points: "5", points_name: "Stars" }));
+});

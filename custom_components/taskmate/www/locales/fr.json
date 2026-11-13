@@ -347,6 +347,7 @@
   "child.done_chore_aria": "Terminé : {chore}",
   "child.action_chore_aria": "{action} : {chore}",
   "child.sr_completed": "{chore} terminé ! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} terminé ! +{points} {points_name} quand un adulte aura vérifié",
   "child.sr_undone": "{chore} annulé",
   "child.sr_help_sent": "Aide demandée pour {chore}",
   "child.undo_recent": "Annuler une tâche que tu viens de faire",

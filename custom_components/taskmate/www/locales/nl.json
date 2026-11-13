@@ -353,6 +353,7 @@
   "child.done_chore_aria": "Klaar: {chore}",
   "child.action_chore_aria": "{action}: {chore}",
   "child.sr_completed": "{chore} gedaan! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} gedaan! +{points} {points_name} zodra een volwassene het heeft gecontroleerd",
   "child.sr_undone": "{chore} teruggenomen",
   "child.sr_help_sent": "Hulp gevraagd bij {chore}",
   "child.undo_recent": "Neem een taak terug die je net deed",
