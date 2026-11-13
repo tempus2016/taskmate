@@ -1131,6 +1131,8 @@ class TaskMatePanel extends HTMLElement {
     }
     if (act === "save-adjust-add")    { this._saveAdjustDialog(1); return; }
     if (act === "save-adjust-remove") { this._saveAdjustDialog(-1); return; }
+    if (act === "payout-open")        { this._openPayoutDialog(t.dataset.id || ""); return; }
+    if (act === "save-payout")        { this._savePayoutDialog(); return; }
     if (act === "edit-child")   { this._openChildDialog(t.dataset.id); return; }
     if (act === "delete-child") { this._confirmDelete("child", t.dataset.id); return; }
     if (act === "save-child")   { this._doSaveChild(); return; }
@@ -1694,6 +1696,18 @@ class TaskMatePanel extends HTMLElement {
       }
       // Inspection pass (#997): relabel the button as the bonus is typed,
       // without a re-render that would steal the input's focus.
+      if (this._dialog.kind === "payout") {
+        if (field === "child_id") {
+          const kid = (this._state.children || []).find(c => c.id === value);
+          this._dialog.data.points = kid ? Math.max(0, Math.floor(Number(kid.points) || 0)) : null;
+          this._render();
+          return;
+        }
+        if (field === "points") {
+          const out = this.querySelector('[data-role="payout-preview"]');
+          if (out) out.textContent = this._payoutPreview(value);
+        }
+      }
       if (this._dialog.kind === "insp-pass" && field === "bonus") {
         const btn = this.querySelector('[data-act="insp-pass-save"]');
         if (btn) btn.textContent = this._inspPassLabel(value);
@@ -14496,6 +14510,7 @@ class TaskMatePanel extends HTMLElement {
         </ul>` : `<p class="tm-meta">${this._t("panel.today_nothing_due")}</p>`}
         <div class="tm-kd-actions">
           <button type="button" class="tm-btn tm-btn-raised tm-btn-sm" data-act="adjust-points-custom" data-id="${this._esc(id)}">± ${this._t("panel.kid_drawer_points")}</button>
+          ${this._state.settings?.allowance_enabled ? `<button type="button" class="tm-btn tm-btn-sm" data-act="payout-open" data-id="${this._esc(id)}"><ha-icon icon="mdi:cash"></ha-icon> ${this._t("panel.payout_button")}</button>` : ""}
           <button type="button" class="tm-btn tm-btn-sm" data-act="kid-drawer-scope" data-child="${scoped ? "" : this._esc(id)}">${scoped ? this._t("panel.scope_clear") : this._esc(this._t("panel.scope_only", { name: child.name }))}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="view-as" data-id="${this._esc(id)}">👁 ${this._t("panel.view_as_button")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="edit-child" data-id="${this._esc(id)}">${this._t("panel.btn_edit")}</button>
@@ -15112,6 +15127,11 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.allowance_currency")}</div>
               <input type="text" class="tm-input" maxlength="8" data-setting="allowance_currency" value="${this._esc(s.allowance_currency || "")}" placeholder="£">
             </div>
+            ${this._state.settings?.allowance_enabled ? `
+              <div class="tm-period-actions">
+                <button type="button" class="tm-btn" data-act="payout-open"><ha-icon icon="mdi:cash"></ha-icon> ${this._t("panel.payout_record")}</button>
+              </div>
+            ` : ""}
             ${(this._state.allowance_payouts || []).length ? `
               <div class="tm-section-pad">
               <h4 class="tm-subhead">${this._t("panel.allowance_ledger")}</h4>
@@ -15120,7 +15140,7 @@ class TaskMatePanel extends HTMLElement {
                   <tr>
                     <td>${this._esc((p.date || "").slice(0, 10))}</td>
                     <td>${this._esc(p.child_name || "")}</td>
-                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(this._t("panel.allowance_money", { currency: p.currency || "", amount: this._fmtNum(p.amount) }).trim())}</td>
+                    <td style="text-align:end">${this._fmtNum(this._num(p.points))} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"} ${this._esc(this._fmtMoney(p.amount, p.currency))}</td>
                   </tr>
                 `).join("")}
               </tbody></table></div>
@@ -15503,6 +15523,110 @@ class TaskMatePanel extends HTMLElement {
     }
   }
 
+  // Allowance payout from the panel. The record_allowance_payout service has
+  // always existed, but a dashboard button can't template its points (tap
+  // actions send the template text), so parents had no working way to pay
+  // out a child's balance. The dialog starts at the whole balance.
+  _openPayoutDialog(childId) {
+    const kids = this._state.children || [];
+    const child = kids.find(c => c.id === childId) || (kids.length === 1 ? kids[0] : null);
+    this._openDialog({ kind: "payout", data: {
+      child_id: child ? child.id : "",
+      points: child ? Math.max(0, Math.floor(Number(child.points) || 0)) : null,
+    } });
+  }
+
+  _payoutRate() {
+    const rate = parseInt(this._state.settings?.allowance_rate, 10);
+    return Number.isFinite(rate) && rate >= 1 ? rate : 10;
+  }
+
+  _payoutMoney(points) {
+    return this._fmtMoney(Math.round((Number(points) / this._payoutRate()) * 100) / 100,
+      this._state.settings?.allowance_currency || "");
+  }
+
+  // Cash as money: £76.90, not £76.9. Whole amounts stay whole (£5).
+  _fmtMoney(amount, currency) {
+    const v = Number(amount) || 0;
+    const frac = Number.isInteger(v) ? 0 : 2;
+    return this._t("panel.allowance_money", {
+      currency: currency || "",
+      amount: __tmNum(this._hass, v, { minimumFractionDigits: frac, maximumFractionDigits: 2 }),
+    }).trim();
+  }
+
+  // Plain text: it is set with textContent while the parent types.
+  _payoutPreview(points) {
+    const n = Number(points);
+    if (!Number.isInteger(n) || n < 1) return "";
+    return this._t("panel.payout_preview", {
+      amount: this._fmtNum(n), points: this._pointsName(), money: this._payoutMoney(n),
+    });
+  }
+
+  _renderPayoutDialog() {
+    const d = this._dialog.data;
+    const kids = this._state.children || [];
+    const child = kids.find(c => c.id === d.child_id);
+    const pointsName = this._pointsName();
+    const balance = child ? Math.max(0, Math.floor(Number(child.points) || 0)) : 0;
+    const picker = `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._t("panel.payout_child")}</span>
+        <select class="tm-select" data-field="child_id">
+          ${child ? "" : `<option value="" selected>${this._t("panel.payout_pick_child")}</option>`}
+          ${kids.map(c => `<option value="${this._esc(c.id)}" ${c.id === d.child_id ? "selected" : ""}>${this._esc(c.name || this._t("panel.child_unnamed"))}</option>`).join("")}
+        </select>
+      </div>`;
+    let body = picker;
+    if (child && balance < 1) {
+      body += `<p class="tm-meta">${this._esc(this._t("panel.payout_none", { name: child.name || "", points: pointsName }))}</p>`;
+    } else if (child) {
+      body += this._field(
+        this._t("panel.payout_points", { points: pointsName }), "points", d.points, "number",
+        this._esc(this._t("panel.payout_balance", { amount: this._fmtNum(balance), points: pointsName })),
+      );
+      body += `<p class="tm-payout-preview" data-role="payout-preview" aria-live="polite">${this._esc(this._payoutPreview(d.points))}</p>`;
+      body += `<p class="tm-meta">${this._esc(this._t("panel.payout_hint", { name: child.name || "", points: pointsName }))}</p>`;
+    }
+    return this._dialogShell(
+      this._t("panel.payout_dialog_title"),
+      body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       ${child && balance >= 1 ? `<button type="button" class="tm-btn tm-btn-raised" data-act="save-payout">${this._t("panel.payout_confirm")}</button>` : ""}`
+    );
+  }
+
+  async _savePayoutDialog() {
+    const d = this._dialog.data;
+    const child = (this._state.children || []).find(c => c.id === d.child_id);
+    if (!child) return;
+    const balance = Math.max(0, Math.floor(Number(child.points) || 0));
+    const points = Number(d.points);
+    if (!Number.isInteger(points) || points < 1 || points > balance) {
+      this._showToast("err", this._t("panel.payout_err_amount", { max: this._fmtNum(balance) }));
+      return;
+    }
+    // Same guard as manual adjustments: one write per child at a time, so a
+    // double tap can't record (and deduct) the payout twice.
+    if (!this._adjustBusy) this._adjustBusy = new Set();
+    if (this._adjustBusy.has(child.id)) return;
+    this._adjustBusy.add(child.id);
+    try {
+      const { ok, err } = await this._callService("record_allowance_payout", { child_id: child.id, points });
+      if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+      await this._fetchState();
+      this._closeDialog(true);
+      this._showToast("ok", this._t("panel.payout_done", {
+        child: child.name || "", money: this._payoutMoney(points),
+        amount: this._fmtNum(points), points: this._pointsName(),
+      }));
+    } finally {
+      this._adjustBusy.delete(child.id);
+    }
+  }
+
   // Log a past job: one done on an earlier day that nobody ticked. The
   // backend (complete_chore with completed_date) re-checks every rule here —
   // the last 7 days, the child's own non-rotating job, due that day, that
@@ -15781,6 +15905,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "planner-series") return this._renderPlannerSeriesDialog();
     if (this._dialog.kind === "gift")         return this._renderGiftDialog();
     if (this._dialog.kind === "adjust")       return this._renderAdjustDialog();
+    if (this._dialog.kind === "payout")       return this._renderPayoutDialog();
     if (this._dialog.kind === "backdate")     return this._renderBackdateDialog();
     if (this._dialog.kind === "child")        return this._renderChildDialog();
     if (this._dialog.kind === "chore")        return this._renderChoreDialog();
@@ -18492,6 +18617,7 @@ class TaskMatePanel extends HTMLElement {
       .tm-sound-item-actions { display: flex; gap: 6px; flex-wrap: wrap; }
       .tm-sound-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
+      .tm-payout-preview { font-size: 1.15em; font-weight: 600; margin: 4px 0 8px; min-height: 1.4em; }
       .tm-points-adjust {
         display: flex; gap: 4px; flex-wrap: wrap;
         align-items: center;
