@@ -64,10 +64,12 @@
   // the host carrying the attribute wherever it lives. Custom properties then
   // inherit down into the card's shadow DOM. Tokens mirror
   // docs/design/redesigns/taskmate-redesigns.html (.dir-a / .dir-b / .dir-c).
+  // --tmd-dim is secondary TEXT, so it must reach 4.5:1 on the style's bg and
+  // surface-2 insets: Playroom's (3.1:1) and Clean Pro's (4.2:1) were deepened.
   const TOKENS = `
 :host([data-tm-design="playroom"]),[data-tm-design="playroom"]{
   --tmd-bg:#FFF7EC;--tmd-surface:#FFFFFF;--tmd-surface-2:#FFF0DB;--tmd-border:#F0DFC4;
-  --tmd-text:#3A2E26;--tmd-dim:#9C8676;
+  --tmd-text:#3A2E26;--tmd-dim:#776456;
   --tmd-accent:#7C5CE6;--tmd-accent2:#FFC23C;--tmd-good:#36C58E;--tmd-warn:#FFB020;--tmd-bad:#FF6B6B;--tmd-gold:#FFC23C;
   --tmd-radius:22px;--tmd-radius-sm:14px;--tmd-shadow:0 10px 24px rgba(123,92,230,.12);--tmd-hd-text:#fff;
   --tmd-font-display:"Baloo 2",cursive;--tmd-font-body:"Nunito",sans-serif;--tmd-font-mono:"Baloo 2",cursive;
@@ -83,7 +85,7 @@
 }
 :host([data-tm-design="cleanpro"]),[data-tm-design="cleanpro"]{
   --tmd-bg:#F6F7F9;--tmd-surface:#FFFFFF;--tmd-surface-2:#F1F3F6;--tmd-border:#E5E8EC;
-  --tmd-text:#1A2230;--tmd-dim:#6B7585;
+  --tmd-text:#1A2230;--tmd-dim:#606978;
   --tmd-accent:#4F6BED;--tmd-accent2:#0FB5A8;--tmd-good:#16A36B;--tmd-warn:#E0A100;--tmd-bad:#DC4C4C;--tmd-gold:#E0A100;
   --tmd-radius:14px;--tmd-radius-sm:9px;--tmd-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 18px rgba(16,24,40,.06);--tmd-hd-text:#fff;
   --tmd-font-display:"Manrope",sans-serif;--tmd-font-body:"Inter",sans-serif;--tmd-font-mono:"Inter",sans-serif;
@@ -201,13 +203,18 @@
 .lead{color:var(--tmd-accent)}
 .lead-dot{color:var(--tmd-gold)}
 .btn{font:inherit;font-family:var(--tmd-font-display);font-weight:800;font-size:13.5px;line-height:1;border:0;cursor:pointer;padding:9px 14px;border-radius:var(--tmd-radius-sm);background:var(--tmd-accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
-:host([data-tm-design="console"]) .btn{color:#06101c;background:linear-gradient(135deg,var(--tmd-accent),var(--tmd-accent2));background:linear-gradient(135deg,var(--tmd-accent),color-mix(in srgb,var(--tmd-accent) 60%,var(--tmd-accent2)));box-shadow:0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent)}
+:host([data-tm-design="console"]) .btn{color:#06101c;background:linear-gradient(135deg,var(--tmd-accent),var(--tmd-accent2));background:linear-gradient(135deg,var(--tmd-accent),color-mix(in srgb,var(--tmd-accent) 80%,var(--tmd-accent2)));box-shadow:0 0 14px color-mix(in srgb,var(--tmd-accent) 45%,transparent)}
 .btn.ghost{background:var(--tmd-surface-2);color:var(--tmd-text);border:1px solid var(--tmd-border)}
 :host([data-tm-design="console"]) .btn.ghost{box-shadow:none}
 .btn.good{background:var(--tmd-good);color:#06301f}
 .btn.bad{background:var(--tmd-bad);color:#3a0d0d}
 .btn.round{border-radius:50%;width:38px;height:38px;padding:0;justify-content:center;font-size:18px}
 .btn.sm{padding:6px 10px;font-size:12.5px}
+/* In the dark variants these accents are light (periwinkle, sky blue,
+   lavender): white on them was 2.3-3.3:1, so the label goes dark instead. */
+:host([data-tm-design="playroom"][data-tm-dark]) .btn:not(.ghost),
+:host([data-tm-design="cleanpro"][data-tm-dark]) .btn:not(.ghost),
+:host([data-tm-design="accessible"][data-tm-dark]) .btn:not(.ghost){color:#0b0f19}
 .stat{background:var(--tmd-surface-2);border:1px solid var(--tmd-border);border-radius:var(--tmd-radius-sm);padding:10px 11px}
 .stat .k{font-size:11px;font-weight:700;color:var(--tmd-dim);text-transform:uppercase;letter-spacing:.04em}
 .stat .v{font-family:var(--tmd-font-display);font-weight:800;font-size:20px;margin-top:2px}
@@ -267,13 +274,16 @@
   background:transparent;border:1.5px solid var(--tmd-border);color:transparent;font-size:0}
 :host([data-tm-design="graphite"]) .tmd-check.done .c-num{background:var(--tmd-good);border-color:var(--tmd-good);color:#fff;font-size:13px}
 :host([data-tm-design="graphite"]) .tmd-check .c-name{font-weight:450;font-size:15px;letter-spacing:-.18px}
-/* Dimming already says "done"; the strike-through is redundant noise. */
-:host([data-tm-design="graphite"]) .tmd-check.done .c-name{text-decoration:none}
-:host([data-tm-design="graphite"]) .tmd-check.done{opacity:.52}
+/* Dimming already says "done"; the strike-through is redundant noise. Only
+   the picture fades and the text greys: fading the whole row took its words
+   to 2.6:1. */
+:host([data-tm-design="graphite"]) .tmd-check.done .c-name{text-decoration:none;color:var(--tmd-dim)}
+:host([data-tm-design="graphite"]) .tmd-check.done .c-emoji{opacity:.52}
+:host([data-tm-design="graphite"]) .tmd-check.done .chip{color:var(--tmd-dim)}
 /* Meta reads as quiet text, not as a row of coloured pills. */
 :host([data-tm-design="graphite"]) .tmd-tag{background:transparent;border-color:transparent;
   color:var(--tmd-dim);font-weight:400;font-size:12.5px;letter-spacing:-.02px;padding:0;text-transform:none}
-:host([data-tm-design="graphite"]) .tmd-tag.mandatory{color:var(--tmd-bad)}
+:host([data-tm-design="graphite"]) .tmd-tag.mandatory{color:var(--tmd-bad);color:color-mix(in srgb,var(--tmd-bad) 80%,var(--tmd-text))}
 :host([data-tm-design="graphite"]) .tmd-tag.photo{color:var(--tmd-dim)}
 
 /* The decorative emoji tile in a card header is the loudest "kids app" tell
