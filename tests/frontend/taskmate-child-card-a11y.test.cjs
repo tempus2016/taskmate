@@ -164,6 +164,7 @@ test("a completion is announced with the chore, points and points name", async (
   card.hass.states[ENTITY].attributes.points_name = "Stars";
   const region = { textContent: "old" };
   card.renderRoot = { querySelector: (sel) => (sel === ".tm-live" ? region : null) };
+  card._needsApproval = () => false;
   card._announceCompleted(chore(), 5);
   assert.equal(region.textContent, "", "cleared first so a repeat is read again");
   await new Promise((r) => setTimeout(r, 200));
