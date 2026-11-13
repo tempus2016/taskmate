@@ -61,6 +61,7 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `default_sound` | string | `coin` | *(v6.2.0)* Sound for chores without their own. YAML only, same as the child card |
 | `undo_sound` | string | `undo` | *(v6.2.0)* Sound played when a child undoes a chore. YAML only, same as the child card |
 | `show_bounties` | boolean | `false` | *(v6.3.0)* A **Bounty Board** section in the child's view, where they can claim and finish bounties. See [Bounties](#bounties) |
+| `show_rewards` | boolean | `false` | A **Spend your points** section in the child's view, where they can claim rewards. Every claim still goes to a grown-up for approval. See [Rewards](#rewards) |
 | `completed_mode` | string | `show` | *(v7.0.0)* `show` keeps done and waiting chores in the list with their Undo button; `hide` drops them. See [Less clutter](#less-clutter) |
 | `elapsed_time_mode` | string | `show` | *(v7.0.0)* What happens to a time-of-day chore once its part of the day has passed: `show`, `dim` or `hide`. See [Less clutter](#less-clutter) |
 | `ambient_mode` | string | `off` | *(v7.0.0)* What the picker turns into when nobody's using it: `off`, `progress` (the family's day) or `photos` (a slideshow of chore photos). See [Ambient mode](#ambient-mode) |
@@ -116,6 +117,19 @@ Switch on **Bounty Board** in the card's visual editor (or `show_bounties: true`
 - **Siblings.** A bounty a sibling has claimed shows greyed out ("Malia is on it", with the time until it's back on the board). Bounties the child can't claim, and siblings' finished ones, are hidden.
 
 Bounties don't count towards the done/total ring, so the "all done" celebration still happens when today's chores are finished. While the camera is open the idle countdown pauses for up to 2 minutes. A photo that arrives after the kiosk has locked still counts for the child who took it.
+
+---
+
+## Rewards
+
+Switch on **Reward claiming** in the card's visual editor (or `show_rewards: true` in YAML) and a **Spend your points** section appears in each child's view, under today's chores (and under the bounty board, when that's on). It lists the rewards that child can have, cheapest first.
+
+- **Claim.** A reward the child has enough points for has a **Claim** button. The kiosk asks first ("Claim Cinema trip? It costs 500 points.") so a stray tap doesn't spend anything. The claim then goes to the grown-ups for approval, exactly as one from the [Rewards card](Dashboard-Cards.md#rewards-card) does, and the row shows **Waiting for a grown-up** until it's decided.
+- **Saving up.** A reward they can't afford yet shows how many more points they need and a progress bar. Points already set aside for another claim don't count.
+- **Not now.** A reward the child has hit its [limit](Reward-Extras.md#limit-per-child) on shows the day it opens again; one outside its [time window](Timed-Unlock-Rewards.md) shows **Not available right now**.
+- **Left out.** Shared jars ([jackpots](Rewards.md#jackpot-rewards) and [pool rewards](Pool-Mode-(Savings-Jars).md)), streak freezes, sold-out or expired rewards and rewards for other children aren't listed. Claim those from the Rewards card.
+
+Each claim names the child, so a child [linked to their own login](#linked-accounts) is checked the same way as when they tick off a chore. A claim dialog left open goes back to the picker with the rest of the screen when the idle countdown runs out.
 
 ---
 
@@ -217,10 +231,9 @@ Type four digits and save. Leave the field blank to keep the current PIN, or tur
 
 ## What Kiosk Mode Deliberately Leaves Out
 
-The kiosk is for children. There is no option to add any of these:
+The kiosk is for children. There is no option to add any of these (reward claiming is opt-in: see [Rewards](#rewards)):
 
 - **No parent controls.** No approve or reject, no completing on a child's behalf, no points adjustments, no settings.
-- **No reward claiming.** Children see how close they are, but claim on their own device or ask a grown-up.
 
 Some chores need more than a tap, so they are shown greyed out under **Do these on your phone**:
 
