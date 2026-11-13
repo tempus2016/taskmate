@@ -172,3 +172,10 @@ test("playroom: the undo chip on a waiting row doesn't celebrate", () => {
   const approved = render(makeCard({ design: "playroom", completions: [done(true)] }).render()).markup;
   assert.ok(approved.includes("! 🎉"), "an approved chore still celebrates");
 });
+
+for (const design of ["cleanpro", "accessible", "graphite"]) {
+  test(`${design}: the status on a waiting row carries the hourglass too`, () => {
+    const { markup } = render(makeCard({ design, completions: [done(false)] }).render());
+    assert.match(markup, /c-done[^>]*>[^<]*⏳/);
+  });
+}
