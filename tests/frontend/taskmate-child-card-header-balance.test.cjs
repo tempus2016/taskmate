@@ -96,6 +96,12 @@ test("cleanpro subtitle says how many are left out of how many", () => {
   assert.ok(markup.includes(localize("child.remaining_of_total", { remaining: 2, total: 2 })));
 });
 
+test("with no chores the subtitle is left out, not \"0 of 0 left\"", () => {
+  const { markup } = render(makeCard("cleanpro", []).render());
+  assert.ok(!markup.includes(localize("child.remaining_of_total", { remaining: 0, total: 0 })));
+  assert.match(markup, /class="tmd-bal"/, "the balance still shows");
+});
+
 test("console uses the family's points name and a readable level", () => {
   const { markup } = render(makeCard("console", TWO).render());
   assert.match(markup, /\+5 Coins/);

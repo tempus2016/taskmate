@@ -3774,7 +3774,7 @@ class TaskMateChildCard extends LitElement {
     const title = design === "console" ? choresTitle.toUpperCase() : choresTitle;
     const sub = design === "console"
       ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${this._t("child.console_active", { count: __tmNum(this.hass, remaining) })}` : this._t("child.console_active", { count: __tmNum(this.hass, remaining) }))
-      : _ltrNums(this._t("child.remaining_of_total", { remaining: __tmNum(this.hass, remaining), total: __tmNum(this.hass, total) }));
+      : total > 0 ? _ltrNums(this._t("child.remaining_of_total", { remaining: __tmNum(this.hass, remaining), total: __tmNum(this.hass, total) })) : "";
     // Avatar picker: classic makes the avatar tappable; the designed header
     // must too, or the picker only ever works on classic. Same eligibility
     // rule (allow_avatar_change + more than one unlocked option).
@@ -3796,7 +3796,7 @@ class TaskMateChildCard extends LitElement {
              @keydown=${(e) => this._avatarKeydown(e)}
              title="${this._t("child.avatar_change")}">${avFace}
         </div>` : html`<div class="tmd-av-wrap">${avFace}</div>`}
-        <span class="tt">${title}<small>${sub}</small></span>
+        <span class="tt">${title}${sub ? html`<small>${sub}</small>` : ""}</span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
         ${this._renderFreezeBadge(child, "tmd-freeze")}
         <span class="tmd-hd-end">
