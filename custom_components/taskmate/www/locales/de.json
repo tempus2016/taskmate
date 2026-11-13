@@ -345,6 +345,7 @@
   "child.done_chore_aria": "Fertig: {chore}",
   "child.action_chore_aria": "{action}: {chore}",
   "child.sr_completed": "{chore} erledigt! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} erledigt! +{points} {points_name}, sobald ein Erwachsener es geprüft hat",
   "child.sr_undone": "{chore} rückgängig gemacht",
   "child.sr_help_sent": "Hilfe bei {chore} angefragt",
   "child.undo_recent": "Eine gerade erledigte Aufgabe rückgängig machen",

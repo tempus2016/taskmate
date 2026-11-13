@@ -351,6 +351,7 @@
   "child.done_chore_aria": "Færdig: {chore}",
   "child.action_chore_aria": "{action}: {chore}",
   "child.sr_completed": "{chore} er klaret! +{points} {points_name}",
+  "child.sr_completed_pending": "{chore} er klaret! +{points} {points_name}, når en voksen har tjekket det",
   "child.sr_undone": "{chore} er fortrudt",
   "child.sr_help_sent": "Bad om hjælp til {chore}",
   "child.undo_recent": "Fortryd en pligt, du lige har klaret",
