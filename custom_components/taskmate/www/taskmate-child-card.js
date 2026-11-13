@@ -5208,7 +5208,7 @@ class TaskMateChildCard extends LitElement {
         this._playSound(sound);
         this._celebrating = chore.id;
         this._spawnConfetti(child.celebration_style);
-        this._announceCompleted(chore, earnedPoints);
+        this._announceCompleted(chore, earnedPoints, child);
         setTimeout(() => { this._celebrating = null; this._celebrationPoints = null; this.requestUpdate(); }, 2000);
       }).catch(() => {
         this._loading = { ...this._loading, [`timed_${chore.id}`]: false };
@@ -5464,9 +5464,12 @@ class TaskMateChildCard extends LitElement {
     this._announceTimer = setTimeout(() => { el.textContent = msg; }, 120);
   }
 
-  /** "Make bed done! +5 Stars": the celebration, in words. */
-  _announceCompleted(chore, points) {
-    this._announce(this._t("child.sr_completed", {
+  /** "Make bed done! +5 Stars": the celebration, in words. A chore a grown-up
+   *  still has to check is announced as pending, not earned, once the
+   *  awaiting-approval rule (_needsApproval) is present on the card. */
+  _announceCompleted(chore, points, child) {
+    const pending = typeof this._needsApproval === "function" && this._needsApproval(chore, child);
+    this._announce(this._t(pending ? "child.sr_completed_pending" : "child.sr_completed", {
       chore: chore.name, points: __tmNum(this.hass, points ?? 0), points_name: this._pointsNameFor(),
     }));
   }
@@ -5651,7 +5654,7 @@ class TaskMateChildCard extends LitElement {
       // Trigger celebration! The child's own tick-off animation.
       this._celebrating = chore.id;
       this._spawnConfetti(child.celebration_style);
-      this._announceCompleted(chore, this._boostPoints(chore, child));
+      this._announceCompleted(chore, this._boostPoints(chore, child), child);
 
       // Play completion sound!
       // Use the chore's completion_sound, fall back to config default, then to 'coin'
