@@ -1560,7 +1560,10 @@ class TaskMateChildCard extends LitElement {
          under the row, outside its tap-to-complete surface. The strip keeps
          2px clear of the row above and 14px of the next row below once each
          chip's hit area is grown to 44px. */
-      .tm-row-acts { display: flex; flex-wrap: wrap; gap: 12px 8px; margin-block: -2px 8px; padding-inline: 14px; }
+      /* Indented to the chore name's column and tucked 8px under its row
+         (18px above the next one), so the strip reads as part of that row
+         while staying outside the row's tap-to-complete area. */
+      .tm-row-acts { display: flex; flex-wrap: wrap; gap: 12px 8px; margin-block: -2px 8px; padding-inline: 56px 14px; }
       .tm-row-acts .photo-badge { min-block-size: 32px; min-inline-size: 44px; justify-content: center; padding-block: 0; padding-inline: 12px; font-size: 0.78rem; }
       /* Designed rows: the bell and "I'm stuck" sit together and are drawn
          32px tall, so each grows only 6px up and down to reach 44px. The 12px
