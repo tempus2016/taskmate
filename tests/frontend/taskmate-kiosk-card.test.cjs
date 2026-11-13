@@ -678,6 +678,103 @@ test("the editor's show_bounties switch is off by default and stores only 'on'",
   assert.equal("show_bounties" in editor.dispatched.at(-1).detail.config, false);
 });
 
+// ── rewards (#1248) ───────────────────────────────────────────────────────
+
+const REWARDS = [
+  { id: "cinema", name: "Cinema trip", cost: 500, assigned_to: [], icon: "mdi:movie" },
+  { id: "sweet", name: "Sweet", cost: 50, assigned_to: [] },
+  { id: "comic", name: "Comic", cost: 100, assigned_to: [], limit_reached: { vaiha: "2026-11-16" } },
+  { id: "game", name: "Game time", cost: 20, assigned_to: [], is_time_locked: true },
+  { id: "toy", name: "Toy", cost: 30, assigned_to: [] },
+  { id: "jar", name: "Family jar", cost: 900, assigned_to: [], is_jackpot: true },
+  { id: "pool", name: "Bike", cost: 900, assigned_to: [], pool_enabled: true },
+  { id: "freeze", name: "Streak freeze", cost: 40, assigned_to: [], streak_freeze: true },
+  { id: "gone", name: "Gone", cost: 10, assigned_to: [], is_sold_out: true },
+  { id: "malias", name: "Malia's", cost: 10, assigned_to: ["malia"] },
+];
+
+async function rewardView({ rewards = REWARDS, pending = [], config = {} } = {}) {
+  const card = await childView({ config: { show_rewards: true, ...config } });
+  const attrs = card.hass.states[ENTITY].attributes;
+  attrs.rewards = plain(rewards);
+  attrs.pending_reward_claims = plain(pending);
+  return card;
+}
+
+const rewardRows = (markup) => Array.from(markup.matchAll(/class="km-row km-reward ([a-z]+)" data-reward="([^"]+)"/g), (m) => `${m[2]}:${m[1]}`);
+
+test("the next-reward tile counts only the points a child can spend", async () => {
+  const card = await childView();
+  // Vaiha has 215, 200 of them set aside for a claim: the Sweet (50) isn't affordable any more.
+  card.hass.states[ENTITY].attributes.children.find((c) => c.id === "vaiha").spendable_balance = 15;
+  const next = card._nextReward(card._entry("vaiha").child);
+  assert.equal(next.reward.id, "sweet");
+  assert.equal(next.have, 15);
+  assert.match(view(card).markup, new RegExp(localize("kiosk.to_go", { points: 35 })));
+});
+
+test("rewards stay off the kiosk unless show_rewards is on", async () => {
+  const card = await childView();
+  assert.deepEqual(rewardRows(view(card).markup), []);
+});
+
+test("a child sees the rewards they can claim, cheapest first, with why the rest can't be", async () => {
+  const card = await rewardView({ pending: [{ claim_id: "x", reward_id: "toy", child_id: "vaiha" }, { claim_id: "y", reward_id: "sweet", child_id: "malia" }] });
+  // Vaiha has 215: jars, pools, streak freezes, sold-out and other children's rewards are left out.
+  assert.deepEqual(plain(rewardRows(view(card).markup)), ["game:locked", "toy:wait", "sweet:claim", "comic:limit", "cinema:save"]);
+  const { markup } = view(card);
+  assert.match(markup, new RegExp(localize("kiosk.rewards_title")));
+  assert.match(markup, new RegExp(localize("kiosk.to_go", { points: 285 })));
+});
+
+test("points already set aside don't count towards a claim", async () => {
+  const card = await rewardView({ rewards: [{ id: "sweet", name: "Sweet", cost: 50, assigned_to: [] }] });
+  card.hass.states[ENTITY].attributes.children.find((c) => c.id === "vaiha").spendable_balance = 40;
+  assert.deepEqual(plain(rewardRows(view(card).markup)), ["sweet:save"]);
+});
+
+test("Claim asks first, then claims the reward for the unlocked child", async () => {
+  const card = await rewardView({ rewards: [{ id: "sweet", name: "Sweet", cost: 50, assigned_to: [] }] });
+  await view(card).control("km-reward-claim").click();
+  assert.deepEqual(card.calls, []);
+  assert.equal(card._rewardDlg.kind, "confirm");
+  assert.match(view(card).markup, new RegExp(localize("kiosk.reward_confirm_btn", { points: 50, pointsName: localize("common.points") })));
+  await dlgButton(card, "km-primary").click();
+  assert.deepEqual(plain(card.calls), [{ domain: "taskmate", service: "claim_reward", data: { reward_id: "sweet", child_id: "vaiha" } }]);
+  assert.equal(card._rewardDlg.kind, "sent");
+  assert.match(view(card).markup, new RegExp(localize("kiosk.reward_sent_title")));
+});
+
+test("a refused claim closes the dialog and says why", async () => {
+  const card = await rewardView({ rewards: [{ id: "sweet", name: "Sweet", cost: 50, assigned_to: [] }] });
+  const notes = [];
+  card._notify = (m) => notes.push(m);
+  card.hass.callService = async () => { throw new Error("Not enough points"); };
+  card._rewardDlg = { kind: "confirm", id: "sweet" };
+  await dlgButton(card, "km-primary").click();
+  assert.equal(card._rewardDlg, null);
+  assert.deepEqual(notes, ["Not enough points"]);
+});
+
+test("a reward dialog left open goes back to the picker with the rest of the screen", async () => {
+  const card = await rewardView({ rewards: [{ id: "sweet", name: "Sweet", cost: 50, assigned_to: [] }] });
+  card._rewardDlg = { kind: "confirm", id: "sweet" };
+  for (let i = 0; i < 200; i += 1) card._tick();
+  assert.equal(card._screen, "picker");
+  assert.equal(card._rewardDlg, null);
+});
+
+test("the editor's show_rewards switch is off by default and stores only 'on'", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.setConfig({ entity: ENTITY });
+  assert.ok(editor._schema().some((f) => f.name === "show_rewards"));
+  editor._formChanged({ detail: { value: { show_rewards: true } } });
+  assert.equal(editor.dispatched.at(-1).detail.config.show_rewards, true);
+  editor._formChanged({ detail: { value: { show_rewards: false } } });
+  assert.equal("show_rewards" in editor.dispatched.at(-1).detail.config, false);
+});
+
 // ── less clutter: completed and missed chores (#1079) ──────────────────────
 
 const AT_3PM = 15 * 60;

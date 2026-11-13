@@ -71,6 +71,7 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_streak", selector: { boolean: {} } },
       { name: "show_reward_progress", selector: { boolean: {} } },
       { name: "show_bounties", selector: { boolean: {} } },
+      { name: "show_rewards", selector: { boolean: {} } },
       { name: "show_picker_progress", selector: { boolean: {} } },
       {
         name: "completed_mode",
@@ -132,6 +133,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_streak: this._t("kiosk.editor.show_streak"),
     show_reward_progress: this._t("kiosk.editor.show_reward_progress"),
     show_bounties: this._t("kiosk.editor.show_bounties"),
+    show_rewards: this._t("kiosk.editor.show_rewards"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
     completed_mode: this._t("kiosk.editor.completed_mode"),
     elapsed_time_mode: this._t("kiosk.editor.missed_mode"),
@@ -155,6 +157,7 @@ class TaskMateKioskCardEditor extends LitElement {
     timeout: this._t("kiosk.editor.timeout_helper"),
     warn_before_return: this._t("kiosk.editor.warn_before_return_helper"),
     show_bounties: this._t("kiosk.editor.show_bounties_helper"),
+    show_rewards: this._t("kiosk.editor.show_rewards_helper"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
     completed_mode: this._t("kiosk.editor.completed_mode_helper"),
     elapsed_time_mode: this._t("kiosk.editor.missed_mode_helper"),
@@ -221,6 +224,7 @@ class TaskMateKioskCardEditor extends LitElement {
       show_streak: this.config.show_streak !== false,
       show_reward_progress: this.config.show_reward_progress !== false,
       show_bounties: this.config.show_bounties === true,
+      show_rewards: this.config.show_rewards === true,
       show_picker_progress: this.config.show_picker_progress !== false,
       completed_mode: this.config.completed_mode || "show",
       elapsed_time_mode: this.config.elapsed_time_mode || "show",
@@ -309,8 +313,8 @@ class TaskMateKioskCardEditor extends LitElement {
       else if (key === "timeout") {
         if (clampTimeout(value) === DEFAULT_TIMEOUT) delete next[key];
         else next[key] = clampTimeout(value);
-      } else if (key === "show_bounties") {
-        // The one toggle that defaults to off: store only the "on" choice.
+      } else if (key === "show_bounties" || key === "show_rewards") {
+        // The toggles that default to off: store only the "on" choice.
         if (value) next[key] = true;
         else delete next[key];
       } else if (typeof value === "boolean" && key !== "entity") {
