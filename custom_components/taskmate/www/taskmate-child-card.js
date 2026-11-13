@@ -1646,7 +1646,7 @@ class TaskMateChildCard extends LitElement {
       .tm-day-tabs { display: flex; gap: 6px; margin: 4px 0 10px; padding: 4px; border-radius: 999px; background: var(--secondary-background-color, #f3f3f3); }
       .tm-day-tab { flex: 1; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 700; padding: 7px 10px; border-radius: 999px; cursor: pointer; opacity: .7; }
       .tm-day-tab.on { background: var(--card-background-color, #fff); opacity: 1; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-      :host([data-tm-design]:not([data-tm-design="classic"])) .tm-day-tabs { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tm-day-tabs { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); margin: 0 0 8px; }
       :host([data-tm-design]:not([data-tm-design="classic"])) .tm-day-tab.on { background: var(--tmd-surface); color: var(--tmd-text); box-shadow: inset 0 0 0 2px var(--tmd-accent); }
       .tm-tomorrow { display: flex; flex-direction: column; gap: 8px; }
       .tm-tomorrow-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; opacity: .72;
@@ -2417,7 +2417,7 @@ class TaskMateChildCard extends LitElement {
         background: rgba(255,255,255,.22); color: #fff;
       }
       .tmd-section {
-        display: flex; align-items: center; gap: 8px; margin-bottom: 11px;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
         flex-wrap: wrap; row-gap: 4px;
         font-family: var(--tmd-font-display); font-weight: 800; font-size: 14px; color: var(--tmd-text);
       }
@@ -2427,6 +2427,10 @@ class TaskMateChildCard extends LitElement {
         max-width: 100%; min-width: 0;
       }
       .tmd-countdown.soon { color: var(--tmd-warn); }
+      /* Chores first: the countdown is a quiet note on the title row. */
+      .tmd-countdown { font-weight: 600; font-variant-numeric: tabular-nums; }
+      .tmd-countdown ha-icon { --mdc-icon-size: 13px; }
+      .tmd-goals > * { margin: 12px 0 0; }
 
       /* Designed: badge strip */
       .tmd-badges {
@@ -3316,6 +3320,9 @@ class TaskMateChildCard extends LitElement {
     const pendingPoints = child.pending_points || 0;
     const countdown = this.config.show_countdown !== false ? this._getMidnightCountdown() : null;
 
+    // Chores first: on the designed styles today's list leads the body. The
+    // section line is one slim row (title + quiet countdown), and the badge
+    // strip and next-badge goal sit in .tmd-goals under the list.
     const sectionLine = rows.length === 0 ? "" : html`
       <div class="tmd-section">
         <span>${this._getDynamicTitle()}</span>
@@ -3350,6 +3357,17 @@ class TaskMateChildCard extends LitElement {
             <ha-icon icon="mdi:palm-tree"></ha-icon>
             <span>${this._t("child.on_vacation")}${attrs.vacation_name ? ` · ${attrs.vacation_name}` : ""}</span>
           </div>` : ""}
+        ${this._renderCareBlocks(child, "tmd")}
+        ${this._renderAdvent(child, attrs, allChores, "tmd")}
+        ${this._renderDayTabs(child, allChores, "tmd")}
+        ${this._showingTomorrow(child, allChores)
+          ? this._renderTomorrow(child, allChores, "tmd")
+          : html`${sectionLine}
+        ${this._renderRoulette(child, childChores, pointsIcon)}
+        ${body}`}
+        ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "tmd")}
+        ${this._renderSwappable(allChores, child, pointsIcon)}
+        <div class="tmd-goals">
         ${showBadges ? html`
           <div class="tmd-badges" @click=${() => this._openBadgesView()} title="${this._t("badges.label")}">
             <span class="lbl">${this._t("badges.label")}</span>
@@ -3383,16 +3401,7 @@ class TaskMateChildCard extends LitElement {
                 : ""}
             </div>
           </div>` : ""}
-        ${this._renderCareBlocks(child, "tmd")}
-        ${this._renderAdvent(child, attrs, allChores, "tmd")}
-        ${this._renderDayTabs(child, allChores, "tmd")}
-        ${this._showingTomorrow(child, allChores)
-          ? this._renderTomorrow(child, allChores, "tmd")
-          : html`${sectionLine}
-        ${this._renderRoulette(child, childChores, pointsIcon)}
-        ${body}`}
-        ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "tmd")}
-        ${this._renderSwappable(allChores, child, pointsIcon)}
+        </div>
       </div>
       ${this._celebrating ? this._renderCelebration() : ""}
       ${this._renderInspectionCelebration(pointsIcon)}${this._renderBoostTakeover()}
