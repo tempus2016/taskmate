@@ -73,7 +73,7 @@ function makeCard({ chores, completions = [], availability = {}, weekly = {}, co
 
 /** The picture tile for the chore under test. */
 function tile(view) {
-  return view.controls.find((c) => c.tag === "button" && /class="pre-tile\b/.test(c.attrs) && /aria-label="ZZ chore"/.test(c.attrs));
+  return view.controls.find((c) => c.tag === "button" && /class="pre-tile\b/.test(c.attrs) && /aria-label="ZZ chore[",]/.test(c.attrs));
 }
 
 async function assertBlocked(card, design) {

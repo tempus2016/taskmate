@@ -235,6 +235,26 @@ class TaskMateChildCard extends LitElement {
     }[tier] || '#888';
   }
 
+  /** Badge disc fill for a designed style. Accessible draws every hue from
+   *  Okabe-Ito, so its tiers map onto that set (vermillion, sky blue,
+   *  orange, bluish green) instead of bronze/silver/gold/cyan. */
+  _designTierColor(tier, design) {
+    if (design !== 'accessible') return this._tierColor(tier);
+    return {
+      bronze: '#D55E00',
+      silver: '#56B4E9',
+      gold: '#E69F00',
+      platinum: '#009E73',
+    }[tier] || '#CC79A7';
+  }
+
+  /** Is this done chore still waiting for a grown-up to check it? Only the
+   *  accessible names ask; the rule itself (_isAwaitingApproval) lives on
+   *  feat/child-card-awaiting-approval, so without it nothing reads as waiting. */
+  _awaitingForAria(chore, child, completions) {
+    return typeof this._isAwaitingApproval === 'function' && !!this._isAwaitingApproval(chore, child, completions);
+  }
+
   _badgeKeydown(e) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -367,6 +387,10 @@ class TaskMateChildCard extends LitElement {
         --fun-orange: #e67e22;
         --fun-red: #e74c3c;
         --fun-cyan: #1abc9c;
+        /* Warning orange as text: raw it was 2.4:1 on a light card; half
+           the theme's text colour takes it past 4.5:1 on light and dark.
+           Designed styles redefine it from --tmd-warn below. */
+        --tm-ink-warn: color-mix(in srgb, var(--fun-orange) 50%, var(--primary-text-color, #212121));
       }
 
       ha-card { overflow: hidden; }
@@ -1420,7 +1444,7 @@ class TaskMateChildCard extends LitElement {
       }
 
       .reset-countdown.soon {
-        color: var(--fun-orange);
+        color: var(--tm-ink-warn);
         background: rgba(230,126,34,0.12);
         font-weight: 700;
       }
@@ -1784,7 +1808,7 @@ class TaskMateChildCard extends LitElement {
       .celebration-points {
         font-size: 1.8rem;
         font-weight: bold;
-        color: var(--fun-orange);
+        color: var(--tm-ink-warn);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1944,11 +1968,11 @@ class TaskMateChildCard extends LitElement {
         text-align: center;
       }
       .timer-counter.running { color: var(--fun-green); }
-      .timer-counter.paused { color: var(--fun-orange); }
+      .timer-counter.paused { color: var(--tm-ink-warn); }
       .timer-points-live {
         font-size: 1.1rem;
         font-weight: 700;
-        color: var(--fun-orange);
+        color: var(--tm-ink-warn);
         display: flex;
         align-items: center;
         gap: 4px;
@@ -1969,7 +1993,7 @@ class TaskMateChildCard extends LitElement {
         font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
-        color: var(--fun-orange);
+        color: var(--tm-ink-warn);
         background: rgba(230, 126, 34, 0.12);
         padding: 3px 8px;
         border-radius: 6px;
@@ -2189,7 +2213,8 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         justify-content: center;
         --mdc-icon-size: 16px;
-        color: #1a1a1a;
+        /* The theme's text colour: a fixed near-black vanished on dark themes. */
+        color: var(--primary-text-color, #1a1a1a);
         border: 2px dashed var(--t);
         background: transparent;
         flex-shrink: 0;
@@ -2259,6 +2284,8 @@ class TaskMateChildCard extends LitElement {
         --tm-ink-good: color-mix(in srgb, var(--tmd-good) 45%, var(--tmd-text));
         --tm-ink-bad: color-mix(in srgb, var(--tmd-bad) 45%, var(--tmd-text));
         --tm-ink-gold: color-mix(in srgb, var(--tmd-gold) 50%, var(--tmd-text));
+        /* Warn needs the most ink: Playroom's amber holds 4.9:1 at 40%. */
+        --tm-ink-warn: color-mix(in srgb, var(--tmd-warn) 40%, var(--tmd-text));
       }
       :host([data-tm-design="accessible"]) {
         --tm-ink-accent: var(--tmd-accent);
@@ -2391,12 +2418,12 @@ class TaskMateChildCard extends LitElement {
       }
       :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter { color: var(--tmd-text); font-family: var(--tmd-font-mono); }
       :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter.running { color: var(--tmd-good); }
-      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter.paused { color: var(--tmd-warn); }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .timer-counter.paused { color: var(--tm-ink-warn); }
       :host([data-tm-design]:not([data-tm-design="classic"])) .timer-points-live { color: var(--tmd-gold); }
       :host([data-tm-design]:not([data-tm-design="classic"])) .timer-points-live ha-icon { color: var(--tmd-gold); }
       :host([data-tm-design]:not([data-tm-design="classic"])) .recording-dot { background: var(--tmd-good); }
       :host([data-tm-design]:not([data-tm-design="classic"])) .paused-badge {
-        color: var(--tmd-warn);
+        color: var(--tm-ink-warn);
         background: color-mix(in srgb, var(--tmd-warn) 16%, transparent);
       }
       :host([data-tm-design]:not([data-tm-design="classic"])) .timer-btn {
@@ -2502,7 +2529,7 @@ class TaskMateChildCard extends LitElement {
         font-size: 12px; font-weight: 700; color: var(--tmd-dim);
         max-width: 100%; min-width: 0;
       }
-      .tmd-countdown.soon { color: var(--tmd-warn); }
+      .tmd-countdown.soon { color: var(--tm-ink-warn); }
 
       /* Designed: badge strip */
       .tmd-badges {
@@ -2517,6 +2544,10 @@ class TaskMateChildCard extends LitElement {
         background: var(--t, var(--tmd-accent)); color: #fff;
       }
       .tmd-badge-mini ha-icon { --mdc-icon-size: 16px; color: #fff; }
+      /* Accessible's Okabe-Ito discs are light (white on orange was 2.3:1),
+         so the glyph goes dark and a solid ring holds the disc's edge. */
+      :host([data-tm-design="accessible"]) .tmd-badge-mini { box-sizing: border-box; border: 1.5px solid var(--tmd-border); }
+      :host([data-tm-design="accessible"]) .tmd-badge-mini ha-icon { color: #111; }
       .tmd-badges .more { font-size: 12px; font-weight: 800; color: var(--tm-ink-accent); }
 
       /* Designed: next badge progress (#780) */
@@ -2569,7 +2600,7 @@ class TaskMateChildCard extends LitElement {
       /* Designed: vacation banner + swappable section */
       .tmd-vacation {
         display: flex; align-items: center; gap: 7px; padding: 9px 11px; margin-bottom: 11px;
-        background: color-mix(in srgb, var(--tmd-warn) 16%, transparent); color: var(--tmd-warn);
+        background: color-mix(in srgb, var(--tmd-warn) 16%, transparent); color: var(--tm-ink-warn);
         border-radius: var(--tmd-radius-sm); font-weight: 700; font-size: 12.5px;
       }
       .tmd-birthday {
@@ -3424,7 +3455,7 @@ class TaskMateChildCard extends LitElement {
             <span class="lbl">${this._t("badges.label")}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
               <div class="tmd-badge-mini ${this._justEarnedBadge === _badgeId(b) ? "just-earned" : ""}"
-                style="--t:${this._tierColor(b.tier)}">
+                style="--t:${this._designTierColor(b.tier, design)}">
                 <ha-icon icon="${b.icon || "mdi:medal"}"></ha-icon>
               </div>`)}
             ${earnedBadges.length > 5 ? html`<span class="more">+${__tmNum(this.hass, earnedBadges.length - 5)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ""}
@@ -3521,7 +3552,8 @@ class TaskMateChildCard extends LitElement {
         <span class="tt">${title}<small>${sub}</small></span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
         ${this._renderFreezeBadge(child, "tmd-freeze")}
-        ${pendingPoints > 0 ? html`<span class="tmd-pending">
+        ${pendingPoints > 0 ? html`<span class="tmd-pending" role="img"
+          aria-label="${this._t("child.pending_points_aria", { count: __tmNum(this.hass, pendingPoints), points_name: this._pointsNameFor() })}">
           <ha-icon icon="mdi:timer-sand"></ha-icon>+${__tmNum(this.hass, pendingPoints)}</span>` : ""}
         ${canChange && this._avatarPickerOpen ? this._renderAvatarPicker(child, opts) : ""}
       </div>`;
@@ -3625,11 +3657,11 @@ class TaskMateChildCard extends LitElement {
   // with the classic card, where tapping a done chore undoes it). r.onAct()
   // calls _handleUndo when the chore is done.
   _designUndoChip(r, label, cls) {
-    // Console's chip is a bare arrow, so it is named for what it does; the
-    // others keep their visible "Done" first so voice control still finds it.
-    const name = cls === "q-undo"
-      ? this._t("child.undo_named", { name: r.chore.name })
-      : `${this._t("child.done_chore_aria", { chore: r.chore.name })}. ${this._t("child.tap_to_undo")}`;
+    // Chore, then its state, then what a tap does: "Make bed, done. Undo".
+    // The visible "Done" stays in the name, so voice control still finds it.
+    const awaiting = r.awaiting ?? this._awaitingForAria(
+      r.chore, r.child, this._isChoreDone(r.chore, r.child, r.todaysCompletions).completions);
+    const name = this._t(awaiting ? "child.undo_waiting_aria" : "child.undo_done_aria", { chore: r.chore.name });
     return html`<button class="chip ${cls || "done-chip"} tmd-undochip"
       ?disabled=${r.loading}
       title="${this._t("child.tap_to_undo")}"
@@ -3696,7 +3728,8 @@ class TaskMateChildCard extends LitElement {
     return html`<div class="tmd-checklist">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
         <div class="tmd-check ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
-          <div class="c-num" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
+          <div class="c-num" style="${r.done ? "--ac:var(--tmd-good)" : ""}"
+            aria-hidden="${this.getAttribute?.("data-tm-design") === "graphite" ? "true" : "false"}">${r.done ? "✓" : r.index + 1}</div>
           <span class="c-emoji">${r.glyph}</span>
           <div class="c-mid">
             <div class="c-name">${r.chore.name}</div>
@@ -4711,7 +4744,17 @@ class TaskMateChildCard extends LitElement {
     // claim, a filled weekly quota, a prerequisite, a set time that isn't
     // open. The tile used to read a flag nothing ever set, so a chore in its
     // cooldown stayed tappable here (#771).
-    const available = !this._choreLocks(chore, isDone).locked;
+    const locks = this._choreLocks(chore, isDone);
+    const available = !locks.locked;
+    // The tile is a picture, so its name carries the state the picture shows:
+    // done, waiting for a grown-up, or locked and why.
+    const awaiting = isDone && this._awaitingForAria(chore, child, childCompletionsToday);
+    const lockWhy = available ? "" : this._lockReason(chore, locks);
+    const state = awaiting ? this._t('child.awaiting_approval')
+      : isDone ? this._t('child.done')
+      : available ? ""
+      : lockWhy ? `${this._t('child.chore_locked')}. ${lockWhy}` : this._t('child.chore_locked');
+    const tileLabel = state ? `${chore.name}, ${state}` : chore.name;
 
     // Stars, not digits: a 4-year-old can count pictures, not read "+3".
     // The count is deliberately lossy — it rounds and clamps to 1..5 — which
@@ -4729,7 +4772,7 @@ class TaskMateChildCard extends LitElement {
       <button
         class="pre-tile ${isDone ? 'done' : ''} ${isLoading ? 'loading' : ''} ${available ? '' : 'locked'}"
         ?disabled=${isLoading || !available}
-        aria-label="${chore.name}"
+        aria-label="${tileLabel}"
         title="${chore.name}"
         @click=${() => {
           if (isLoading || !available) return;
@@ -4929,11 +4972,13 @@ class TaskMateChildCard extends LitElement {
     // rest only ever lived in title=, which touch and screen readers miss.
     const lockText = locks.locked ? this._lockReason(chore, locks) : '';
     const showLockText = lockText && (isLockedPreview || notDueToday || timeElapsed || weeklyDone);
-    // The row is one big button, so its name carries the state too.
+    // The row is one big button, so its name carries the state too —
+    // including a tick a grown-up still has to check.
+    const awaitingAria = isCompletedForToday && this._awaitingForAria(chore, child, childCompletionsToday);
     const rowLabel = [
-      chore.name,
+      awaitingAria ? `${chore.name}, ${this._t('child.awaiting_approval')}` : chore.name,
       chore.mandatory ? this._t('child.mandatory') : '',
-      isCompletedForToday ? this._t('child.done') : lockText,
+      isCompletedForToday ? (awaitingAria ? '' : this._t('child.done')) : lockText,
     ].filter(Boolean).join('. ');
     const handleRowKeyDown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -6073,7 +6118,9 @@ class TaskMateChildCard extends LitElement {
     // day, a passed window (whatever elapsed_time_mode shows), a cooldown, a
     // sibling's claim, a prerequisite… The server refuses those requests too.
     if (this._choreLocks(chore, false).locked || chore._isTimeElapsed) return "";
+    // Every row's button reads "I'm stuck"; the name says which chore.
     return html`<button type="button" class="${cls} tm-help-btn"
+      aria-label="${this._t("child.help_ask_aria", { chore: chore.name })}"
       @click=${(e) => { e.stopPropagation(); this._askForHelp(chore, child); }}>🙋 ${this._t("child.help_ask")}</button>`;
   }
 
