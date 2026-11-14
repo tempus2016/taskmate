@@ -45,6 +45,9 @@ jobs:
   eslint:
     name: ESLint (cards + panel)
     runs-on: ubuntu-latest
+    # The card render tests finish in about a minute. A stuck timer in a test
+    # once held the job until GitHub's six-hour default; fail fast instead.
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository

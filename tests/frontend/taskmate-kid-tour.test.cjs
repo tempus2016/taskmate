@@ -374,11 +374,16 @@ const LOCKED_CHORES = [
   { id: "walk", name: "Walk dog", points: 3, time_category: "anytime", assigned_to: [], due_days: [], schedule_mode: "specific_days", assignment_mode: "everyone" },
 ];
 // A completion stamped earlier today (local time), so "done today" checks hold
-// whatever day the suite runs on.
+// whatever day the suite runs on. 08:00, or a minute ago when the suite runs
+// before 08:00: a stamp in the future would keep the card's settle timer
+// (_availableFirst) waiting until then, and the test file would never exit.
 const TODAY_8AM = (() => {
-  const d = new Date();
+  const eight = new Date();
+  eight.setHours(8, 0, 0, 0);
+  const minuteAgo = new Date(Date.now() - 60 * 1000);
+  const d = eight <= minuteAgo || minuteAgo.getDate() !== eight.getDate() ? eight : minuteAgo;
   const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T08:00:00`;
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
 })();
 const BED_DONE = [{ chore_id: "bed", child_id: "kid1", approved: true, completed_at: TODAY_8AM }];
 

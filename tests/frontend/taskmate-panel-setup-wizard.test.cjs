@@ -54,11 +54,19 @@ const TEMPLATES = [
   { id: "custom_pack", name: "Ours", builtin: false, chores: [{ name: "Custom", points: 1 }] },
 ];
 
+// The panel reads a birthday as a local calendar date, so the fixtures must be
+// local dates too: toISOString() gives the UTC date, which is a day off when
+// the suite runs east of UTC late in the evening.
+function localIso(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function age(years, monthsAgo = 1) {
   const d = new Date();
   d.setMonth(d.getMonth() - monthsAgo);
   d.setFullYear(d.getFullYear() - years);
-  return d.toISOString().slice(0, 10);
+  return localIso(d);
 }
 
 function panel(state = {}) {
@@ -108,7 +116,7 @@ test("a birthday gives an age that only goes up on the day", () => {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   d.setFullYear(d.getFullYear() - 9);
-  assert.equal(p._wizardAgeOf({ mode: "bday", bday: d.toISOString().slice(0, 10) }), 8);
+  assert.equal(p._wizardAgeOf({ mode: "bday", bday: localIso(d) }), 8);
   assert.equal(p._wizardAgeOf({ mode: "age", age: 6 }), 6);
   assert.equal(p._wizardAgeOf({ mode: "none", band: "6_8" }), null);
 });
@@ -224,7 +232,7 @@ test("a birthday in the future is refused", async () => {
   const p = await opened({});
   const d = new Date();
   d.setDate(d.getDate() + 3);
-  Object.assign(p._wz.form, { name: "Isla", mode: "bday", bday: d.toISOString().slice(0, 10) });
+  Object.assign(p._wz.form, { name: "Isla", mode: "bday", bday: localIso(d) });
   assert.equal(p._wizardAddKid(), false);
   assert.equal(p._wz.kids.length, 0);
   assert.equal(p._toasts[0][0], "err");
