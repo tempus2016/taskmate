@@ -4044,7 +4044,6 @@ class TaskMateChildCard extends LitElement {
   // calls _handleUndo when the chore is done.
   _designUndoChip(r, label, cls) {
     // Chore, then its state, then what a tap does: "Make bed, done. Undo".
-    // The visible "Done" stays in the name, so voice control still finds it.
     const awaiting = r.awaiting ?? this._awaitingForAria(
       r.chore, r.child, this._isChoreDone(r.chore, r.child, r.todaysCompletions).completions);
     const name = this._t(awaiting ? "child.undo_waiting_aria" : "child.undo_done_aria", { chore: r.chore.name });
@@ -5990,7 +5989,9 @@ class TaskMateChildCard extends LitElement {
 
     return html`
       <div class="celebration-overlay" role="img"
-        aria-label="${this._t('child.celebration_title')} +${__tmNum(this.hass, points)} ${this._pointsNameFor()}"
+        aria-label="${typeof this._celebrationTitle === "function"
+          ? this._celebrationTitle(attrs.chores, this._celebrating)
+          : this._t('child.celebration_title')} +${__tmNum(this.hass, points)} ${this._pointsNameFor()}"
         @click="${this._closeCelebration}">
         <div class="celebration-content" @click="${(e) => e.stopPropagation()}">
           <div class="celebration-stars">&#127775;&#127775;&#127775;</div>
