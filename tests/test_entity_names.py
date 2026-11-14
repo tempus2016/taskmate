@@ -40,7 +40,28 @@ TaskMateChildEvent = tm_event.TaskMateChildEvent
 TaskMateFamilyEvent = tm_event.TaskMateFamilyEvent
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "taskmate"
-LANGS = ("en", "en-GB", "da", "de", "fr", "nb", "nl", "nn", "pl", "pt", "pt-BR")
+LANGS = (
+    "en",
+    "en-GB",
+    "da",
+    "de",
+    "fr",
+    "nb",
+    "nl",
+    "nn",
+    "pl",
+    "pt",
+    "pt-BR",
+    "es",
+    "it",
+    "ja",
+    "ko",
+    "ru",
+    "sv",
+    "tr",
+    "uk",
+    "zh-Hans",
+)
 
 ENTRY = MagicMock(entry_id="e1")
 MALIA = Child(name="Malia", id="ch1")

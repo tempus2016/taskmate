@@ -98,7 +98,8 @@ pre-commit run --all-files
 ## Translations
 
 TaskMate ships in several languages. **Any new user-facing string must be added
-to every locale in the same PR** — `da`, `de`, `fr`, `nb`, `nl`, `nn`, `pl`, `pt`, and `pt-BR`
+to every locale in the same PR** — `da`, `de`, `es`, `fr`, `it`, `ja`, `ko`, `nb`, `nl`, `nn`, `pl`, `pt`, `pt-BR`,
+`ru`, `sv`, `tr`, `uk`, and `zh-Hans`
 (plus the English source). English-only PRs with a "translate later" note will
 be asked to include the translations.
 

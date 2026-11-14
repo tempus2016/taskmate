@@ -12,15 +12,24 @@ TaskMate supports multiple languages for both the configuration UI and the Lovel
 |----------|------|----------|
 | English (GB) | `en-GB` | Full (default fallback) |
 | English (US) | `en` | Full |
+| Chinese (Simplified) | `zh-Hans` | Full (machine-translated; corrections from native speakers welcome) |
 | Danish | `da` | Full (new in v6.0.0, contributed and reviewed by a native speaker) |
 | Dutch | `nl` | Full (new in v7.1.0, community contribution) |
 | French | `fr` | Full |
 | German | `de` | Full |
+| Italian | `it` | Full (machine-translated; corrections from native speakers welcome) |
+| Japanese | `ja` | Full (machine-translated; corrections from native speakers welcome) |
+| Korean | `ko` | Full (machine-translated; corrections from native speakers welcome) |
 | Norwegian Bokmål | `nb` | Full |
 | Norwegian Nynorsk | `nn` | Full |
 | Polish | `pl` | Full (new in v6.1.0, contributed by a native speaker) |
 | Portuguese | `pt` | Full |
 | Portuguese (Brazil) | `pt-BR` | Full |
+| Russian | `ru` | Full (machine-translated; corrections from native speakers welcome) |
+| Spanish | `es` | Full (machine-translated; corrections from native speakers welcome) |
+| Swedish | `sv` | Full (machine-translated; corrections from native speakers welcome) |
+| Turkish | `tr` | Full (machine-translated; corrections from native speakers welcome) |
+| Ukrainian | `uk` | Full (machine-translated; corrections from native speakers welcome) |
 
 ---
 

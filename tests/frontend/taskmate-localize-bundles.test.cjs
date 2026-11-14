@@ -115,7 +115,7 @@ test("the admin panel's page starts its bundle with the cards one", async () => 
 });
 
 test("regional and unshipped languages map to a shipped one", async () => {
-  const cases = { "de-CH": "de", "pt-BR": "pt-BR", "en-US": "en", es: "en-GB", ar: "en-GB" };
+  const cases = { "de-CH": "de", "pt-BR": "pt-BR", "en-US": "en", "es-MX": "es", fi: "en-GB", ar: "en-GB" };
   for (const [lang, want] of Object.entries(cases)) {
     const m = loadModule({ guess: lang });
     m.t({ language: lang }, "common.today");

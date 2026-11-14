@@ -73,7 +73,7 @@ function makeCard({ chores, completions = [], availability = {}, weekly = {}, co
 
 /** The picture tile for the chore under test. */
 function tile(view) {
-  return view.controls.find((c) => c.tag === "button" && /class="pre-tile\b/.test(c.attrs) && /aria-label="ZZ chore"/.test(c.attrs));
+  return view.controls.find((c) => c.tag === "button" && /class="pre-tile\b/.test(c.attrs) && /aria-label="ZZ chore[",]/.test(c.attrs));
 }
 
 async function assertBlocked(card, design) {
@@ -189,7 +189,10 @@ for (const design of DESIGNS) {
     assert.ok(target, "the done tile should be rendered");
     assert.match(target.attrs, /\bdone\b/);
     assert.equal(target.disabled, false);
+    // Undo on a pre-reader tile is two taps: the first arms it, the second undoes.
     await target.click();
+    assert.equal(undone, 0);
+    await render(card.render()).control("undo-armed").click();
     assert.equal(undone, 1);
     assert.deepEqual(card.completed, []);
   });

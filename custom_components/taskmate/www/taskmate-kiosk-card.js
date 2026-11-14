@@ -438,6 +438,14 @@ class TaskMateKioskCard extends LitElement {
       const prev = latest.get(String(c.chore_id));
       if (!prev || new Date(c.completed_at || 0) > new Date(prev.completed_at || 0)) latest.set(String(c.chore_id), c);
     }
+    // First come: who finished each chore today when it wasn't this child,
+    // so a lost race shows as "Malia got it first" instead of vanishing.
+    const takenBy = new Map();
+    for (const c of attrs.todays_completions || []) {
+      if (String(c.child_id) === id || c.bonus_subtask_id) continue;
+      const prev = takenBy.get(String(c.chore_id));
+      if (!prev || new Date(c.completed_at || 0) > new Date(prev.completed_at || 0)) takenBy.set(String(c.chore_id), c);
+    }
     const order = (child.chore_order || []).map(String);
     const chores = (attrs.chores || []).slice().sort((a, b) => {
       const ai = order.indexOf(String(a.id));
@@ -464,7 +472,14 @@ class TaskMateKioskCard extends LitElement {
       const comp = latest.get(String(chore.id));
       const team = chore.team;
       const joined = team && Array.isArray(team.joined) ? team.joined.map(String) : [];
-      if (!due && !comp) continue;
+      if (!due && !comp) {
+        const taker = chore.assignment_mode === "first_come" ? takenBy.get(String(chore.id)) : null;
+        const assigned = Array.isArray(chore.assigned_to) ? chore.assigned_to.map(String) : [];
+        if (taker && (!assigned.length || assigned.includes(id))) {
+          rows.push({ chore, state: "taken", phone: false, missed: false, opensAt: null, completion: null, team: null, taker: String(taker.child_id) });
+        }
+        continue;
+      }
       const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit);
       // A chore for a later part of the day isn't open yet (#771): the child
       // card shows it as a locked "Available at …" preview, so the tablet
@@ -518,8 +533,10 @@ class TaskMateKioskCard extends LitElement {
     const missedMode = this._missedMode();
     const hideDone = this.config.completed_mode === "hide";
     const all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
-    const counted = all.filter(r => !r.phone && !(missedMode === "dim" && r.missed));
-    const shown = r => !(hideDone && isDone(r));
+    // A first-come chore a sibling got first was never this child's to do:
+    // shown, but left out of the count so "all done" still comes.
+    const counted = all.filter(r => !r.phone && r.state !== "taken" && !(missedMode === "dim" && r.missed));
+    const shown = r => !(hideDone && (isDone(r) || r.state === "taken"));
     // A chore with set times counts once, in either layout, and only once
     // every time is done (waiting for a grown-up counts as done).
     let done = 0;
@@ -1984,6 +2001,10 @@ class TaskMateKioskCard extends LitElement {
       action = html`<div class="km-done is-done"><ha-icon icon="mdi:check-bold"></ha-icon> ${this._t("child.done")}</div>`;
     } else if (state === "wait") {
       action = html`<div class="km-done is-wait"><ha-icon icon="mdi:timer-sand"></ha-icon><span>${this._t("kiosk.waiting")}</span></div>`;
+    } else if (state === "taken") {
+      const taker = (this._attrs().children || []).find(c => String(c.id) === row.taker);
+      const text = taker && taker.name ? this._t("kiosk.taken_by", { name: taker.name }) : this._t("kiosk.taken_by_grownup");
+      action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:flag-checkered"></ha-icon><span>${text}</span></div>`;
     } else if (state === "team") {
       action = html`<div class="km-done is-wait"><ha-icon icon="mdi:account-group"></ha-icon><span>${this._t("kiosk.team_waiting", { joined: team.joined, size: team.size })}</span></div>`;
     } else {
@@ -2562,6 +2583,7 @@ class TaskMateKioskCard extends LitElement {
       .km-row.done { opacity: 0.72; }
       .km-row.done .km-row-name { text-decoration: line-through; text-decoration-thickness: 2px; }
       .km-row.elsewhere { opacity: 0.55; }
+      .km-row.taken { opacity: 0.55; }
       .km-row.missed { opacity: 0.5; }
       /* A first-come chore: whoever finishes it first gets it. A dashed accent
          border and a tinted background set it apart from this child's own. */
@@ -2569,6 +2591,10 @@ class TaskMateKioskCard extends LitElement {
         border-style: dashed;
         border-color: var(--tmd-warn, #e67e22);
         background: color-mix(in srgb, var(--tmd-warn, #e67e22) 14%, var(--tmd-surface, var(--card-background-color, #fff)));
+        /* A still glow, never animated: the kiosk lays out every second and
+           old iPads crash on looping effects (#1126). */
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--tmd-warn, #e67e22) 22%, transparent),
+                    0 0 16px color-mix(in srgb, var(--tmd-warn, #e67e22) 40%, transparent);
       }
       /* Tinted, not solid, like .km-tag: the design's own text colour on a
          warn tint passes 4.5:1 in every design (a fixed dark ink on a solid

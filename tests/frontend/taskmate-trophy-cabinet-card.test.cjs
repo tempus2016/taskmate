@@ -284,7 +284,7 @@ test("every trophy string is translated in every locale", () => {
   const en = JSON.parse(readFileSync(path.join(WWW, "locales/en.json"), "utf8"));
   const keys = Object.keys(en).filter((k) => k.startsWith("trophy."));
   assert.ok(keys.length > 30);
-  for (const lang of ["da", "de", "fr", "nb", "nl", "nn", "pl", "pt", "pt-BR"]) {
+  for (const lang of ["da", "de", "fr", "nb", "nl", "nn", "pl", "pt", "pt-BR", "es", "it", "ja", "ko", "ru", "sv", "tr", "uk", "zh-Hans"]) {
     const loc = JSON.parse(readFileSync(path.join(WWW, `locales/${lang}.json`), "utf8"));
     const same = keys.filter((k) => loc[k] === en[k] && !/^\{|^Badges$|^New$|^Ny$/.test(en[k]));
     assert.ok(same.length <= 3, `${lang} copies English for ${same.join(", ")}`);

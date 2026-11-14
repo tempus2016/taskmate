@@ -1,0 +1,3551 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TaskMate'e hoş geldin!",
+        "description": "Aile görev yönetim sistemini kur. Çocukların kazanacağı puan birimini özelleştirebilirsin.",
+        "data": {
+          "points_name": "Puan Birimi Adı (ör. Yıldız, Jeton, Para)",
+          "points_icon": "Puan Simgesi"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Ad gerekli"
+    },
+    "abort": {
+      "already_configured": "TaskMate zaten yapılandırılmış"
+    },
+    "create_entry": {
+      "default": "TaskMate hazır. Çocuklarını, yaşlarına uygun görevler öneren kurulum sihirbazıyla eklemek için [TaskMate panelini aç](/taskmate-admin)."
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Değişiklikleri Kaydet",
+        "re_enable": "Görevi Yeniden Etkinleştir",
+        "disable": "Görevi Devre Dışı Bırak",
+        "delete": "Bu Görevi Sil"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Değişiklikleri Kaydet",
+        "delete": "Ödülü Sil"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Sabah",
+        "afternoon": "Öğleden sonra",
+        "evening": "Akşam",
+        "night": "Gece",
+        "anytime": "Her zaman"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Haftanın belirli günleri",
+        "recurring": "Tekrarlanan (her N gün/hafta/ay)",
+        "one_shot": "Tek seferlik görev (tek gün)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Pazartesi",
+        "tuesday": "Salı",
+        "wednesday": "Çarşamba",
+        "thursday": "Perşembe",
+        "friday": "Cuma",
+        "saturday": "Cumartesi",
+        "sunday": "Pazar"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "2 günde bir",
+        "weekly": "Haftalık",
+        "every_2_weeks": "2 haftada bir",
+        "monthly": "Aylık",
+        "every_3_months": "3 ayda bir",
+        "every_6_months": "6 ayda bir"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Pazartesi",
+        "tuesday": "Salı",
+        "wednesday": "Çarşamba",
+        "thursday": "Perşembe",
+        "friday": "Cuma",
+        "saturday": "Cumartesi",
+        "sunday": "Pazar",
+        "any_day": "Herhangi bir gün"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Hemen kullanılabilir",
+        "wait_for_first_occurrence": "İlk planlanan tekrarı bekle"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Sıfırla — kaçırılan günde seri 0 olur",
+        "pause": "Duraklat — seri bir sonraki tamamlamaya kadar korunur"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Filtre yok — görevi her zaman göster",
+        "equals": "Eşit — varlık durumu tam eşleştiğinde göster",
+        "not_equals": "Eşit değil — varlık durumu eşleşmediğinde göster",
+        "gte": "Büyük veya eşit (≥) — sayısal değer ≥ hedef olduğunda göster",
+        "lte": "Küçük veya eşit (≤) — sayısal değer ≤ hedef olduğunda göster",
+        "gt": "Büyüktür (>) — sayısal değer > hedef olduğunda göster",
+        "lt": "Küçüktür (<) — sayısal değer < hedef olduğunda göster"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Herkes — atanan her çocuk görevi görür",
+        "alternating": "Sırayla — atanan çocuklar arasında dön, günde bir",
+        "random": "Rastgele — her gün atanan çocuklardan birini rastgele seç",
+        "balanced": "Dengeli — bugünün dengeli görevlerini atanan çocuklara eşit dağıt",
+        "first_come": "İlk gelen alır — ilk tamamlayan kazanır; diğerlerinden gizlenir",
+        "unassigned": "Atanmamış — hiçbir çocuk bu görevi görmez"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Sabit — gruptaki tüm görevler aynı çocukta",
+        "spread": "Dağıtılmış — bugün grup genelinde farklı çocuklar"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Değişiklikleri Kaydet",
+        "delete": "Grubu Sil"
+      }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Ses yok",
+        "coin": "Jeton",
+        "levelup": "Seviye atlama",
+        "fanfare": "Fanfar",
+        "chime": "Zil",
+        "powerup": "Güç artışı",
+        "undo": "Geri al",
+        "fart1": "Osuruk 1",
+        "fart2": "Osuruk 2",
+        "fart3": "Osuruk 3",
+        "fart4": "Osuruk 4",
+        "fart5": "Osuruk 5",
+        "fart6": "Osuruk 6",
+        "fart7": "Osuruk 7",
+        "fart8": "Osuruk 8",
+        "fart9": "Osuruk 9",
+        "fart10": "Osuruk 10",
+        "fart_random": "Rastgele osuruk"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Kolay",
+        "medium": "Orta",
+        "hard": "Zor"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Herkes puanın tamamını alır",
+        "split": "Puanı eşit böl (aşağı yuvarlanır)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Her zamanı geldiğinde",
+        "week": "Haftalık",
+        "month": "Aylık"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronz",
+        "silver": "Gümüş",
+        "gold": "Altın",
+        "platinum": "Platin"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Hepsi gerekli (VE)",
+        "or": "Herhangi biri yeter (VEYA)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 saat",
+        "2h": "2 saat",
+        "4h": "4 saat",
+        "bed": "Yatma saatine kadar"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Harika",
+        "good": "İyi",
+        "ok": "İdare eder",
+        "sad": "Üzgün",
+        "upset": "Kızgın"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Görev",
+        "reward": "Ödül",
+        "penalty": "Ceza"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Ejderha",
+        "cat": "Kedi",
+        "dog": "Köpek",
+        "bunny": "Tavşan",
+        "dino": "Dinozor",
+        "unicorn": "Tek boynuzlu at"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Bitmiş görünüyor",
+        "not_yet": "Henüz değil"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Görevi Tamamla",
+      "description": "Bir görevi çocuk tarafından tamamlandı olarak işaretle",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Tamamlanacak görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Görevi tamamlayan çocuğun kimliği"
+        },
+        "note": {
+          "name": "Not",
+          "description": "Çocuğun kendi sözleriyle ne yaptığı. Görev açık uçluysa gereklidir ve onay sırasında ebeveyne gösterilir."
+        },
+        "suggested_points": {
+          "name": "Önerilen puan",
+          "description": "Çocuğun işin kaç puan ettiğini düşündüğü. Onaylayan ebeveyn için bir ipucu — kendi başına hiçbir şey vermez."
+        },
+        "quantity": {
+          "name": "Miktar",
+          "description": "Miktarlı bir görevde (\"20 sayfa oku\") çocuğun kaç birim yaptığı. Bu görevlerde çocuktan istenir; görevin puanı birim başına ödenir."
+        },
+        "time_id": {
+          "name": "Belirli saat",
+          "description": "Belirli saatli bir görevde bunun hangi saati işaretlediği. Şu an açık olan için boş bırak."
+        },
+        "as_parent": {
+          "name": "Ebeveyn olarak",
+          "description": "Çocuk adına tamamla ve onayı atlayarak puanları hemen ver."
+        },
+        "photo_url": {
+          "name": "Fotoğraf URL'si",
+          "description": "Tamamlamanın kanıtı olarak gönderilen fotoğrafın isteğe bağlı URL'si veya yolu (ör. kamera anlık görüntüsü). Onay sırasında ebeveyne gösterilir."
+        },
+        "completed_date": {
+          "name": "Yapıldığı gün",
+          "description": "Yapılmış ama işaretlenmemiş bir işi önceki bir güne kaydet (en fazla 7 gün geriye, bugün değil). Yalnızca ebeveynler; hemen onaylanır. O günün günlük limiti yine geçerlidir."
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "Bonus Alt Görevi Tamamla",
+      "description": "Ana görev bittikten sonra bir bonus alt görevi tamamla",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Ana görevin kimliği"
+        },
+        "bonus_subtask_id": {
+          "name": "Bonus alt görev kimliği",
+          "description": "Tamamlanacak bonus alt görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Bonus alt görevi tamamlayan çocuğun kimliği"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Görevi Onayla",
+      "description": "Tamamlanan bir görevi onayla ve puan ver",
+      "fields": {
+        "completion_id": {
+          "name": "Tamamlama kimliği",
+          "description": "Onaylanacak görev tamamlamasının kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Görevin kendi değeri yerine bu kadar puan ver. Görevin puanını kullanmak için boş bırak."
+        },
+        "rating": {
+          "name": "Kalite puanı",
+          "description": "Görevin ne kadar iyi yapıldığına dair isteğe bağlı 1-3 yıldız. Kalite puanları etkinse puanı o yıldızın çarpanıyla ölçekler; %100 ödemek için boş bırak."
+        },
+        "note": {
+          "name": "Övgü notu",
+          "description": "Çocuk için bugün kartında gösterilen isteğe bağlı kısa mesaj (en fazla 120 karakter)."
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "Tüm Görevleri Onayla",
+      "description": "Bekleyen tüm görev tamamlamalarını (veya belirli bir kısmını) onayla ve puan ver",
+      "fields": {
+        "completion_ids": {
+          "name": "Tamamlama kimlikleri",
+          "description": "Onaylanacak belirli tamamlama kimlikleri; tüm bekleyenleri onaylamak için boş bırak"
+        },
+        "rating": {
+          "name": "Kalite puanı",
+          "description": "Bu çağrıyla onaylanan her göreve uygulanan isteğe bağlı 1-3 yıldız (kalite puanları etkin olmalı)."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Görevi Reddet",
+      "description": "Tamamlanan bir görevi reddet",
+      "fields": {
+        "completion_id": {
+          "name": "Tamamlama kimliği",
+          "description": "Reddedilecek görev tamamlamasının kimliği"
+        },
+        "reason": {
+          "name": "Neden",
+          "description": "Çocuğa gösterilen isteğe bağlı neden"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "Görevi Geri Al",
+      "description": "Çocuğun kendi görevini geri almasını sağla — ebeveyn inceleyene kadar bekleyen bir gönderimi veya geri alma süresi içinde otomatik onaylanmış olanı. TaskMate ayarlarında süre 0'dan büyük ayarlanmadıkça kapalıdır; ebeveynin incelediği her şeyi ancak ebeveyn geri alabilir.",
+      "fields": {
+        "completion_id": {
+          "name": "Tamamlama kimliği",
+          "description": "Geri alınacak çocuk görev tamamlamasının kimliği"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "Görev Onayını Geri Al",
+      "description": "Yanlışlıkla verilen görev onayını geri al — verilen puanları kaldırır ve tamamlamayı tekrar onaylanabilmesi için beklemeye döndürür.",
+      "fields": {
+        "completion_id": {
+          "name": "Tamamlama kimliği",
+          "description": "Beklemeye döndürülecek onaylı görev tamamlamasının kimliği"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "İşlemi Geri Al",
+      "description": "Bir puan işlemini kimliğiyle geri al — cezalar, bonuslar, elle ekleme/çıkarma düzeltmeleri ve hediyeler (her iki taraf). Otomatik işlemler (hafta sonu/seri/mükemmel hafta bonusları, havuz hareketleri, erime, faiz) geri alınamaz.",
+      "fields": {
+        "transaction_id": {
+          "name": "İşlem kimliği",
+          "description": "Geri alınacak puan işleminin kimliği"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Ödül Al",
+      "description": "Çocuk puanlarını kullanarak bir ödül alır",
+      "fields": {
+        "reward_id": {
+          "name": "Ödül kimliği",
+          "description": "Alınacak ödülün kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Ödülü alan çocuğun kimliği"
+        },
+        "recipient_id": {
+          "name": "Alıcı kimliği",
+          "description": "Bunun yerine bir kardeş için al. Talep eden çocuk öder; \"Çocuklar birbirine ödül alabilsin\" seçeneğinin açık olması gerekir."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Ödülü Onayla",
+      "description": "Bir ödül talebini onayla",
+      "fields": {
+        "claim_id": {
+          "name": "Talep kimliği",
+          "description": "Onaylanacak ödül talebinin kimliği"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Havuza Puan Ayır",
+      "description": "Puanları çocuğun harcanabilir bakiyesinden bir ödülün birikim havuzuna taşı (kilitli).",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Ayırmayı yapan çocuğun kimliği"
+        },
+        "reward_id": {
+          "name": "Ödül kimliği",
+          "description": "Yatırılacak ödül havuzunun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Ayrılacak puan sayısı (havuz kapasitesi ve harcanabilir bakiyeyle sınırlı)"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Puan Ekle",
+      "description": "Bir çocuğa bonus puan ekle",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Puan eklenecek çocuğun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Eklenecek puan sayısı"
+        },
+        "reason": {
+          "name": "Neden",
+          "description": "Bonus için isteğe bağlı neden"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Puan Çıkar",
+      "description": "Bir çocuktan puan çıkar (ceza)",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Puan çıkarılacak çocuğun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Çıkarılacak puan sayısı"
+        },
+        "reason": {
+          "name": "Neden",
+          "description": "Ceza için isteğe bağlı neden"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Ödülü Reddet",
+      "description": "Bir ödül talebini reddet",
+      "fields": {
+        "claim_id": {
+          "name": "Talep kimliği",
+          "description": "Reddedilecek ödül talebinin kimliği"
+        },
+        "reason": {
+          "name": "Neden",
+          "description": "Çocuğa gösterilen isteğe bağlı neden"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Sesi Önizle",
+      "description": "Bir tamamlama ses efektini tarayıcıda önizle",
+      "fields": {
+        "sound": {
+          "name": "Ses",
+          "description": "Önizlenecek ses"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Görev Sırasını Ayarla",
+      "description": "Bir çocuk için görevlerin gösterim sırasını ayarla",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Görev sırası ayarlanacak çocuğun kimliği"
+        },
+        "chore_order": {
+          "name": "Görev Sırası",
+          "description": "Görev kimliklerinin sıralı listesi"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Ceza Ekle",
+      "description": "Yeni bir ceza tanımı oluştur",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Cezanın adı"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Uygulandığında düşülecek puan sayısı"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Cezanın isteğe bağlı açıklaması"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Ceza için MDI simgesi"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Bu cezanın uygulandığı çocuk kimliklerinin listesi"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Cezayı Güncelle",
+      "description": "Mevcut bir ceza tanımını güncelle",
+      "fields": {
+        "penalty_id": {
+          "name": "Ceza kimliği",
+          "description": "Güncellenecek cezanın kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Cezanın yeni adı"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Yeni puan değeri"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Yeni açıklama"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Yeni simge"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Yeni çocuk kimlikleri listesi"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Cezayı Kaldır",
+      "description": "Bir ceza tanımını kaldır",
+      "fields": {
+        "penalty_id": {
+          "name": "Ceza kimliği",
+          "description": "Kaldırılacak cezanın kimliği"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Ceza Uygula",
+      "description": "Bir çocuğa ceza uygula, puan düşerek",
+      "fields": {
+        "penalty_id": {
+          "name": "Ceza kimliği",
+          "description": "Uygulanacak cezanın kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Cezanın uygulanacağı çocuğun kimliği"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Bonus Ekle",
+      "description": "Yeni bir bonus tanımı oluştur",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Bonusun adı"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Uygulandığında verilecek puan sayısı"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Bonusun isteğe bağlı açıklaması"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Bonus için MDI simgesi"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Bu bonusun uygulandığı çocuk kimliklerinin listesi"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Bonusu Güncelle",
+      "description": "Mevcut bir bonus tanımını güncelle",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus kimliği",
+          "description": "Güncellenecek bonusun kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Bonusun yeni adı"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Yeni puan değeri"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Yeni açıklama"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Yeni simge"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Yeni çocuk kimlikleri listesi"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Bonusu Kaldır",
+      "description": "Bir bonus tanımını kaldır",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus kimliği",
+          "description": "Kaldırılacak bonusun kimliği"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Bonus Uygula",
+      "description": "Bir çocuğa bonus uygula, puan vererek",
+      "fields": {
+        "bonus_id": {
+          "name": "Bonus kimliği",
+          "description": "Uygulanacak bonusun kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Bonusun uygulanacağı çocuğun kimliği"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Görev Ekle",
+      "description": "Genellikle bir otomasyon veya betikten dinamik olarak yeni bir görev oluştur",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Görevin adı"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Görevin isteğe bağlı açıklaması"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Bu görev tamamlandığında verilen puan"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Bu görevin atanacağı çocuklar, ada veya kimliğe göre. Tüm çocuklara atamak için boş bırak"
+        },
+        "time_category": {
+          "name": "Zaman Dilimi",
+          "description": "Bu görevin ne zaman tamamlanması gerektiği: morning, afternoon, evening, night veya anytime"
+        },
+        "one_shot": {
+          "name": "Tek Seferlik",
+          "description": "True ise, tamamlandıktan sonra veya gün sonunda sona eren tek seferlik bir görevdir"
+        },
+        "requires_approval": {
+          "name": "Onay Gerekir",
+          "description": "True ise, puan verilmeden önce bir ebeveynin tamamlamayı onaylaması gerekir"
+        },
+        "team_size": {
+          "name": "Takım büyüklüğü",
+          "description": "Bunu ancak bu kadar farklı çocuk katıldığında sayılan bir takım görevi yap. Takım dolunca hepsi için gönderilir. 0 = normal görev."
+        },
+        "team_points_mode": {
+          "name": "Takım puanı",
+          "description": "Takım görevinin nasıl ödediği: \"each\" her katılımcıya puanın tamamını verir, \"split\" eşit böler (aşağı yuvarlanır)."
+        },
+        "team_bonus": {
+          "name": "Takım bonusu",
+          "description": "Takım görevi tamamlandığında her katılımcının kazandığı ekstra puan."
+        },
+        "times": {
+          "name": "Belirli saatler",
+          "description": "Bunu günün belirli saatlerinde gelen bir görev yap, ör. kahvaltı, öğle ve akşam yemeğinde el yıkama. Her biri ad, başlangıç ve bitiş (\"HH:MM\", aynı gün, çakışmasız) ve puan içeren en fazla 5 saatlik bir liste."
+        },
+        "times_bonus": {
+          "name": "Tüm saatler bonusu",
+          "description": "Her belirli saat tamamlandığında günde bir kez ödenen ekstra puan."
+        },
+        "assignment_mode": {
+          "name": "Atama modu",
+          "description": "Görevi her gün kimin yaptığı: everyone, alternating (sırayla), random, balanced (en az yapan), first_come (ilk üstlenen çocuk) veya unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Dönüşüm dönemi",
+          "description": "Sırayla görevler için: each_time (görev her geldiğinde sıradaki çocuk), week (bir çocuk tüm hafta boyunca tutar) veya month (tüm ay boyunca)."
+        },
+        "assignment_rotation_every": {
+          "name": "Dönüşüm aralığı",
+          "description": "Dönüşüm dönemi olan sırayla bir görevi her çocuğun kaç hafta veya ay tuttuğu (2 = iki haftada bir)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Devir günü",
+          "description": "Haftalık dönüşümün sıradaki çocuğa geçtiği hafta günü."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Ayın devir günü",
+          "description": "Aylık dönüşümün sıradaki çocuğa geçtiği ayın günü (kısa aylarda son gün)."
+        },
+        "schedule_mode": {
+          "name": "Program",
+          "description": "specific_days (Due days'teki hafta günleri veya hiçbiri yoksa her gün), recurring (Recurrence ritmine göre) veya one_shot (yalnızca bugün)."
+        },
+        "due_days": {
+          "name": "Günler",
+          "description": "specific_days programı için görevin yapılacağı hafta günleri. Her gün için boş bırak."
+        },
+        "recurrence": {
+          "name": "Tekrar",
+          "description": "Tekrarlanan bir görevin ne sıklıkla geldiği: weekly, every_2_weeks, monthly, every_3_months, every_6_months veya N 2 ile 365 arasında olmak üzere every_N_days (ör. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Tekrar günü",
+          "description": "Haftalık veya every_2_weeks bir görevin denk geldiği hafta günü."
+        },
+        "recurrence_start": {
+          "name": "Tekrar başlangıcı",
+          "description": "Tekrarlanan bir görevin ritminin başladığı tarih (YYYY-MM-DD)."
+        },
+        "due_time": {
+          "name": "Son saat",
+          "description": "Görevin son saati (\"HH:MM\"). O saate kadar bitirmek erken bonusunu, sonrası geç cezasını getirir. Son saat yoksa boş bırak."
+        },
+        "daily_limit": {
+          "name": "Günlük limit",
+          "description": "Görevin günde kaç kez tamamlanabileceği. Tek seferlik görevler her zaman 1'dir."
+        },
+        "difficulty": {
+          "name": "Zorluk",
+          "description": "Zorluk seviyesi; verilen puanı seviye çarpanıyla ölçekler (medium = ×1.0 temel)"
+        },
+        "expires_in_minutes": {
+          "name": "Bitiş süresi (dakika)",
+          "description": "Bunu şu andan itibaren bu kadar dakika son süreli bir tepki görevi yap, ör. çamaşır makinesi bitti, 30 dakika içinde boşalt. Süre dolunca görev kaybolur ve devre dışı kalır. 0 = son süre yok."
+        },
+        "speed_bonus_points": {
+          "name": "Hız bonusu puanı",
+          "description": "Görev son süreden önce tamamlanırsa verilen ekstra puan. expires_in_minutes gerektirir."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Görevi Güncelle",
+      "description": "Mevcut bir görevi kimliğiyle değiştir. Yalnızca ayarladığın alanlar değişir; geri kalan her şey olduğu gibi kalır.",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Değiştirilecek görevin kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Görevin yeni adı"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Görevin yeni açıklaması"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Bu görev tamamlandığında verilen puan"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Bu görevin atanacağı çocuklar, ada veya kimliğe göre. Boş liste tüm çocuklara atar"
+        },
+        "time_category": {
+          "name": "Zaman Dilimi",
+          "description": "Bu görevin ne zaman tamamlanması gerektiği: morning, afternoon, evening, night veya anytime"
+        },
+        "difficulty": {
+          "name": "Zorluk",
+          "description": "Zorluk seviyesi: easy, medium veya hard. Verilen puanı ölçekler (medium = ×1.0)."
+        },
+        "requires_approval": {
+          "name": "Onay Gerekir",
+          "description": "True ise, puan verilmeden önce bir ebeveynin tamamlamayı onaylaması gerekir"
+        },
+        "enabled": {
+          "name": "Etkin",
+          "description": "Görevi silmeden her yerde gizlemek için kapat (false) veya tekrar aç (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Hız bonusu puanı",
+          "description": "Görev son süresinden önce tamamlanırsa verilen ekstra puan."
+        },
+        "team_size": {
+          "name": "Takım büyüklüğü",
+          "description": "Bunu ancak bu kadar farklı çocuk katıldığında sayılan bir takım görevi yap. Takım dolunca hepsi için gönderilir. 0 = normal görev."
+        },
+        "team_points_mode": {
+          "name": "Takım puanı",
+          "description": "Takım görevinin nasıl ödediği: \"each\" her katılımcıya puanın tamamını verir, \"split\" eşit böler (aşağı yuvarlanır)."
+        },
+        "team_bonus": {
+          "name": "Takım bonusu",
+          "description": "Takım görevi tamamlandığında her katılımcının kazandığı ekstra puan."
+        },
+        "times": {
+          "name": "Belirli saatler",
+          "description": "Görevin belirli saatlerini değiştir. Her biri ad, başlangıç ve bitiş (\"HH:MM\", aynı gün, çakışmasız) ve puan içeren en fazla 5 saatlik bir liste. Boş liste onları kaldırır."
+        },
+        "times_bonus": {
+          "name": "Tüm saatler bonusu",
+          "description": "Her belirli saat tamamlandığında günde bir kez ödenen ekstra puan."
+        },
+        "assignment_mode": {
+          "name": "Atama modu",
+          "description": "Görevi her gün kimin yaptığı: everyone, alternating (sırayla), random, balanced (en az yapan), first_come (ilk üstlenen çocuk) veya unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Dönüşüm dönemi",
+          "description": "Sırayla görevler için: each_time (görev her geldiğinde sıradaki çocuk), week (bir çocuk tüm hafta boyunca tutar) veya month (tüm ay boyunca)."
+        },
+        "assignment_rotation_every": {
+          "name": "Dönüşüm aralığı",
+          "description": "Dönüşüm dönemi olan sırayla bir görevi her çocuğun kaç hafta veya ay tuttuğu (2 = iki haftada bir)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Devir günü",
+          "description": "Haftalık dönüşümün sıradaki çocuğa geçtiği hafta günü."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Ayın devir günü",
+          "description": "Aylık dönüşümün sıradaki çocuğa geçtiği ayın günü (kısa aylarda son gün)."
+        },
+        "schedule_mode": {
+          "name": "Program",
+          "description": "specific_days (Due days'teki hafta günleri veya hiçbiri yoksa her gün), recurring (Recurrence ritmine göre) veya one_shot (yalnızca bugün)."
+        },
+        "due_days": {
+          "name": "Günler",
+          "description": "specific_days programı için görevin yapılacağı hafta günleri. Her gün için boş bırak."
+        },
+        "recurrence": {
+          "name": "Tekrar",
+          "description": "Tekrarlanan bir görevin ne sıklıkla geldiği: weekly, every_2_weeks, monthly, every_3_months, every_6_months veya N 2 ile 365 arasında olmak üzere every_N_days (ör. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Tekrar günü",
+          "description": "Haftalık veya every_2_weeks bir görevin denk geldiği hafta günü."
+        },
+        "recurrence_start": {
+          "name": "Tekrar başlangıcı",
+          "description": "Tekrarlanan bir görevin ritminin başladığı tarih (YYYY-MM-DD)."
+        },
+        "due_time": {
+          "name": "Son saat",
+          "description": "Görevin son saati (\"HH:MM\"). O saate kadar bitirmek erken bonusunu, sonrası geç cezasını getirir. Son saat yoksa boş bırak."
+        },
+        "daily_limit": {
+          "name": "Günlük limit",
+          "description": "Görevin günde kaç kez tamamlanabileceği. Tek seferlik görevler her zaman 1'dir."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Görevi Sil",
+      "description": "Bir görevi kimliğiyle, paneldeki temizlikle aynı şekilde sil. 7 gün boyunca paneldeki Son silinenler'e gider, böylece geri yüklenebilir.",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Silinecek görevin kimliği"
+        },
+        "confirm": {
+          "name": "Onayla",
+          "description": "True olmalı. Bir görevin yanlışlıkla silinmemesi için bir güvenlik önlemi."
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Görevi Atla",
+      "description": "Bugünkü dönüşümü mevcut sorumlunun ötesine ilerlet. Geçicidir — yarınki dönüşüm normal devam eder.",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Atlanacak görevin kimliği"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Başlangıç Çocuğunu Elle Ayarla",
+      "description": "Dönüşümlü bir göreve hangi çocuğun başlayacağını ayarla. Sırayla modunda havuzu yeniden sıralar; rastgele/dengeli modda yalnızca bugünkü sorumluyu değiştirir.",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Güncellenecek görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dönüşüme başlaması gereken çocuğun kimliği"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Görev Grubu Ekle",
+      "description": "Bir görev grubu oluştur (sticky = aynı çocuk, spread = farklı çocuklar).",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Grubun görünen adı"
+        },
+        "policy": {
+          "name": "Politika",
+          "description": "sticky (aynı çocuk) veya spread (farklı çocuklar)"
+        },
+        "chore_ids": {
+          "name": "Görev kimlikleri",
+          "description": "Gruptaki görev kimliklerinin listesi. sticky için ilk görev liderdir."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Görev Grubunu Güncelle",
+      "description": "Bir görev grubunun adını, politikasını veya üyeliğini güncelle.",
+      "fields": {
+        "group_id": {
+          "name": "Grup kimliği",
+          "description": "Güncellenecek grubun kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Yeni görünen ad"
+        },
+        "policy": {
+          "name": "Politika",
+          "description": "Yeni politika (sticky veya spread)"
+        },
+        "chore_ids": {
+          "name": "Görev kimlikleri",
+          "description": "Yeni görev kimliği listesi. sticky için ilk görev liderdir."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Görev Grubunu Kaldır",
+      "description": "Bir görev grubunu sil. Üye görevler etkilenmez.",
+      "fields": {
+        "group_id": {
+          "name": "Grup kimliği",
+          "description": "Silinecek grubun kimliği"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "Süreli Görevi Başlat",
+      "description": "Süreli bir görevde zamanlayıcıyı başlat veya devam ettir",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Süreli görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Zamanlayıcıyı başlatan çocuğun kimliği"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Takım Görevinden Ayrıl",
+      "description": "Bir çocuğu, takım tamamlanmadan önce bugün katıldığı takım görevinden çıkar",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Takım görevinin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Takımdan ayrılan çocuğun kimliği"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "Sonraki Görevi Tamamla",
+      "description": "Çocuğun bekleyen sonraki görevini, çocuk kartının gösterdiği sırayla tamamla. Fotoğraf, not, zamanlayıcı veya takım gerektiren görevler atlanır. Saat düğmeleri ve kısayollar için yapıldı; normal onay kuralları geçerlidir.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Sonraki görevi tamamlanacak çocuğun kimliği"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "Ödül Avı Yayınla",
+      "description": "Ödül avı panosuna sabit puanlı tek seferlik bir iş yayınla. Uygun her çocuk üstlenebilir; bitirmek normal onay kuyruğundan geçer.",
+      "fields": {
+        "title": {
+          "name": "Başlık",
+          "description": "İşin ne olduğu, ör. \"Arabayı yıka\""
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Ebeveyn biten işi onayladığında ödenen sabit puan"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Çocuklar için isteğe bağlı ek ayrıntı"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Panoda gösterilen MDI simgesi"
+        },
+        "expires_at": {
+          "name": "Bitiş zamanı",
+          "description": "Kimse üstlenmezse ödül avının panodan kalkacağı isteğe bağlı tarih ve saat. Süresiz için boş bırak."
+        },
+        "eligible_child_ids": {
+          "name": "Uygun çocuklar",
+          "description": "Üstlenebilecek çocukların kimlikleri. Boş = her çocuk."
+        },
+        "claim_hours": {
+          "name": "Üstlenme kilidi (saat)",
+          "description": "Ödül avı panoya geri dönmeden önce üstlenmenin ne kadar sürdüğü"
+        },
+        "require_photo": {
+          "name": "Fotoğraf iste",
+          "description": "Çocuk bitti olarak işaretlerken fotoğraf eklemeli"
+        },
+        "notify_children": {
+          "name": "Çocuklara bildir",
+          "description": "Uygun çocuklara \"Yeni ödül avı\" bildirimini gönder"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Ödül Avını Güncelle",
+      "description": "Bir ödül avını düzenle. Üstlenildikten sonra yalnızca puanı ve bitişi değiştirilebilir.",
+      "fields": {
+        "bounty_id": {
+          "name": "Ödül avı kimliği",
+          "description": "Düzenlenecek ödül avının kimliği"
+        },
+        "title": {
+          "name": "Başlık",
+          "description": "İşin ne olduğu, ör. \"Arabayı yıka\""
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Ebeveyn biten işi onayladığında ödenen sabit puan"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Çocuklar için isteğe bağlı ek ayrıntı"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Panoda gösterilen MDI simgesi"
+        },
+        "expires_at": {
+          "name": "Bitiş zamanı",
+          "description": "Kimse üstlenmezse ödül avının panodan kalkacağı isteğe bağlı tarih ve saat. Süresiz için boş bırak."
+        },
+        "eligible_child_ids": {
+          "name": "Uygun çocuklar",
+          "description": "Üstlenebilecek çocukların kimlikleri. Boş = her çocuk."
+        },
+        "claim_hours": {
+          "name": "Üstlenme kilidi (saat)",
+          "description": "Ödül avı panoya geri dönmeden önce üstlenmenin ne kadar sürdüğü"
+        },
+        "require_photo": {
+          "name": "Fotoğraf iste",
+          "description": "Çocuk bitti olarak işaretlerken fotoğraf eklemeli"
+        },
+        "notify_children": {
+          "name": "Çocuklara bildir",
+          "description": "Uygun çocuklara \"Yeni ödül avı\" bildirimini gönder"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Ödül Avını Kaldır",
+      "description": "Bir ödül avını panodan kaldır. Biten iş onay beklerken izin verilmez.",
+      "fields": {
+        "bounty_id": {
+          "name": "Ödül avı kimliği",
+          "description": "Kaldırılacak ödül avının kimliği"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Ödül Avını Üstlen",
+      "description": "Bir çocuk için ödül avını üstlen ve üstlenme süresi boyunca ona kilitle. Bir çocuk aynı anda tek bir üstlenme tutabilir.",
+      "fields": {
+        "bounty_id": {
+          "name": "Ödül avı kimliği",
+          "description": "Üstlenilecek ödül avının kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Üstlenen çocuğun kimliği"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Ödül Avını Geri Ver",
+      "description": "Başka bir çocuğun alabilmesi için üstlenilen ödül avını panoya geri ver",
+      "fields": {
+        "bounty_id": {
+          "name": "Ödül avı kimliği",
+          "description": "Üstlenilen ödül avının kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Üstlenen çocuğun kimliği"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Ödül Avını Tamamla",
+      "description": "Üstlenilen bir ödül avını bitti olarak işaretle. Bir görev gibi onay kuyruğuna gider.",
+      "fields": {
+        "bounty_id": {
+          "name": "Ödül avı kimliği",
+          "description": "Üstlenilen ödül avının kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Üstlenen çocuğun kimliği"
+        },
+        "photo_url": {
+          "name": "Fotoğraf URL'si",
+          "description": "Biten işin fotoğrafı (ödül avı istediğinde gerekli)"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Süreli Görevi Duraklat",
+      "description": "Çalışan bir süreli görev zamanlayıcısını duraklat",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Süreli görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Zamanlayıcıyı duraklatan çocuğun kimliği"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Süreli Görevi Durdur",
+      "description": "Süreli görev zamanlayıcısını durdur ve onaya gönder",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Süreli görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Zamanlayıcıyı durduran çocuğun kimliği"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Rozet Ekle",
+      "description": "Özel bir rozet oluştur.",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Rozetin görünen adı"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Rozetin nasıl kazanıldığının açıklaması"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Rozet simgesi (ör. mdi:beach)"
+        },
+        "tier": {
+          "name": "Seviye",
+          "description": "Rozet seviyesi: bronze, silver, gold veya platinum"
+        },
+        "point_bonus": {
+          "name": "Puan bonusu",
+          "description": "Rozet kazanıldığında çocuğa yatırılan puan"
+        },
+        "criteria": {
+          "name": "Ölçütler",
+          "description": "metric / operator / value sözlüklerinin listesi. Boş = yalnızca elle verilir."
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Çocuk kimlikleri listesi (boş = hepsi)"
+        },
+        "notify_on_earn": {
+          "name": "Kazanınca bildir",
+          "description": "Rozet kazanıldığında bildirim gönder"
+        },
+        "combinator": {
+          "name": "Birleştirici",
+          "description": "Birden çok ölçütün nasıl birleştiği: AND (hepsi geçmeli) veya OR (herhangi biri). Varsayılan AND."
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Rozeti Güncelle",
+      "description": "Mevcut bir rozeti güncelle. Yerleşik rozetlerde yalnızca point_bonus, tier, assigned_to, enabled, notify_on_earn düzenlenebilir.",
+      "fields": {
+        "badge_id": {
+          "name": "Rozet kimliği",
+          "description": "Güncellenecek rozetin kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Rozetin yeni görünen adı"
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Rozetin yeni açıklaması"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Rozetin yeni simgesi"
+        },
+        "tier": {
+          "name": "Seviye",
+          "description": "Rozet seviyesi: bronze, silver, gold veya platinum"
+        },
+        "point_bonus": {
+          "name": "Puan bonusu",
+          "description": "Rozet kazanıldığında çocuğa yatırılan puan"
+        },
+        "criteria": {
+          "name": "Ölçütler",
+          "description": "metric / operator / value sözlüklerinin listesi. Boş = yalnızca elle verilir."
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Çocuk kimlikleri listesi (boş = hepsi)"
+        },
+        "enabled": {
+          "name": "Etkin",
+          "description": "Rozetin etkin olup olmadığı"
+        },
+        "notify_on_earn": {
+          "name": "Kazanınca bildir",
+          "description": "Rozet kazanıldığında bildirim gönder"
+        },
+        "combinator": {
+          "name": "Birleştirici",
+          "description": "Birden çok ölçütün nasıl birleştiği: AND (hepsi geçmeli) veya OR (herhangi biri). Varsayılan AND."
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Rozeti Kaldır",
+      "description": "Özel bir rozeti kaldır. Yerleşik rozetler kaldırılamaz.",
+      "fields": {
+        "badge_id": {
+          "name": "Rozet kimliği",
+          "description": "Kaldırılacak rozetin kimliği"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Rozeti Elle Ver",
+      "description": "Bir çocuğa elle rozet ver.",
+      "fields": {
+        "badge_id": {
+          "name": "Rozet kimliği",
+          "description": "Verilecek rozetin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Rozeti alan çocuğun kimliği"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Rozeti Geri Al",
+      "description": "Verilmiş bir rozeti geri al. Puan bonusu yatırıldıysa geri alınır.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "Verilen rozet kimliği",
+          "description": "Geri alınacak verilen rozet kaydının kimliği"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Rozetleri Yeniden Oluştur",
+      "description": "Tüm çocuklar için tüm rozetleri sessizce yeniden değerlendir (bildirim yok, puan bonusu yok)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Zorunlu Cezayı Uygula",
+      "description": "Kaçırılan zorunlu görev için ayarlanan ceza puanını düş ve inceleme öğesini temizle.",
+      "fields": {
+        "miss_id": {
+          "name": "Kaçırma kimliği",
+          "description": "Zorunlu kaçırma inceleme öğesinin kimliği"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Avatar Seç",
+      "description": "Çocuk kilidini açtığı bir avatara geçer.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Çocuğun kimliği"
+        },
+        "icon": {
+          "name": "Avatar simgesi",
+          "description": "Kilidi açılmış bir katalog avatarının mdi simgesi (ör. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Zorunlu Görevi Kapat",
+      "description": "Kaçırılan zorunlu görev inceleme öğesini cezasız temizle.",
+      "fields": {
+        "miss_id": {
+          "name": "Kaçırma kimliği",
+          "description": "Zorunlu kaçırma inceleme öğesinin kimliği"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Puan Hediye Et",
+      "description": "Harcanabilir puanları bir çocuktan diğerine aktar (ebeveyn denetiminde).",
+      "fields": {
+        "from_child_id": {
+          "name": "Gönderen çocuk kimliği",
+          "description": "Puan gönderen çocuğun kimliği"
+        },
+        "to_child_id": {
+          "name": "Alıcı çocuk kimliği",
+          "description": "Puan alan çocuğun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Aktarılacak puan sayısı"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Seri Dondurmaları Düzelt",
+      "description": "Bir çocuğa seri dondurma jetonu ver (pozitif miktar) veya bir kısmını al (negatif). Verilen miktar streak_freeze_max sınırını asla aşmaz.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Jetonları değişecek çocuğun kimliği"
+        },
+        "amount": {
+          "name": "Miktar",
+          "description": "Eklenecek (pozitif) veya çıkarılacak (negatif) jetonlar"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Zorunlu Görevi Ertele",
+      "description": "Kaçırılan zorunlu göreve cezasız başka bir dönem (veya yarın) ver ve inceleme öğesini temizle.",
+      "fields": {
+        "miss_id": {
+          "name": "Kaçırma kimliği",
+          "description": "Zorunlu kaçırma inceleme öğesinin kimliği"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Görev Takası İste",
+      "description": "Çocuk bir görevin bugünkü dönüşüm atamasını devralmak ister (ebeveyn onayı bekler).",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Devralınacak görevin kimliği"
+        },
+        "requester_id": {
+          "name": "İsteyen çocuk kimliği",
+          "description": "Takası isteyen çocuğun kimliği"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Test Bildirimi",
+      "description": "Verilen türde örnek bir bildirimi etkin alıcılarına gönder (yönlendirme doğrulanabilsin diye ana aç/kapa anahtarını yok sayar).",
+      "fields": {
+        "type_id": {
+          "name": "Bildirim türü",
+          "description": "Bildirim türü kimliği, ör. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "Harçlık Ödemesini Kaydet",
+      "description": "Puan düş ve gerçek parayla harçlık ödemesini deftere kaydet (sabit dönüşüm oranı; ebeveyn denetiminde).",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Ödemeyi alan çocuğun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Paraya çevrilip düşülecek puan"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "Dilek Ekle",
+      "description": "Çocuk biriktirmek istediği bir şeyi ekler. Bir ebeveynin onaylamasını bekler.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dileği tutan çocuğun kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Çocuğun ne istediği"
+        },
+        "target": {
+          "name": "Hedef",
+          "description": "Önerilen puan fiyatı. Ebeveyn onaylarken değiştirebilir."
+        },
+        "link": {
+          "name": "Bağlantı",
+          "description": "Şey için isteğe bağlı web adresi (http veya https)"
+        },
+        "photo_url": {
+          "name": "Resim",
+          "description": "TaskMate fotoğraf uç noktası üzerinden az önce yüklenen isteğe bağlı resim"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Dileği Geri Çek",
+      "description": "Çocuk hâlâ onay bekleyen bir dileği geri çeker veya reddedilmiş birini temizler.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dileğin sahibi olan çocuğun kimliği"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Puanları Dileğe Aktar",
+      "description": "Puanları çocuğun harcanabilir bakiyesinden onaylı dileklerinden birine aktar.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dileğin sahibi olan çocuğun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Kaç puan aktarılacak (bakiye ve dileğin hâlâ gerektirdiği miktarla sınırlı)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Dilekten Puan Al",
+      "description": "Çocuğun bir dilekte kendi biriktirdiği puanların bir kısmını geri ver. Katkı sözü verilen puanlar asla çıkmaz.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dileğin sahibi olan çocuğun kimliği"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Kaç biriken puan geri alınacak (çocuğun biriktirdiğiyle sınırlı)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Dileği Kullanmak İste",
+      "description": "Tamamen biriken bir dilek, ebeveyn onayını bekleyen bir ödül talebine dönüşür.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dileğin sahibi olan çocuğun kimliği"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Dileği Onayla",
+      "description": "Bekleyen bir dileği, isteğe bağlı olarak farklı bir hedefle birikim hedefine dönüştür.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "target": {
+          "name": "Hedef",
+          "description": "Dileğin puan fiyatı. Çocuğun önerisini korumak için boş bırak."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Dileği Reddet",
+      "description": "Bir dileğe hayır de. Biriken puanlar çocuğa döner ve katkı sözleri iptal edilir.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "reason": {
+          "name": "Neden",
+          "description": "Çocuğa gösterilen isteğe bağlı neden"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Dileğe Katkı Sözü Ver",
+      "description": "Bir akrabanın çocuğun dileğine kattığı puanları kaydet. Hiçbir bakiyeye dokunmaz.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "name": {
+          "name": "Kimden",
+          "description": "Katkı sözünün kimden olduğu, ör. Büyükanne"
+        },
+        "points": {
+          "name": "Puan",
+          "description": "Kaç puan katkı sözü verilecek (dileğin hâlâ gerektirdiğiyle sınırlı)"
+        },
+        "message": {
+          "name": "Mesaj",
+          "description": "Çocuk için isteğe bağlı mesaj"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Dilek Katkı Sözünü Kaldır",
+      "description": "Bir katkı sözünü geri al. Dilek kullanılana kadar izin verilir.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        },
+        "pledge_id": {
+          "name": "Katkı sözü kimliği",
+          "description": "Kaldırılacak katkı sözünün kimliği"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Dileği Kaldır",
+      "description": "Bir dileği sil. Biriken puanlar çocuğa döner ve katkı sözleri iptal edilir.",
+      "fields": {
+        "wish_id": {
+          "name": "Dilek kimliği",
+          "description": "Dileğin kimliği"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "Kontrol Başlat",
+      "description": "Son 24 saatte onaylanmış bir görevi sürpriz kontrol için işaretle. Süre bitmeden geçir veya kaldır; karara bağlanmayan kontrol sessizce kapanır.",
+      "fields": {
+        "completion_id": {
+          "name": "Tamamlama kimliği",
+          "description": "Kontrol edilecek onaylı görev tamamlamasının kimliği"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Geçerse ödenen puan. Varsayılan Ayarlar'daki değerdir."
+        },
+        "window": {
+          "name": "Süre",
+          "description": "Kontrol etmek için ne kadar süren var: 1h, 2h, 4h veya bed (yatma saatine kadar). Varsayılan Ayarlar'daki değerdir."
+        },
+        "tell_child": {
+          "name": "Çocuğa haber ver",
+          "description": "Çocuğun kartında şimdi \"Kontrol geliyor\" göster. Gizli kontrol için kapat."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Kontrolü Geçir",
+      "description": "Kontrol edilen görev geçti. Bonusu normal bir puan kaydı olarak öder ve çocuğun kartında kutlar.",
+      "fields": {
+        "inspection_id": {
+          "name": "Kontrol kimliği",
+          "description": "Açık kontrolün kimliği"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Ödenecek puan. Varsayılan, kontrol başladığında ayarlanan bonustur."
+        },
+        "note": {
+          "name": "Not",
+          "description": "Çocuğa gösterilen isteğe bağlı not"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Kontrolden Kaldır",
+      "description": "Kontrol edilen görev geçemedi. Puan alınmaz. Tekrar yapılması için geri gönderilebilir; tekrar ekstra bir şey kazandırmaz.",
+      "fields": {
+        "inspection_id": {
+          "name": "Kontrol kimliği",
+          "description": "Açık kontrolün kimliği"
+        },
+        "redo": {
+          "name": "Tekrar yapılması için geri gönder",
+          "description": "Görevi çocuğun listesine bugün için yapılmamış olarak geri koy. Varsayılan Ayarlar'daki değerdir."
+        },
+        "note": {
+          "name": "Not",
+          "description": "Çocuğa gösterilen isteğe bağlı not (neyin düzeltilmesi gerektiği)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Kontrolü İptal Et",
+      "description": "Açık bir kontrolü hiç başlamamış gibi iptal et.",
+      "fields": {
+        "inspection_id": {
+          "name": "Kontrol kimliği",
+          "description": "Açık kontrolün kimliği"
+        }
+      }
+    },
+    "request_help": {
+      "name": "Yardım iste",
+      "description": "Çocuk bir görevde takıldığını söyler. Ebeveynlere bildirim gönderir; hiçbir şey tamamlanmaz veya atlanmaz.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Yardım isteyen çocuk"
+        },
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Takıldığı görev"
+        },
+        "message": {
+          "name": "Mesaj",
+          "description": "Çocuktan isteğe bağlı birkaç kelime, ör. \"Rafa yetişemiyorum\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Yardım isteğini yanıtla",
+      "description": "Çocuğun yardım isteğini yanıtlandı olarak işaretle, böylece kartı yardımın geldiğini söylemeyi bırakır.",
+      "fields": {
+        "request_id": {
+          "name": "İstek kimliği",
+          "description": "Kapatılacak yardım isteği"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Ruh hâlini kaydet",
+      "description": "Çocuk gününün nasıl geçtiğini söyler. Günde bir tane; tekrar kaydetmek öncekinin yerine geçer.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Çocuk"
+        },
+        "mood": {
+          "name": "Ruh hâli",
+          "description": "great, good, ok, sad veya upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Hasta günü ayarla",
+      "description": "Bir çocuğa hasta günü ver. Görevleri gizlenir, serisi donar ve hiçbir zorunlu görev kaçırılmış sayılmaz.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Hasta olan çocuk"
+        },
+        "date": {
+          "name": "Tarih",
+          "description": "Gün (varsayılan bugün). Bir hafta önceden bir ay sonrasına kadar."
+        },
+        "sick": {
+          "name": "Hasta",
+          "description": "Hasta gününü geri almak için kapat."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Haftalık hedef belirle",
+      "description": "Çocuğun kendi haftalık puan hedefini belirle. Ulaşmak, ailenin haftalık hedef bonusunu haftada bir kez öder. 0 temizler.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Çocuk"
+        },
+        "target": {
+          "name": "Hedef",
+          "description": "Bu hafta kazanılacak puan"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Çekiliş bileti al",
+      "description": "Çocuk bir çekiliş için bilete puan harcar. Her bilet çekilişte bir şanstır.",
+      "fields": {
+        "raffle_id": {
+          "name": "Çekiliş kimliği",
+          "description": "Çekiliş"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Satın alan çocuk"
+        },
+        "tickets": {
+          "name": "Biletler",
+          "description": "Kaç bilet alınacak"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Çekilişi yap",
+      "description": "Çekiliş zamanını beklemeden kazananı şimdi çek.",
+      "fields": {
+        "raffle_id": {
+          "name": "Çekiliş kimliği",
+          "description": "Çekilecek çekiliş"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Evcil hayvan sahiplen",
+      "description": "Çocuk sanal evcil hayvanını sahiplenir (veya yeniden adlandırır). Bundan sonra bitirdiği her görevle büyür.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Çocuk"
+        },
+        "species": {
+          "name": "Tür",
+          "description": "dragon, cat, dog, bunny, dino veya unicorn"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Evcil hayvanın adı"
+        },
+        "hatch_egg": {
+          "name": "Yumurtayı çatlat",
+          "description": "Yetişkin evcil hayvanın yumurtladığı yumurtadan yeni bir evcil hayvan çıkar. Eski evcil hayvan evcil hayvan ailesine katılır."
+        }
+      }
+    },
+    "buy_pet_item": {
+      "name": "Evcil hayvan eşyası al",
+      "description": "Çocuk harcanabilir puanlarıyla evcil hayvan dükkânından bir eşya alır. Ebeveyn onay eşiğinin üstündeyse bunun yerine bir ebeveyni bekler.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Satın alan çocuk"
+        },
+        "item_id": {
+          "name": "Eşya kimliği",
+          "description": "Evcil hayvan dükkânı eşyası"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Evcil hayvanı giydir",
+      "description": "Sahip olunan veya seviyeyle açılan bir eşyayı çocuğun evcil hayvanına tak (o yuvadakinin yerine) veya çıkar.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Çocuk"
+        },
+        "item_id": {
+          "name": "Eşya kimliği",
+          "description": "Bir evcil hayvan dükkânı eşyası veya bow, top_hat, scarf ya da crown"
+        },
+        "wear": {
+          "name": "Tak",
+          "description": "Açık takar; kapalı çıkarır."
+        }
+      }
+    },
+    "mark_reward_delivered": {
+      "name": "Ödülü teslim edildi olarak işaretle",
+      "description": "Kullanılan bir ödül teslim edildi, bu yüzden verilecekler listesinden çıkar. Çocuk kendisininkini onaylıyorsa child_id ver.",
+      "fields": {
+        "claim_id": {
+          "name": "Talep kimliği",
+          "description": "Onaylı ödül talebi"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Aldığını onaylayan çocuk (ebeveyn işaretliyorsa boş bırak)"
+        }
+      }
+    },
+    "start_boost": {
+      "name": "Güçlendirme başlat",
+      "description": "Bir güçlendirme penceresi aç. İçinde yapılan görevler çarpanı öder. Hepsi için chore_ids veya child_ids boş bırak.",
+      "fields": {
+        "multiplier": {
+          "name": "Çarpan",
+          "description": "Kapsanan görevlerin ne kadar ödediği, ör. iki katı için 2 (1.1 ile 5 arası)"
+        },
+        "minutes": {
+          "name": "Dakika",
+          "description": "Güçlendirmenin ne kadar sürdüğü"
+        },
+        "chore_ids": {
+          "name": "Görev kimlikleri",
+          "description": "Kapsadığı görevler (boş = tüm görevler)"
+        },
+        "child_ids": {
+          "name": "Çocuk kimlikleri",
+          "description": "Kapsadığı çocuklar (boş = herkes)"
+        },
+        "starts_at": {
+          "name": "Başlangıç",
+          "description": "Şimdi yerine daha sonra başlat (en fazla bir hafta ilerisi)"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Kartlarda gösterilen isteğe bağlı etiket, ör. \"Altıda misafir var\""
+        },
+        "notify": {
+          "name": "Bildir",
+          "description": "Güçlendirme bildirimini kapsadığı çocuklara gönder (o bildirim açıksa)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Güçlendirmeyi bitir",
+      "description": "Bir güçlendirmeyi erken durdur veya henüz başlamamış birini iptal et.",
+      "fields": {
+        "boost_id": {
+          "name": "Güçlendirme kimliği",
+          "description": "sensor.taskmate_overview varlığının boosts özniteliğindeki güçlendirme"
+        }
+      }
+    },
+    "appeal": {
+      "name": "İtiraz",
+      "description": "Çocuk son 48 saatteki reddedilmiş bir görev, reddedilmiş bir ödül talebi veya bir ceza için tekrar bakılmasını ister. İtirazların açık olması gerekir.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "İtiraz eden çocuk"
+        },
+        "kind": {
+          "name": "Tür",
+          "description": "Neye itiraz edildiği"
+        },
+        "target_id": {
+          "name": "Hedef kimliği",
+          "description": "sensor.taskmate_overview içindeki çocuk kaydının appealable özniteliğindeki öğe"
+        },
+        "message": {
+          "name": "Mesaj",
+          "description": "Çocuktan isteğe bağlı birkaç kelime, en fazla 200 karakter"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "İtirazı sonuçlandır",
+      "description": "Bir itirazı kabul edip kararı boz (görevi öde, ödülü onayla veya cezayı geri al) ya da ilk kararı koru.",
+      "fields": {
+        "appeal_id": {
+          "name": "İtiraz kimliği",
+          "description": "İtiraz"
+        },
+        "overturn": {
+          "name": "Boz",
+          "description": "bozmak için true, korumak için false"
+        },
+        "note": {
+          "name": "Not",
+          "description": "Çocuk için isteğe bağlı birkaç kelime, en fazla 200 karakter"
+        }
+      }
+    },
+    "adjust_screen_time": {
+      "name": "Ekran süresini düzelt",
+      "description": "Çocuğun ekran süresi bakiyesine dakika ekle veya negatif bir sayıyla bir kısmını al.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Bakiyesi değişen çocuk"
+        },
+        "minutes": {
+          "name": "Dakika",
+          "description": "Eklenecek dakika; almak için negatif. Bakiye asla sıfırın altına düşmez."
+        },
+        "reason": {
+          "name": "Neden",
+          "description": "Bakiye geçmişi için kısa bir not"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Ekran süresi biriktir",
+      "description": "Çocuğun kullanılmayan ekran süresi dakikalarını hafta sonu kavanozuna aktar. Önce bugünkü hak, sonra bankadaki dakikalar, kavanozun kapasitesine kadar girer.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Dakikaları biriktiren çocuk"
+        },
+        "minutes": {
+          "name": "Dakika",
+          "description": "Kaç dakika biriktirilecek. Sığan her şeyi biriktirmek için boş bırak."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Ödülü puanla",
+      "description": "Çocuk aldığı bir ödüle 1 ile 3 arasında yıldız verir. Ödül teslim edildikten (veya teslim takibi kapalıyken onaylandıktan) sonra 3 gün boyunca.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Ödülü alan çocuk"
+        },
+        "claim_id": {
+          "name": "Talep kimliği",
+          "description": "Puanlanan ödül talebi"
+        },
+        "stars": {
+          "name": "Yıldız",
+          "description": "1 ile 3 yıldız"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Kardeş kontrolü",
+      "description": "Çocuk, kardeşinin onay bekleyen görevini kontrol eder. done onu onaylar ve kontrol edene kardeş kontrolü bonusunu öder; not_yet bir notla ebeveyni beklemeye bırakır.",
+      "fields": {
+        "child_id": {
+          "name": "Kontrol eden çocuk kimliği",
+          "description": "Kontrolü yapan çocuk (görevi yapan değil)"
+        },
+        "completion_id": {
+          "name": "Tamamlama kimliği",
+          "description": "sensor.taskmate_overview içindeki kontrol edenin kaydının sibling_checks özniteliğindeki bekleyen tamamlama"
+        },
+        "verdict": {
+          "name": "Karar",
+          "description": "done (bitmiş görünüyor) veya not_yet"
+        },
+        "note": {
+          "name": "Not",
+          "description": "not_yet ile ebeveyn için isteğe bağlı birkaç kelime, en fazla 120 karakter"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Görev hatırlatması kur",
+      "description": "Çocuk, görevlerinden biri için ne zaman hatırlatılacağını TaskMate ayarlarındaki en erken ve en geç saatler içinde seçer. Temizlemek için saati boş bırak.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Hatırlatılmak isteyen çocuk"
+        },
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Hatırlatılacak görev"
+        },
+        "time": {
+          "name": "Saat",
+          "description": "SS:DD, ör. 17:30. Boş bırakmak hatırlatmayı temizler."
+        }
+      }
+    },
+    "read_aloud": {
+      "name": "Görevleri Sesli Oku",
+      "description": "Çocuğun bekleyen görevlerini bir medya oynatıcıda seslendir, örneğin \"Ella, üç işin kaldı…\". Özel sesli okuma şablonları ayarlanmadıkça Home Assistant dilindeki sesli okuma metnini kullanır.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Görevleri okunan çocuğun kimliği"
+        },
+        "media_player": {
+          "name": "Medya oynatıcı",
+          "description": "Nerede konuşulacağı. Ayarlar'daki varsayılana döner."
+        },
+        "tts_entity": {
+          "name": "Metin okuma varlığı",
+          "description": "Hangi TTS hizmetinin kullanılacağı. Önce Ayarlar'a, sonra yüklü olan tek hizmete döner."
+        },
+        "message": {
+          "name": "Mesajı değiştir",
+          "description": "Oluşturulan özet yerine bunu söyle."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Görev Ruletini Çevir",
+      "description": "Bir çocuk için puan çarpanıyla rastgele bir bekleyen görev seç. İsteğe bağlıdır: TaskMate panel ayarlarında aç ve çarpanı ile günlük çevirme hakkını ayarla.",
+      "fields": {
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Çeviren çocuğun kimliği"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "görev",
+        "name": "{child} İstatistikleri"
+      },
+      "child_badges": {
+        "unit_of_measurement": "rozet",
+        "name": "{child} Rozetleri"
+      },
+      "child_watch": {
+        "state": {
+          "left": "# kaldı",
+          "all_done": "Hepsi bitti",
+          "no_chores": "Görev yok"
+        },
+        "name": "{child} Saat"
+      },
+      "overview": {
+        "name": "TaskMate Genel Bakış"
+      },
+      "chores": {
+        "name": "TaskMate Görevler"
+      },
+      "chore_availability": {
+        "name": "TaskMate Görev Uygunluğu"
+      },
+      "rewards": {
+        "name": "TaskMate Ödüller"
+      },
+      "activity": {
+        "name": "TaskMate Etkinlik"
+      },
+      "incentives": {
+        "name": "TaskMate Teşvikler"
+      },
+      "bounties": {
+        "name": "TaskMate Ödül Avları"
+      },
+      "auctions": {
+        "name": "TaskMate Açık Artırmalar"
+      },
+      "chore_board": {
+        "name": "TaskMate Görev Tablosu"
+      },
+      "child_points": {
+        "name": "{child} Puanları"
+      },
+      "child_wishlist": {
+        "name": "{child} Dilek Listesi"
+      },
+      "pending_approvals": {
+        "name": "Bekleyen Onaylar"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Hafta sonu çarpanı"
+      },
+      "perfect_week_bonus": {
+        "name": "Mükemmel hafta bonusu"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Seri sıfırlama modu",
+        "state": {
+          "reset": "Sıfırla — kaçırılan günde seri 0 olur",
+          "pause": "Duraklat — seri bir sonraki tamamlamaya kadar korunur"
+        }
+      },
+      "card_design": {
+        "name": "Kart tasarımı",
+        "state": {
+          "classic": "Klasik",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Erişilebilir",
+          "graphite": "Grafit"
+        }
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "{child} etkinliği",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Görev tamamlandı",
+              "chore_approved": "Görev onaylandı",
+              "chore_rejected": "Görev reddedildi",
+              "chore_approval_undone": "Görev onayı geri alındı",
+              "reward_claimed": "Ödül alındı",
+              "reward_approved": "Ödül onaylandı",
+              "reward_rejected": "Ödül reddedildi",
+              "badge_earned": "Rozet kazanıldı",
+              "level_up": "Seviye atlama",
+              "streak_updated": "Seri güncellendi",
+              "streak_freeze_used": "Seri dondurma kullanıldı",
+              "perfect_week": "Mükemmel hafta",
+              "weekly_target_reached": "Haftalık hedefe ulaşıldı",
+              "quest_completed": "Macera tamamlandı",
+              "challenge_completed": "Meydan okuma tamamlandı",
+              "bonus_applied": "Bonus uygulandı",
+              "penalty_applied": "Ceza uygulandı",
+              "surprise_bonus": "Sürpriz bonus",
+              "mandatory_missed": "Zorunlu görev kaçırıldı",
+              "team_chore_completed": "Takım görevi tamamlandı",
+              "points_gifted": "Puan hediye edildi",
+              "help_requested": "Yardım istendi",
+              "mood_logged": "Ruh hâli kaydedildi",
+              "weekly_goal_reached": "Haftalık hedefe ulaşıldı",
+              "sick_day": "Hasta günü",
+              "chore_auto_approved": "Görev otomatik onaylandı",
+              "penalty_redeemed": "Ceza geri kazanıldı",
+              "raffle_won": "Çekiliş kazanıldı",
+              "pet_evolved": "Evcil hayvan büyüdü",
+              "pet_item_bought": "Evcil hayvan eşyası alındı",
+              "reward_delivered": "Ödül teslim edildi",
+              "personal_best": "Kişisel rekor",
+              "appeal_submitted": "İtiraz gönderildi",
+              "appeal_decided": "İtiraz sonuçlandı",
+              "screen_time_low": "Ekran süresi azalıyor",
+              "screen_time_out": "Ekran süresi bitti",
+              "screen_time_changed": "Ekran süresi değişti",
+              "screen_time_saved": "Ekran süresi biriktirildi",
+              "screen_time_jar_opened": "Ekran süresi kavanozu açıldı",
+              "points_expired": "Puanların süresi doldu",
+              "points_expiring": "Süresi dolmak üzere olan puanlar",
+              "reward_rated": "Ödül puanlandı",
+              "penalty_warning": "Ceza uyarısı",
+              "sibling_check": "Kardeş kontrolü"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Aile etkinliği",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Aile hedefine ulaşıldı",
+              "season_champion": "Sezon şampiyonu",
+              "bounty_posted": "Ödül avı yayınlandı",
+              "scheduled_change_applied": "Zamanlanmış değişiklik uygulandı",
+              "raffle_drawn": "Çekiliş yapıldı",
+              "boost_started": "Güçlendirme başladı",
+              "boost_ended": "Güçlendirme bitti",
+              "bin_day": "Çöp günü görevi",
+              "shopping_job": "Alışveriş listesi işi"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Bekleyen Onay Var"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: Tamamla: {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: Al: {reward}"
+      }
+    }
+  },
+  "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} henüz başlatılamaz — önce şunu yap: {chores}."
+    },
+    "calendar_unknown_event": {
+      "message": "Bu etkinlik bu çocuğun takvimindeki bir TaskMate görevi değil."
+    },
+    "calendar_series_not_supported": {
+      "message": "Tekrarlanan bir görev takvimden yalnızca gün gün taşınabilir veya kaldırılabilir. Tüm seriyi değiştirmek için görevi TaskMate'te düzenle."
+    },
+    "calendar_repeating_create": {
+      "message": "Tekrarlanan etkinlikler takvimden eklenemez. Bunun yerine TaskMate'te tekrarlanan bir görev oluştur."
+    },
+    "calendar_rename_series": {
+      "message": "Tekrarlanan bir görevi TaskMate'te yeniden adlandır. Takvimden yalnızca tek bir günü taşıyabilir veya kaldırabilirsin."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Tekrarlanan bir görev zaman dilimini korur. Takvimden yalnızca tek bir tekrarın tarihi değiştirilebilir."
+    },
+    "calendar_past_date": {
+      "message": "Görevler geçmişteki bir güne eklenemez, oraya taşınamaz veya oradan taşınamaz."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} zaten şu tarihte: {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Göreve bir başlık ver."
+    },
+    "calendar_own_event": {
+      "message": "Bu etkinlik TaskMate'in kendisi tarafından yayınlandı, bu yüzden yeni görev olarak eklenmez."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} henüz açık değil — yapma zamanı gelince yardım iste."
+    },
+    "help_chore_time_passed": {
+      "message": "{chore} zamanı geçti, bu yüzden şimdi yardım istenecek bir şey yok."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} şu anda yapılamaz, bu yüzden henüz yardım istenecek bir şey yok."
+    },
+    "help_already_on_its_way": {
+      "message": "{chore} için yardım zaten geliyor."
+    },
+    "help_cooldown": {
+      "message": "Tekrar yardım istemeden önce bir dakika bekle."
+    },
+    "rate_limited": {
+      "message": "Bu hesaptan çok fazla istek geldi. Bir dakika sonra tekrar dene."
+    },
+    "child_not_found": {
+      "message": "Çocuk bulunamadı: {child_id}"
+    },
+    "chore_not_found": {
+      "message": "Görev bulunamadı: {chore_id}"
+    },
+    "reward_not_found": {
+      "message": "Ödül bulunamadı: {reward_id}"
+    },
+    "teamwork_size_not_number": {
+      "message": "Takım büyüklüğü bir tam sayı olmalı."
+    },
+    "teamwork_size_range": {
+      "message": "Takım görevi 2 ile {max} arasında çocuk gerektirir (normal görev için 0)."
+    },
+    "teamwork_points_mode": {
+      "message": "Takım puanı 'each' veya 'split' olmalı."
+    },
+    "teamwork_open_ended": {
+      "message": "Takım görevi aynı zamanda açık uçlu olamaz."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Takım görevi herkese atanmalı — ilk gelen alır veya dönüşümlü olamaz."
+    },
+    "teamwork_timed": {
+      "message": "Süreli görev takım görevi olamaz."
+    },
+    "teamwork_not_team_chore": {
+      "message": "“{name}” bir takım görevi değil"
+    },
+    "swap_only_rotation": {
+      "message": "Yalnızca dönüşümlü görevler takas edilebilir"
+    },
+    "swap_won_at_auction": {
+      "message": "Bu görev bugün açık artırmada kazanıldı, bu yüzden takas edilemez"
+    },
+    "swap_already_assigned": {
+      "message": "Görev bugün zaten o çocuğa atanmış"
+    },
+    "swap_already_pending": {
+      "message": "Bu görev için zaten bekleyen bir takas isteği var"
+    },
+    "swap_too_many_pending": {
+      "message": "Çok fazla bekleyen takas isteği var"
+    },
+    "swap_request_not_found": {
+      "message": "Takas isteği bulunamadı: {request_id}"
+    },
+    "bulk_unknown_action": {
+      "message": "Bilinmeyen toplu işlem: {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Toplu düzenlenemez: {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Bilinmeyen çocuk: {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Bilinmeyen zaman dilimi: {period}"
+    },
+    "chore_unknown": {
+      "message": "Bilinmeyen görev: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "'everyone' atama modunda atlama desteklenmez"
+    },
+    "skip_sticky_follower": {
+      "message": "Sabit grubun takipçi görevi atlanamaz; bunun yerine lider görevi atla"
+    },
+    "skip_pool_too_small": {
+      "message": "Atlama, 2 veya daha fazla çocuklu bir dönüşüm havuzu gerektirir"
+    },
+    "manual_start_everyone_mode": {
+      "message": "'everyone' atama modunda elle başlangıç desteklenmez"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Çocuk bu görevin havuzunda değil: {child_id}"
+    },
+    "chore_photo_required": {
+      "message": "Bu görev kanıt olarak fotoğraf gerektirir."
+    },
+    "chore_note_required": {
+      "message": "Bunu göndermek için ne yaptığını söyle."
+    },
+    "chore_quantity_required": {
+      "message": "Kaç {unit} yaptığını söyle."
+    },
+    "backdate_day_range": {
+      "message": "Son {days} gün içinde, bugünden önce bir gün seç."
+    },
+    "backdate_switched_off": {
+      "message": "“{name}” kapalı."
+    },
+    "backdate_not_assigned": {
+      "message": "“{name}”, şu çocuğun işlerinden biri değil: {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "“{name}” dönüşümlü veya takım gerektiriyor, bu yüzden geçmiş bir gün için kaydedilemez."
+    },
+    "backdate_open_ended": {
+      "message": "“{name}” açık uçlu, bu yüzden çocuğun notu ve bir fiyat gerektirir. Çocuğun kartını kullan."
+    },
+    "backdate_set_times": {
+      "message": "“{name}” belirli saatli, bu yüzden geçmiş bir gün için kaydedilemez."
+    },
+    "backdate_holiday": {
+      "message": "{weekday} tatildi, bu yüzden yapılacak iş yoktu."
+    },
+    "backdate_sick_day": {
+      "message": "{weekday}: {child} için hasta günüydü, bu yüzden yapılacak iş yoktu."
+    },
+    "backdate_birthday": {
+      "message": "{weekday}: {child} için doğum günüydü, işlerden izin günü."
+    },
+    "backdate_auction": {
+      "message": "“{name}” o gün açık artırmada kazanıldı, bu yüzden sonradan kaydedilemez."
+    },
+    "backdate_weekly_target_met": {
+      "message": "“{name}” o hafta için hedefine ({target}) zaten ulaştı."
+    },
+    "backdate_not_due": {
+      "message": "“{name}” şu gün yapılacak değildi: {weekday}."
+    },
+    "backdate_daily_limit": {
+      "message": "“{name}” şu gün zaten {done}/{limit} kez yapıldı: {weekday}."
+    },
+    "chore_disabled": {
+      "message": "“{name}” görevi devre dışı"
+    },
+    "parent_complete_one_shot": {
+      "message": "“{name}” tek seferlik bir görev ve ebeveyn tarafından tamamlanamaz"
+    },
+    "parent_complete_no_children": {
+      "message": "“{name}” görevinin bastırılacak çocuğu yok"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "“{name}” bir dönüşümle paylaşılıyor ve yalnızca herkes için yapılabilir"
+    },
+    "parent_complete_not_assigned": {
+      "message": "“{name}” o çocuğa atanmamış"
+    },
+    "bonus_subtask_not_found": {
+      "message": "“{name}” görevinde bonus alt görev bulunamadı: {subtask_id}"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "“{subtask}” bonus alt görevi şu çocuğa atanmamış: {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "“{subtask}” bonus alt görevi tamamlanamaz — önce bugün “{name}” ana görevi tamamlanmalı."
+    },
+    "bonus_subtask_already_done": {
+      "message": "“{subtask}” bonus alt görevi bugün zaten tamamlandı."
+    },
+    "undo_window_passed": {
+      "message": "Bu görev artık geri alınamaz. Geri alması için bir ebeveyne sor."
+    },
+    "undo_points_spent": {
+      "message": "Bu görev şimdi geri alınamaz: puanları zaten harcandı. Bir ebeveyne sor."
+    },
+    "completion_not_found": {
+      "message": "Tamamlama bulunamadı: {completion_id}"
+    },
+    "completion_not_approved": {
+      "message": "Tamamlama onaylı değil; geri alınacak bir şey yok"
+    },
+    "chore_sort_unknown": {
+      "message": "Bilinmeyen sıralama: “{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Grupta yinelenen görev: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "“{name}” 'everyone' modunu kullanıyor ve bir gruba katılamaz"
+    },
+    "task_group_already_member": {
+      "message": "“{name}” zaten “{group}” grubuna ait"
+    },
+    "task_group_unknown_policy": {
+      "message": "Bilinmeyen görev grubu politikası: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Bilinmeyen görev grubu: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "miktar 0 olmamalı"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Seri dondurmalar kapalı (streak_freeze_max 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} zaten en fazla {cap} seri dondurmaya sahip"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} zaten en fazla {cap} seri dondurmaya sahip"
+    },
+    "streak_freeze_off": {
+      "message": "Seri dondurmalar kapalı"
+    },
+    "points_non_negative": {
+      "message": "puan negatif olmamalı"
+    },
+    "transaction_not_found": {
+      "message": "İşlem bulunamadı: {transaction_id}"
+    },
+    "undo_not_undoable": {
+      "message": "Bu işlem geri alınamaz"
+    },
+    "gift_undo_too_old": {
+      "message": "Bu hediye geri alma desteğinden önceye ait ve otomatik olarak geri alınamaz."
+    },
+    "gift_undo_spent": {
+      "message": "{child} bu hediyenin bir kısmını zaten harcadı, bu yüzden geri alınamaz."
+    },
+    "gift_amount_positive": {
+      "message": "Hediye miktarı pozitif olmalı"
+    },
+    "gift_same_child": {
+      "message": "Aynı çocuğa hediye edilemez"
+    },
+    "gift_child_not_found": {
+      "message": "Gönderen veya alıcı bulunamadı"
+    },
+    "gift_not_enough_points": {
+      "message": "Yeterli puan yok: {child} için {points} var, hediye {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "“{name}” ortak bir büyük ikramiye ve havuzu dolu değil. Gereken {cost}, biriken {saved}"
+    },
+    "reward_not_available_to": {
+      "message": "“{name}” ödülü şu çocuk için açık değil: {child}"
+    },
+    "reward_sold_out": {
+      "message": "“{name}” ödülü tükendi"
+    },
+    "reward_expired": {
+      "message": "“{name}” ödülünün süresi doldu"
+    },
+    "reward_not_available_now": {
+      "message": "“{name}” ödülü şu anda alınamaz"
+    },
+    "reward_claim_already_waiting": {
+      "message": "“{name}” için bir talep zaten onay bekliyor"
+    },
+    "reward_claims_too_many": {
+      "message": "Zaten çok fazla ödül talebi onay bekliyor"
+    },
+    "reward_not_enough_points": {
+      "message": "Yeterli puan yok. Gereken {cost}, mevcut {available}"
+    },
+    "reward_spending_cap": {
+      "message": "Harcama sınırına ulaşıldı: dönem başına {cap} zaten kullanıldı"
+    },
+    "reward_claim_target_missing": {
+      "message": "Talep için ödül veya çocuk bulunamadı: {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Onaylamak için yeterli puan yok. Gereken {cost}, mevcut {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "“{name}” zaten onaylandı ve artık reddedilemez"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "'Bu ödül' zaten onaylandı ve artık reddedilemez"
+    },
+    "pool_allocate_min": {
+      "message": "Ayrılacak puan en az 1 olmalı"
+    },
+    "pool_no_spendable": {
+      "message": "Şu çocuk için harcanabilir puan yok: {child}"
+    },
+    "pool_full": {
+      "message": "“{name}” ödülünün havuzu zaten dolu"
+    },
+    "reward_limit_once_day": {
+      "message": "{child}, {name} ödülünü günde bir kez alabilir. Tekrar alınabileceği tarih: {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child}, {name} ödülünü haftada bir kez alabilir. Tekrar alınabileceği tarih: {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child}, {name} ödülünü ayda bir kez alabilir. Tekrar alınabileceği tarih: {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child}, {name} ödülünü günde {count} kez alabilir. Tekrar alınabileceği tarih: {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child}, {name} ödülünü haftada {count} kez alabilir. Tekrar alınabileceği tarih: {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child}, {name} ödülünü ayda {count} kez alabilir. Tekrar alınabileceği tarih: {date}"
+    },
+    "reward_gift_off": {
+      "message": "Birbirine ödül alma kapalı"
+    },
+    "reward_gift_children_only": {
+      "message": "Ödüller yalnızca çocuklar için alınabilir"
+    },
+    "reward_gift_not_giftable": {
+      "message": "“{name}” başkası için alınamaz"
+    },
+    "reward_rating_stars": {
+      "message": "1 ile 3 yıldız seç"
+    },
+    "reward_rating_not_yet": {
+      "message": "Bu ödül henüz puanlanamaz"
+    },
+    "reward_rating_not_holder": {
+      "message": "Ödülü yalnızca alan çocuk puanlayabilir"
+    },
+    "reward_rating_already": {
+      "message": "Bu ödül zaten puanlandı"
+    },
+    "service_unknown_child": {
+      "message": "Bilinmeyen çocuk: “{ref}”. Geçerli çocuklar: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "“{ref}” adında birden fazla çocuk var; bunun yerine çocuk kimliğini kullan ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Güncellenecek bir şey yok: değiştirilecek en az bir alan belirt"
+    },
+    "service_confirm_delete": {
+      "message": "Görevi silmek için confirm: true ayarla"
+    },
+    "penalty_already_earned_back": {
+      "message": "Bu ceza zaten geri kazanıldı."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Bu ödül teslim edilmeyi beklemiyor."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Bu ödül zaten teslim edildi olarak işaretlendi."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Bu ödül şu çocuğa ait: {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "“{field}” bir zamanlamayla değiştirilemez"
+    },
+    "scheduled_expects_bool": {
+      "message": "“{field}” true veya false bekler"
+    },
+    "scheduled_expects_int": {
+      "message": "“{field}” bir tam sayı bekler"
+    },
+    "scheduled_negative": {
+      "message": "“{field}” negatif olamaz"
+    },
+    "scheduled_expects_list": {
+      "message": "“{field}” bir liste bekler"
+    },
+    "scheduled_expects_text": {
+      "message": "“{field}” metin bekler"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on bir ISO tarihi olmalı, ör. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on gelecekte bir tarih olmalı"
+    },
+    "scheduled_no_fields": {
+      "message": "Zamanlanmış bir değişiklik en az bir alanı değiştirmeli"
+    },
+    "scheduled_change_not_found": {
+      "message": "Zamanlanmış değişiklik bulunamadı: {change_id}"
+    },
+    "timed_not_timed": {
+      "message": "“{name}” süreli bir görev değil"
+    },
+    "timed_already_running": {
+      "message": "Zamanlayıcı zaten çalışıyor"
+    },
+    "timed_daily_cap": {
+      "message": "Günlük sınıra ulaşıldı ({minutes} dk)"
+    },
+    "timed_not_available": {
+      "message": "“{name}” şu anda şu çocuk için açık değil: {child}"
+    },
+    "timed_no_running": {
+      "message": "Duraklatılacak çalışan zamanlayıcı yok"
+    },
+    "timed_no_active": {
+      "message": "Durdurulacak etkin zamanlayıcı yok"
+    },
+    "set_time_unknown": {
+      "message": "Bu saat, bu görevin belirli saatlerinden biri değil."
+    },
+    "sick_day_range": {
+      "message": "Bir hafta önceden bir ay sonrasına kadar bir gün seç."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Geri yüklenecek bir şey yok: hiç silinmedi veya kalıcı olarak temizlendi"
+    },
+    "trash_id_exists": {
+      "message": "{item_id} kimliğine sahip bir şey zaten var"
+    },
+    "wish_not_found": {
+      "message": "Dilek bulunamadı"
+    },
+    "wish_target_not_whole": {
+      "message": "Hedef bir tam sayı olmalı"
+    },
+    "wish_target_range": {
+      "message": "Hedef 1 ile {max} arasında olmalı"
+    },
+    "wish_name_required": {
+      "message": "Dileğe bir ad ver"
+    },
+    "wish_link_invalid": {
+      "message": "Bağlantılar http:// veya https:// ile başlayan bir web adresi olmalı"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} için zaten devam eden {max} dilek var"
+    },
+    "wish_picture_unusable": {
+      "message": "Bu resim kullanılamaz"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Yalnızca bekleyen veya reddedilmiş bir dilek geri çekilebilir"
+    },
+    "wish_not_open_for_saving": {
+      "message": "“{name}” biriktirmeye açık değil"
+    },
+    "wish_move_min": {
+      "message": "Aktarılacak puan en az 1 olmalı"
+    },
+    "wish_fully_funded": {
+      "message": "“{name}” zaten tamamen birikti"
+    },
+    "wish_no_spendable": {
+      "message": "Şu çocuk için harcanabilir puan yok: {child_name}"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Şu anda “{name}” dileğinden puan alınamaz"
+    },
+    "wish_take_back_min": {
+      "message": "Geri alınacak puan en az 1 olmalı"
+    },
+    "wish_nothing_saved": {
+      "message": "“{name}” içinde geri alınacak biriken bir şey yok"
+    },
+    "wish_cannot_redeem": {
+      "message": "“{name}” şu anda kullanılamaz"
+    },
+    "wish_needs_more_points": {
+      "message": "“{name}” için önce {points} puan daha gerekiyor"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Zaten çok fazla ödül talebi onay bekliyor"
+    },
+    "wish_not_waiting_approval": {
+      "message": "“{name}” onay beklemiyor"
+    },
+    "wish_cannot_decline": {
+      "message": "“{name}” artık reddedilemez"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "“{name}” katkı sözlerine açık değil"
+    },
+    "wish_pledge_name_required": {
+      "message": "Katkı sözünün kimden olduğunu belirt"
+    },
+    "wish_pledge_min": {
+      "message": "Katkı sözü en az 1 puan olmalı"
+    },
+    "wish_too_many_pledges": {
+      "message": "“{name}” için zaten {max} katkı sözü var"
+    },
+    "wish_pledges_locked": {
+      "message": "“{name}” üzerindeki katkı sözleri artık değiştirilemez"
+    },
+    "wish_pledge_not_found": {
+      "message": "Katkı sözü bulunamadı"
+    },
+    "wish_claim_missing": {
+      "message": "Talep için dilek veya çocuk bulunamadı: {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "“{name}” artık kullanılmayı beklemiyor"
+    },
+    "wish_not_funded": {
+      "message": "“{name}” artık tamamen birikmiş değil"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "Resim bir emoji olmalı (en fazla {max} karakter)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Renk #ff8800 gibi görünmeli veya 'rainbow' olmalı."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Bu eşya dükkânda yok."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Adı en fazla {max} karakterde tut."
+    },
+    "pet_shop_name_required": {
+      "message": "Eşyaya bir ad ver."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Bilinmeyen yuva: “{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "Fiyat ve seviye tam sayı olmalı."
+    },
+    "pet_shop_cost_range": {
+      "message": "Fiyat 1 ile {max} arasında olmalı."
+    },
+    "pet_shop_level_range": {
+      "message": "Seviye 0 ile {max} arasında olmalı."
+    },
+    "pet_shop_full": {
+      "message": "Dükkân en fazla {max} eşya tutar."
+    },
+    "pets_switched_off": {
+      "message": "Evcil hayvanlar kapalı."
+    },
+    "pet_adopt_first": {
+      "message": "Önce bir evcil hayvan sahiplen."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Bunun kilidi henüz açılmadı."
+    },
+    "pet_shop_closed": {
+      "message": "Evcil hayvan dükkânı kapalı."
+    },
+    "pet_shop_buy_first": {
+      "message": "Önce satın al."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Bu eşya satılık değil."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Bu {level}. seviyede açılır."
+    },
+    "pet_shop_already_owned": {
+      "message": "Buna zaten sahipsin."
+    },
+    "pet_shop_already_pending": {
+      "message": "Bu zaten bir ebeveyni bekliyor."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Bunun için henüz yeterli puan yok."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Bu alışveriş artık beklemiyor."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Bu çocuk veya eşya artık yok; bunun yerine reddet."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} için şu an yeterli puan yok."
+    },
+    "pet_unknown_species": {
+      "message": "Bilinmeyen evcil hayvan: “{species}”"
+    },
+    "pet_name_required": {
+      "message": "Evcil hayvanına bir ad ver."
+    },
+    "pet_no_egg": {
+      "message": "Henüz çatlatılacak yumurta yok."
+    },
+    "auction_not_found": {
+      "message": "Bu açık artırma artık yok. Kartı yenile."
+    },
+    "auction_refuse_off": {
+      "message": "Bu görev kapalı."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Atanmamış bir görev kimseye verilemez, bu yüzden açık artırmaya çıkarılamaz."
+    },
+    "auction_refuse_team": {
+      "message": "Takım görevi bir takım tarafından paylaşılır, bu yüzden açık artırmaya çıkarılamaz."
+    },
+    "auction_refuse_timed": {
+      "message": "Süreli görev dakika başına ödenir, bu yüzden açık artırmaya çıkarılamaz."
+    },
+    "auction_refuse_open_ended": {
+      "message": "Açık uçlu bir görevin fiyatını ebeveyn belirler, bu yüzden açık artırmaya çıkarılamaz."
+    },
+    "auction_invalid_date": {
+      "message": "Geçersiz tarih: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Yarından itibaren bir tekrar seç."
+    },
+    "auction_not_scheduled": {
+      "message": "“{chore}” şu tarihte planlı değil: {date}."
+    },
+    "auction_already_exists": {
+      "message": "Bu tekrarın zaten bir açık artırması var."
+    },
+    "auction_points_not_whole": {
+      "message": "Puanlar tam sayı olmalı."
+    },
+    "auction_max_range": {
+      "message": "En yüksek teklif 1 ile {max} puan arasındadır."
+    },
+    "auction_min_range": {
+      "message": "En düşük teklif 1 ile en yüksek arasında olmalı."
+    },
+    "auction_needs_close": {
+      "message": "Açık artırmanın bir kapanış saati olmalı."
+    },
+    "auction_close_in_past": {
+      "message": "Kapanış saati zaten geçmişte."
+    },
+    "auction_close_before_day": {
+      "message": "Teklifler görevin gününden önce kapanmalı."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Yalnızca bu görevi yapabilecek çocuklar teklif verebilir."
+    },
+    "auction_no_bidders": {
+      "message": "Teklif verebilecek en az bir çocuk seç."
+    },
+    "auction_already_closed": {
+      "message": "Bu açık artırma zaten kapandı."
+    },
+    "auction_already_cancelled": {
+      "message": "Bu açık artırma zaten iptal edildi."
+    },
+    "auction_occurrence_passed": {
+      "message": "Bu tekrar zaten gerçekleşti."
+    },
+    "auction_still_live": {
+      "message": "Bu açık artırma hâlâ canlı. Bunun yerine iptal et."
+    },
+    "auction_not_for_you": {
+      "message": "Bu açık artırma senin için değil."
+    },
+    "auction_bidding_closed": {
+      "message": "Bu açık artırmanın teklifleri kapandı."
+    },
+    "auction_bid_not_whole": {
+      "message": "Teklif tam sayı bir puan olmalı."
+    },
+    "auction_bid_range": {
+      "message": "{min} ile {max} puan arasında teklif ver."
+    },
+    "auction_no_bid": {
+      "message": "Buna teklif vermedin."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Geçersiz bitiş saati: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Bu ödül avı artık yok. Kartı yenile."
+    },
+    "bounty_title_required": {
+      "message": "Ödül avının bir başlığı olmalı."
+    },
+    "bounty_points_not_whole": {
+      "message": "Puan tam sayı olmalı."
+    },
+    "bounty_points_range": {
+      "message": "Ödül avı 1 ile {max} puan arasında değerdedir."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Üstlenme kilidi tam sayı saat olmalı."
+    },
+    "bounty_claim_hours_range": {
+      "message": "Üstlenme kilidi 1 ile {max} saat arasındadır."
+    },
+    "bounty_expiry_in_past": {
+      "message": "Bitiş zaten geçmişte."
+    },
+    "bounty_finished_locked": {
+      "message": "Biten bir ödül avı düzenlenemez."
+    },
+    "bounty_claimed_locked": {
+      "message": "Bir ödül avı üstlenildikten sonra yalnızca puanı ve bitişi değiştirilebilir."
+    },
+    "bounty_review_before_remove": {
+      "message": "Bu ödül avını kaldırmadan önce biten işi onayla veya reddet."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Yalnızca üstlenilmiş bir ödül avı bırakılabilir."
+    },
+    "bounty_not_for_you": {
+      "message": "Bu ödül avı senin için değil."
+    },
+    "bounty_taken": {
+      "message": "Başkası senden önce davrandı — bu ödül avı artık panoda değil."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Önce “{title}” işini bitir — aynı anda yalnızca bir ödül avı tutabilirsin."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Bu ödül avını sen üstlenmedin."
+    },
+    "bounty_claim_expired": {
+      "message": "Bu ödül avındaki üstlenme süren doldu."
+    },
+    "bounty_photo_required": {
+      "message": "Bu ödül avı için biten işin fotoğrafı gerekiyor."
+    },
+    "raffle_name_required": {
+      "message": "Çekilişe bir ad ver."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Bir bilet 1 ile {max} arası tutar."
+    },
+    "raffle_draw_required": {
+      "message": "Çekilişin ne zaman yapılacağını seç."
+    },
+    "raffle_field_required": {
+      "message": "{field} gerekli"
+    },
+    "raffle_draw_in_past": {
+      "message": "Çekiliş gelecekte olmalı."
+    },
+    "raffle_not_found": {
+      "message": "Çekiliş bulunamadı"
+    },
+    "raffle_not_open_edit": {
+      "message": "Yalnızca açık bir çekiliş değiştirilebilir."
+    },
+    "raffle_price_locked": {
+      "message": "Bilet alındı, bu yüzden fiyat değişemez."
+    },
+    "raffle_closed": {
+      "message": "Bu çekiliş kapandı."
+    },
+    "raffle_drawing": {
+      "message": "Bu çekiliş şu an yapılıyor."
+    },
+    "raffle_not_open_to": {
+      "message": "Bu çekiliş şu çocuğa açık değil: {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "En az bir bilet al."
+    },
+    "raffle_max_tickets": {
+      "message": "En fazla {max} bilet tutabilirsin."
+    },
+    "raffle_not_enough_points": {
+      "message": "Bu kadar bilet için yeterli puan yok."
+    },
+    "raffle_already_closed": {
+      "message": "Bu çekiliş zaten kapandı."
+    },
+    "roulette_off": {
+      "message": "Görev ruleti kapalı"
+    },
+    "roulette_no_spins": {
+      "message": "Bugün çevirme hakkı kalmadı"
+    },
+    "roulette_nothing_left": {
+      "message": "Çevrilecek bir şey kalmadı"
+    },
+    "unlock_not_allowed": {
+      "message": "“{entity_id}” kilit açma izin listesinde değil. Ödül olarak kullanmadan önce Ayarlar'dan ekle."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Kilit açma dakikası tam sayı olmalı"
+    },
+    "unlock_minutes_negative": {
+      "message": "Kilit açma dakikası negatif olamaz"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Kilit açma dakikası {max} değerini aşamaz"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Bu avatar katalogda yok"
+    },
+    "avatar_locked": {
+      "message": "Bu avatarın kilidi henüz açılmadı"
+    },
+    "weekly_goals_off": {
+      "message": "Haftalık hedefler kapalı."
+    },
+    "weekly_goal_range": {
+      "message": "0 ile {max} arasında bir hedef seç."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Hedef, ödediği bonus olan {bonus} değerinden az olamaz."
+    },
+    "weekly_goal_locked": {
+      "message": "Bu haftanın hedefine zaten ulaşıldı ve ödendi, bu yüzden pazartesiye kadar değişemez."
+    },
+    "challenge_name_required": {
+      "message": "Meydan okuma adı gerekli"
+    },
+    "challenge_target_min": {
+      "message": "Hedef en az 1 olmalı"
+    },
+    "challenge_not_found": {
+      "message": "Meydan okuma bulunamadı: {challenge_id}"
+    },
+    "quest_name_required": {
+      "message": "Macera adı gerekli"
+    },
+    "quest_needs_step": {
+      "message": "Maceranın en az bir adımı olmalı"
+    },
+    "quest_not_found": {
+      "message": "Macera bulunamadı: {quest_id}"
+    },
+    "admin_only": {
+      "message": "Yalnızca yönetici"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate başlatılmadı"
+    },
+    "not_allowed": {
+      "message": "İzin verilmiyor"
+    },
+    "handler_failed": {
+      "message": "Bir şeyler ters gitti; Home Assistant günlüğüne bak"
+    },
+    "chore_one_off_past_day": {
+      "message": "Tek seferlik bir görev geçmiş bir güne ayarlanamaz"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start bir ISO tarihi olmalı"
+    },
+    "penalty_not_found": {
+      "message": "Ceza bulunamadı: {penalty_id}"
+    },
+    "bonus_not_found": {
+      "message": "Bonus bulunamadı: {bonus_id}"
+    },
+    "group_not_found": {
+      "message": "Grup bulunamadı: {group_id}"
+    },
+    "chores_bulk_no_names": {
+      "message": "En az bir görev adı gerekli"
+    },
+    "notif_child_not_found": {
+      "message": "Çocuk bulunamadı"
+    },
+    "notif_parent_not_found": {
+      "message": "Ebeveyn bulunamadı"
+    },
+    "recap_not_found": {
+      "message": "Özet bulunamadı"
+    },
+    "voucher_not_approved": {
+      "message": "Yalnızca onaylanmış bir ödül yazdırılabilir"
+    },
+    "voucher_missing": {
+      "message": "Bu ödül veya çocuk artık yok"
+    },
+    "setup_invalid_birthday": {
+      "message": "Doğum günü “{value}” geçerli bir tarih değil"
+    },
+    "kiosk_pin_invalid": {
+      "message": "Kiosk PIN'i tam olarak 4 haneli olmalı"
+    },
+    "time_periods_empty": {
+      "message": "time_periods boş olmayan bir liste olmalı"
+    },
+    "time_periods_too_many": {
+      "message": "çok fazla dilim (en fazla {max})"
+    },
+    "time_periods_not_object": {
+      "message": "her dilim bir nesne olmalı"
+    },
+    "time_periods_duplicate_id": {
+      "message": "yinelenen dilim kimliği: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "her özel dilimin bir adı olmalı"
+    },
+    "time_periods_invalid_time": {
+      "message": "“{name}” dilimi için geçersiz saat (HH:MM kullan)"
+    },
+    "time_periods_start_after_end": {
+      "message": "“{name}” dilimi bitmeden önce başlamalı"
+    },
+    "time_periods_overlap": {
+      "message": "“{name}” ile “{other}” çakışıyor — dilimler çakışamaz"
+    },
+    "time_periods_in_use": {
+      "message": "görevlerin hâlâ kullandığı bir dilim silinemez: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods bir liste olmalı"
+    },
+    "vacation_periods_too_many": {
+      "message": "çok fazla tatil dönemi (en fazla {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "her tatil dönemi bir nesne olmalı"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "her tatil döneminin geçerli başlangıç ve bitiş tarihi olmalı (YYYY-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "Görevi olmayan şablon uygulanamaz"
+    },
+    "template_none_selected": {
+      "message": "En az bir görev seçilmeli"
+    },
+    "template_no_valid_chores": {
+      "message": "Seçilen kimlikler için geçerli görev bulunamadı"
+    },
+    "template_needs_chore": {
+      "message": "Şablonun en az bir görevi olmalı"
+    },
+    "template_builtin_modify": {
+      "message": "Yerleşik şablon değiştirilemez: “{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "Yerleşik şablon silinemez: “{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "Bu bir TaskMate paketine benzemiyor"
+    },
+    "template_pack_wrong_format": {
+      "message": "TaskMate şablon paketi değil"
+    },
+    "template_pack_version_nan": {
+      "message": "Paket sürümü bir sayı değil"
+    },
+    "template_pack_too_new": {
+      "message": "Bu paket daha yeni bir TaskMate gerektiriyor (paket sürümü {version}, bu sürüm {supported} anlıyor)"
+    },
+    "template_pack_empty": {
+      "message": "Pakette şablon yok"
+    },
+    "template_pack_too_many": {
+      "message": "Pakette çok fazla şablon var (en fazla {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Pakette hatalı biçimli bir şablon var"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Paketteki bir şablonun adı yok"
+    },
+    "template_pack_template_no_chores": {
+      "message": "“{name}” şablonunda görev yok"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "“{name}” şablonunda çok fazla görev var"
+    },
+    "template_pack_malformed_chore": {
+      "message": "“{name}” şablonunda hatalı biçimli bir görev var"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "“{name}” içindeki bir görevin adı yok"
+    },
+    "boost_bad_time": {
+      "message": "“{value}”, 09:30 gibi bir saat değil."
+    },
+    "boost_multiplier_nan": {
+      "message": "Çarpan bir sayı olmalı."
+    },
+    "boost_multiplier_range": {
+      "message": "×{min} ile ×{max} arasında bir çarpan seç."
+    },
+    "boost_chore_not_found": {
+      "message": "Görev bulunamadı: {chore_id}."
+    },
+    "boost_child_not_found": {
+      "message": "Çocuk bulunamadı: {child_id}."
+    },
+    "boost_start_past": {
+      "message": "Güçlendirme geçmişte başlayamaz."
+    },
+    "boost_too_far_ahead": {
+      "message": "Güçlendirme en fazla bir hafta ilerisine zamanlanabilir."
+    },
+    "boost_minutes_nan": {
+      "message": "Dakika tam sayı olmalı."
+    },
+    "boost_minutes_range": {
+      "message": "1 ile {max} dakika arasında seç."
+    },
+    "boost_already_ended": {
+      "message": "Bu güçlendirme zaten bitti."
+    },
+    "boost_rule_no_days": {
+      "message": "En az bir gün seç."
+    },
+    "boost_rule_end_before_start": {
+      "message": "Bitiş saati başlangıçtan sonra olmalı."
+    },
+    "boost_rules_max": {
+      "message": "En fazla {max} tekrarlanan güçlendirme."
+    },
+    "boost_rule_gone": {
+      "message": "Bu tekrarlanan güçlendirme artık yok."
+    },
+    "season_pack_unknown": {
+      "message": "Bilinmeyen mevsim paketi: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Bilinmeyen çocuk: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Bu görev zaten geri alındı. Kartı yenile."
+    },
+    "import_invalid_payload": {
+      "message": "Geçersiz TaskMate dışa aktarım verisi"
+    },
+    "import_data_not_object": {
+      "message": "içe aktarılan veri bir nesne olmalı"
+    },
+    "allowance_points_min": {
+      "message": "puan >= 1 olmalı"
+    },
+    "allowance_not_enabled": {
+      "message": "Harçlık etkin değil"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} için ödenecek yalnızca {points} {points_name} var."
+    },
+    "appeals_off": {
+      "message": "İtirazlar kapalı."
+    },
+    "appeals_already_appealed": {
+      "message": "Buna zaten itiraz edildi."
+    },
+    "appeals_not_appealable": {
+      "message": "Buna itiraz edilemez."
+    },
+    "appeals_not_found": {
+      "message": "Bu itiraz artık yok."
+    },
+    "appeals_already_decided": {
+      "message": "Bu itiraz zaten sonuçlandı."
+    },
+    "appeals_child_gone": {
+      "message": "Çocuk artık burada değil."
+    },
+    "appeals_reward_gone": {
+      "message": "Bu ödül artık yok."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Bu ceza zaten geri alındı."
+    },
+    "appeals_unknown_kind": {
+      "message": "Bilinmeyen itiraz türü: {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Doğum günü YYYY-MM-DD veya MM-DD olmalı, gelen: “{value}”"
+    },
+    "birthday_in_future": {
+      "message": "Doğum günü gelecekte olamaz"
+    },
+    "chore_reminders_off": {
+      "message": "Hatırlatmalar kapalı"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore}, şu çocuğun görevlerinden biri değil: {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "17:30 gibi bir saat seç"
+    },
+    "chore_reminder_time_range": {
+      "message": "{earliest} ile {latest} arasında bir saat seç"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on bir ISO tarihi olmalı, ör. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Bu kontrol artık yok. Yenile ve tekrar dene."
+    },
+    "inspection_already_decided": {
+      "message": "Bu kontrol zaten sonuçlandı veya kapandı."
+    },
+    "inspections_off": {
+      "message": "Sürpriz kontroller Ayarlar'da kapalı."
+    },
+    "inspection_chore_gone": {
+      "message": "Bu görev artık yok."
+    },
+    "inspection_not_approved": {
+      "message": "Yalnızca onaylanmış görevler kontrol edilebilir."
+    },
+    "inspection_not_child_chore": {
+      "message": "Yalnızca bir çocuğun kendi görevi kontrol edilebilir."
+    },
+    "inspection_child_gone": {
+      "message": "Bu çocuk artık yok."
+    },
+    "inspection_too_old": {
+      "message": "Yalnızca son {hours} saatte onaylanan görevler kontrol edilebilir."
+    },
+    "inspection_already_inspected": {
+      "message": "Bu görev zaten kontrol edildi."
+    },
+    "inspection_redo_today_only": {
+      "message": "Yalnızca bugün bitirilmiş bir görev tekrar yapılması için geri gönderilebilir."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url bir /yol, bir http(s) URL'si veya noAction olmalı"
+    },
+    "notification_group_spaces": {
+      "message": "group boşluk içermemeli (family-chores dene)"
+    },
+    "notification_group_control": {
+      "message": "group kontrol karakteri içermemeli"
+    },
+    "notification_group_too_long": {
+      "message": "group en fazla 64 karakter olmalı"
+    },
+    "notification_unknown_type": {
+      "message": "Bilinmeyen bildirim türü: {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Bilinmeyen bildirim alıcısı: {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Dakika tam sayı olmalı"
+    },
+    "screen_time_minutes_max": {
+      "message": "Dakika {max} değerini aşamaz"
+    },
+    "screen_time_jar_off": {
+      "message": "Ekran süresi kavanozu kapalı"
+    },
+    "screen_time_jar_full": {
+      "message": "Kavanoz dolu"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Biriktirilecek dakika yok"
+    },
+    "setup_unknown_age_group": {
+      "message": "Bilinmeyen yaş grubu: “{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Her yeni çocuğun kendi ref değeri olmalı"
+    },
+    "setup_child_needs_name": {
+      "message": "Çocuğun bir adı olmalı"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Görev bilinmeyen bir çocuğa atanmış: “{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "Görevin bir adı olmalı"
+    },
+    "setup_reward_needs_name": {
+      "message": "Ödülün bir adı olmalı"
+    },
+    "sibling_checks_off": {
+      "message": "Kardeş kontrolleri kapalı"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Bilinmeyen karar: {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Bu görev zaten kontrol edildi. Kartı yenile."
+    },
+    "sibling_check_own_chore": {
+      "message": "Kendi görevini kontrol edemezsin"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} bu çocuğun görevlerini kontrol edemez"
+    },
+    "sound_invalid_file_name": {
+      "message": "Geçerli bir ses dosyası adı değil: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Ses zaten kayıtlı: {file}"
+    },
+    "sound_unknown_custom": {
+      "message": "Bilinmeyen özel ses: {file}"
+    },
+    "tour_adult": {
+      "message": "Yetişkin profilleri turu almaz"
+    },
+    "tour_bad_status": {
+      "message": "status 'done' veya 'skipped' olmalı"
+    },
+    "tour_unknown_step": {
+      "message": "Bilinmeyen tur adımı: {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Zaten konuşuyor; birazdan tekrar dene"
+    },
+    "tts_no_media_player": {
+      "message": "Medya oynatıcı verilmedi ve Ayarlar'da varsayılan yok"
+    },
+    "tts_no_entity": {
+      "message": "Metin okuma varlığı bulunamadı. Ayarlar'da bir tane ayarla veya tts_entity ver."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore}, bugün şu çocuğun görevlerinden biri değil: {child}."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Bilinmeyen ruh hâli: “{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Belirli saatler bir liste olmalı."
+    },
+    "set_times_too_many": {
+      "message": "Bir görevin en fazla {max} belirli saati olabilir."
+    },
+    "set_times_timed": {
+      "message": "Süreli bir görevin belirli saatleri olamaz."
+    },
+    "set_times_open_ended": {
+      "message": "Açık uçlu bir görevin belirli saatleri olamaz."
+    },
+    "set_times_quantity": {
+      "message": "Miktarlı bir görevin belirli saatleri olamaz."
+    },
+    "set_times_teamwork": {
+      "message": "Takım görevinin belirli saatleri olamaz."
+    },
+    "set_times_need_start_end": {
+      "message": "Her belirli saatin bir başlangıcı ve bitişi olmalı."
+    },
+    "set_times_bad_format": {
+      "message": "Belirli saatlerin 07:30 gibi bir başlangıcı ve bitişi olmalı."
+    },
+    "set_times_end_before_start": {
+      "message": "Belirli bir saat, aynı gün içinde açıldıktan sonra kapanmalı."
+    },
+    "set_times_overlap": {
+      "message": "İki belirli saat çakışıyor. Çakışmaması için birini kaydır."
+    },
+    "template_not_found": {
+      "message": "Şablon bulunamadı: {template_id}"
+    },
+    "upload_admin_required": {
+      "message": "Yönetici gerekli"
+    },
+    "upload_file_too_large": {
+      "message": "Dosya çok büyük"
+    },
+    "upload_expected_multipart": {
+      "message": "Multipart form bekleniyordu"
+    },
+    "upload_too_many_parts": {
+      "message": "Çok fazla form parçası"
+    },
+    "upload_no_file": {
+      "message": "Dosya verilmedi"
+    },
+    "upload_image_unsupported": {
+      "message": "Desteklenen bir resim değil (JPEG, PNG veya WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Resim depolaması dolu"
+    },
+    "upload_image_store_failed": {
+      "message": "Resim saklanamadı"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Çok fazla yükleme, birazdan tekrar dene"
+    },
+    "upload_photo_busy": {
+      "message": "Aynı anda çok fazla yükleme, birazdan tekrar dene"
+    },
+    "upload_photo_storage_full": {
+      "message": "Fotoğraf depolaması dolu"
+    },
+    "upload_photo_timeout": {
+      "message": "Yükleme çok uzun sürdü"
+    },
+    "upload_photo_invalid": {
+      "message": "Geçerli bir resim değil"
+    },
+    "upload_photo_store_failed": {
+      "message": "Fotoğraf saklanamadı"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Bir göreve eklenmeyi bekleyen çok fazla fotoğrafın var. Önce onları gönder veya kaldır."
+    },
+    "upload_sound_unsupported": {
+      "message": "Desteklenen bir ses değil (MP3, OGG, WAV veya M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Ses depolaması dolu"
+    },
+    "upload_sound_store_failed": {
+      "message": "Ses saklanamadı"
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate şu kişiye bildirim gönderemiyor: {who}",
+      "description": "TaskMate, {who} kişisine `{service}` üzerinden bildirim gönderecek şekilde ayarlı, ama bu hizmet artık yok — genellikle telefon Mobile App entegrasyonunda kaldırıldığı veya yeniden adlandırıldığı için.\n\nTaskMate yönetim paneli → Bildirimler'i aç ve {who} için güncel hizmeti seç. Hizmet var olduğunda bu onarım kendiliğinden kalkar."
+    },
+    "child_entity_missing": {
+      "title": "{child} profili eksik bir varlık kullanıyor",
+      "description": "{child} profili artık var olmayan `{entity}` varlığını kullanıyor. Ona dayanan müsaitlik, konuma duyarlı hatırlatmalar veya profil resmi çalışmaz.\n\nTaskMate yönetim paneli → Çocuklar'ı aç, {child} profilini düzenle ve var olan bir varlık seç (veya alanı temizle)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” eksik bir varlık kullanıyor",
+      "description": "“{chore}” ne zaman görüneceğine karar vermek için `{entity}` varlığını kontrol ediyor, ama bu varlık artık yok, bu yüzden kontrol atlanıyor.\n\nTaskMate yönetim paneli → Görevler'i aç, “{chore}” görevini düzenle ve var olan bir varlık seç (veya temizle)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "“{chore}” görevi kimseye atanmamış",
+      "description": "“{chore}” görevinin atandığı tüm çocuklar kaldırıldı, bu yüzden onu hiç kimse görmeyecek.\n\nTaskMate yönetim paneli → Görevler'i aç ve “{chore}” görevini bir çocuğa ata veya sil."
+    },
+    "chore_dependency_missing": {
+      "title": "“{chore}” görevinin kilidi asla açılamaz",
+      "description": "“{chore}” önce başka bir görevin yapılmasını bekliyor, ama o görev silindi, bu yüzden “{chore}” sonsuza kadar kilitli kalıyor.\n\nTaskMate yönetim paneli → Görevler'i aç, “{chore}” görevini düzenle ve eksik bağımlılığı kaldır."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Hiçbir çocuk “{reward}” ödülünü alamaz",
+      "description": "“{reward}” ödülünün tanımlandığı tüm çocuklar kaldırıldı, bu yüzden kimse onu alamaz.\n\nTaskMate yönetim paneli → Ödüller'i aç ve “{reward}” ödülünün kimin için olduğunu seç veya sil."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "“{reward}” ödülü hiçbir şeyin kilidini açmıyor",
+      "description": "“{reward}” `{entity}` varlığını açacak şekilde ayarlı, ama bu varlık artık TaskMate'in kilit açma izin listesinde değil, bu yüzden ödül onaylandığında hiçbir şey olmaz.\n\nTaskMate yönetim paneli → Ayarlar'ı aç ve `{entity}` varlığını kilit açma izin listesine ekle veya “{reward}” ödülünü düzenle."
+    }
+  }
+}

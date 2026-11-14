@@ -1,0 +1,3551 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "¡Te damos la bienvenida a TaskMate!",
+        "description": "Configura tu sistema familiar de gestión de tareas. Puedes personalizar la moneda de puntos que ganarán los niños.",
+        "data": {
+          "points_name": "Nombre de la moneda de puntos (p. ej., Estrellas, Monedas, Pavos)",
+          "points_icon": "Icono de los puntos"
+        }
+      }
+    },
+    "error": {
+      "name_required": "El nombre es obligatorio"
+    },
+    "abort": {
+      "already_configured": "TaskMate ya está configurado"
+    },
+    "create_entry": {
+      "default": "TaskMate está listo. [Abre el panel de TaskMate](/taskmate-admin) para añadir a tus hijos con el asistente de configuración, que sugiere tareas para su edad."
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Guardar cambios",
+        "re_enable": "Reactivar tarea",
+        "disable": "Desactivar tarea",
+        "delete": "Eliminar esta tarea"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Guardar cambios",
+        "delete": "Eliminar premio"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Mañana",
+        "afternoon": "Tarde",
+        "evening": "Noche",
+        "night": "Antes de dormir",
+        "anytime": "Cualquier hora"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Días concretos de la semana",
+        "recurring": "Recurrente (cada N días/semanas/meses)",
+        "one_shot": "Tarea de una sola vez (un solo día)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado",
+        "sunday": "Domingo"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Cada 2 días",
+        "weekly": "Semanal",
+        "every_2_weeks": "Cada 2 semanas",
+        "monthly": "Mensual",
+        "every_3_months": "Cada 3 meses",
+        "every_6_months": "Cada 6 meses"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado",
+        "sunday": "Domingo",
+        "any_day": "Cualquier día"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Disponible de inmediato",
+        "wait_for_first_occurrence": "Esperar a la primera vez programada"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Reiniciar: la racha vuelve a 0 el día que no se cumpla",
+        "pause": "Pausar: la racha se conserva hasta la siguiente tarea completada"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Sin filtro: mostrar siempre la tarea",
+        "equals": "Igual: mostrar cuando el estado de la entidad coincide exactamente",
+        "not_equals": "Distinto: mostrar cuando el estado de la entidad no coincide",
+        "gte": "Mayor o igual que (≥): mostrar cuando el valor numérico es ≥ objetivo",
+        "lte": "Menor o igual que (≤): mostrar cuando el valor numérico es ≤ objetivo",
+        "gt": "Mayor que (>): mostrar cuando el valor numérico es > objetivo",
+        "lt": "Menor que (<): mostrar cuando el valor numérico es < objetivo"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Todos: todos los niños asignados ven la tarea",
+        "alternating": "Por turnos: rota entre los niños asignados, uno por día",
+        "random": "Al azar: elige cada día a un niño asignado al azar",
+        "balanced": "Equilibrada: reparte por igual las tareas equilibradas de hoy entre los niños asignados",
+        "first_come": "El primero que llegue: gana el primer niño que la complete; se oculta para los demás",
+        "unassigned": "Sin asignar: ningún niño ve esta tarea"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Fijo: el mismo niño para todas las tareas del grupo",
+        "spread": "Repartido: niños distintos en el grupo hoy"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Guardar cambios",
+        "delete": "Eliminar grupo"
+      }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Sin sonido",
+        "coin": "Moneda",
+        "levelup": "Subir de nivel",
+        "fanfare": "Fanfarria",
+        "chime": "Campanilla",
+        "powerup": "Potenciador",
+        "undo": "Deshacer",
+        "fart1": "Pedo 1",
+        "fart2": "Pedo 2",
+        "fart3": "Pedo 3",
+        "fart4": "Pedo 4",
+        "fart5": "Pedo 5",
+        "fart6": "Pedo 6",
+        "fart7": "Pedo 7",
+        "fart8": "Pedo 8",
+        "fart9": "Pedo 9",
+        "fart10": "Pedo 10",
+        "fart_random": "Pedo al azar"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Fácil",
+        "medium": "Media",
+        "hard": "Difícil"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Todos reciben los puntos completos",
+        "split": "Repartir los puntos por igual (redondeando hacia abajo)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Cada vez que toque",
+        "week": "Semanal",
+        "month": "Mensual"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronce",
+        "silver": "Plata",
+        "gold": "Oro",
+        "platinum": "Platino"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Exigir todos (Y)",
+        "or": "Exigir alguno (O)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 hora",
+        "2h": "2 horas",
+        "4h": "4 horas",
+        "bed": "Hasta la hora de dormir"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Genial",
+        "good": "Bien",
+        "ok": "Normal",
+        "sad": "Triste",
+        "upset": "Enfadado"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Tarea",
+        "reward": "Premio",
+        "penalty": "Penalización"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Dragón",
+        "cat": "Gato",
+        "dog": "Perro",
+        "bunny": "Conejito",
+        "dino": "Dinosaurio",
+        "unicorn": "Unicornio"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Parece hecha",
+        "not_yet": "Todavía no"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Completar tarea",
+      "description": "Marca una tarea como completada por un niño",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea que se completa"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que completa la tarea"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Lo que hizo el niño, con sus propias palabras. Obligatorio cuando la tarea es abierta; se muestra al adulto al aprobarla."
+        },
+        "suggested_points": {
+          "name": "Puntos sugeridos",
+          "description": "Lo que el niño cree que vale el trabajo. Una pista para el adulto que aprueba: por sí solo no otorga nada."
+        },
+        "quantity": {
+          "name": "Cantidad",
+          "description": "Cuántas unidades hizo el niño, en una tarea de cantidad (\"leer 20 páginas\"). Obligatorio para un niño en esas tareas; los puntos de la tarea se pagan por unidad."
+        },
+        "time_id": {
+          "name": "Hora fija",
+          "description": "En una tarea con horas fijas, qué hora marca. Déjalo vacío para la que está abierta ahora."
+        },
+        "as_parent": {
+          "name": "Como adulto",
+          "description": "Completa en nombre del niño y otorga los puntos al momento, sin pasar por la aprobación."
+        },
+        "photo_url": {
+          "name": "URL de la foto",
+          "description": "URL o ruta opcional de una foto enviada como prueba (p. ej., una captura de cámara). Se muestra al adulto al aprobar."
+        },
+        "completed_date": {
+          "name": "Hecha el",
+          "description": "Registra la tarea en un día anterior (hasta 7 días atrás, no hoy) en que se hizo pero no se marcó. Solo adultos; se aprueba al momento. Se sigue aplicando el límite diario de ese día."
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "Completar subtarea extra",
+      "description": "Completa una subtarea extra después de hacer la tarea principal",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea principal"
+        },
+        "bonus_subtask_id": {
+          "name": "ID de la subtarea extra",
+          "description": "El ID de la subtarea extra que se completa"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que completa la subtarea extra"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Aprobar tarea",
+      "description": "Aprueba una tarea completada y otorga los puntos",
+      "fields": {
+        "completion_id": {
+          "name": "ID de la tarea completada",
+          "description": "El ID de la tarea completada que se aprueba"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Otorga estos puntos en lugar del valor propio de la tarea. Déjalo vacío para usar los puntos de la tarea."
+        },
+        "rating": {
+          "name": "Valoración de calidad",
+          "description": "Valoración opcional de 1 a 3 estrellas de lo bien hecha que está la tarea. Con las valoraciones de calidad activadas, ajusta los puntos según el multiplicador de esas estrellas; déjalo vacío para pagar el 100 %."
+        },
+        "note": {
+          "name": "Nota de elogio",
+          "description": "Mensaje breve opcional para el niño, que se muestra hoy en su tarjeta (hasta 120 caracteres)."
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "Aprobar todas las tareas",
+      "description": "Aprueba todas las tareas completadas pendientes (o un conjunto concreto) y otorga los puntos",
+      "fields": {
+        "completion_ids": {
+          "name": "ID de tareas completadas",
+          "description": "ID concretos de tareas completadas que aprobar; omítelo para aprobar todas las pendientes"
+        },
+        "rating": {
+          "name": "Valoración de calidad",
+          "description": "Valoración opcional de 1 a 3 estrellas aplicada a cada tarea aprobada con esta llamada (las valoraciones de calidad deben estar activadas)."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Rechazar tarea",
+      "description": "Rechaza una tarea completada",
+      "fields": {
+        "completion_id": {
+          "name": "ID de la tarea completada",
+          "description": "El ID de la tarea completada que se rechaza"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional que se muestra al niño"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "Deshacer tarea",
+      "description": "Permite que un niño retire su propia tarea: una entrega pendiente hasta que un adulto la revise, o una aprobada automáticamente dentro del margen para deshacer. Desactivado salvo que el margen sea mayor que 0 en los ajustes de TaskMate; lo que haya revisado un adulto solo lo puede deshacer un adulto.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de la tarea completada",
+          "description": "El ID de la tarea completada del niño que se retira"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "Deshacer aprobación de tarea",
+      "description": "Revierte una aprobación de tarea hecha por error: quita los puntos otorgados y devuelve la tarea a pendiente para que se pueda aprobar de nuevo.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de la tarea completada",
+          "description": "El ID de la tarea aprobada que vuelve a pendiente"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Deshacer movimiento",
+      "description": "Revierte un movimiento de puntos por su ID: penalizaciones, bonificaciones, ajustes manuales de suma/resta y regalos (ambas partes). Los movimientos automáticos (bonificaciones de fin de semana, racha o semana perfecta, movimientos de hucha, pérdida, intereses) no se pueden deshacer.",
+      "fields": {
+        "transaction_id": {
+          "name": "ID del movimiento",
+          "description": "El ID del movimiento de puntos que se revierte"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Canjear premio",
+      "description": "El niño canjea un premio con sus puntos",
+      "fields": {
+        "reward_id": {
+          "name": "ID del premio",
+          "description": "El ID del premio que se canjea"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que canjea el premio"
+        },
+        "recipient_id": {
+          "name": "ID del destinatario",
+          "description": "Cómpralo para un hermano o hermana. Paga el niño que lo canjea; requiere activar \"Los niños pueden comprarse premios entre ellos\"."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Aprobar premio",
+      "description": "Aprueba el canje de un premio",
+      "fields": {
+        "claim_id": {
+          "name": "ID del canje",
+          "description": "El ID del canje de premio que se aprueba"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Asignar puntos a la hucha",
+      "description": "Mueve puntos del saldo disponible de un niño a la hucha de un premio (bloqueados).",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que hace la asignación"
+        },
+        "reward_id": {
+          "name": "ID del premio",
+          "description": "El ID de la hucha del premio donde se deposita"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Número de puntos que asignar (limitado por la capacidad de la hucha y el saldo disponible)"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Añadir puntos",
+      "description": "Añade puntos extra a un niño",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que se añaden puntos"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "El número de puntos que añadir"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional de la bonificación"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Quitar puntos",
+      "description": "Quita puntos a un niño (penalización)",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que se quitan puntos"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "El número de puntos que quitar"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional de la penalización"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Rechazar premio",
+      "description": "Rechaza el canje de un premio",
+      "fields": {
+        "claim_id": {
+          "name": "ID del canje",
+          "description": "El ID del canje de premio que se rechaza"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional que se muestra al niño"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Probar sonido",
+      "description": "Reproduce en el navegador un efecto de sonido de tarea completada",
+      "fields": {
+        "sound": {
+          "name": "Sonido",
+          "description": "El sonido que se reproduce"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Fijar el orden de las tareas",
+      "description": "Fija el orden en que se muestran las tareas de un niño",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño cuyo orden de tareas se fija"
+        },
+        "chore_order": {
+          "name": "Orden de las tareas",
+          "description": "Lista ordenada de ID de tareas"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Añadir penalización",
+      "description": "Crea una nueva penalización",
+      "fields": {
+        "name": {
+          "name": "Nombre",
+          "description": "El nombre de la penalización"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "El número de puntos que se descuentan al aplicarla"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Descripción opcional de la penalización"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono MDI de la penalización"
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Lista de ID de niños a los que se aplica esta penalización"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Actualizar penalización",
+      "description": "Actualiza una penalización existente",
+      "fields": {
+        "penalty_id": {
+          "name": "ID de la penalización",
+          "description": "El ID de la penalización que se actualiza"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Nuevo nombre de la penalización"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Nuevo valor en puntos"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Nueva descripción"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Nuevo icono"
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Nueva lista de ID de niños"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Quitar penalización",
+      "description": "Quita una penalización",
+      "fields": {
+        "penalty_id": {
+          "name": "ID de la penalización",
+          "description": "El ID de la penalización que se quita"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Aplicar penalización",
+      "description": "Aplica una penalización a un niño y descuenta puntos",
+      "fields": {
+        "penalty_id": {
+          "name": "ID de la penalización",
+          "description": "El ID de la penalización que se aplica"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que se aplica la penalización"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Añadir bonificación",
+      "description": "Crea una nueva bonificación",
+      "fields": {
+        "name": {
+          "name": "Nombre",
+          "description": "El nombre de la bonificación"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "El número de puntos que se otorgan al aplicarla"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Descripción opcional de la bonificación"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono MDI de la bonificación"
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Lista de ID de niños a los que se aplica esta bonificación"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Actualizar bonificación",
+      "description": "Actualiza una bonificación existente",
+      "fields": {
+        "bonus_id": {
+          "name": "ID de la bonificación",
+          "description": "El ID de la bonificación que se actualiza"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Nuevo nombre de la bonificación"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Nuevo valor en puntos"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Nueva descripción"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Nuevo icono"
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Nueva lista de ID de niños"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Quitar bonificación",
+      "description": "Quita una bonificación",
+      "fields": {
+        "bonus_id": {
+          "name": "ID de la bonificación",
+          "description": "El ID de la bonificación que se quita"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Aplicar bonificación",
+      "description": "Aplica una bonificación a un niño y otorga puntos",
+      "fields": {
+        "bonus_id": {
+          "name": "ID de la bonificación",
+          "description": "El ID de la bonificación que se aplica"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que se aplica la bonificación"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Añadir tarea",
+      "description": "Crea una tarea nueva de forma dinámica, normalmente desde una automatización o un script",
+      "fields": {
+        "name": {
+          "name": "Nombre",
+          "description": "El nombre de la tarea"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Descripción opcional de la tarea"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Puntos que se otorgan al completar esta tarea"
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Niños a los que asignar esta tarea, por nombre o ID. Déjalo vacío para asignarla a todos los niños"
+        },
+        "time_category": {
+          "name": "Franja horaria",
+          "description": "Cuándo hay que completar esta tarea: morning, afternoon, evening, night o anytime"
+        },
+        "one_shot": {
+          "name": "Una sola vez",
+          "description": "Si es true, es una tarea de una sola vez que caduca al completarse o al final del día"
+        },
+        "requires_approval": {
+          "name": "Requiere aprobación",
+          "description": "Si es true, un adulto debe aprobarla antes de otorgar los puntos"
+        },
+        "team_size": {
+          "name": "Tamaño del equipo",
+          "description": "La convierte en una tarea de equipo que solo cuenta cuando se han unido este número de niños distintos. Cuando el equipo está completo, se envía por todos. 0 = una tarea normal."
+        },
+        "team_points_mode": {
+          "name": "Puntos del equipo",
+          "description": "Cómo paga una tarea de equipo: \"each\" da a cada participante los puntos completos, \"split\" los reparte por igual (redondeando hacia abajo)."
+        },
+        "team_bonus": {
+          "name": "Bonificación de equipo",
+          "description": "Puntos extra que gana cada participante al completar una tarea de equipo."
+        },
+        "times": {
+          "name": "Horas fijas",
+          "description": "La convierte en una tarea que aparece a horas fijas del día, p. ej., lavarse las manos en el desayuno, la comida y la cena. Una lista de hasta 5 horas, cada una con nombre, inicio y fin (\"HH:MM\", el mismo día, sin solaparse) y puntos."
+        },
+        "times_bonus": {
+          "name": "Bonificación por todas",
+          "description": "Puntos extra que se pagan una vez al día cuando se han hecho todas las horas fijas."
+        },
+        "assignment_mode": {
+          "name": "Modo de asignación",
+          "description": "Quién hace la tarea cada día: everyone, alternating (por turnos), random, balanced (quien menos la haya hecho), first_come (el primer niño que la coja) o unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Periodo de rotación",
+          "description": "Para tareas por turnos: each_time (el siguiente niño cada vez que toca), week (un niño la mantiene semanas enteras) o month (meses enteros)."
+        },
+        "assignment_rotation_every": {
+          "name": "Rotar cada",
+          "description": "Cuántas semanas o meses mantiene cada niño una tarea por turnos con periodo de rotación (2 = cada dos semanas)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Día de cambio",
+          "description": "El día de la semana en que una rotación semanal pasa al siguiente niño."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Día del mes del cambio",
+          "description": "El día del mes en que una rotación mensual pasa al siguiente niño (el último día en los meses más cortos)."
+        },
+        "schedule_mode": {
+          "name": "Programación",
+          "description": "specific_days (los días de Días en que toca, o todos si no hay ninguno), recurring (con el ritmo de Repetición) o one_shot (solo hoy)."
+        },
+        "due_days": {
+          "name": "Días en que toca",
+          "description": "Días de la semana en que toca la tarea, con la programación specific_days. Déjalo vacío para todos los días."
+        },
+        "recurrence": {
+          "name": "Repetición",
+          "description": "Cada cuánto vuelve una tarea recurrente: weekly, every_2_weeks, monthly, every_3_months, every_6_months o every_N_days con N de 2 a 365 (p. ej., every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Día de repetición",
+          "description": "El día de la semana en que cae una tarea weekly o every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Inicio de la repetición",
+          "description": "La fecha desde la que empieza el ritmo de una tarea recurrente (AAAA-MM-DD)."
+        },
+        "due_time": {
+          "name": "Hora límite",
+          "description": "Hora del día en que vence la tarea (\"HH:MM\"). Terminarla antes da la bonificación por adelantarse; después, la penalización por retraso. Vacío para no tener hora límite."
+        },
+        "daily_limit": {
+          "name": "Límite diario",
+          "description": "Cuántas veces al día se puede completar la tarea. Las tareas de una sola vez siempre son 1."
+        },
+        "difficulty": {
+          "name": "Dificultad",
+          "description": "Nivel de dificultad; ajusta los puntos otorgados con el multiplicador del nivel (medium = ×1.0 de base)"
+        },
+        "expires_in_minutes": {
+          "name": "Caduca en (minutos)",
+          "description": "La convierte en una tarea reactiva con un plazo de estos minutos desde ahora, p. ej., la lavadora ha terminado, vacíala en 30 minutos. La tarea desaparece y se desactiva cuando vence el plazo. 0 = sin plazo."
+        },
+        "speed_bonus_points": {
+          "name": "Puntos extra por rapidez",
+          "description": "Puntos extra que se otorgan si la tarea se completa antes del plazo. Requiere expires_in_minutes."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Actualizar tarea",
+      "description": "Cambia una tarea existente por su ID. Solo cambian los campos que indiques; lo demás se queda como está.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea que se cambia"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Nuevo nombre de la tarea"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Nueva descripción de la tarea"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Puntos que se otorgan al completar esta tarea"
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Niños a los que asignar esta tarea, por nombre o ID. Una lista vacía la asigna a todos los niños"
+        },
+        "time_category": {
+          "name": "Franja horaria",
+          "description": "Cuándo hay que completar esta tarea: morning, afternoon, evening, night o anytime"
+        },
+        "difficulty": {
+          "name": "Dificultad",
+          "description": "Nivel de dificultad: easy, medium o hard. Ajusta los puntos otorgados (medium = ×1.0)."
+        },
+        "requires_approval": {
+          "name": "Requiere aprobación",
+          "description": "Si es true, un adulto debe aprobarla antes de otorgar los puntos"
+        },
+        "enabled": {
+          "name": "Activada",
+          "description": "Desactiva la tarea (false) para ocultarla en todas partes sin eliminarla, o vuelve a activarla (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Puntos extra por rapidez",
+          "description": "Puntos extra que se otorgan si la tarea se completa antes de su plazo."
+        },
+        "team_size": {
+          "name": "Tamaño del equipo",
+          "description": "La convierte en una tarea de equipo que solo cuenta cuando se han unido este número de niños distintos. Cuando el equipo está completo, se envía por todos. 0 = una tarea normal."
+        },
+        "team_points_mode": {
+          "name": "Puntos del equipo",
+          "description": "Cómo paga una tarea de equipo: \"each\" da a cada participante los puntos completos, \"split\" los reparte por igual (redondeando hacia abajo)."
+        },
+        "team_bonus": {
+          "name": "Bonificación de equipo",
+          "description": "Puntos extra que gana cada participante al completar una tarea de equipo."
+        },
+        "times": {
+          "name": "Horas fijas",
+          "description": "Sustituye las horas fijas de la tarea. Una lista de hasta 5 horas, cada una con nombre, inicio y fin (\"HH:MM\", el mismo día, sin solaparse) y puntos. Una lista vacía las quita."
+        },
+        "times_bonus": {
+          "name": "Bonificación por todas",
+          "description": "Puntos extra que se pagan una vez al día cuando se han hecho todas las horas fijas."
+        },
+        "assignment_mode": {
+          "name": "Modo de asignación",
+          "description": "Quién hace la tarea cada día: everyone, alternating (por turnos), random, balanced (quien menos la haya hecho), first_come (el primer niño que la coja) o unassigned."
+        },
+        "assignment_rotation_period": {
+          "name": "Periodo de rotación",
+          "description": "Para tareas por turnos: each_time (el siguiente niño cada vez que toca), week (un niño la mantiene semanas enteras) o month (meses enteros)."
+        },
+        "assignment_rotation_every": {
+          "name": "Rotar cada",
+          "description": "Cuántas semanas o meses mantiene cada niño una tarea por turnos con periodo de rotación (2 = cada dos semanas)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Día de cambio",
+          "description": "El día de la semana en que una rotación semanal pasa al siguiente niño."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Día del mes del cambio",
+          "description": "El día del mes en que una rotación mensual pasa al siguiente niño (el último día en los meses más cortos)."
+        },
+        "schedule_mode": {
+          "name": "Programación",
+          "description": "specific_days (los días de Días en que toca, o todos si no hay ninguno), recurring (con el ritmo de Repetición) o one_shot (solo hoy)."
+        },
+        "due_days": {
+          "name": "Días en que toca",
+          "description": "Días de la semana en que toca la tarea, con la programación specific_days. Déjalo vacío para todos los días."
+        },
+        "recurrence": {
+          "name": "Repetición",
+          "description": "Cada cuánto vuelve una tarea recurrente: weekly, every_2_weeks, monthly, every_3_months, every_6_months o every_N_days con N de 2 a 365 (p. ej., every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Día de repetición",
+          "description": "El día de la semana en que cae una tarea weekly o every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Inicio de la repetición",
+          "description": "La fecha desde la que empieza el ritmo de una tarea recurrente (AAAA-MM-DD)."
+        },
+        "due_time": {
+          "name": "Hora límite",
+          "description": "Hora del día en que vence la tarea (\"HH:MM\"). Terminarla antes da la bonificación por adelantarse; después, la penalización por retraso. Vacío para no tener hora límite."
+        },
+        "daily_limit": {
+          "name": "Límite diario",
+          "description": "Cuántas veces al día se puede completar la tarea. Las tareas de una sola vez siempre son 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Eliminar tarea",
+      "description": "Elimina una tarea por su ID, con la misma limpieza que el panel. Va a Eliminados recientemente en el panel durante 7 días, así que se puede restaurar.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea que se elimina"
+        },
+        "confirm": {
+          "name": "Confirmar",
+          "description": "Debe ser true. Una protección para que nunca se elimine una tarea por error."
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Saltar tarea",
+      "description": "Avanza la rotación de hoy saltando a quien la tiene asignada. Temporal: mañana la rotación sigue con normalidad.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea que se salta"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Fijar el niño inicial",
+      "description": "Fija qué niño empieza una tarea rotativa. En modo por turnos reordena el grupo; en al azar/equilibrada solo cambia a quien le toca hoy.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea que se actualiza"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que debe empezar la rotación"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Añadir grupo de tareas",
+      "description": "Crea un grupo de tareas (sticky = el mismo niño, spread = niños distintos).",
+      "fields": {
+        "name": {
+          "name": "Nombre",
+          "description": "Nombre visible del grupo"
+        },
+        "policy": {
+          "name": "Regla",
+          "description": "sticky (el mismo niño) o spread (niños distintos)"
+        },
+        "chore_ids": {
+          "name": "ID de tareas",
+          "description": "Lista de ID de tareas del grupo. En sticky, la primera tarea es la principal."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Actualizar grupo de tareas",
+      "description": "Actualiza el nombre, la regla o los miembros de un grupo de tareas.",
+      "fields": {
+        "group_id": {
+          "name": "ID del grupo",
+          "description": "El ID del grupo que se actualiza"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Nuevo nombre visible"
+        },
+        "policy": {
+          "name": "Regla",
+          "description": "Nueva regla (sticky o spread)"
+        },
+        "chore_ids": {
+          "name": "ID de tareas",
+          "description": "Lista de ID de tareas que sustituye a la actual. En sticky, la primera tarea es la principal."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Quitar grupo de tareas",
+      "description": "Elimina un grupo de tareas. Las tareas del grupo no se ven afectadas.",
+      "fields": {
+        "group_id": {
+          "name": "ID del grupo",
+          "description": "El ID del grupo que se elimina"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "Iniciar tarea cronometrada",
+      "description": "Inicia o reanuda el temporizador de una tarea cronometrada",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea cronometrada"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que inicia el temporizador"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Salir de una tarea de equipo",
+      "description": "Saca a un niño de una tarea de equipo a la que se unió hoy, antes de que el equipo esté completo",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea de equipo"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que sale del equipo"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "Completar la siguiente tarea",
+      "description": "Completa la siguiente tarea pendiente del niño, en el orden de la tarjeta infantil. Se saltan las tareas que necesitan foto, nota, temporizador o equipo. Pensado para botones de reloj y atajos; se aplican las reglas de aprobación normales.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño cuya siguiente tarea se completa"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "Publicar recompensa",
+      "description": "Publica un trabajo único en el tablón de recompensas por un número fijo de puntos. Cualquier niño elegible puede cogerlo; al terminarlo pasa por la cola de aprobación normal.",
+      "fields": {
+        "title": {
+          "name": "Título",
+          "description": "Cuál es el trabajo, p. ej., \"Lavar el coche\""
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Puntos fijos que se pagan cuando un adulto aprueba el trabajo terminado"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Detalle adicional opcional para los niños"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono MDI que se muestra en el tablón"
+        },
+        "expires_at": {
+          "name": "Caduca el",
+          "description": "Fecha y hora opcionales en que la recompensa sale del tablón si nadie la ha cogido. Déjalo vacío para que no caduque."
+        },
+        "eligible_child_ids": {
+          "name": "Niños elegibles",
+          "description": "ID de los niños que pueden cogerla. Vacío = todos los niños."
+        },
+        "claim_hours": {
+          "name": "Reserva (horas)",
+          "description": "Cuánto dura una reserva antes de que la recompensa vuelva al tablón"
+        },
+        "require_photo": {
+          "name": "Exigir foto",
+          "description": "El niño debe adjuntar una foto al marcarla como hecha"
+        },
+        "notify_children": {
+          "name": "Avisar a los niños",
+          "description": "Envía la notificación \"Nueva recompensa\" a los niños elegibles"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Actualizar recompensa",
+      "description": "Edita una recompensa. Una vez cogida, solo se pueden cambiar sus puntos y su caducidad.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la recompensa",
+          "description": "El ID de la recompensa que se edita"
+        },
+        "title": {
+          "name": "Título",
+          "description": "Cuál es el trabajo, p. ej., \"Lavar el coche\""
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Puntos fijos que se pagan cuando un adulto aprueba el trabajo terminado"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Detalle adicional opcional para los niños"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono MDI que se muestra en el tablón"
+        },
+        "expires_at": {
+          "name": "Caduca el",
+          "description": "Fecha y hora opcionales en que la recompensa sale del tablón si nadie la ha cogido. Déjalo vacío para que no caduque."
+        },
+        "eligible_child_ids": {
+          "name": "Niños elegibles",
+          "description": "ID de los niños que pueden cogerla. Vacío = todos los niños."
+        },
+        "claim_hours": {
+          "name": "Reserva (horas)",
+          "description": "Cuánto dura una reserva antes de que la recompensa vuelva al tablón"
+        },
+        "require_photo": {
+          "name": "Exigir foto",
+          "description": "El niño debe adjuntar una foto al marcarla como hecha"
+        },
+        "notify_children": {
+          "name": "Avisar a los niños",
+          "description": "Envía la notificación \"Nueva recompensa\" a los niños elegibles"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Quitar recompensa",
+      "description": "Quita una recompensa del tablón. No se permite mientras un trabajo terminado espera aprobación.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la recompensa",
+          "description": "El ID de la recompensa que se quita"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Coger recompensa",
+      "description": "Coge una recompensa para un niño y se la reserva durante su periodo de reserva. Un niño solo puede tener una reserva a la vez.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la recompensa",
+          "description": "El ID de la recompensa que se coge"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que la coge"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Devolver recompensa",
+      "description": "Devuelve al tablón una recompensa cogida para que otro niño pueda cogerla",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la recompensa",
+          "description": "El ID de la recompensa cogida"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que la cogió"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Completar recompensa",
+      "description": "Marca como hecha una recompensa cogida. Va a la cola de aprobación como una tarea.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID de la recompensa",
+          "description": "El ID de la recompensa cogida"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que la cogió"
+        },
+        "photo_url": {
+          "name": "URL de la foto",
+          "description": "Foto del trabajo terminado (obligatoria cuando la recompensa la pide)"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Pausar tarea cronometrada",
+      "description": "Pausa el temporizador en marcha de una tarea cronometrada",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea cronometrada"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que pausa el temporizador"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Detener tarea cronometrada",
+      "description": "Detiene el temporizador de una tarea cronometrada y la envía para aprobar",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea cronometrada"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que detiene el temporizador"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Añadir insignia",
+      "description": "Crea una insignia personalizada.",
+      "fields": {
+        "name": {
+          "name": "Nombre",
+          "description": "El nombre visible de la insignia"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Descripción de cómo se consigue la insignia"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Icono de la insignia (p. ej., mdi:beach)"
+        },
+        "tier": {
+          "name": "Nivel",
+          "description": "Nivel de la insignia: bronze, silver, gold o platinum"
+        },
+        "point_bonus": {
+          "name": "Bonificación de puntos",
+          "description": "Puntos que se abonan al niño al conseguir la insignia"
+        },
+        "criteria": {
+          "name": "Criterios",
+          "description": "Lista de diccionarios metric / operator / value. Vacío = solo se otorga a mano."
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Lista de ID de niños (vacío = todos)"
+        },
+        "notify_on_earn": {
+          "name": "Avisar al conseguirla",
+          "description": "Envía una notificación al conseguir la insignia"
+        },
+        "combinator": {
+          "name": "Combinación",
+          "description": "Cómo se combinan varios criterios: AND (deben cumplirse todos) u OR (cualquiera). Predeterminado AND."
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Actualizar insignia",
+      "description": "Actualiza una insignia existente. En las integradas solo se pueden editar point_bonus, tier, assigned_to, enabled y notify_on_earn.",
+      "fields": {
+        "badge_id": {
+          "name": "ID de la insignia",
+          "description": "El ID de la insignia que se actualiza"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Nuevo nombre visible de la insignia"
+        },
+        "description": {
+          "name": "Descripción",
+          "description": "Nueva descripción de la insignia"
+        },
+        "icon": {
+          "name": "Icono",
+          "description": "Nuevo icono de la insignia"
+        },
+        "tier": {
+          "name": "Nivel",
+          "description": "Nivel de la insignia: bronze, silver, gold o platinum"
+        },
+        "point_bonus": {
+          "name": "Bonificación de puntos",
+          "description": "Puntos que se abonan al niño al conseguir la insignia"
+        },
+        "criteria": {
+          "name": "Criterios",
+          "description": "Lista de diccionarios metric / operator / value. Vacío = solo se otorga a mano."
+        },
+        "assigned_to": {
+          "name": "Asignada a",
+          "description": "Lista de ID de niños (vacío = todos)"
+        },
+        "enabled": {
+          "name": "Activada",
+          "description": "Si la insignia está activa"
+        },
+        "notify_on_earn": {
+          "name": "Avisar al conseguirla",
+          "description": "Envía una notificación al conseguir la insignia"
+        },
+        "combinator": {
+          "name": "Combinación",
+          "description": "Cómo se combinan varios criterios: AND (deben cumplirse todos) u OR (cualquiera). Predeterminado AND."
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Quitar insignia",
+      "description": "Quita una insignia personalizada. Las integradas no se pueden quitar.",
+      "fields": {
+        "badge_id": {
+          "name": "ID de la insignia",
+          "description": "El ID de la insignia que se quita"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Otorgar insignia a mano",
+      "description": "Otorga a mano una insignia a un niño.",
+      "fields": {
+        "badge_id": {
+          "name": "ID de la insignia",
+          "description": "El ID de la insignia que se otorga"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que recibe la insignia"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Retirar insignia",
+      "description": "Retira una insignia otorgada. Si se abonó una bonificación de puntos, se revierte.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID de la insignia otorgada",
+          "description": "El ID del registro de insignia otorgada que se retira"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Recalcular insignias",
+      "description": "Vuelve a evaluar en silencio todas las insignias de todos los niños (sin avisos ni bonificaciones de puntos)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Aplicar penalización obligatoria",
+      "description": "Descuenta los puntos de penalización configurados por una tarea obligatoria no hecha y cierra el elemento de revisión.",
+      "fields": {
+        "miss_id": {
+          "name": "ID de la tarea no hecha",
+          "description": "El ID del elemento de revisión de la tarea obligatoria no hecha"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Elegir avatar",
+      "description": "Un niño cambia a un avatar que ha desbloqueado.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño"
+        },
+        "icon": {
+          "name": "Icono del avatar",
+          "description": "El icono mdi de un avatar desbloqueado del catálogo (p. ej., mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Descartar tarea obligatoria",
+      "description": "Cierra sin penalización el elemento de revisión de una tarea obligatoria no hecha.",
+      "fields": {
+        "miss_id": {
+          "name": "ID de la tarea no hecha",
+          "description": "El ID del elemento de revisión de la tarea obligatoria no hecha"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Regalar puntos",
+      "description": "Transfiere puntos disponibles de un niño a otro (controlado por los padres).",
+      "fields": {
+        "from_child_id": {
+          "name": "ID del niño que envía",
+          "description": "El ID del niño que envía los puntos"
+        },
+        "to_child_id": {
+          "name": "ID del niño que recibe",
+          "description": "El ID del niño que recibe los puntos"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "El número de puntos que transferir"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Ajustar protectores de racha",
+      "description": "Da a un niño fichas de protector de racha (cantidad positiva) o le quita algunas (negativa). Nunca se supera el límite streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño cuyas fichas cambian"
+        },
+        "amount": {
+          "name": "Cantidad",
+          "description": "Fichas que añadir (positivo) o quitar (negativo)"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Aplazar tarea obligatoria",
+      "description": "Da otra franja (o mañana) a una tarea obligatoria no hecha, sin penalización, y cierra el elemento de revisión.",
+      "fields": {
+        "miss_id": {
+          "name": "ID de la tarea no hecha",
+          "description": "El ID del elemento de revisión de la tarea obligatoria no hecha"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Pedir intercambio de tarea",
+      "description": "Un niño pide hacerse cargo del turno de hoy de una tarea (pendiente de aprobación de un adulto).",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea que quiere hacer"
+        },
+        "requester_id": {
+          "name": "ID del niño que lo pide",
+          "description": "El ID del niño que pide el intercambio"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Probar notificación",
+      "description": "Envía una notificación de ejemplo del tipo indicado a sus destinatarios activados (ignora el interruptor general para poder comprobar el envío).",
+      "fields": {
+        "type_id": {
+          "name": "Tipo de notificación",
+          "description": "ID del tipo de notificación, p. ej., pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "Registrar pago de la paga",
+      "description": "Descuenta puntos y registra un pago de paga en dinero real en el libro de cuentas (tasa de conversión fija; controlado por los padres).",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que recibe el pago"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Puntos que convertir en dinero y descontar"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "Añadir deseo",
+      "description": "Un niño añade algo para lo que quiere ahorrar. Espera a que lo apruebe un adulto.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que pide el deseo"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Lo que quiere el niño"
+        },
+        "target": {
+          "name": "Objetivo",
+          "description": "Número de puntos que cuesta, según el niño. El adulto puede cambiarlo al aprobarlo."
+        },
+        "link": {
+          "name": "Enlace",
+          "description": "Dirección web opcional (http o https) del artículo"
+        },
+        "photo_url": {
+          "name": "Imagen",
+          "description": "Imagen opcional recién subida con el endpoint de fotos de TaskMate"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Retirar deseo",
+      "description": "Un niño retira un deseo que aún espera aprobación o borra uno que se rechazó.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que pertenece el deseo"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Mover puntos a un deseo",
+      "description": "Mueve puntos del saldo disponible de un niño a uno de sus deseos aprobados.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que pertenece el deseo"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Cuántos puntos mover (limitado por el saldo y por lo que aún falta para el deseo)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Recuperar puntos de un deseo",
+      "description": "Devuelve al niño parte de los puntos que ahorró en un deseo. Los puntos aportados nunca salen.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que pertenece el deseo"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Cuántos puntos ahorrados recuperar (limitado por lo que ahorró el niño)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Pedir el canje de un deseo",
+      "description": "Un deseo conseguido del todo se convierte en un canje de premio que espera la aprobación de un adulto.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño al que pertenece el deseo"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Aprobar deseo",
+      "description": "Convierte un deseo en espera en una meta de ahorro, opcionalmente con otro objetivo.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "target": {
+          "name": "Objetivo",
+          "description": "Puntos que cuesta el deseo. Déjalo vacío para mantener la sugerencia del niño."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Rechazar deseo",
+      "description": "Dice que no a un deseo. Los puntos ahorrados vuelven al niño y se anulan las aportaciones.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo opcional que se muestra al niño"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Aportar a un deseo",
+      "description": "Registra los puntos que aporta un familiar al deseo de un niño. Nunca afectan a ningún saldo.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "name": {
+          "name": "De",
+          "description": "De quién es la aportación, p. ej., la abuela"
+        },
+        "points": {
+          "name": "Puntos",
+          "description": "Cuántos puntos aportar (limitado por lo que aún falta para el deseo)"
+        },
+        "message": {
+          "name": "Mensaje",
+          "description": "Mensaje opcional para el niño"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Quitar aportación a un deseo",
+      "description": "Deshace una aportación. Se permite hasta que se canjea el deseo.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        },
+        "pledge_id": {
+          "name": "ID de la aportación",
+          "description": "El ID de la aportación que se quita"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Quitar deseo",
+      "description": "Elimina un deseo. Los puntos ahorrados vuelven al niño y se anulan las aportaciones.",
+      "fields": {
+        "wish_id": {
+          "name": "ID del deseo",
+          "description": "El ID del deseo"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "Iniciar inspección",
+      "description": "Marca una tarea aprobada en las últimas 24 horas para una inspección sorpresa. Apruébala o suspéndela antes de que cierre el plazo; una inspección sin decidir se cierra sin avisar.",
+      "fields": {
+        "completion_id": {
+          "name": "ID de la tarea completada",
+          "description": "El ID de la tarea aprobada que se inspecciona"
+        },
+        "bonus": {
+          "name": "Bonificación",
+          "description": "Puntos que se pagan si la supera. Por defecto, el valor de Ajustes."
+        },
+        "window": {
+          "name": "Plazo",
+          "description": "Cuánto tiempo tienes para revisarla: 1h, 2h, 4h o bed (hasta la hora de dormir). Por defecto, el valor de Ajustes."
+        },
+        "tell_child": {
+          "name": "Avisar al niño",
+          "description": "Muestra ahora \"Viene una inspección\" en la tarjeta del niño. Desactívalo para una revisión secreta."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Aprobar inspección",
+      "description": "La tarea inspeccionada ha superado la inspección. Paga la bonificación como un movimiento de puntos normal y lo celebra en la tarjeta del niño.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID de la inspección",
+          "description": "El ID de la inspección abierta"
+        },
+        "bonus": {
+          "name": "Bonificación",
+          "description": "Puntos que pagar. Por defecto, la bonificación fijada al iniciar la inspección."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota opcional que se muestra al niño"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Suspender inspección",
+      "description": "La tarea inspeccionada no ha superado la inspección. No se quitan puntos. Se puede devolver para repetirla; repetirla no da nada extra.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID de la inspección",
+          "description": "El ID de la inspección abierta"
+        },
+        "redo": {
+          "name": "Devolver para repetir",
+          "description": "Vuelve a poner la tarea en la lista del niño como no hecha hoy. Por defecto, el valor de Ajustes."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota opcional que se muestra al niño (qué hay que arreglar)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Cancelar inspección",
+      "description": "Cancela una inspección abierta, como si nunca hubiera empezado.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID de la inspección",
+          "description": "El ID de la inspección abierta"
+        }
+      }
+    },
+    "request_help": {
+      "name": "Pedir ayuda",
+      "description": "Un niño dice que está atascado en una tarea. Envía un aviso a los padres; no se completa ni se salta nada.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que pide ayuda"
+        },
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "La tarea en la que está atascado"
+        },
+        "message": {
+          "name": "Mensaje",
+          "description": "Palabras opcionales del niño, p. ej., \"No llego a la estantería\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Atender una petición de ayuda",
+      "description": "Marca como atendida la petición de ayuda de un niño, para que su tarjeta deje de decir que la ayuda está en camino.",
+      "fields": {
+        "request_id": {
+          "name": "ID de la petición",
+          "description": "La petición de ayuda que se cierra"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registrar estado de ánimo",
+      "description": "Un niño dice qué tal le ha ido el día. Uno por día; volver a registrarlo lo sustituye.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño"
+        },
+        "mood": {
+          "name": "Estado de ánimo",
+          "description": "great, good, ok, sad o upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Poner día de enfermo",
+      "description": "Da a un niño un día de enfermo. Sus tareas se ocultan, su racha se congela y no se pierde ninguna tarea obligatoria.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que está enfermo"
+        },
+        "date": {
+          "name": "Fecha",
+          "description": "El día (hoy por defecto). Desde hace una semana hasta dentro de un mes."
+        },
+        "sick": {
+          "name": "Enfermo",
+          "description": "Desactívalo para quitar el día de enfermo."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Fijar meta semanal",
+      "description": "Fija la meta semanal de puntos propia de un niño. Alcanzarla paga la bonificación de meta semanal de la familia una vez a la semana. 0 la borra.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño"
+        },
+        "target": {
+          "name": "Objetivo",
+          "description": "Puntos que ganar esta semana"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Comprar papeletas",
+      "description": "Un niño gasta puntos en papeletas para un sorteo. Cada papeleta es una oportunidad en el sorteo.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID del sorteo",
+          "description": "El sorteo"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que compra"
+        },
+        "tickets": {
+          "name": "Papeletas",
+          "description": "Cuántas papeletas comprar"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Sortear",
+      "description": "Sortea ahora al ganador de un sorteo en lugar de esperar a su hora.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID del sorteo",
+          "description": "El sorteo que se realiza"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adoptar una mascota",
+      "description": "Un niño adopta (o renombra) su mascota virtual. A partir de ahora crece con cada tarea que termine.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño"
+        },
+        "species": {
+          "name": "Especie",
+          "description": "dragon, cat, dog, bunny, dino o unicorn"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "El nombre de la mascota"
+        },
+        "hatch_egg": {
+          "name": "Abrir el huevo",
+          "description": "Abre el huevo que puso la mascota adulta y sale una mascota nueva. La anterior se une a la familia de mascotas."
+        }
+      }
+    },
+    "buy_pet_item": {
+      "name": "Comprar un artículo para la mascota",
+      "description": "Un niño compra un artículo de la tienda de mascotas con sus puntos disponibles. Si supera el límite de aprobación de los padres, espera a un adulto.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que compra"
+        },
+        "item_id": {
+          "name": "ID del artículo",
+          "description": "El artículo de la tienda de mascotas"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Vestir a la mascota",
+      "description": "Pone a la mascota del niño un artículo que tenga o que haya desbloqueado por nivel (sustituyendo lo que haya en ese lugar), o se lo quita.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño"
+        },
+        "item_id": {
+          "name": "ID del artículo",
+          "description": "Un artículo de la tienda de mascotas, o bow, top_hat, scarf o crown"
+        },
+        "wear": {
+          "name": "Ponérselo",
+          "description": "Activado lo pone; desactivado lo quita."
+        }
+      }
+    },
+    "mark_reward_delivered": {
+      "name": "Marcar premio como entregado",
+      "description": "Un premio canjeado se ha entregado, así que sale de la lista de pendientes. Indica child_id cuando sea el niño quien confirma el suyo.",
+      "fields": {
+        "claim_id": {
+          "name": "ID del canje",
+          "description": "El canje de premio aprobado"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que confirma que lo ha recibido (déjalo vacío cuando lo marca un adulto)"
+        }
+      }
+    },
+    "start_boost": {
+      "name": "Iniciar un impulso",
+      "description": "Abre un periodo de impulso. Las tareas hechas dentro pagan el multiplicador. Deja chore_ids o child_ids vacíos para incluirlos todos.",
+      "fields": {
+        "multiplier": {
+          "name": "Multiplicador",
+          "description": "Lo que pagan las tareas incluidas, p. ej., 2 para el doble (de 1.1 a 5)"
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Cuánto dura el impulso"
+        },
+        "chore_ids": {
+          "name": "ID de tareas",
+          "description": "Las tareas que incluye (vacío = todas)"
+        },
+        "child_ids": {
+          "name": "ID de niños",
+          "description": "Los niños que incluye (vacío = todos)"
+        },
+        "starts_at": {
+          "name": "Empieza a las",
+          "description": "Empezar más tarde en lugar de ahora (hasta una semana antes)"
+        },
+        "name": {
+          "name": "Nombre",
+          "description": "Etiqueta opcional que se muestra en las tarjetas, p. ej., \"Visitas a las seis\""
+        },
+        "notify": {
+          "name": "Avisar",
+          "description": "Envía el aviso del impulso a los niños incluidos (cuando esa notificación está activada)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Terminar un impulso",
+      "description": "Detiene antes de tiempo un impulso, o cancela uno que aún no ha empezado.",
+      "fields": {
+        "boost_id": {
+          "name": "ID del impulso",
+          "description": "El impulso, del atributo boosts de sensor.taskmate_overview"
+        }
+      }
+    },
+    "appeal": {
+      "name": "Apelar",
+      "description": "Un niño pide otra revisión de una tarea rechazada, un canje de premio rechazado o una penalización de las últimas 48 horas. Requiere las apelaciones activadas.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que apela"
+        },
+        "kind": {
+          "name": "Tipo",
+          "description": "Lo que se apela"
+        },
+        "target_id": {
+          "name": "ID del elemento",
+          "description": "El elemento, del atributo appealable de la entrada del niño en sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Mensaje",
+          "description": "Palabras opcionales del niño, hasta 200 caracteres"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Resolver una apelación",
+      "description": "Acepta una apelación (paga la tarea, aprueba el premio o deshace la penalización) o mantiene la decisión original.",
+      "fields": {
+        "appeal_id": {
+          "name": "ID de la apelación",
+          "description": "La apelación"
+        },
+        "overturn": {
+          "name": "Anular",
+          "description": "true para anular, false para mantener"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Palabras opcionales para el niño, hasta 200 caracteres"
+        }
+      }
+    },
+    "adjust_screen_time": {
+      "name": "Ajustar el tiempo de pantalla",
+      "description": "Suma minutos al saldo de pantalla de un niño, o quita algunos con un número negativo.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño cuyo saldo cambia"
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Minutos que sumar; negativo para quitar. El saldo nunca baja de cero."
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Una nota breve para el historial del saldo"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Guardar tiempo de pantalla",
+      "description": "Mueve los minutos de pantalla no usados de un niño a su bote del fin de semana. Primero entra la asignación de hoy y luego los minutos acumulados, hasta el límite del bote.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que guarda los minutos"
+        },
+        "minutes": {
+          "name": "Minutos",
+          "description": "Cuántos minutos guardar. Déjalo vacío para guardar todo lo que quepa."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Valorar un premio",
+      "description": "El niño da de 1 a 3 estrellas a un premio que ha disfrutado. Una vez entregado el premio (o aprobado, si el seguimiento de entregas está desactivado), durante 3 días.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que disfrutó del premio"
+        },
+        "claim_id": {
+          "name": "ID del canje",
+          "description": "El canje de premio que se valora"
+        },
+        "stars": {
+          "name": "Estrellas",
+          "description": "De 1 a 3 estrellas"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Revisión entre hermanos",
+      "description": "Un niño revisa la tarea de un hermano que espera aprobación. done la aprueba y paga a quien revisa la bonificación de revisión; not_yet la deja esperando a un adulto, con una nota.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño que revisa",
+          "description": "El niño que revisa (no el que hizo la tarea)"
+        },
+        "completion_id": {
+          "name": "ID de la tarea completada",
+          "description": "La tarea completada en espera, del atributo sibling_checks de la entrada de quien revisa en sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Veredicto",
+          "description": "done (parece hecha) o not_yet"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Palabras opcionales para el adulto con un not_yet, hasta 120 caracteres"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Poner recordatorio de tarea",
+      "description": "Un niño elige cuándo quiere que le recuerden una de sus tareas, entre la hora más temprana y la más tardía fijadas en los ajustes de TaskMate. Deja la hora vacía para quitarlo.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El niño que quiere el recordatorio"
+        },
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "La tarea que se recuerda"
+        },
+        "time": {
+          "name": "Hora",
+          "description": "HH:MM, p. ej., 17:30. Vacío quita el recordatorio."
+        }
+      }
+    },
+    "read_aloud": {
+      "name": "Leer las tareas en voz alta",
+      "description": "Dice en voz alta en un reproductor multimedia las tareas pendientes de un niño, por ejemplo \"Ella, te quedan tres cosas…\". Usa los textos de lectura en el idioma de Home Assistant salvo que haya plantillas de lectura personalizadas.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño cuyas tareas se leen"
+        },
+        "media_player": {
+          "name": "Reproductor multimedia",
+          "description": "Dónde hablar. Si no se indica, usa el predeterminado de Ajustes."
+        },
+        "tts_entity": {
+          "name": "Entidad de texto a voz",
+          "description": "Qué servicio TTS usar. Si no se indica, usa el de Ajustes y luego el único instalado."
+        },
+        "message": {
+          "name": "Mensaje alternativo",
+          "description": "Dice esto en lugar del resumen generado."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Girar la ruleta de tareas",
+      "description": "Elige al azar una tarea pendiente para un niño con un multiplicador de puntos. Opcional: actívalo y fija el multiplicador y las tiradas diarias en los ajustes del panel de TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que gira la ruleta"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "tareas",
+        "name": "Estadísticas de {child}"
+      },
+      "child_badges": {
+        "unit_of_measurement": "insignias",
+        "name": "Insignias de {child}"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Quedan #",
+          "all_done": "Todo hecho",
+          "no_chores": "Sin tareas"
+        },
+        "name": "Reloj de {child}"
+      },
+      "overview": {
+        "name": "TaskMate Resumen"
+      },
+      "chores": {
+        "name": "TaskMate Tareas"
+      },
+      "chore_availability": {
+        "name": "TaskMate Disponibilidad de tareas"
+      },
+      "rewards": {
+        "name": "TaskMate Premios"
+      },
+      "activity": {
+        "name": "TaskMate Actividad"
+      },
+      "incentives": {
+        "name": "TaskMate Incentivos"
+      },
+      "bounties": {
+        "name": "TaskMate Recompensas"
+      },
+      "auctions": {
+        "name": "TaskMate Subastas"
+      },
+      "chore_board": {
+        "name": "TaskMate Tablero de tareas"
+      },
+      "child_points": {
+        "name": "Puntos de {child}"
+      },
+      "child_wishlist": {
+        "name": "Lista de deseos de {child}"
+      },
+      "pending_approvals": {
+        "name": "Aprobaciones pendientes"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Multiplicador de fin de semana"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonificación por semana perfecta"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Modo de reinicio de racha",
+        "state": {
+          "reset": "Reiniciar: la racha vuelve a 0 el día que no se cumpla",
+          "pause": "Pausar: la racha se conserva hasta la siguiente tarea completada"
+        }
+      },
+      "card_design": {
+        "name": "Diseño de la tarjeta",
+        "state": {
+          "classic": "Clásico",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Accesible",
+          "graphite": "Graphite"
+        }
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "Actividad de {child}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Tarea completada",
+              "chore_approved": "Tarea aprobada",
+              "chore_rejected": "Tarea rechazada",
+              "chore_approval_undone": "Aprobación de tarea deshecha",
+              "reward_claimed": "Premio canjeado",
+              "reward_approved": "Premio aprobado",
+              "reward_rejected": "Premio rechazado",
+              "badge_earned": "Insignia conseguida",
+              "level_up": "Subir de nivel",
+              "streak_updated": "Racha actualizada",
+              "streak_freeze_used": "Protector de racha usado",
+              "perfect_week": "Semana perfecta",
+              "weekly_target_reached": "Objetivo semanal conseguido",
+              "quest_completed": "Misión completada",
+              "challenge_completed": "Desafío completado",
+              "bonus_applied": "Bonificación aplicada",
+              "penalty_applied": "Penalización aplicada",
+              "surprise_bonus": "Bonificación sorpresa",
+              "mandatory_missed": "Tarea obligatoria no hecha",
+              "team_chore_completed": "Tarea de equipo completada",
+              "points_gifted": "Puntos regalados",
+              "help_requested": "Ayuda pedida",
+              "mood_logged": "Estado de ánimo registrado",
+              "weekly_goal_reached": "Meta semanal conseguida",
+              "sick_day": "Día de enfermo",
+              "chore_auto_approved": "Tarea aprobada automáticamente",
+              "penalty_redeemed": "Penalización recuperada",
+              "raffle_won": "Sorteo ganado",
+              "pet_evolved": "La mascota ha crecido",
+              "pet_item_bought": "Artículo de mascota comprado",
+              "reward_delivered": "Premio entregado",
+              "personal_best": "Récord personal",
+              "appeal_submitted": "Apelación enviada",
+              "appeal_decided": "Apelación resuelta",
+              "screen_time_low": "Queda poco tiempo de pantalla",
+              "screen_time_out": "Se acabó el tiempo de pantalla",
+              "screen_time_changed": "Tiempo de pantalla cambiado",
+              "screen_time_saved": "Tiempo de pantalla guardado",
+              "screen_time_jar_opened": "Bote de pantalla abierto",
+              "points_expired": "Puntos caducados",
+              "points_expiring": "Puntos a punto de caducar",
+              "reward_rated": "Premio valorado",
+              "penalty_warning": "Aviso de penalización",
+              "sibling_check": "Revisión entre hermanos"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Actividad familiar",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Meta familiar conseguida",
+              "season_champion": "Campeón de la temporada",
+              "bounty_posted": "Recompensa publicada",
+              "scheduled_change_applied": "Cambio programado aplicado",
+              "raffle_drawn": "Sorteo realizado",
+              "boost_started": "Impulso iniciado",
+              "boost_ended": "Impulso terminado",
+              "bin_day": "Tarea del día de la basura",
+              "shopping_job": "Tarea de la lista de la compra"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Hay aprobaciones pendientes"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: completar {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: canjear {reward}"
+      }
+    }
+  },
+  "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} todavía no se puede empezar: primero haz {chores}."
+    },
+    "calendar_unknown_event": {
+      "message": "Este evento no es una tarea de TaskMate del calendario de este niño."
+    },
+    "calendar_series_not_supported": {
+      "message": "Desde el calendario, una tarea que se repite solo se puede mover o quitar de día en día. Para cambiar toda la serie, edita la tarea en TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "No se pueden añadir eventos repetitivos desde el calendario. Crea una tarea que se repita en TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Renombra una tarea que se repite en TaskMate. Desde el calendario solo puedes mover o quitar un día concreto."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Una tarea que se repite mantiene su momento del día. Desde el calendario solo se puede cambiar la fecha de una ocasión concreta."
+    },
+    "calendar_past_date": {
+      "message": "No se pueden añadir tareas a un día pasado, ni moverlas a un día pasado o desde él."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} ya está el {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Ponle un título a la tarea."
+    },
+    "calendar_own_event": {
+      "message": "Este evento lo publicó el propio TaskMate, así que no se añade como tarea nueva."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} todavía no está abierta: pide ayuda cuando sea la hora de hacerla."
+    },
+    "help_chore_time_passed": {
+      "message": "Ya pasó el momento de {chore}, así que ahora no hay nada con lo que pedir ayuda."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} no se puede hacer ahora mismo, así que todavía no hay nada con lo que pedir ayuda."
+    },
+    "help_already_on_its_way": {
+      "message": "La ayuda con {chore} ya está en camino."
+    },
+    "help_cooldown": {
+      "message": "Espera un minuto antes de volver a pedir ayuda."
+    },
+    "rate_limited": {
+      "message": "Demasiadas peticiones desde esta cuenta. Inténtalo de nuevo dentro de un minuto."
+    },
+    "child_not_found": {
+      "message": "No se encontró al niño {child_id}"
+    },
+    "chore_not_found": {
+      "message": "No se encontró la tarea {chore_id}"
+    },
+    "reward_not_found": {
+      "message": "No se encontró el premio {reward_id}"
+    },
+    "teamwork_size_not_number": {
+      "message": "El tamaño del equipo debe ser un número entero."
+    },
+    "teamwork_size_range": {
+      "message": "Una tarea de equipo necesita entre 2 y {max} niños (o 0 para una tarea normal)."
+    },
+    "teamwork_points_mode": {
+      "message": "Los puntos del equipo deben ser 'each' o 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "Una tarea de equipo no puede ser también abierta."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Una tarea de equipo debe asignarse a todos, no a «el primero que llegue» ni a una rotación."
+    },
+    "teamwork_timed": {
+      "message": "Una tarea cronometrada no puede ser una tarea de equipo."
+    },
+    "teamwork_not_team_chore": {
+      "message": "La tarea “{name}” no es una tarea de equipo"
+    },
+    "swap_only_rotation": {
+      "message": "Solo se pueden intercambiar tareas con rotación"
+    },
+    "swap_won_at_auction": {
+      "message": "Esta tarea se ganó hoy en una subasta, así que no se puede intercambiar"
+    },
+    "swap_already_assigned": {
+      "message": "La tarea ya está asignada hoy a ese niño"
+    },
+    "swap_already_pending": {
+      "message": "Ya hay una solicitud de intercambio pendiente para esta tarea"
+    },
+    "swap_too_many_pending": {
+      "message": "Demasiadas solicitudes de intercambio pendientes"
+    },
+    "swap_request_not_found": {
+      "message": "No se encontró la solicitud de intercambio {request_id}"
+    },
+    "bulk_unknown_action": {
+      "message": "Acción en bloque desconocida: {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "No se puede editar en bloque: {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Niño desconocido: {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Franja horaria desconocida: {period}"
+    },
+    "chore_unknown": {
+      "message": "Tarea desconocida: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "No se puede saltar en el modo de asignación 'everyone'"
+    },
+    "skip_sticky_follower": {
+      "message": "No se puede saltar una tarea secundaria de un grupo fijo; salta la tarea principal"
+    },
+    "skip_pool_too_small": {
+      "message": "Saltar requiere una rotación de 2 o más niños"
+    },
+    "manual_start_everyone_mode": {
+      "message": "El inicio manual no está disponible en el modo de asignación 'everyone'"
+    },
+    "manual_start_not_in_pool": {
+      "message": "El niño {child_id} no está en la rotación de esta tarea"
+    },
+    "chore_photo_required": {
+      "message": "Esta tarea necesita una foto como prueba."
+    },
+    "chore_note_required": {
+      "message": "Di qué has hecho para enviar esta."
+    },
+    "chore_quantity_required": {
+      "message": "Di cuántas {unit} has hecho."
+    },
+    "backdate_day_range": {
+      "message": "Elige un día de los últimos {days} días, antes de hoy."
+    },
+    "backdate_switched_off": {
+      "message": "“{name}” está desactivada."
+    },
+    "backdate_not_assigned": {
+      "message": "“{name}” no es una de las tareas de {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "“{name}” rota o necesita un equipo, así que no se puede registrar en un día pasado."
+    },
+    "backdate_open_ended": {
+      "message": "“{name}” es abierta, así que necesita la nota del niño y un precio. Usa la tarjeta del niño."
+    },
+    "backdate_set_times": {
+      "message": "“{name}” tiene horas fijas, así que no se puede registrar en un día pasado."
+    },
+    "backdate_holiday": {
+      "message": "El {weekday} era vacaciones, así que no había tareas."
+    },
+    "backdate_sick_day": {
+      "message": "El {weekday} fue día de enfermo de {child}, así que no había tareas."
+    },
+    "backdate_birthday": {
+      "message": "El {weekday} fue el cumpleaños de {child}, un día libre de tareas."
+    },
+    "backdate_auction": {
+      "message": "“{name}” se ganó en una subasta ese día, así que no se puede registrar después."
+    },
+    "backdate_weekly_target_met": {
+      "message": "“{name}” ya alcanzó su objetivo de {target} esa semana."
+    },
+    "backdate_not_due": {
+      "message": "“{name}” no tocaba el {weekday}."
+    },
+    "backdate_daily_limit": {
+      "message": "“{name}” ya se hizo {done}/{limit} veces el {weekday}."
+    },
+    "chore_disabled": {
+      "message": "La tarea “{name}” está desactivada"
+    },
+    "parent_complete_one_shot": {
+      "message": "La tarea “{name}” es de una sola vez y no la puede completar un adulto"
+    },
+    "parent_complete_no_children": {
+      "message": "La tarea “{name}” no tiene niños que ocultar"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "La tarea “{name}” la comparte una rotación y solo se puede hacer por todos"
+    },
+    "parent_complete_not_assigned": {
+      "message": "La tarea “{name}” no está asignada a ese niño"
+    },
+    "bonus_subtask_not_found": {
+      "message": "No se encontró la subtarea extra {subtask_id} en la tarea “{name}”"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "La subtarea extra “{subtask}” no está asignada a {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "No se puede completar la subtarea extra “{subtask}”: primero hay que completar hoy la tarea principal “{name}”."
+    },
+    "bonus_subtask_already_done": {
+      "message": "La subtarea extra “{subtask}” ya se completó hoy."
+    },
+    "undo_window_passed": {
+      "message": "Esta tarea ya no se puede deshacer. Pide a un adulto que la deshaga."
+    },
+    "undo_points_spent": {
+      "message": "Esta tarea no se puede deshacer ahora: sus puntos ya se han gastado. Pregunta a un adulto."
+    },
+    "completion_not_found": {
+      "message": "No se encontró la tarea completada {completion_id}"
+    },
+    "completion_not_approved": {
+      "message": "La tarea completada no está aprobada; no hay nada que deshacer"
+    },
+    "chore_sort_unknown": {
+      "message": "Orden desconocido: “{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Tarea duplicada en el grupo: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "La tarea “{name}” usa el modo 'everyone' y no puede unirse a un grupo"
+    },
+    "task_group_already_member": {
+      "message": "La tarea “{name}” ya pertenece al grupo “{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "Regla de grupo de tareas desconocida: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Grupo de tareas desconocido: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "amount no puede ser 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Los protectores de racha están desactivados (streak_freeze_max es 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} ya tiene el máximo de {cap} protectores de racha"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} ya tiene el máximo de {cap} protectores de racha"
+    },
+    "streak_freeze_off": {
+      "message": "Los protectores de racha están desactivados"
+    },
+    "points_non_negative": {
+      "message": "points no puede ser negativo"
+    },
+    "transaction_not_found": {
+      "message": "No se encontró el movimiento {transaction_id}"
+    },
+    "undo_not_undoable": {
+      "message": "Esta acción no se puede deshacer"
+    },
+    "gift_undo_too_old": {
+      "message": "Este regalo es anterior a la función de deshacer y no se puede revertir automáticamente."
+    },
+    "gift_undo_spent": {
+      "message": "{child} ya ha gastado parte de este regalo, así que no se puede deshacer."
+    },
+    "gift_amount_positive": {
+      "message": "La cantidad del regalo debe ser positiva"
+    },
+    "gift_same_child": {
+      "message": "No se puede regalar al mismo niño"
+    },
+    "gift_child_not_found": {
+      "message": "No se encontró a quien envía o a quien recibe"
+    },
+    "gift_not_enough_points": {
+      "message": "No hay puntos suficientes: {child} tiene {points}, regalo {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "“{name}” es un bote compartido y su hucha no está llena. Hacen falta {cost}, hay {saved} ahorrados"
+    },
+    "reward_not_available_to": {
+      "message": "El premio “{name}” no está disponible para {child}"
+    },
+    "reward_sold_out": {
+      "message": "El premio “{name}” está agotado"
+    },
+    "reward_expired": {
+      "message": "El premio “{name}” ha caducado"
+    },
+    "reward_not_available_now": {
+      "message": "El premio “{name}” no está disponible ahora mismo"
+    },
+    "reward_claim_already_waiting": {
+      "message": "Ya hay un canje de “{name}” esperando aprobación"
+    },
+    "reward_claims_too_many": {
+      "message": "Ya hay demasiados canjes de premios esperando aprobación"
+    },
+    "reward_not_enough_points": {
+      "message": "No hay puntos suficientes. Hacen falta {cost}, hay {available} disponibles"
+    },
+    "reward_spending_cap": {
+      "message": "Límite de gasto alcanzado: ya se han usado {cap} en este periodo"
+    },
+    "reward_claim_target_missing": {
+      "message": "No se encontró el premio o el niño del canje {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "No hay puntos suficientes para aprobar. Hacen falta {cost}, hay {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "“{name}” ya se ha aprobado y ya no se puede rechazar"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "'Este premio' ya se ha aprobado y ya no se puede rechazar"
+    },
+    "pool_allocate_min": {
+      "message": "Los puntos que asignar deben ser al menos 1"
+    },
+    "pool_no_spendable": {
+      "message": "{child} no tiene puntos disponibles para gastar"
+    },
+    "pool_full": {
+      "message": "La hucha del premio “{name}” ya está llena"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} puede tener {name} una vez al día. Vuelve a estar disponible el {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} puede tener {name} una vez a la semana. Vuelve a estar disponible el {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} puede tener {name} una vez al mes. Vuelve a estar disponible el {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} puede tener {name} {count} veces al día. Vuelve a estar disponible el {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} puede tener {name} {count} veces a la semana. Vuelve a estar disponible el {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} puede tener {name} {count} veces al mes. Vuelve a estar disponible el {date}"
+    },
+    "reward_gift_off": {
+      "message": "Comprarse premios entre ellos está desactivado"
+    },
+    "reward_gift_children_only": {
+      "message": "Los premios solo se pueden comprar para niños"
+    },
+    "reward_gift_not_giftable": {
+      "message": "“{name}” no se puede comprar para otra persona"
+    },
+    "reward_rating_stars": {
+      "message": "Elige de 1 a 3 estrellas"
+    },
+    "reward_rating_not_yet": {
+      "message": "Ese premio todavía no se puede valorar"
+    },
+    "reward_rating_not_holder": {
+      "message": "Solo el niño que disfrutó del premio puede valorarlo"
+    },
+    "reward_rating_already": {
+      "message": "Ese premio ya se ha valorado"
+    },
+    "service_unknown_child": {
+      "message": "Niño desconocido: “{ref}”. Niños válidos: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Hay más de un niño llamado “{ref}”; usa el ID del niño ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Nada que actualizar: indica al menos un campo que cambiar"
+    },
+    "service_confirm_delete": {
+      "message": "Pon confirm: true para eliminar la tarea"
+    },
+    "penalty_already_earned_back": {
+      "message": "Esa penalización ya se recuperó."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Ese premio no está pendiente de entregar."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Ese premio ya se ha marcado como entregado."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Ese premio es de {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "“{field}” no se puede cambiar de forma programada"
+    },
+    "scheduled_expects_bool": {
+      "message": "“{field}” espera true o false"
+    },
+    "scheduled_expects_int": {
+      "message": "“{field}” espera un número entero"
+    },
+    "scheduled_negative": {
+      "message": "“{field}” no puede ser negativo"
+    },
+    "scheduled_expects_list": {
+      "message": "“{field}” espera una lista"
+    },
+    "scheduled_expects_text": {
+      "message": "“{field}” espera texto"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on debe ser una fecha ISO, p. ej., 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on debe ser una fecha futura"
+    },
+    "scheduled_no_fields": {
+      "message": "Un cambio programado debe cambiar al menos un campo"
+    },
+    "scheduled_change_not_found": {
+      "message": "No se encontró el cambio programado {change_id}"
+    },
+    "timed_not_timed": {
+      "message": "La tarea “{name}” no es cronometrada"
+    },
+    "timed_already_running": {
+      "message": "El temporizador ya está en marcha"
+    },
+    "timed_daily_cap": {
+      "message": "Límite diario alcanzado ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "“{name}” no está disponible para {child} ahora mismo"
+    },
+    "timed_no_running": {
+      "message": "No hay ningún temporizador en marcha que pausar"
+    },
+    "timed_no_active": {
+      "message": "No hay ningún temporizador activo que detener"
+    },
+    "set_time_unknown": {
+      "message": "Esa hora no es una de las horas fijas de esta tarea."
+    },
+    "sick_day_range": {
+      "message": "Elige un día entre hace una semana y dentro de un mes."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Nada que restaurar: nunca se eliminó o ya se ha borrado definitivamente"
+    },
+    "trash_id_exists": {
+      "message": "Ya existe algo con el id {item_id}"
+    },
+    "wish_not_found": {
+      "message": "No se encontró el deseo"
+    },
+    "wish_target_not_whole": {
+      "message": "El objetivo debe ser un número entero"
+    },
+    "wish_target_range": {
+      "message": "El objetivo debe estar entre 1 y {max}"
+    },
+    "wish_name_required": {
+      "message": "Ponle un nombre al deseo"
+    },
+    "wish_link_invalid": {
+      "message": "Los enlaces deben ser una dirección web que empiece por http:// o https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} ya tiene {max} deseos en marcha"
+    },
+    "wish_picture_unusable": {
+      "message": "Esa imagen no se puede usar"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Solo se puede retirar un deseo en espera o rechazado"
+    },
+    "wish_not_open_for_saving": {
+      "message": "“{name}” no admite ahorros"
+    },
+    "wish_move_min": {
+      "message": "Los puntos que mover deben ser al menos 1"
+    },
+    "wish_fully_funded": {
+      "message": "“{name}” ya está conseguido del todo"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} no tiene puntos disponibles para gastar"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Ahora mismo no se pueden sacar puntos de “{name}”"
+    },
+    "wish_take_back_min": {
+      "message": "Los puntos que recuperar deben ser al menos 1"
+    },
+    "wish_nothing_saved": {
+      "message": "No hay nada ahorrado en “{name}” que recuperar"
+    },
+    "wish_cannot_redeem": {
+      "message": "“{name}” no se puede canjear ahora mismo"
+    },
+    "wish_needs_more_points": {
+      "message": "A “{name}” todavía le faltan {points} puntos"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Ya hay demasiados canjes de premios esperando aprobación"
+    },
+    "wish_not_waiting_approval": {
+      "message": "“{name}” no está esperando aprobación"
+    },
+    "wish_cannot_decline": {
+      "message": "“{name}” ya no se puede rechazar"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "“{name}” no admite aportaciones"
+    },
+    "wish_pledge_name_required": {
+      "message": "Indica de quién es la aportación"
+    },
+    "wish_pledge_min": {
+      "message": "Una aportación debe ser de al menos 1 punto"
+    },
+    "wish_too_many_pledges": {
+      "message": "“{name}” ya tiene {max} aportaciones"
+    },
+    "wish_pledges_locked": {
+      "message": "Las aportaciones a “{name}” ya no se pueden cambiar"
+    },
+    "wish_pledge_not_found": {
+      "message": "No se encontró la aportación"
+    },
+    "wish_claim_missing": {
+      "message": "No se encontró el deseo o el niño del canje {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "“{name}” ya no está esperando a canjearse"
+    },
+    "wish_not_funded": {
+      "message": "“{name}” ya no está conseguido del todo"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "La imagen debe ser un emoji (hasta {max} caracteres)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Un color debe tener la forma #ff8800 o ser 'rainbow'."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Ese artículo no está en la tienda."
+    },
+    "pet_shop_name_too_long": {
+      "message": "El nombre puede tener como máximo {max} caracteres."
+    },
+    "pet_shop_name_required": {
+      "message": "Ponle un nombre al artículo."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Lugar desconocido: “{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "El coste y el nivel deben ser números enteros."
+    },
+    "pet_shop_cost_range": {
+      "message": "El coste debe estar entre 1 y {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "El nivel debe estar entre 0 y {max}."
+    },
+    "pet_shop_full": {
+      "message": "La tienda admite como máximo {max} artículos."
+    },
+    "pets_switched_off": {
+      "message": "Las mascotas están desactivadas."
+    },
+    "pet_adopt_first": {
+      "message": "Primero adopta una mascota."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Eso todavía no está desbloqueado."
+    },
+    "pet_shop_closed": {
+      "message": "La tienda de mascotas está cerrada."
+    },
+    "pet_shop_buy_first": {
+      "message": "Primero cómpralo."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Ese artículo no está a la venta."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Eso se desbloquea en el nivel {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Ya lo tienes."
+    },
+    "pet_shop_already_pending": {
+      "message": "Eso ya está esperando a un adulto."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Todavía no tienes puntos suficientes para eso."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Esa compra ya no está en espera."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Ese niño o artículo ya no existe; recházala."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} no tiene ahora puntos suficientes para eso."
+    },
+    "pet_unknown_species": {
+      "message": "Mascota desconocida: “{species}”"
+    },
+    "pet_name_required": {
+      "message": "Ponle un nombre a tu mascota."
+    },
+    "pet_no_egg": {
+      "message": "Todavía no hay ningún huevo que abrir."
+    },
+    "auction_not_found": {
+      "message": "Esa subasta ya no existe. Actualiza la tarjeta."
+    },
+    "auction_refuse_off": {
+      "message": "Esa tarea está desactivada."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Una tarea sin asignar no se puede dar a nadie, así que no se puede subastar."
+    },
+    "auction_refuse_team": {
+      "message": "Una tarea de equipo la comparte un equipo, así que no se puede subastar."
+    },
+    "auction_refuse_timed": {
+      "message": "Una tarea cronometrada se paga por minuto, así que no se puede subastar."
+    },
+    "auction_refuse_open_ended": {
+      "message": "El precio de una tarea abierta lo pone un adulto, así que no se puede subastar."
+    },
+    "auction_invalid_date": {
+      "message": "Fecha no válida: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Elige una ocasión de mañana en adelante."
+    },
+    "auction_not_scheduled": {
+      "message": "“{chore}” no está programada el {date}."
+    },
+    "auction_already_exists": {
+      "message": "Esa ocasión ya tiene una subasta."
+    },
+    "auction_points_not_whole": {
+      "message": "Los puntos deben ser números enteros."
+    },
+    "auction_max_range": {
+      "message": "La puja máxima está entre 1 y {max} puntos."
+    },
+    "auction_min_range": {
+      "message": "La puja mínima debe estar entre 1 y la máxima."
+    },
+    "auction_needs_close": {
+      "message": "Una subasta necesita una hora de cierre."
+    },
+    "auction_close_in_past": {
+      "message": "La hora de cierre ya ha pasado."
+    },
+    "auction_close_before_day": {
+      "message": "Las pujas deben cerrarse antes del día de la tarea."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Solo pueden pujar los niños que pueden hacer esta tarea."
+    },
+    "auction_no_bidders": {
+      "message": "Elige al menos un niño que pueda pujar."
+    },
+    "auction_already_closed": {
+      "message": "Esta subasta ya se ha cerrado."
+    },
+    "auction_already_cancelled": {
+      "message": "Esta subasta ya se canceló."
+    },
+    "auction_occurrence_passed": {
+      "message": "Esa ocasión ya ha pasado."
+    },
+    "auction_still_live": {
+      "message": "Esta subasta sigue activa. Cancélala."
+    },
+    "auction_not_for_you": {
+      "message": "Esta subasta no es para ti."
+    },
+    "auction_bidding_closed": {
+      "message": "Las pujas de esta subasta se han cerrado."
+    },
+    "auction_bid_not_whole": {
+      "message": "Una puja es un número entero de puntos."
+    },
+    "auction_bid_range": {
+      "message": "Puja entre {min} y {max} puntos."
+    },
+    "auction_no_bid": {
+      "message": "No has pujado en esta."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Hora de caducidad no válida: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Esa recompensa ya no existe. Actualiza la tarjeta."
+    },
+    "bounty_title_required": {
+      "message": "Una recompensa necesita un título."
+    },
+    "bounty_points_not_whole": {
+      "message": "Los puntos deben ser un número entero."
+    },
+    "bounty_points_range": {
+      "message": "Una recompensa vale entre 1 y {max} puntos."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "La reserva debe ser un número entero de horas."
+    },
+    "bounty_claim_hours_range": {
+      "message": "La reserva está entre 1 y {max} horas."
+    },
+    "bounty_expiry_in_past": {
+      "message": "La caducidad ya ha pasado."
+    },
+    "bounty_finished_locked": {
+      "message": "Una recompensa terminada no se puede editar."
+    },
+    "bounty_claimed_locked": {
+      "message": "Una vez cogida una recompensa, solo se pueden cambiar sus puntos y su caducidad."
+    },
+    "bounty_review_before_remove": {
+      "message": "Aprueba o rechaza el trabajo terminado antes de quitar esta recompensa."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Solo se puede liberar una recompensa cogida."
+    },
+    "bounty_not_for_you": {
+      "message": "Esta recompensa no es para ti."
+    },
+    "bounty_taken": {
+      "message": "Alguien llegó antes: esta recompensa ya no está en el tablón."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Primero termina “{title}”: solo puedes tener una recompensa a la vez."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "No has cogido esta recompensa."
+    },
+    "bounty_claim_expired": {
+      "message": "Tu reserva de esta recompensa ha vencido."
+    },
+    "bounty_photo_required": {
+      "message": "Esta recompensa necesita una foto del trabajo terminado."
+    },
+    "raffle_name_required": {
+      "message": "Ponle un nombre al sorteo."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Una papeleta cuesta de 1 a {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Elige cuándo se hace el sorteo."
+    },
+    "raffle_field_required": {
+      "message": "{field} es obligatorio"
+    },
+    "raffle_draw_in_past": {
+      "message": "El sorteo tiene que ser en el futuro."
+    },
+    "raffle_not_found": {
+      "message": "No se encontró el sorteo"
+    },
+    "raffle_not_open_edit": {
+      "message": "Solo se puede cambiar un sorteo abierto."
+    },
+    "raffle_price_locked": {
+      "message": "Ya se han comprado papeletas, así que el precio no puede cambiar."
+    },
+    "raffle_closed": {
+      "message": "Este sorteo se ha cerrado."
+    },
+    "raffle_drawing": {
+      "message": "Este sorteo se está realizando."
+    },
+    "raffle_not_open_to": {
+      "message": "Este sorteo no está abierto para {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Compra al menos una papeleta."
+    },
+    "raffle_max_tickets": {
+      "message": "Puedes tener como máximo {max} papeletas."
+    },
+    "raffle_not_enough_points": {
+      "message": "No hay puntos suficientes para tantas papeletas."
+    },
+    "raffle_already_closed": {
+      "message": "Este sorteo ya se ha cerrado."
+    },
+    "roulette_off": {
+      "message": "La ruleta de tareas está desactivada"
+    },
+    "roulette_no_spins": {
+      "message": "Hoy no quedan tiradas"
+    },
+    "roulette_nothing_left": {
+      "message": "No queda nada por lo que girar"
+    },
+    "unlock_not_allowed": {
+      "message": "“{entity_id}” no está en la lista de desbloqueos permitidos. Añádela en Ajustes antes de usarla como premio."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "Los minutos de desbloqueo deben ser un número entero"
+    },
+    "unlock_minutes_negative": {
+      "message": "Los minutos de desbloqueo no pueden ser negativos"
+    },
+    "unlock_minutes_too_many": {
+      "message": "Los minutos de desbloqueo no pueden superar {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Ese avatar no está en el catálogo"
+    },
+    "avatar_locked": {
+      "message": "Ese avatar todavía no está desbloqueado"
+    },
+    "weekly_goals_off": {
+      "message": "Las metas semanales están desactivadas."
+    },
+    "weekly_goal_range": {
+      "message": "Elige una meta de 0 a {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Una meta tiene que ser de al menos {bonus}, la bonificación que paga."
+    },
+    "weekly_goal_locked": {
+      "message": "La meta de esta semana ya se ha alcanzado y pagado, así que no puede cambiar hasta el lunes."
+    },
+    "challenge_name_required": {
+      "message": "El nombre del desafío es obligatorio"
+    },
+    "challenge_target_min": {
+      "message": "El objetivo debe ser al menos 1"
+    },
+    "challenge_not_found": {
+      "message": "No se encontró el desafío {challenge_id}"
+    },
+    "quest_name_required": {
+      "message": "El nombre de la misión es obligatorio"
+    },
+    "quest_needs_step": {
+      "message": "Una misión necesita al menos un paso"
+    },
+    "quest_not_found": {
+      "message": "No se encontró la misión {quest_id}"
+    },
+    "admin_only": {
+      "message": "Solo administradores"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate no está inicializado"
+    },
+    "not_allowed": {
+      "message": "No permitido"
+    },
+    "handler_failed": {
+      "message": "Algo salió mal; consulta el registro de Home Assistant"
+    },
+    "chore_one_off_past_day": {
+      "message": "Una tarea de una sola vez no se puede poner en un día que ya ha pasado"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start debe ser una fecha ISO"
+    },
+    "penalty_not_found": {
+      "message": "No se encontró la penalización {penalty_id}"
+    },
+    "bonus_not_found": {
+      "message": "No se encontró la bonificación {bonus_id}"
+    },
+    "group_not_found": {
+      "message": "No se encontró el grupo {group_id}"
+    },
+    "chores_bulk_no_names": {
+      "message": "Hace falta al menos un nombre de tarea"
+    },
+    "notif_child_not_found": {
+      "message": "No se encontró al niño"
+    },
+    "notif_parent_not_found": {
+      "message": "No se encontró al adulto"
+    },
+    "recap_not_found": {
+      "message": "No se encontró el resumen"
+    },
+    "voucher_not_approved": {
+      "message": "Solo se puede imprimir un premio aprobado"
+    },
+    "voucher_missing": {
+      "message": "Ese premio o niño ya no existe"
+    },
+    "setup_invalid_birthday": {
+      "message": "El cumpleaños “{value}” no es una fecha válida"
+    },
+    "kiosk_pin_invalid": {
+      "message": "Un PIN de quiosco debe tener exactamente 4 dígitos"
+    },
+    "time_periods_empty": {
+      "message": "time_periods debe ser una lista no vacía"
+    },
+    "time_periods_too_many": {
+      "message": "demasiadas franjas (máx. {max})"
+    },
+    "time_periods_not_object": {
+      "message": "cada franja debe ser un objeto"
+    },
+    "time_periods_duplicate_id": {
+      "message": "id de franja duplicado: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "cada franja personalizada necesita un nombre"
+    },
+    "time_periods_invalid_time": {
+      "message": "hora no válida para la franja “{name}” (usa HH:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "la franja “{name}” debe empezar antes de terminar"
+    },
+    "time_periods_overlap": {
+      "message": "“{name}” se solapa con “{other}”: las franjas no pueden solaparse"
+    },
+    "time_periods_in_use": {
+      "message": "no se puede eliminar una franja que aún usan tareas: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods debe ser una lista"
+    },
+    "vacation_periods_too_many": {
+      "message": "demasiados periodos de vacaciones (máx. {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "cada periodo de vacaciones debe ser un objeto"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "cada periodo de vacaciones necesita fechas de inicio y fin válidas (AAAA-MM-DD)"
+    },
+    "template_apply_empty": {
+      "message": "No se puede aplicar una plantilla sin tareas"
+    },
+    "template_none_selected": {
+      "message": "Hay que elegir al menos una tarea"
+    },
+    "template_no_valid_chores": {
+      "message": "No se encontraron tareas válidas para los ID elegidos"
+    },
+    "template_needs_chore": {
+      "message": "La plantilla debe tener al menos una tarea"
+    },
+    "template_builtin_modify": {
+      "message": "No se puede modificar la plantilla integrada “{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "No se puede eliminar la plantilla integrada “{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "Eso no parece un paquete de TaskMate"
+    },
+    "template_pack_wrong_format": {
+      "message": "No es un paquete de plantillas de TaskMate"
+    },
+    "template_pack_version_nan": {
+      "message": "La versión del paquete no es un número"
+    },
+    "template_pack_too_new": {
+      "message": "Este paquete necesita un TaskMate más reciente (versión del paquete {version}; esta entiende {supported})"
+    },
+    "template_pack_empty": {
+      "message": "El paquete no contiene plantillas"
+    },
+    "template_pack_too_many": {
+      "message": "El paquete tiene demasiadas plantillas (máx. {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "El paquete contiene una plantilla mal formada"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Una plantilla del paquete no tiene nombre"
+    },
+    "template_pack_template_no_chores": {
+      "message": "La plantilla “{name}” no tiene tareas"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "La plantilla “{name}” tiene demasiadas tareas"
+    },
+    "template_pack_malformed_chore": {
+      "message": "La plantilla “{name}” tiene una tarea mal formada"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "Una tarea de “{name}” no tiene nombre"
+    },
+    "boost_bad_time": {
+      "message": "“{value}” no es una hora como 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "El multiplicador debe ser un número."
+    },
+    "boost_multiplier_range": {
+      "message": "Elige un multiplicador de ×{min} a ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "No se encontró la tarea {chore_id}."
+    },
+    "boost_child_not_found": {
+      "message": "No se encontró al niño {child_id}."
+    },
+    "boost_start_past": {
+      "message": "Un impulso no puede empezar en el pasado."
+    },
+    "boost_too_far_ahead": {
+      "message": "Un impulso se puede programar con hasta una semana de antelación."
+    },
+    "boost_minutes_nan": {
+      "message": "Los minutos deben ser un número entero."
+    },
+    "boost_minutes_range": {
+      "message": "Elige de 1 a {max} minutos."
+    },
+    "boost_already_ended": {
+      "message": "Ese impulso ya ha terminado."
+    },
+    "boost_rule_no_days": {
+      "message": "Elige al menos un día."
+    },
+    "boost_rule_end_before_start": {
+      "message": "La hora final debe ser posterior a la de inicio."
+    },
+    "boost_rules_max": {
+      "message": "Hasta {max} impulsos recurrentes."
+    },
+    "boost_rule_gone": {
+      "message": "Ese impulso recurrente ya no existe."
+    },
+    "season_pack_unknown": {
+      "message": "Paquete de temporada desconocido: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Niño desconocido: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Esta tarea ya se ha deshecho. Actualiza la tarjeta."
+    },
+    "import_invalid_payload": {
+      "message": "Datos de exportación de TaskMate no válidos"
+    },
+    "import_data_not_object": {
+      "message": "los datos de importación deben ser un objeto"
+    },
+    "allowance_points_min": {
+      "message": "points debe ser >= 1"
+    },
+    "allowance_not_enabled": {
+      "message": "La paga no está activada"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} solo tiene {points} {points_name} para pagar."
+    },
+    "appeals_off": {
+      "message": "Las apelaciones están desactivadas."
+    },
+    "appeals_already_appealed": {
+      "message": "Eso ya se ha apelado."
+    },
+    "appeals_not_appealable": {
+      "message": "Eso no se puede apelar."
+    },
+    "appeals_not_found": {
+      "message": "Esa apelación ya no existe."
+    },
+    "appeals_already_decided": {
+      "message": "Esa apelación ya se ha resuelto."
+    },
+    "appeals_child_gone": {
+      "message": "El niño ya no está."
+    },
+    "appeals_reward_gone": {
+      "message": "Ese premio ya no existe."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Esa penalización ya se ha retirado."
+    },
+    "appeals_unknown_kind": {
+      "message": "Tipo de apelación desconocido: {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "El cumpleaños debe ser AAAA-MM-DD o MM-DD; se recibió “{value}”"
+    },
+    "birthday_in_future": {
+      "message": "El cumpleaños no puede ser en el futuro"
+    },
+    "chore_reminders_off": {
+      "message": "Los recordatorios están desactivados"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} no es una de las tareas de {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "Elige una hora como 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Elige una hora entre las {earliest} y las {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on debe ser una fecha ISO, p. ej., 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Esa inspección ya no existe. Actualiza e inténtalo de nuevo."
+    },
+    "inspection_already_decided": {
+      "message": "Esa inspección ya se ha resuelto o se ha cerrado."
+    },
+    "inspections_off": {
+      "message": "Las inspecciones sorpresa están desactivadas en Ajustes."
+    },
+    "inspection_chore_gone": {
+      "message": "Esa tarea ya no existe."
+    },
+    "inspection_not_approved": {
+      "message": "Solo se pueden inspeccionar tareas aprobadas."
+    },
+    "inspection_not_child_chore": {
+      "message": "Solo se puede inspeccionar una tarea propia de un niño."
+    },
+    "inspection_child_gone": {
+      "message": "Ese niño ya no existe."
+    },
+    "inspection_too_old": {
+      "message": "Solo se pueden inspeccionar tareas aprobadas en las últimas {hours} horas."
+    },
+    "inspection_already_inspected": {
+      "message": "Esa tarea ya se ha inspeccionado."
+    },
+    "inspection_redo_today_only": {
+      "message": "Solo se puede devolver para repetir una tarea terminada hoy."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url debe ser una /ruta, una URL http(s) o noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group no puede contener espacios (prueba family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group no puede contener caracteres de control"
+    },
+    "notification_group_too_long": {
+      "message": "group debe tener 64 caracteres o menos"
+    },
+    "notification_unknown_type": {
+      "message": "Tipo de notificación desconocido: {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Destinatario de notificación desconocido: {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "Los minutos deben ser un número entero"
+    },
+    "screen_time_minutes_max": {
+      "message": "Los minutos no pueden superar {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "El bote de pantalla está desactivado"
+    },
+    "screen_time_jar_full": {
+      "message": "El bote está lleno"
+    },
+    "screen_time_jar_nothing": {
+      "message": "No hay minutos que guardar"
+    },
+    "setup_unknown_age_group": {
+      "message": "Grupo de edad desconocido: “{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Cada niño nuevo necesita su propio ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Un niño necesita un nombre"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Tarea asignada a un niño desconocido: “{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "Una tarea necesita un nombre"
+    },
+    "setup_reward_needs_name": {
+      "message": "Un premio necesita un nombre"
+    },
+    "sibling_checks_off": {
+      "message": "La revisión entre hermanos está desactivada"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Veredicto desconocido: {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Esa tarea ya se ha revisado. Actualiza la tarjeta."
+    },
+    "sibling_check_own_chore": {
+      "message": "No puedes revisar tu propia tarea"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} no puede revisar las tareas de este niño"
+    },
+    "sound_invalid_file_name": {
+      "message": "Nombre de archivo de sonido no válido: {file}"
+    },
+    "sound_already_registered": {
+      "message": "El sonido {file} ya está registrado"
+    },
+    "sound_unknown_custom": {
+      "message": "Sonido personalizado desconocido: {file}"
+    },
+    "tour_adult": {
+      "message": "Los perfiles de adultos no tienen recorrido"
+    },
+    "tour_bad_status": {
+      "message": "status debe ser 'done' o 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Paso del recorrido desconocido: {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Ya está hablando; inténtalo de nuevo en un momento"
+    },
+    "tts_no_media_player": {
+      "message": "No se indicó ningún reproductor multimedia y no hay uno predeterminado en Ajustes"
+    },
+    "tts_no_entity": {
+      "message": "No se encontró ninguna entidad de texto a voz. Configura una en Ajustes o indica tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} no es hoy una de las tareas de {child}."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Estado de ánimo desconocido: “{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Las horas fijas deben ser una lista."
+    },
+    "set_times_too_many": {
+      "message": "Una tarea puede tener como máximo {max} horas fijas."
+    },
+    "set_times_timed": {
+      "message": "Una tarea cronometrada no puede tener horas fijas."
+    },
+    "set_times_open_ended": {
+      "message": "Una tarea abierta no puede tener horas fijas."
+    },
+    "set_times_quantity": {
+      "message": "Una tarea de cantidad no puede tener horas fijas."
+    },
+    "set_times_teamwork": {
+      "message": "Una tarea de equipo no puede tener horas fijas."
+    },
+    "set_times_need_start_end": {
+      "message": "Cada hora fija necesita un inicio y un final."
+    },
+    "set_times_bad_format": {
+      "message": "Las horas fijas necesitan un inicio y un final como 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "Una hora fija debe cerrar después de abrir, el mismo día."
+    },
+    "set_times_overlap": {
+      "message": "Dos horas fijas se solapan. Mueve una para que no coincidan."
+    },
+    "template_not_found": {
+      "message": "No se encontró la plantilla {template_id}"
+    },
+    "upload_admin_required": {
+      "message": "Se requiere administrador"
+    },
+    "upload_file_too_large": {
+      "message": "Archivo demasiado grande"
+    },
+    "upload_expected_multipart": {
+      "message": "Se esperaba un formulario multipart"
+    },
+    "upload_too_many_parts": {
+      "message": "Demasiadas partes en el formulario"
+    },
+    "upload_no_file": {
+      "message": "No se ha enviado ningún archivo"
+    },
+    "upload_image_unsupported": {
+      "message": "No es una imagen compatible (JPEG, PNG o WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Almacenamiento de imágenes lleno"
+    },
+    "upload_image_store_failed": {
+      "message": "No se pudo guardar la imagen"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Demasiadas subidas, inténtalo de nuevo en breve"
+    },
+    "upload_photo_busy": {
+      "message": "Demasiadas subidas a la vez, inténtalo de nuevo en un momento"
+    },
+    "upload_photo_storage_full": {
+      "message": "Almacenamiento de fotos lleno"
+    },
+    "upload_photo_timeout": {
+      "message": "La subida tardó demasiado"
+    },
+    "upload_photo_invalid": {
+      "message": "No es una imagen válida"
+    },
+    "upload_photo_store_failed": {
+      "message": "No se pudo guardar la foto"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Tienes demasiadas fotos esperando a adjuntarse a una tarea. Primero envíalas o quítalas."
+    },
+    "upload_sound_unsupported": {
+      "message": "No es un sonido compatible (MP3, OGG, WAV o M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Almacenamiento de sonidos lleno"
+    },
+    "upload_sound_store_failed": {
+      "message": "No se pudo guardar el sonido"
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate no puede enviar notificaciones a {who}",
+      "description": "TaskMate está configurado para avisar a {who} mediante `{service}`, pero ese servicio ya no existe; normalmente porque el móvil se quitó o se renombró en la integración Mobile App.\n\nAbre el panel de administración de TaskMate → Notificaciones y elige el servicio actual para {who}. Esta reparación desaparece sola cuando el servicio existe."
+    },
+    "child_entity_missing": {
+      "title": "El perfil de {child} usa una entidad que no existe",
+      "description": "El perfil de {child} usa `{entity}`, que ya no existe. La disponibilidad, los recordatorios según presencia o la foto de perfil que dependen de ella no funcionarán.\n\nAbre el panel de administración de TaskMate → Niños, edita a {child} y elige una entidad que exista (o vacía el campo)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” usa una entidad que no existe",
+      "description": "“{chore}” comprueba `{entity}` para decidir cuándo se muestra, pero esa entidad ya no existe, así que la comprobación se omite.\n\nAbre el panel de administración de TaskMate → Tareas, edita “{chore}” y elige una entidad que exista (o vacíala)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "La tarea “{chore}” no está asignada a nadie",
+      "description": "Se han quitado todos los niños a los que estaba asignada “{chore}”, así que nadie la verá nunca.\n\nAbre el panel de administración de TaskMate → Tareas y asigna “{chore}” a un niño, o elimínala."
+    },
+    "chore_dependency_missing": {
+      "title": "La tarea “{chore}” nunca se podrá desbloquear",
+      "description": "“{chore}” espera a que se haga antes otra tarea, pero esa tarea se ha eliminado, así que “{chore}” se queda bloqueada para siempre.\n\nAbre el panel de administración de TaskMate → Tareas, edita “{chore}” y quita la dependencia que falta."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Ningún niño puede canjear el premio “{reward}”",
+      "description": "Se han quitado todos los niños para los que era “{reward}”, así que nadie puede canjearlo.\n\nAbre el panel de administración de TaskMate → Premios y elige para quién es “{reward}”, o elimínalo."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "El premio “{reward}” no desbloquea nada",
+      "description": "“{reward}” está configurado para encender `{entity}`, pero esa entidad ya no está en la lista de desbloqueos permitidos de TaskMate, así que no pasa nada cuando se aprueba el premio.\n\nAbre el panel de administración de TaskMate → Ajustes y añade `{entity}` a la lista de desbloqueos permitidos, o edita “{reward}”."
+    }
+  }
+}

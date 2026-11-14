@@ -1,0 +1,3551 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "欢迎使用 TaskMate！",
+        "description": "设置你的家庭家务管理系统。你可以自定义孩子们赚取的积分货币。",
+        "data": {
+          "points_name": "积分货币名称（例如：星星、金币、积分）",
+          "points_icon": "积分图标"
+        }
+      }
+    },
+    "error": {
+      "name_required": "名称为必填项"
+    },
+    "abort": {
+      "already_configured": "TaskMate 已经配置过了"
+    },
+    "create_entry": {
+      "default": "TaskMate 已就绪。[打开 TaskMate 面板](/taskmate-admin)，用设置向导添加你的孩子，它会推荐适合他们年龄的家务。"
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "保存更改",
+        "re_enable": "重新启用家务",
+        "disable": "停用家务",
+        "delete": "删除这项家务"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "保存更改",
+        "delete": "删除奖励"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "早上",
+        "afternoon": "下午",
+        "evening": "晚上",
+        "night": "睡前",
+        "anytime": "随时"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "每周固定几天",
+        "recurring": "重复（每 N 天/周/月）",
+        "one_shot": "一次性任务（单日）"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "星期一",
+        "tuesday": "星期二",
+        "wednesday": "星期三",
+        "thursday": "星期四",
+        "friday": "星期五",
+        "saturday": "星期六",
+        "sunday": "星期日"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "每 2 天",
+        "weekly": "每周",
+        "every_2_weeks": "每 2 周",
+        "monthly": "每月",
+        "every_3_months": "每 3 个月",
+        "every_6_months": "每 6 个月"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "星期一",
+        "tuesday": "星期二",
+        "wednesday": "星期三",
+        "thursday": "星期四",
+        "friday": "星期五",
+        "saturday": "星期六",
+        "sunday": "星期日",
+        "any_day": "任何一天"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "立即可做",
+        "wait_for_first_occurrence": "等到第一次计划时间"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "重置 — 错过一天连续天数归 0",
+        "pause": "暂停 — 保留连续天数直到下次完成"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "不筛选 — 始终显示家务",
+        "equals": "等于 — 实体状态完全一致时显示",
+        "not_equals": "不等于 — 实体状态不一致时显示",
+        "gte": "大于等于（≥）— 数值 ≥ 目标值时显示",
+        "lte": "小于等于（≤）— 数值 ≤ 目标值时显示",
+        "gt": "大于（>）— 数值 > 目标值时显示",
+        "lt": "小于（<）— 数值 < 目标值时显示"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "所有人 — 每个被分配的孩子都能看到这项家务",
+        "alternating": "交替 — 在被分配的孩子中轮流，每天一人",
+        "random": "随机 — 每天从被分配的孩子中随机选一个",
+        "balanced": "均衡 — 把今天的均衡家务平均分给被分配的孩子",
+        "first_come": "先到先得 — 第一个完成的孩子获胜，其他人看不到",
+        "unassigned": "未分配 — 没有孩子能看到这项家务"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "固定 — 组内所有家务由同一个孩子做",
+        "spread": "分散 — 今天组内由不同孩子做"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "保存更改",
+        "delete": "删除分组"
+      }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "无声音",
+        "coin": "金币",
+        "levelup": "升级",
+        "fanfare": "号角",
+        "chime": "叮咚",
+        "powerup": "能量提升",
+        "undo": "撤销",
+        "fart1": "放屁 1",
+        "fart2": "放屁 2",
+        "fart3": "放屁 3",
+        "fart4": "放屁 4",
+        "fart5": "放屁 5",
+        "fart6": "放屁 6",
+        "fart7": "放屁 7",
+        "fart8": "放屁 8",
+        "fart9": "放屁 9",
+        "fart10": "放屁 10",
+        "fart_random": "随机放屁"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "简单",
+        "medium": "中等",
+        "hard": "困难"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "每人获得全部积分",
+        "split": "平分积分（向下取整）"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "每次到期时",
+        "week": "每周",
+        "month": "每月"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "铜",
+        "silver": "银",
+        "gold": "金",
+        "platinum": "白金"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "全部满足（且）",
+        "or": "满足任一（或）"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 小时",
+        "2h": "2 小时",
+        "4h": "4 小时",
+        "bed": "到就寝时间"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "超棒",
+        "good": "不错",
+        "ok": "还行",
+        "sad": "难过",
+        "upset": "生气"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "家务",
+        "reward": "奖励",
+        "penalty": "扣分"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "龙",
+        "cat": "猫",
+        "dog": "狗",
+        "bunny": "兔子",
+        "dino": "恐龙",
+        "unicorn": "独角兽"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "做好了",
+        "not_yet": "还没有"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "完成家务",
+      "description": "将孩子的一项家务标记为已完成",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要完成的家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "完成家务的孩子的 ID"
+        },
+        "note": {
+          "name": "说明",
+          "description": "孩子用自己的话描述做了什么。开放式家务必填，审批时会显示给家长。"
+        },
+        "suggested_points": {
+          "name": "建议积分",
+          "description": "孩子认为这项工作值多少分。仅供审批的家长参考 — 本身不会发放任何积分。"
+        },
+        "quantity": {
+          "name": "数量",
+          "description": "计数式家务（“阅读 20 页”）中孩子完成的单位数量。孩子完成这类家务时必填；家务积分按单位发放。"
+        },
+        "time_id": {
+          "name": "固定时间",
+          "description": "对于设置了固定时间的家务，指定勾选哪个时间。留空则为当前开放的时间。"
+        },
+        "as_parent": {
+          "name": "以家长身份",
+          "description": "代孩子完成并立即发放积分，跳过审批。"
+        },
+        "photo_url": {
+          "name": "照片 URL",
+          "description": "可选，作为完成证明提交的照片的 URL 或路径（例如摄像头快照）。审批时会显示给家长。"
+        },
+        "completed_date": {
+          "name": "完成日期",
+          "description": "为之前某天（最多 7 天前，不含今天）已完成但未勾选的任务补记。仅限家长；立即批准。当天的每日次数上限仍然适用。"
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "完成奖励子任务",
+      "description": "在主家务完成后完成一个奖励子任务",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "主家务的 ID"
+        },
+        "bonus_subtask_id": {
+          "name": "奖励子任务 ID",
+          "description": "要完成的奖励子任务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "完成奖励子任务的孩子的 ID"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "批准家务",
+      "description": "批准一项已完成的家务并发放积分",
+      "fields": {
+        "completion_id": {
+          "name": "完成记录 ID",
+          "description": "要批准的家务完成记录的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "发放这么多积分，而不是家务本身的分值。留空则使用家务的积分。"
+        },
+        "rating": {
+          "name": "质量评分",
+          "description": "可选，1-3 星评分，表示家务做得怎么样。开启质量评分时，会按该星级的倍数调整积分；留空则发放 100%。"
+        },
+        "note": {
+          "name": "表扬留言",
+          "description": "可选，给孩子的简短留言，今天会显示在孩子的卡片上（最多 120 个字符）。"
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "批准所有家务",
+      "description": "批准所有待批准的家务完成记录（或指定的一组）并发放积分",
+      "fields": {
+        "completion_ids": {
+          "name": "完成记录 ID 列表",
+          "description": "要批准的特定完成记录 ID；省略则批准所有待批准的"
+        },
+        "rating": {
+          "name": "质量评分",
+          "description": "可选，应用于本次调用批准的每项家务的 1-3 星评分（必须开启质量评分）。"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "驳回家务",
+      "description": "驳回一项已完成的家务",
+      "fields": {
+        "completion_id": {
+          "name": "完成记录 ID",
+          "description": "要驳回的家务完成记录的 ID"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "可选，显示给孩子的原因"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "撤销家务",
+      "description": "让孩子撤回自己的家务 — 家长审核前的待批准提交，或在家务撤销时限内自动批准的家务。除非在 TaskMate 设置中将时限设为大于 0，否则此功能关闭；家长已审核的内容需要家长撤销。",
+      "fields": {
+        "completion_id": {
+          "name": "完成记录 ID",
+          "description": "要撤回的孩子家务完成记录的 ID"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "撤销家务批准",
+      "description": "撤销误操作的家务批准 — 扣除已发放的积分，并将完成记录恢复为待批准，以便重新批准。",
+      "fields": {
+        "completion_id": {
+          "name": "完成记录 ID",
+          "description": "要恢复为待批准的已批准家务完成记录的 ID"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "撤销积分记录",
+      "description": "按 ID 撤销一条积分记录 — 扣分、奖励分、手动加减和礼物（双方）。自动产生的记录（周末/连续打卡/完美一周奖励、共享池转移、衰减、利息）无法撤销。",
+      "fields": {
+        "transaction_id": {
+          "name": "记录 ID",
+          "description": "要撤销的积分记录的 ID"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "领取奖励",
+      "description": "孩子用积分领取奖励",
+      "fields": {
+        "reward_id": {
+          "name": "奖励 ID",
+          "description": "要领取的奖励的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "领取奖励的孩子的 ID"
+        },
+        "recipient_id": {
+          "name": "接收人 ID",
+          "description": "改为给兄弟姐妹购买。由领取的孩子付积分；需要开启“孩子可以互相兑换奖励”。"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "批准奖励",
+      "description": "批准一个奖励领取",
+      "fields": {
+        "claim_id": {
+          "name": "领取 ID",
+          "description": "要批准的奖励领取的 ID"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "向共享池存入积分",
+      "description": "把积分从孩子的可用余额转入某个奖励的储蓄池（锁定）。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "存入积分的孩子的 ID"
+        },
+        "reward_id": {
+          "name": "奖励 ID",
+          "description": "要存入的奖励共享池的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要存入的积分数（不超过共享池容量和可用余额）"
+        }
+      }
+    },
+    "add_points": {
+      "name": "增加积分",
+      "description": "给孩子增加奖励积分",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要增加积分的孩子的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要增加的积分数"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "可选，奖励的原因"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "减少积分",
+      "description": "从孩子处扣除积分（扣分）",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要扣除积分的孩子的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要扣除的积分数"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "可选，扣分的原因"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "驳回奖励",
+      "description": "驳回一个奖励领取",
+      "fields": {
+        "claim_id": {
+          "name": "领取 ID",
+          "description": "要驳回的奖励领取的 ID"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "可选，显示给孩子的原因"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "预览音效",
+      "description": "在浏览器中预览完成音效",
+      "fields": {
+        "sound": {
+          "name": "音效",
+          "description": "要预览的音效"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "设置家务顺序",
+      "description": "设置孩子家务的显示顺序",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要设置家务顺序的孩子的 ID"
+        },
+        "chore_order": {
+          "name": "家务顺序",
+          "description": "按顺序排列的家务 ID 列表"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "添加扣分项",
+      "description": "创建一个新的扣分项定义",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "扣分项的名称"
+        },
+        "points": {
+          "name": "积分",
+          "description": "执行时扣除的积分数"
+        },
+        "description": {
+          "name": "描述",
+          "description": "可选，扣分项的描述"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "扣分项的 MDI 图标"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "此扣分项适用的孩子 ID 列表"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "更新扣分项",
+      "description": "更新一个已有的扣分项定义",
+      "fields": {
+        "penalty_id": {
+          "name": "扣分项 ID",
+          "description": "要更新的扣分项的 ID"
+        },
+        "name": {
+          "name": "名称",
+          "description": "扣分项的新名称"
+        },
+        "points": {
+          "name": "积分",
+          "description": "新的积分值"
+        },
+        "description": {
+          "name": "描述",
+          "description": "新的描述"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "新的图标"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "新的孩子 ID 列表"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "移除扣分项",
+      "description": "移除一个扣分项定义",
+      "fields": {
+        "penalty_id": {
+          "name": "扣分项 ID",
+          "description": "要移除的扣分项的 ID"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "执行扣分",
+      "description": "对孩子执行扣分项，扣除积分",
+      "fields": {
+        "penalty_id": {
+          "name": "扣分项 ID",
+          "description": "要执行的扣分项的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要扣分的孩子的 ID"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "添加奖励分",
+      "description": "创建一个新的奖励分定义",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "奖励分的名称"
+        },
+        "points": {
+          "name": "积分",
+          "description": "发放时奖励的积分数"
+        },
+        "description": {
+          "name": "描述",
+          "description": "可选，奖励分的描述"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "奖励分的 MDI 图标"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "此奖励分适用的孩子 ID 列表"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "更新奖励分",
+      "description": "更新一个已有的奖励分定义",
+      "fields": {
+        "bonus_id": {
+          "name": "奖励分 ID",
+          "description": "要更新的奖励分的 ID"
+        },
+        "name": {
+          "name": "名称",
+          "description": "奖励分的新名称"
+        },
+        "points": {
+          "name": "积分",
+          "description": "新的积分值"
+        },
+        "description": {
+          "name": "描述",
+          "description": "新的描述"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "新的图标"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "新的孩子 ID 列表"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "移除奖励分",
+      "description": "移除一个奖励分定义",
+      "fields": {
+        "bonus_id": {
+          "name": "奖励分 ID",
+          "description": "要移除的奖励分的 ID"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "发放奖励分",
+      "description": "给孩子发放奖励分，增加积分",
+      "fields": {
+        "bonus_id": {
+          "name": "奖励分 ID",
+          "description": "要发放的奖励分的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要发放奖励分的孩子的 ID"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "添加家务",
+      "description": "动态创建一项新家务，通常用于自动化或脚本",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "家务的名称"
+        },
+        "description": {
+          "name": "描述",
+          "description": "可选，家务的描述"
+        },
+        "points": {
+          "name": "积分",
+          "description": "完成这项家务时获得的积分"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "要分配这项家务的孩子，按名字或 ID。留空则分配给所有孩子"
+        },
+        "time_category": {
+          "name": "时段",
+          "description": "这项家务应在什么时候完成：morning、afternoon、evening、night 或 anytime"
+        },
+        "one_shot": {
+          "name": "一次性",
+          "description": "如果为 true，这是一项一次性家务，完成后或当天结束时过期"
+        },
+        "requires_approval": {
+          "name": "需要批准",
+          "description": "如果为 true，家长必须批准完成后才发放积分"
+        },
+        "team_size": {
+          "name": "团队人数",
+          "description": "设为团队家务，需要这么多不同的孩子加入才算数。团队满员后为所有人一起提交。0 = 普通家务。"
+        },
+        "team_points_mode": {
+          "name": "团队积分",
+          "description": "团队家务如何发放积分：\"each\" 每个参与者获得全部积分，\"split\" 平分积分（向下取整）。"
+        },
+        "team_bonus": {
+          "name": "团队奖励",
+          "description": "团队家务完成时每个参与者额外获得的积分。"
+        },
+        "times": {
+          "name": "固定时间",
+          "description": "设为在一天中固定时间出现的家务，例如早餐、午餐和晚餐时洗手。最多 5 个时间的列表，每个包含名称、开始和结束时间（\"HH:MM\"，同一天，不重叠）以及积分。"
+        },
+        "times_bonus": {
+          "name": "全部完成奖励",
+          "description": "所有固定时间都完成时每天额外发放一次的积分。"
+        },
+        "assignment_mode": {
+          "name": "分配方式",
+          "description": "每天由谁做这项家务：everyone（所有人）、alternating（轮流）、random（随机）、balanced（做得最少的人）、first_come（第一个领取的孩子）或 unassigned（未分配）。"
+        },
+        "assignment_rotation_period": {
+          "name": "轮流周期",
+          "description": "用于交替家务：each_time（每次出现时换下一个孩子）、week（一个孩子负责整周）或 month（整月）。"
+        },
+        "assignment_rotation_every": {
+          "name": "轮换间隔",
+          "description": "对于设置了轮流周期的交替家务，每个孩子负责多少周或多少个月（2 = 每两周）。"
+        },
+        "assignment_rotation_weekday": {
+          "name": "交接星期",
+          "description": "每周轮流交给下一个孩子的星期几。"
+        },
+        "assignment_rotation_month_day": {
+          "name": "每月交接日",
+          "description": "每月轮流交给下一个孩子的日期（较短的月份为最后一天）。"
+        },
+        "schedule_mode": {
+          "name": "计划",
+          "description": "specific_days（到期日中的星期几，未设置则每天）、recurring（按重复节奏）或 one_shot（仅今天）。"
+        },
+        "due_days": {
+          "name": "到期日",
+          "description": "specific_days 计划下家务到期的星期几。留空则每天。"
+        },
+        "recurrence": {
+          "name": "重复",
+          "description": "重复家务的频率：weekly、every_2_weeks、monthly、every_3_months、every_6_months，或 every_N_days（N 为 2 到 365，例如 every_10_days）。"
+        },
+        "recurrence_day": {
+          "name": "重复日",
+          "description": "weekly 或 every_2_weeks 家务所在的星期几。"
+        },
+        "recurrence_start": {
+          "name": "重复开始",
+          "description": "重复家务节奏的起始日期（YYYY-MM-DD）。"
+        },
+        "due_time": {
+          "name": "截止时间",
+          "description": "家务当天的截止时间（\"HH:MM\"）。在此之前完成可获得提前奖励，之后完成会被扣迟到分。留空表示无截止时间。"
+        },
+        "daily_limit": {
+          "name": "每日次数上限",
+          "description": "这项家务一天可以完成多少次。一次性家务始终为 1。"
+        },
+        "difficulty": {
+          "name": "难度",
+          "description": "难度等级；按等级倍数调整发放的积分（medium = ×1.0 基准）"
+        },
+        "expires_in_minutes": {
+          "name": "多少分钟后过期",
+          "description": "设为有截止时间的即时家务，从现在起这么多分钟后截止，例如洗衣机洗完了，30 分钟内把衣服取出来。截止后家务消失并停用。0 = 无截止时间。"
+        },
+        "speed_bonus_points": {
+          "name": "速度奖励积分",
+          "description": "在截止时间前完成家务可额外获得的积分。需要 expires_in_minutes。"
+        }
+      }
+    },
+    "update_chore": {
+      "name": "更新家务",
+      "description": "按 ID 修改已有家务。只更改你设置的字段，其他保持不变。",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要修改的家务的 ID"
+        },
+        "name": {
+          "name": "名称",
+          "description": "家务的新名称"
+        },
+        "description": {
+          "name": "描述",
+          "description": "家务的新描述"
+        },
+        "points": {
+          "name": "积分",
+          "description": "完成这项家务时获得的积分"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "要分配这项家务的孩子，按名字或 ID。空列表表示分配给所有孩子"
+        },
+        "time_category": {
+          "name": "时段",
+          "description": "这项家务应在什么时候完成：morning、afternoon、evening、night 或 anytime"
+        },
+        "difficulty": {
+          "name": "难度",
+          "description": "难度等级：easy、medium 或 hard。按比例调整发放的积分（medium = ×1.0）。"
+        },
+        "requires_approval": {
+          "name": "需要批准",
+          "description": "如果为 true，家长必须批准完成后才发放积分"
+        },
+        "enabled": {
+          "name": "已启用",
+          "description": "关闭家务（false）可在所有地方隐藏它而不删除，或重新开启（true）。"
+        },
+        "speed_bonus_points": {
+          "name": "速度奖励积分",
+          "description": "在截止时间前完成家务可额外获得的积分。"
+        },
+        "team_size": {
+          "name": "团队人数",
+          "description": "设为团队家务，需要这么多不同的孩子加入才算数。团队满员后为所有人一起提交。0 = 普通家务。"
+        },
+        "team_points_mode": {
+          "name": "团队积分",
+          "description": "团队家务如何发放积分：\"each\" 每个参与者获得全部积分，\"split\" 平分积分（向下取整）。"
+        },
+        "team_bonus": {
+          "name": "团队奖励",
+          "description": "团队家务完成时每个参与者额外获得的积分。"
+        },
+        "times": {
+          "name": "固定时间",
+          "description": "替换家务在一天中的固定时间。最多 5 个时间的列表，每个包含名称、开始和结束时间（\"HH:MM\"，同一天，不重叠）以及积分。空列表表示移除。"
+        },
+        "times_bonus": {
+          "name": "全部完成奖励",
+          "description": "所有固定时间都完成时每天额外发放一次的积分。"
+        },
+        "assignment_mode": {
+          "name": "分配方式",
+          "description": "每天由谁做这项家务：everyone（所有人）、alternating（轮流）、random（随机）、balanced（做得最少的人）、first_come（第一个领取的孩子）或 unassigned（未分配）。"
+        },
+        "assignment_rotation_period": {
+          "name": "轮流周期",
+          "description": "用于交替家务：each_time（每次出现时换下一个孩子）、week（一个孩子负责整周）或 month（整月）。"
+        },
+        "assignment_rotation_every": {
+          "name": "轮换间隔",
+          "description": "对于设置了轮流周期的交替家务，每个孩子负责多少周或多少个月（2 = 每两周）。"
+        },
+        "assignment_rotation_weekday": {
+          "name": "交接星期",
+          "description": "每周轮流交给下一个孩子的星期几。"
+        },
+        "assignment_rotation_month_day": {
+          "name": "每月交接日",
+          "description": "每月轮流交给下一个孩子的日期（较短的月份为最后一天）。"
+        },
+        "schedule_mode": {
+          "name": "计划",
+          "description": "specific_days（到期日中的星期几，未设置则每天）、recurring（按重复节奏）或 one_shot（仅今天）。"
+        },
+        "due_days": {
+          "name": "到期日",
+          "description": "specific_days 计划下家务到期的星期几。留空则每天。"
+        },
+        "recurrence": {
+          "name": "重复",
+          "description": "重复家务的频率：weekly、every_2_weeks、monthly、every_3_months、every_6_months，或 every_N_days（N 为 2 到 365，例如 every_10_days）。"
+        },
+        "recurrence_day": {
+          "name": "重复日",
+          "description": "weekly 或 every_2_weeks 家务所在的星期几。"
+        },
+        "recurrence_start": {
+          "name": "重复开始",
+          "description": "重复家务节奏的起始日期（YYYY-MM-DD）。"
+        },
+        "due_time": {
+          "name": "截止时间",
+          "description": "家务当天的截止时间（\"HH:MM\"）。在此之前完成可获得提前奖励，之后完成会被扣迟到分。留空表示无截止时间。"
+        },
+        "daily_limit": {
+          "name": "每日次数上限",
+          "description": "这项家务一天可以完成多少次。一次性家务始终为 1。"
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "删除家务",
+      "description": "按 ID 删除家务，清理方式与面板相同。它会在面板的“最近删除”中保留 7 天，可以恢复。",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要删除的家务的 ID"
+        },
+        "confirm": {
+          "name": "确认",
+          "description": "必须为 true。防止家务被误删的保护措施。"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "跳过家务",
+      "description": "让今天的轮流跳过当前负责人。仅限今天 — 明天的轮流照常进行。",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要跳过的家务的 ID"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "设置轮流起始孩子",
+      "description": "设置轮流家务从哪个孩子开始。交替模式下会调整轮流顺序；随机/均衡模式下只覆盖今天的负责人。",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要更新的家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "开始轮流的孩子的 ID"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "添加任务组",
+      "description": "创建任务组（sticky = 同一个孩子，spread = 不同孩子）。",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "分组的显示名称"
+        },
+        "policy": {
+          "name": "策略",
+          "description": "sticky（同一个孩子）或 spread（不同孩子）"
+        },
+        "chore_ids": {
+          "name": "家务 ID 列表",
+          "description": "组内的家务 ID 列表。sticky 模式下第一项家务为主导。"
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "更新任务组",
+      "description": "更新任务组的名称、策略或成员。",
+      "fields": {
+        "group_id": {
+          "name": "分组 ID",
+          "description": "要更新的分组的 ID"
+        },
+        "name": {
+          "name": "名称",
+          "description": "新的显示名称"
+        },
+        "policy": {
+          "name": "策略",
+          "description": "新的策略（sticky 或 spread）"
+        },
+        "chore_ids": {
+          "name": "家务 ID 列表",
+          "description": "替换用的家务 ID 列表。sticky 模式下第一项家务为主导。"
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "移除任务组",
+      "description": "删除任务组。成员家务不受影响。",
+      "fields": {
+        "group_id": {
+          "name": "分组 ID",
+          "description": "要删除的分组的 ID"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "开始计时任务",
+      "description": "开始或继续计时任务的计时器",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "计时家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "开始计时的孩子的 ID"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "退出团队家务",
+      "description": "在团队满员前，让孩子退出今天加入的团队家务",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "团队家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "退出团队的孩子的 ID"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "完成下一项家务",
+      "description": "按孩子卡片上的顺序完成孩子的下一项未完成家务。需要照片、说明、计时器或团队的家务会被跳过。专为手表按钮和快捷方式设计；照常适用审批规则。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要完成下一项家务的孩子的 ID"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "发布悬赏",
+      "description": "在悬赏榜上发布一项固定积分的一次性任务。任何符合条件的孩子都可以领取；完成后照常进入审批队列。",
+      "fields": {
+        "title": {
+          "name": "标题",
+          "description": "任务内容，例如“洗车”"
+        },
+        "points": {
+          "name": "积分",
+          "description": "家长批准完成的任务时发放的固定积分"
+        },
+        "description": {
+          "name": "描述",
+          "description": "可选，给孩子的额外说明"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "悬赏榜上显示的 MDI 图标"
+        },
+        "expires_at": {
+          "name": "过期时间",
+          "description": "可选，如果无人领取，悬赏离开悬赏榜的日期和时间。留空则不过期。"
+        },
+        "eligible_child_ids": {
+          "name": "可领取的孩子",
+          "description": "可以领取的孩子 ID。留空 = 所有孩子。"
+        },
+        "claim_hours": {
+          "name": "领取锁定（小时）",
+          "description": "领取后多久内有效，超时悬赏回到悬赏榜"
+        },
+        "require_photo": {
+          "name": "需要照片",
+          "description": "孩子标记完成时必须附上照片"
+        },
+        "notify_children": {
+          "name": "通知孩子",
+          "description": "向符合条件的孩子发送“新悬赏”通知"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "更新悬赏",
+      "description": "编辑悬赏。被领取后只能修改积分和过期时间。",
+      "fields": {
+        "bounty_id": {
+          "name": "悬赏 ID",
+          "description": "要编辑的悬赏的 ID"
+        },
+        "title": {
+          "name": "标题",
+          "description": "任务内容，例如“洗车”"
+        },
+        "points": {
+          "name": "积分",
+          "description": "家长批准完成的任务时发放的固定积分"
+        },
+        "description": {
+          "name": "描述",
+          "description": "可选，给孩子的额外说明"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "悬赏榜上显示的 MDI 图标"
+        },
+        "expires_at": {
+          "name": "过期时间",
+          "description": "可选，如果无人领取，悬赏离开悬赏榜的日期和时间。留空则不过期。"
+        },
+        "eligible_child_ids": {
+          "name": "可领取的孩子",
+          "description": "可以领取的孩子 ID。留空 = 所有孩子。"
+        },
+        "claim_hours": {
+          "name": "领取锁定（小时）",
+          "description": "领取后多久内有效，超时悬赏回到悬赏榜"
+        },
+        "require_photo": {
+          "name": "需要照片",
+          "description": "孩子标记完成时必须附上照片"
+        },
+        "notify_children": {
+          "name": "通知孩子",
+          "description": "向符合条件的孩子发送“新悬赏”通知"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "移除悬赏",
+      "description": "把悬赏从悬赏榜上撤下。已完成的任务等待审批时不允许。",
+      "fields": {
+        "bounty_id": {
+          "name": "悬赏 ID",
+          "description": "要移除的悬赏的 ID"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "领取悬赏",
+      "description": "为孩子领取悬赏，在领取期限内锁定给他。一个孩子同时只能领取一个悬赏。",
+      "fields": {
+        "bounty_id": {
+          "name": "悬赏 ID",
+          "description": "要领取的悬赏的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "领取的孩子的 ID"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "放弃悬赏",
+      "description": "把已领取的悬赏放回悬赏榜，让其他孩子领取",
+      "fields": {
+        "bounty_id": {
+          "name": "悬赏 ID",
+          "description": "已领取的悬赏的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "领取它的孩子的 ID"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "完成悬赏",
+      "description": "将已领取的悬赏标记为完成。它会像家务一样进入审批队列。",
+      "fields": {
+        "bounty_id": {
+          "name": "悬赏 ID",
+          "description": "已领取的悬赏的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "领取它的孩子的 ID"
+        },
+        "photo_url": {
+          "name": "照片 URL",
+          "description": "完成任务的照片（悬赏要求时必填）"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "暂停计时任务",
+      "description": "暂停正在运行的计时任务计时器",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "计时家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "暂停计时的孩子的 ID"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "停止计时任务",
+      "description": "停止计时任务计时器并提交审批",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "计时家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "停止计时的孩子的 ID"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "添加徽章",
+      "description": "创建自定义徽章。",
+      "fields": {
+        "name": {
+          "name": "名称",
+          "description": "徽章的显示名称"
+        },
+        "description": {
+          "name": "描述",
+          "description": "如何获得徽章的描述"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "徽章的图标（例如 mdi:beach）"
+        },
+        "tier": {
+          "name": "等级",
+          "description": "徽章等级：bronze、silver、gold 或 platinum"
+        },
+        "point_bonus": {
+          "name": "奖励积分",
+          "description": "获得徽章时给孩子的积分"
+        },
+        "criteria": {
+          "name": "条件",
+          "description": "metric / operator / value 字典的列表。留空 = 仅可手动授予。"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "孩子 ID 列表（留空 = 所有）"
+        },
+        "notify_on_earn": {
+          "name": "获得时通知",
+          "description": "获得徽章时发送通知"
+        },
+        "combinator": {
+          "name": "组合方式",
+          "description": "多个条件如何组合：AND（全部满足）或 OR（满足任一）。默认 AND。"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "更新徽章",
+      "description": "更新已有徽章。内置徽章只能修改 point_bonus、tier、assigned_to、enabled、notify_on_earn。",
+      "fields": {
+        "badge_id": {
+          "name": "徽章 ID",
+          "description": "要更新的徽章的 ID"
+        },
+        "name": {
+          "name": "名称",
+          "description": "徽章的新显示名称"
+        },
+        "description": {
+          "name": "描述",
+          "description": "徽章的新描述"
+        },
+        "icon": {
+          "name": "图标",
+          "description": "徽章的新图标"
+        },
+        "tier": {
+          "name": "等级",
+          "description": "徽章等级：bronze、silver、gold 或 platinum"
+        },
+        "point_bonus": {
+          "name": "奖励积分",
+          "description": "获得徽章时给孩子的积分"
+        },
+        "criteria": {
+          "name": "条件",
+          "description": "metric / operator / value 字典的列表。留空 = 仅可手动授予。"
+        },
+        "assigned_to": {
+          "name": "分配给",
+          "description": "孩子 ID 列表（留空 = 所有）"
+        },
+        "enabled": {
+          "name": "已启用",
+          "description": "徽章是否启用"
+        },
+        "notify_on_earn": {
+          "name": "获得时通知",
+          "description": "获得徽章时发送通知"
+        },
+        "combinator": {
+          "name": "组合方式",
+          "description": "多个条件如何组合：AND（全部满足）或 OR（满足任一）。默认 AND。"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "移除徽章",
+      "description": "移除自定义徽章。内置徽章无法移除。",
+      "fields": {
+        "badge_id": {
+          "name": "徽章 ID",
+          "description": "要移除的徽章的 ID"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "手动授予徽章",
+      "description": "手动给孩子授予徽章。",
+      "fields": {
+        "badge_id": {
+          "name": "徽章 ID",
+          "description": "要授予的徽章的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "获得徽章的孩子的 ID"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "收回徽章",
+      "description": "收回已授予的徽章。如果已发放奖励积分，会一并撤回。",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "已授予徽章 ID",
+          "description": "要收回的已授予徽章记录的 ID"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "重新计算徽章",
+      "description": "静默为所有孩子重新评估所有徽章（不发通知，不发奖励积分）。"
+    },
+    "apply_mandatory_penalty": {
+      "name": "执行必做家务扣分",
+      "description": "对错过的必做家务扣除设定的积分，并清除审核项。",
+      "fields": {
+        "miss_id": {
+          "name": "错过记录 ID",
+          "description": "必做家务错过审核项的 ID"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "选择头像",
+      "description": "孩子切换到已解锁的头像。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "孩子的 ID"
+        },
+        "icon": {
+          "name": "头像图标",
+          "description": "已解锁的目录头像的 mdi 图标（例如 mdi:rocket-launch）。"
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "忽略必做家务",
+      "description": "清除错过的必做家务审核项，不扣分。",
+      "fields": {
+        "miss_id": {
+          "name": "错过记录 ID",
+          "description": "必做家务错过审核项的 ID"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "赠送积分",
+      "description": "把可用积分从一个孩子转给另一个孩子（由家长控制）。",
+      "fields": {
+        "from_child_id": {
+          "name": "转出孩子 ID",
+          "description": "送出积分的孩子的 ID"
+        },
+        "to_child_id": {
+          "name": "转入孩子 ID",
+          "description": "收到积分的孩子的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要转移的积分数"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "调整连续保护卡",
+      "description": "给孩子连续保护卡（正数）或收回一些（负数）。发放数量不会超过 streak_freeze_max 上限。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要调整保护卡的孩子的 ID"
+        },
+        "amount": {
+          "name": "数量",
+          "description": "要增加（正数）或移除（负数）的保护卡数量"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "推迟必做家务",
+      "description": "给错过的必做家务再一个时段（或明天），不扣分，并清除审核项。",
+      "fields": {
+        "miss_id": {
+          "name": "错过记录 ID",
+          "description": "必做家务错过审核项的 ID"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "申请交换家务",
+      "description": "孩子申请接手某项家务今天的轮流分配（待家长批准）。",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要接手的家务的 ID"
+        },
+        "requester_id": {
+          "name": "申请孩子 ID",
+          "description": "申请交换的孩子的 ID"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "测试通知",
+      "description": "向已启用的接收人发送指定类型的示例通知（忽略总开关，以便验证路由）。",
+      "fields": {
+        "type_id": {
+          "name": "通知类型",
+          "description": "通知类型 ID，例如 pending_chore_approval、badge_earned、streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "记录零花钱发放",
+      "description": "扣除积分，并在账本中记录一笔真钱零花钱发放（固定兑换率；由家长控制）。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "领取零花钱的孩子的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要兑换成现金并扣除的积分"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "添加心愿",
+      "description": "孩子添加想要攒分换取的东西。需要等家长批准。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "许愿的孩子的 ID"
+        },
+        "name": {
+          "name": "名称",
+          "description": "孩子想要什么"
+        },
+        "target": {
+          "name": "目标",
+          "description": "建议的积分价格。家长批准时可以修改。"
+        },
+        "link": {
+          "name": "链接",
+          "description": "可选，这个东西的网址（http 或 https）"
+        },
+        "photo_url": {
+          "name": "图片",
+          "description": "可选，刚通过 TaskMate 照片接口上传的图片"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "撤回心愿",
+      "description": "孩子撤回仍在等待批准的心愿，或清除已被拒绝的心愿。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "心愿所属孩子的 ID"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "把积分存入心愿",
+      "description": "把积分从孩子的可用余额转入其已批准的某个心愿。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "心愿所属孩子的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要转入的积分数（不超过余额和心愿还需要的积分）"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "从心愿中取回积分",
+      "description": "从心愿中取回孩子自己存的部分积分。认捐的积分永远不会取出。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "心愿所属孩子的 ID"
+        },
+        "points": {
+          "name": "积分",
+          "description": "要取回的已存积分数（不超过孩子存入的数量）"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "申请兑换心愿",
+      "description": "已攒够的心愿变成等待家长批准的奖励领取。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "心愿所属孩子的 ID"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "批准心愿",
+      "description": "把等待中的心愿变成储蓄目标，可选择修改目标值。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "target": {
+          "name": "目标",
+          "description": "心愿的积分价格。留空则保留孩子的建议。"
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "拒绝心愿",
+      "description": "拒绝一个心愿。已存的积分退还给孩子，认捐作废。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "可选，显示给孩子的原因"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "为心愿认捐",
+      "description": "记录亲友为孩子心愿贡献的积分。不会影响任何余额。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "name": {
+          "name": "来自",
+          "description": "认捐人，例如奶奶"
+        },
+        "points": {
+          "name": "积分",
+          "description": "认捐的积分数（不超过心愿还需要的积分）"
+        },
+        "message": {
+          "name": "留言",
+          "description": "可选，给孩子的留言"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "移除心愿认捐",
+      "description": "撤销一笔认捐。在心愿兑换前都可以撤销。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        },
+        "pledge_id": {
+          "name": "认捐 ID",
+          "description": "要移除的认捐的 ID"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "移除心愿",
+      "description": "删除一个心愿。已存的积分退还给孩子，认捐作废。",
+      "fields": {
+        "wish_id": {
+          "name": "心愿 ID",
+          "description": "心愿的 ID"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "开始抽查",
+      "description": "标记过去 24 小时内批准的某项家务进行突击抽查。在期限结束前判定通过或不通过；未判定的抽查会自动结束。",
+      "fields": {
+        "completion_id": {
+          "name": "完成记录 ID",
+          "description": "要抽查的已批准家务完成记录的 ID"
+        },
+        "bonus": {
+          "name": "奖励分",
+          "description": "通过后发放的积分。默认为设置中的值。"
+        },
+        "window": {
+          "name": "期限",
+          "description": "你有多长时间检查：1h、2h、4h 或 bed（到就寝时间）。默认为设置中的值。"
+        },
+        "tell_child": {
+          "name": "告诉孩子",
+          "description": "现在在孩子的卡片上显示“抽查要来啦”。关闭则为秘密检查。"
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "抽查通过",
+      "description": "被抽查的家务通过了。以普通积分记录发放奖励分，并在孩子的卡片上庆祝。",
+      "fields": {
+        "inspection_id": {
+          "name": "抽查 ID",
+          "description": "进行中的抽查的 ID"
+        },
+        "bonus": {
+          "name": "奖励分",
+          "description": "要发放的积分。默认为开始抽查时设置的奖励分。"
+        },
+        "note": {
+          "name": "留言",
+          "description": "可选，显示给孩子的留言"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "抽查未通过",
+      "description": "被抽查的家务没有通过。不扣积分。可以退回重做；重做不会额外获得积分。",
+      "fields": {
+        "inspection_id": {
+          "name": "抽查 ID",
+          "description": "进行中的抽查的 ID"
+        },
+        "redo": {
+          "name": "退回重做",
+          "description": "把家务放回孩子的列表，标为今天未完成。默认为设置中的值。"
+        },
+        "note": {
+          "name": "留言",
+          "description": "可选，显示给孩子的留言（需要改进的地方）"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "取消抽查",
+      "description": "取消进行中的抽查，就像从未开始过。",
+      "fields": {
+        "inspection_id": {
+          "name": "抽查 ID",
+          "description": "进行中的抽查的 ID"
+        }
+      }
+    },
+    "request_help": {
+      "name": "请求帮助",
+      "description": "孩子表示某项家务卡住了。向家长发送推送；不会完成或跳过任何内容。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "请求帮助的孩子"
+        },
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "卡住的家务"
+        },
+        "message": {
+          "name": "留言",
+          "description": "可选，孩子说的话，例如“我够不到架子”。"
+        }
+      }
+    },
+    "answer_help": {
+      "name": "回应帮助请求",
+      "description": "将孩子的帮助请求标记为已回应，孩子的卡片不再显示“帮手马上就来”。",
+      "fields": {
+        "request_id": {
+          "name": "请求 ID",
+          "description": "要关闭的帮助请求"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "记录心情",
+      "description": "孩子说说今天过得怎么样。每天一次；再次记录会替换。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "孩子"
+        },
+        "mood": {
+          "name": "心情",
+          "description": "great、good、ok、sad 或 upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "设置病假",
+      "description": "给孩子一天病假。家务会隐藏，连续打卡冻结，不会算作错过必做家务。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "生病的孩子"
+        },
+        "date": {
+          "name": "日期",
+          "description": "日期（默认今天）。从一周前到一个月后。"
+        },
+        "sick": {
+          "name": "生病",
+          "description": "关闭可取消病假。"
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "设置每周目标",
+      "description": "设置孩子自己的每周积分目标。达成后每周发放一次家庭设定的每周目标奖励。0 表示清除。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "孩子"
+        },
+        "target": {
+          "name": "目标",
+          "description": "本周要获得的积分"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "购买抽奖彩票",
+      "description": "孩子用积分购买抽奖彩票。每张彩票代表一次中奖机会。",
+      "fields": {
+        "raffle_id": {
+          "name": "抽奖 ID",
+          "description": "抽奖"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "购买的孩子"
+        },
+        "tickets": {
+          "name": "彩票",
+          "description": "要购买的彩票数量"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "抽奖开奖",
+      "description": "立即抽出中奖者，而不是等到开奖时间。",
+      "fields": {
+        "raffle_id": {
+          "name": "抽奖 ID",
+          "description": "要开奖的抽奖"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "领养宠物",
+      "description": "孩子领养（或重命名）自己的虚拟宠物。从现在起，孩子每完成一项家务它都会成长。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "孩子"
+        },
+        "species": {
+          "name": "种类",
+          "description": "dragon、cat、dog、bunny、dino 或 unicorn"
+        },
+        "name": {
+          "name": "名字",
+          "description": "宠物的名字"
+        },
+        "hatch_egg": {
+          "name": "孵蛋",
+          "description": "把长大的宠物下的蛋孵成新宠物。旧宠物加入宠物家族。"
+        }
+      }
+    },
+    "buy_pet_item": {
+      "name": "购买宠物物品",
+      "description": "孩子用可用积分从宠物商店购买物品。超过家长审批门槛时，会改为等待家长确认。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "购买的孩子"
+        },
+        "item_id": {
+          "name": "物品 ID",
+          "description": "宠物商店物品"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "给宠物装扮",
+      "description": "给孩子的宠物穿戴已拥有或按等级解锁的物品（替换该部位原有的物品），或者取下。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "孩子"
+        },
+        "item_id": {
+          "name": "物品 ID",
+          "description": "宠物商店物品，或 bow、top_hat、scarf、crown"
+        },
+        "wear": {
+          "name": "穿戴",
+          "description": "开启为穿戴；关闭为取下。"
+        }
+      }
+    },
+    "mark_reward_delivered": {
+      "name": "标记奖励已兑现",
+      "description": "已兑换的奖励已交给孩子，因此从待兑现列表中移除。孩子自己确认时请提供 child_id。",
+      "fields": {
+        "claim_id": {
+          "name": "领取 ID",
+          "description": "已批准的奖励领取"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "确认收到奖励的孩子（家长标记时留空）"
+        }
+      }
+    },
+    "start_boost": {
+      "name": "开始加成",
+      "description": "开启一个加成时段。在此期间完成的家务按倍数计分。chore_ids 或 child_ids 留空表示全部。",
+      "fields": {
+        "multiplier": {
+          "name": "倍数",
+          "description": "覆盖的家务的积分倍数，例如 2 表示双倍（1.1 到 5）"
+        },
+        "minutes": {
+          "name": "分钟",
+          "description": "加成持续多久"
+        },
+        "chore_ids": {
+          "name": "家务 ID 列表",
+          "description": "覆盖的家务（留空 = 所有家务）"
+        },
+        "child_ids": {
+          "name": "孩子 ID 列表",
+          "description": "覆盖的孩子（留空 = 所有人）"
+        },
+        "starts_at": {
+          "name": "开始时间",
+          "description": "稍后开始而不是现在（最多提前一周）"
+        },
+        "name": {
+          "name": "名称",
+          "description": "可选，显示在卡片上的标签，例如“六点有客人”"
+        },
+        "notify": {
+          "name": "通知",
+          "description": "向覆盖的孩子发送加成推送（需开启该通知）"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "结束加成",
+      "description": "提前结束加成，或取消尚未开始的加成。",
+      "fields": {
+        "boost_id": {
+          "name": "加成 ID",
+          "description": "加成，来自 sensor.taskmate_overview 的 boosts 属性"
+        }
+      }
+    },
+    "appeal": {
+      "name": "申诉",
+      "description": "孩子对过去 48 小时内被驳回的家务、被驳回的奖励领取或扣分申请重新审核。需要开启申诉。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "申诉的孩子"
+        },
+        "kind": {
+          "name": "类型",
+          "description": "申诉的内容"
+        },
+        "target_id": {
+          "name": "对象 ID",
+          "description": "申诉项目，来自 sensor.taskmate_overview 中该孩子条目的 appealable 属性"
+        },
+        "message": {
+          "name": "留言",
+          "description": "可选，孩子说的话，最多 200 个字符"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "处理申诉",
+      "description": "采纳申诉（发放家务积分、批准奖励或撤销扣分）或维持原判。",
+      "fields": {
+        "appeal_id": {
+          "name": "申诉 ID",
+          "description": "申诉"
+        },
+        "overturn": {
+          "name": "撤销原判",
+          "description": "true 表示撤销原判，false 表示维持"
+        },
+        "note": {
+          "name": "留言",
+          "description": "可选，给孩子的话，最多 200 个字符"
+        }
+      }
+    },
+    "adjust_screen_time": {
+      "name": "调整屏幕时间",
+      "description": "给孩子的屏幕时间余额增加分钟数，或用负数减少。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "余额变动的孩子"
+        },
+        "minutes": {
+          "name": "分钟",
+          "description": "要增加的分钟数；负数表示减少。余额永远不会低于零。"
+        },
+        "reason": {
+          "name": "原因",
+          "description": "余额记录中的简短备注"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "存屏幕时间",
+      "description": "把孩子没用完的屏幕时间分钟存入周末存钱罐。先存今天的免费额度，再存已有的分钟，不超过存钱罐上限。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "存分钟的孩子"
+        },
+        "minutes": {
+          "name": "分钟",
+          "description": "要存多少分钟。留空则存入所有能放下的分钟。"
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "给奖励评分",
+      "description": "孩子给已得到的奖励打 1 到 3 颗星。在奖励交给孩子后（未开启兑现跟踪时为批准后）3 天内可评分。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "得到奖励的孩子"
+        },
+        "claim_id": {
+          "name": "领取 ID",
+          "description": "要评分的奖励领取"
+        },
+        "stars": {
+          "name": "星级",
+          "description": "1 到 3 颗星"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "兄弟姐妹互查",
+      "description": "孩子检查兄弟姐妹等待批准的家务。done 表示批准并向检查者发放互查奖励；not_yet 表示附上留言，继续等待家长处理。",
+      "fields": {
+        "child_id": {
+          "name": "检查者孩子 ID",
+          "description": "进行检查的孩子（不是做家务的那个）"
+        },
+        "completion_id": {
+          "name": "完成记录 ID",
+          "description": "等待中的完成记录，来自 sensor.taskmate_overview 中检查者条目的 sibling_checks 属性"
+        },
+        "verdict": {
+          "name": "结论",
+          "description": "done（做好了）或 not_yet"
+        },
+        "note": {
+          "name": "留言",
+          "description": "可选，选择 not_yet 时给家长的话，最多 120 个字符"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "设置家务提醒",
+      "description": "孩子选择什么时候被提醒做自己的某项家务，时间须在 TaskMate 设置中规定的最早和最晚时间之间。时间留空则清除提醒。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "想被提醒的孩子"
+        },
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "要提醒的家务"
+        },
+        "time": {
+          "name": "时间",
+          "description": "HH:MM，例如 17:30。留空则清除提醒。"
+        }
+      }
+    },
+    "read_aloud": {
+      "name": "朗读家务",
+      "description": "在媒体播放器上朗读孩子还没完成的家务，例如“Ella，你还剩三件事…”。使用 Home Assistant 语言的朗读文案，除非设置了自定义朗读模板。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "要朗读其家务的孩子的 ID"
+        },
+        "media_player": {
+          "name": "媒体播放器",
+          "description": "在哪里播放。默认使用设置中的值。"
+        },
+        "tts_entity": {
+          "name": "文字转语音实体",
+          "description": "使用哪个 TTS 服务。默认使用设置中的值，否则使用唯一安装的那个。"
+        },
+        "message": {
+          "name": "自定义内容",
+          "description": "朗读这段内容，而不是自动生成的摘要。"
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "转动家务轮盘",
+      "description": "为孩子随机抽一项未完成的家务，并按积分倍数计分。需手动开启：在 TaskMate 面板设置中开启并设置倍数和每日转动次数。",
+      "fields": {
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "转动轮盘的孩子的 ID"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "项家务",
+        "name": "{child} 统计"
+      },
+      "child_badges": {
+        "unit_of_measurement": "个徽章",
+        "name": "{child} 徽章"
+      },
+      "child_watch": {
+        "state": {
+          "left": "剩 #",
+          "all_done": "全部完成",
+          "no_chores": "没有家务"
+        },
+        "name": "{child} 手表"
+      },
+      "overview": {
+        "name": "TaskMate 概览"
+      },
+      "chores": {
+        "name": "TaskMate 家务"
+      },
+      "chore_availability": {
+        "name": "TaskMate 家务可用性"
+      },
+      "rewards": {
+        "name": "TaskMate 奖励"
+      },
+      "activity": {
+        "name": "TaskMate 动态"
+      },
+      "incentives": {
+        "name": "TaskMate 激励"
+      },
+      "bounties": {
+        "name": "TaskMate 悬赏"
+      },
+      "auctions": {
+        "name": "TaskMate 拍卖"
+      },
+      "chore_board": {
+        "name": "TaskMate 家务看板"
+      },
+      "child_points": {
+        "name": "{child} 积分"
+      },
+      "child_wishlist": {
+        "name": "{child} 心愿单"
+      },
+      "pending_approvals": {
+        "name": "待批准"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "周末倍数"
+      },
+      "perfect_week_bonus": {
+        "name": "完美一周奖励"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "连续打卡重置模式",
+        "state": {
+          "reset": "重置 — 错过一天连续天数归 0",
+          "pause": "暂停 — 保留连续天数直到下次完成"
+        }
+      },
+      "card_design": {
+        "name": "卡片设计",
+        "state": {
+          "classic": "经典",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "无障碍",
+          "graphite": "Graphite"
+        }
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "{child} 动态",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "家务已完成",
+              "chore_approved": "家务已批准",
+              "chore_rejected": "家务已驳回",
+              "chore_approval_undone": "家务批准已撤销",
+              "reward_claimed": "奖励已领取",
+              "reward_approved": "奖励已批准",
+              "reward_rejected": "奖励已驳回",
+              "badge_earned": "获得徽章",
+              "level_up": "升级",
+              "streak_updated": "连续打卡已更新",
+              "streak_freeze_used": "使用了连续保护卡",
+              "perfect_week": "完美一周",
+              "weekly_target_reached": "达成每周目标",
+              "quest_completed": "冒险任务完成",
+              "challenge_completed": "挑战完成",
+              "bonus_applied": "奖励分已发放",
+              "penalty_applied": "已扣分",
+              "surprise_bonus": "惊喜奖励",
+              "mandatory_missed": "错过必做家务",
+              "team_chore_completed": "团队家务完成",
+              "points_gifted": "积分已赠送",
+              "help_requested": "请求帮助",
+              "mood_logged": "心情已记录",
+              "weekly_goal_reached": "达成每周目标",
+              "sick_day": "病假",
+              "chore_auto_approved": "家务已自动批准",
+              "penalty_redeemed": "扣分已赢回",
+              "raffle_won": "抽奖中奖",
+              "pet_evolved": "宠物长大了",
+              "pet_item_bought": "购买了宠物物品",
+              "reward_delivered": "奖励已兑现",
+              "personal_best": "个人最佳",
+              "appeal_submitted": "提交了申诉",
+              "appeal_decided": "申诉已处理",
+              "screen_time_low": "屏幕时间快用完了",
+              "screen_time_out": "屏幕时间用完了",
+              "screen_time_changed": "屏幕时间已变更",
+              "screen_time_saved": "屏幕时间已存入",
+              "screen_time_jar_opened": "屏幕时间存钱罐已打开",
+              "points_expired": "积分已过期",
+              "points_expiring": "积分即将过期",
+              "reward_rated": "奖励已评分",
+              "penalty_warning": "扣分警告",
+              "sibling_check": "兄弟姐妹互查"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "家庭动态",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "家庭目标达成",
+              "season_champion": "赛季冠军",
+              "bounty_posted": "悬赏已发布",
+              "scheduled_change_applied": "计划更改已生效",
+              "raffle_drawn": "抽奖已开奖",
+              "boost_started": "加成开始",
+              "boost_ended": "加成结束",
+              "bin_day": "倒垃圾日家务",
+              "shopping_job": "购物清单任务"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "有待批准项"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}：完成 {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}：领取 {reward}"
+      }
+    }
+  },
+  "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} 还不能开始 — 请先完成 {chores}。"
+    },
+    "calendar_unknown_event": {
+      "message": "这个事件不是该孩子日历上的 TaskMate 家务。"
+    },
+    "calendar_series_not_supported": {
+      "message": "重复家务在日历中一次只能移动或移除一天。要修改整个系列，请在 TaskMate 中编辑家务。"
+    },
+    "calendar_repeating_create": {
+      "message": "无法从日历添加重复事件。请改为在 TaskMate 中创建重复家务。"
+    },
+    "calendar_rename_series": {
+      "message": "请在 TaskMate 中重命名重复家务。在日历中只能移动或移除单独的一天。"
+    },
+    "calendar_time_follows_chore": {
+      "message": "重复家务保持其时段。在日历中只能修改单次的日期。"
+    },
+    "calendar_past_date": {
+      "message": "家务不能添加到过去的日子，也不能移入或移出过去的日子。"
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} 已经安排在 {date}。"
+    },
+    "calendar_empty_title": {
+      "message": "请给家务起个标题。"
+    },
+    "calendar_own_event": {
+      "message": "这个事件是 TaskMate 自己发布的，因此不会作为新家务添加。"
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} 还没开放 — 到时间再请求帮助吧。"
+    },
+    "help_chore_time_passed": {
+      "message": "{chore} 的时间已经过了，现在没有需要帮助的了。"
+    },
+    "help_chore_not_available": {
+      "message": "{chore} 现在还不能做，所以还没有需要帮助的。"
+    },
+    "help_already_on_its_way": {
+      "message": "{chore} 的帮手已经在路上了。"
+    },
+    "help_cooldown": {
+      "message": "稍等一分钟再请求帮助吧。"
+    },
+    "rate_limited": {
+      "message": "此账户请求过多。请一分钟后再试。"
+    },
+    "child_not_found": {
+      "message": "未找到孩子 {child_id}"
+    },
+    "chore_not_found": {
+      "message": "未找到家务 {chore_id}"
+    },
+    "reward_not_found": {
+      "message": "未找到奖励 {reward_id}"
+    },
+    "teamwork_size_not_number": {
+      "message": "团队人数必须是整数。"
+    },
+    "teamwork_size_range": {
+      "message": "团队家务需要 2 到 {max} 个孩子（普通家务为 0）。"
+    },
+    "teamwork_points_mode": {
+      "message": "团队积分必须是 'each' 或 'split'。"
+    },
+    "teamwork_open_ended": {
+      "message": "团队家务不能同时是开放式家务。"
+    },
+    "teamwork_assignment_mode": {
+      "message": "团队家务必须分配给所有人 — 不能是先到先得或轮流。"
+    },
+    "teamwork_timed": {
+      "message": "计时任务不能是团队家务。"
+    },
+    "teamwork_not_team_chore": {
+      "message": "家务“{name}”不是团队家务"
+    },
+    "swap_only_rotation": {
+      "message": "只有轮流家务可以交换"
+    },
+    "swap_won_at_auction": {
+      "message": "这项家务今天是拍卖赢得的，因此不能交换"
+    },
+    "swap_already_assigned": {
+      "message": "今天这项家务已经分配给那个孩子了"
+    },
+    "swap_already_pending": {
+      "message": "这项家务已有一个待处理的交换申请"
+    },
+    "swap_too_many_pending": {
+      "message": "待处理的交换申请太多"
+    },
+    "swap_request_not_found": {
+      "message": "未找到交换申请 {request_id}"
+    },
+    "bulk_unknown_action": {
+      "message": "未知的批量操作 {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "无法批量编辑 {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "未知的孩子 {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "未知的时段 {period}"
+    },
+    "chore_unknown": {
+      "message": "未知的家务：{chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "“everyone”分配方式不支持跳过"
+    },
+    "skip_sticky_follower": {
+      "message": "不能跳过固定分组中的跟随家务；请改为跳过主导家务"
+    },
+    "skip_pool_too_small": {
+      "message": "跳过需要至少 2 个孩子参与轮流"
+    },
+    "manual_start_everyone_mode": {
+      "message": "“everyone”分配方式不支持手动设置起始"
+    },
+    "manual_start_not_in_pool": {
+      "message": "孩子 {child_id} 不在这项家务的轮流名单中"
+    },
+    "chore_photo_required": {
+      "message": "这项家务需要照片作为证明。"
+    },
+    "chore_note_required": {
+      "message": "说说你做了什么才能提交。"
+    },
+    "chore_quantity_required": {
+      "message": "说说你做了多少{unit}。"
+    },
+    "backdate_day_range": {
+      "message": "请选择今天之前最近 {days} 天内的某一天。"
+    },
+    "backdate_switched_off": {
+      "message": "“{name}”已关闭。"
+    },
+    "backdate_not_assigned": {
+      "message": "“{name}”不是 {child} 的任务。"
+    },
+    "backdate_rotation_team": {
+      "message": "“{name}”是轮流或团队家务，不能补记过去的日子。"
+    },
+    "backdate_open_ended": {
+      "message": "“{name}”是开放式家务，需要孩子的说明和定价。请使用孩子的卡片。"
+    },
+    "backdate_set_times": {
+      "message": "“{name}”设置了固定时间，不能补记过去的日子。"
+    },
+    "backdate_holiday": {
+      "message": "{weekday}是假期，没有要做的任务。"
+    },
+    "backdate_sick_day": {
+      "message": "{weekday}是 {child} 的病假，没有要做的任务。"
+    },
+    "backdate_birthday": {
+      "message": "{weekday}是 {child} 的生日，不用做任务。"
+    },
+    "backdate_auction": {
+      "message": "“{name}”那天是拍卖赢得的，之后不能补记。"
+    },
+    "backdate_weekly_target_met": {
+      "message": "“{name}”那一周已经达到 {target} 次。"
+    },
+    "backdate_not_due": {
+      "message": "“{name}”在{weekday}不需要做。"
+    },
+    "backdate_daily_limit": {
+      "message": "“{name}”在{weekday}已经完成了 {done}/{limit} 次。"
+    },
+    "chore_disabled": {
+      "message": "家务“{name}”已停用"
+    },
+    "parent_complete_one_shot": {
+      "message": "家务“{name}”是一次性家务，不能由家长完成"
+    },
+    "parent_complete_no_children": {
+      "message": "家务“{name}”没有可隐藏的孩子"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "家务“{name}”为轮流共享，只能为所有人完成"
+    },
+    "parent_complete_not_assigned": {
+      "message": "家务“{name}”没有分配给那个孩子"
+    },
+    "bonus_subtask_not_found": {
+      "message": "在家务“{name}”中未找到奖励子任务 {subtask_id}"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "奖励子任务“{subtask}”没有分配给 {child}。"
+    },
+    "bonus_subtask_parent_first": {
+      "message": "无法完成奖励子任务“{subtask}”— 今天必须先完成主家务“{name}”。"
+    },
+    "bonus_subtask_already_done": {
+      "message": "奖励子任务“{subtask}”今天已经完成了。"
+    },
+    "undo_window_passed": {
+      "message": "这项家务已经不能撤销了。请让家长撤销。"
+    },
+    "undo_points_spent": {
+      "message": "这项家务现在不能撤销：它的积分已经花掉了。请问家长。"
+    },
+    "completion_not_found": {
+      "message": "未找到完成记录 {completion_id}"
+    },
+    "completion_not_approved": {
+      "message": "完成记录未被批准；没有可撤销的内容"
+    },
+    "chore_sort_unknown": {
+      "message": "未知的排序方式“{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "分组中有重复的家务：{chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "家务“{name}”使用“everyone”方式，不能加入分组"
+    },
+    "task_group_already_member": {
+      "message": "家务“{name}”已属于分组“{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "未知的任务组策略：{policy}"
+    },
+    "task_group_unknown": {
+      "message": "未知的任务组：{group_id}"
+    },
+    "points_amount_zero": {
+      "message": "amount 不能为 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "连续保护卡已关闭（streak_freeze_max 为 0）"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} 已持有最多 {cap} 张连续保护卡"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} 已拥有最多 {cap} 张连续保护卡"
+    },
+    "streak_freeze_off": {
+      "message": "连续保护卡已关闭"
+    },
+    "points_non_negative": {
+      "message": "积分不能为负数"
+    },
+    "transaction_not_found": {
+      "message": "未找到积分记录 {transaction_id}"
+    },
+    "undo_not_undoable": {
+      "message": "此操作无法撤销"
+    },
+    "gift_undo_too_old": {
+      "message": "这份礼物早于撤销功能，无法自动撤回。"
+    },
+    "gift_undo_spent": {
+      "message": "{child} 已经花掉了这份礼物的一部分，因此无法撤销。"
+    },
+    "gift_amount_positive": {
+      "message": "赠送数量必须为正数"
+    },
+    "gift_same_child": {
+      "message": "不能赠送给同一个孩子"
+    },
+    "gift_child_not_found": {
+      "message": "未找到赠送人或接收人"
+    },
+    "gift_not_enough_points": {
+      "message": "积分不足：{child} 有 {points}，要赠送 {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "“{name}”是共享奖池，池子还没满。需要 {cost}，已存 {saved}"
+    },
+    "reward_not_available_to": {
+      "message": "奖励“{name}”不对 {child} 开放"
+    },
+    "reward_sold_out": {
+      "message": "奖励“{name}”已售罄"
+    },
+    "reward_expired": {
+      "message": "奖励“{name}”已过期"
+    },
+    "reward_not_available_now": {
+      "message": "奖励“{name}”现在不能领取"
+    },
+    "reward_claim_already_waiting": {
+      "message": "“{name}”已有一个领取在等待批准"
+    },
+    "reward_claims_too_many": {
+      "message": "等待批准的奖励领取太多了"
+    },
+    "reward_not_enough_points": {
+      "message": "积分不足。需要 {cost}，可用 {available}"
+    },
+    "reward_spending_cap": {
+      "message": "已达到消费上限：本周期已用 {cap}"
+    },
+    "reward_claim_target_missing": {
+      "message": "领取 {claim_id} 对应的奖励或孩子不存在"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "积分不足，无法批准。需要 {cost}，现有 {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "“{name}”已经被批准，不能再驳回"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "“此奖励”已经被批准，不能再驳回"
+    },
+    "pool_allocate_min": {
+      "message": "存入的积分至少为 1"
+    },
+    "pool_no_spendable": {
+      "message": "{child} 没有可用积分"
+    },
+    "pool_full": {
+      "message": "奖励“{name}”的共享池已满"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} 每天只能领取一次 {name}。{date} 可再次领取"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} 每周只能领取一次 {name}。{date} 可再次领取"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} 每月只能领取一次 {name}。{date} 可再次领取"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} 每天可以领取 {count} 次 {name}。{date} 可再次领取"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} 每周可以领取 {count} 次 {name}。{date} 可再次领取"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} 每月可以领取 {count} 次 {name}。{date} 可再次领取"
+    },
+    "reward_gift_off": {
+      "message": "互相兑换奖励功能已关闭"
+    },
+    "reward_gift_children_only": {
+      "message": "只能为孩子兑换奖励"
+    },
+    "reward_gift_not_giftable": {
+      "message": "“{name}”不能为别人兑换"
+    },
+    "reward_rating_stars": {
+      "message": "请选择 1 到 3 颗星"
+    },
+    "reward_rating_not_yet": {
+      "message": "这个奖励还不能评分"
+    },
+    "reward_rating_not_holder": {
+      "message": "只有得到奖励的孩子才能评分"
+    },
+    "reward_rating_already": {
+      "message": "这个奖励已经评过分了"
+    },
+    "service_unknown_child": {
+      "message": "未知的孩子“{ref}”。有效的孩子：{valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "有不止一个孩子叫“{ref}”；请改用孩子 ID（{ids}）"
+    },
+    "service_nothing_to_update": {
+      "message": "没有要更新的内容：请至少指定一个要修改的字段"
+    },
+    "service_confirm_delete": {
+      "message": "设置 confirm: true 才能删除家务"
+    },
+    "penalty_already_earned_back": {
+      "message": "这次扣分已经赢回了。"
+    },
+    "fulfilment_not_waiting": {
+      "message": "这个奖励不在待兑现状态。"
+    },
+    "fulfilment_already_delivered": {
+      "message": "这个奖励已经被标记为已兑现。"
+    },
+    "fulfilment_wrong_child": {
+      "message": "这个奖励属于 {child}。"
+    },
+    "scheduled_field_not_allowed": {
+      "message": "“{field}”不能通过计划更改修改"
+    },
+    "scheduled_expects_bool": {
+      "message": "“{field}”需要 true 或 false"
+    },
+    "scheduled_expects_int": {
+      "message": "“{field}”需要整数"
+    },
+    "scheduled_negative": {
+      "message": "“{field}”不能为负数"
+    },
+    "scheduled_expects_list": {
+      "message": "“{field}”需要列表"
+    },
+    "scheduled_expects_text": {
+      "message": "“{field}”需要文本"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on 必须是 ISO 日期，例如 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on 必须是将来的日期"
+    },
+    "scheduled_no_fields": {
+      "message": "计划更改必须至少修改一个字段"
+    },
+    "scheduled_change_not_found": {
+      "message": "未找到计划更改 {change_id}"
+    },
+    "timed_not_timed": {
+      "message": "家务“{name}”不是计时任务"
+    },
+    "timed_already_running": {
+      "message": "计时器已在运行"
+    },
+    "timed_daily_cap": {
+      "message": "已达每日上限（{minutes} 分钟）"
+    },
+    "timed_not_available": {
+      "message": "“{name}”现在对 {child} 不可用"
+    },
+    "timed_no_running": {
+      "message": "没有正在运行的计时器可暂停"
+    },
+    "timed_no_active": {
+      "message": "没有进行中的计时器可停止"
+    },
+    "set_time_unknown": {
+      "message": "这个时间不是这项家务的固定时间之一。"
+    },
+    "sick_day_range": {
+      "message": "请选择一周前到一个月后之间的日期。"
+    },
+    "trash_nothing_to_restore": {
+      "message": "没有可恢复的内容：它从未被删除，或已被永久清除"
+    },
+    "trash_id_exists": {
+      "message": "已存在 ID 为 {item_id} 的项目"
+    },
+    "wish_not_found": {
+      "message": "未找到心愿"
+    },
+    "wish_target_not_whole": {
+      "message": "目标必须是整数"
+    },
+    "wish_target_range": {
+      "message": "目标必须在 1 到 {max} 之间"
+    },
+    "wish_name_required": {
+      "message": "请给心愿起个名字"
+    },
+    "wish_link_invalid": {
+      "message": "链接必须是以 http:// 或 https:// 开头的网址"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} 已经有 {max} 个进行中的心愿了"
+    },
+    "wish_picture_unusable": {
+      "message": "这张图片无法使用"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "只有等待中或被拒绝的心愿才能撤回"
+    },
+    "wish_not_open_for_saving": {
+      "message": "“{name}”现在不能存积分"
+    },
+    "wish_move_min": {
+      "message": "转入的积分至少为 1"
+    },
+    "wish_fully_funded": {
+      "message": "“{name}”已经攒够了"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name} 没有可用积分"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "现在不能从“{name}”中取出积分"
+    },
+    "wish_take_back_min": {
+      "message": "取回的积分至少为 1"
+    },
+    "wish_nothing_saved": {
+      "message": "“{name}”中没有可取回的积分"
+    },
+    "wish_cannot_redeem": {
+      "message": "“{name}”现在不能兑换"
+    },
+    "wish_needs_more_points": {
+      "message": "“{name}”还需要 {points} 积分"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "等待批准的奖励领取太多了"
+    },
+    "wish_not_waiting_approval": {
+      "message": "“{name}”不在等待批准"
+    },
+    "wish_cannot_decline": {
+      "message": "“{name}”已经不能拒绝了"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "“{name}”现在不接受认捐"
+    },
+    "wish_pledge_name_required": {
+      "message": "请填写认捐人"
+    },
+    "wish_pledge_min": {
+      "message": "认捐至少为 1 积分"
+    },
+    "wish_too_many_pledges": {
+      "message": "“{name}”已经有 {max} 笔认捐了"
+    },
+    "wish_pledges_locked": {
+      "message": "“{name}”的认捐已经不能修改了"
+    },
+    "wish_pledge_not_found": {
+      "message": "未找到认捐"
+    },
+    "wish_claim_missing": {
+      "message": "领取 {claim_id} 对应的心愿或孩子不存在"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "“{name}”已不在等待兑换"
+    },
+    "wish_not_funded": {
+      "message": "“{name}”已经不再是攒够状态"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "图片必须是表情符号（最多 {max} 个字符）。"
+    },
+    "pet_shop_colour_invalid": {
+      "message": "颜色必须形如 #ff8800，或为 'rainbow'。"
+    },
+    "pet_shop_item_not_found": {
+      "message": "商店里没有这个物品。"
+    },
+    "pet_shop_name_too_long": {
+      "message": "名称请不要超过 {max} 个字符。"
+    },
+    "pet_shop_name_required": {
+      "message": "请给物品起个名字。"
+    },
+    "pet_shop_unknown_slot": {
+      "message": "未知的部位“{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "价格和等级必须是整数。"
+    },
+    "pet_shop_cost_range": {
+      "message": "价格必须在 1 到 {max} 之间。"
+    },
+    "pet_shop_level_range": {
+      "message": "等级必须在 0 到 {max} 之间。"
+    },
+    "pet_shop_full": {
+      "message": "商店最多容纳 {max} 个物品。"
+    },
+    "pets_switched_off": {
+      "message": "宠物功能已关闭。"
+    },
+    "pet_adopt_first": {
+      "message": "请先领养一只宠物。"
+    },
+    "pet_shop_not_unlocked": {
+      "message": "这个还没解锁。"
+    },
+    "pet_shop_closed": {
+      "message": "宠物商店关门了。"
+    },
+    "pet_shop_buy_first": {
+      "message": "请先购买。"
+    },
+    "pet_shop_not_for_sale": {
+      "message": "这个物品不出售。"
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "达到 {level} 级才能解锁。"
+    },
+    "pet_shop_already_owned": {
+      "message": "你已经有这个了。"
+    },
+    "pet_shop_already_pending": {
+      "message": "这个已经在等家长确认了。"
+    },
+    "pet_shop_not_enough_points": {
+      "message": "积分还不够买这个。"
+    },
+    "pet_shop_purchase_gone": {
+      "message": "这笔购买已经不在等待中了。"
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "这个孩子或物品已不存在；请改为拒绝。"
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name} 现在没有足够的积分买它。"
+    },
+    "pet_unknown_species": {
+      "message": "未知的宠物“{species}”"
+    },
+    "pet_name_required": {
+      "message": "给你的宠物起个名字吧。"
+    },
+    "pet_no_egg": {
+      "message": "还没有可以孵的蛋。"
+    },
+    "auction_not_found": {
+      "message": "这个拍卖已经不存在了。请刷新卡片。"
+    },
+    "auction_refuse_off": {
+      "message": "这项家务已关闭。"
+    },
+    "auction_refuse_unassigned": {
+      "message": "未分配的家务无法交给任何人，因此不能拍卖。"
+    },
+    "auction_refuse_team": {
+      "message": "团队家务由团队共同完成，因此不能拍卖。"
+    },
+    "auction_refuse_timed": {
+      "message": "计时家务按分钟计分，因此不能拍卖。"
+    },
+    "auction_refuse_open_ended": {
+      "message": "开放式家务由家长定价，因此不能拍卖。"
+    },
+    "auction_invalid_date": {
+      "message": "无效日期：{date}"
+    },
+    "auction_pick_future": {
+      "message": "请选择明天及以后的场次。"
+    },
+    "auction_not_scheduled": {
+      "message": "“{chore}”在 {date} 没有安排。"
+    },
+    "auction_already_exists": {
+      "message": "这一场次已经有拍卖了。"
+    },
+    "auction_points_not_whole": {
+      "message": "积分必须是整数。"
+    },
+    "auction_max_range": {
+      "message": "最高出价须在 1 到 {max} 积分之间。"
+    },
+    "auction_min_range": {
+      "message": "最低出价须在 1 到最高出价之间。"
+    },
+    "auction_needs_close": {
+      "message": "拍卖需要结束时间。"
+    },
+    "auction_close_in_past": {
+      "message": "结束时间已经过去了。"
+    },
+    "auction_close_before_day": {
+      "message": "出价必须在家务当天之前结束。"
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "只有能做这项家务的孩子才能出价。"
+    },
+    "auction_no_bidders": {
+      "message": "请至少选择一个可以出价的孩子。"
+    },
+    "auction_already_closed": {
+      "message": "这个拍卖已经结束了。"
+    },
+    "auction_already_cancelled": {
+      "message": "这个拍卖已经取消了。"
+    },
+    "auction_occurrence_passed": {
+      "message": "这一场次已经过去了。"
+    },
+    "auction_still_live": {
+      "message": "这个拍卖还在进行中。请改为取消。"
+    },
+    "auction_not_for_you": {
+      "message": "这个拍卖不是给你的。"
+    },
+    "auction_bidding_closed": {
+      "message": "这个拍卖的出价已经结束了。"
+    },
+    "auction_bid_not_whole": {
+      "message": "出价必须是整数积分。"
+    },
+    "auction_bid_range": {
+      "message": "请出价 {min} 到 {max} 积分。"
+    },
+    "auction_no_bid": {
+      "message": "你还没有对这个出价。"
+    },
+    "bounty_invalid_expiry": {
+      "message": "无效的过期时间：{value}"
+    },
+    "bounty_not_found": {
+      "message": "这个悬赏已经不存在了。请刷新卡片。"
+    },
+    "bounty_title_required": {
+      "message": "悬赏需要标题。"
+    },
+    "bounty_points_not_whole": {
+      "message": "积分必须是整数。"
+    },
+    "bounty_points_range": {
+      "message": "悬赏的积分须在 1 到 {max} 之间。"
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "领取锁定必须是整数小时。"
+    },
+    "bounty_claim_hours_range": {
+      "message": "领取锁定须在 1 到 {max} 小时之间。"
+    },
+    "bounty_expiry_in_past": {
+      "message": "过期时间已经过去了。"
+    },
+    "bounty_finished_locked": {
+      "message": "已完成的悬赏不能编辑。"
+    },
+    "bounty_claimed_locked": {
+      "message": "悬赏被领取后，只能修改积分和过期时间。"
+    },
+    "bounty_review_before_remove": {
+      "message": "请先批准或驳回已完成的任务，再移除这个悬赏。"
+    },
+    "bounty_release_not_claimed": {
+      "message": "只有已领取的悬赏才能释放。"
+    },
+    "bounty_not_for_you": {
+      "message": "这个悬赏不是给你的。"
+    },
+    "bounty_taken": {
+      "message": "别人抢先了 — 这个悬赏已经不在悬赏榜上了。"
+    },
+    "bounty_one_at_a_time": {
+      "message": "先完成“{title}”— 你一次只能领取一个悬赏。"
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "你没有领取这个悬赏。"
+    },
+    "bounty_claim_expired": {
+      "message": "你对这个悬赏的领取已经超时了。"
+    },
+    "bounty_photo_required": {
+      "message": "这个悬赏需要完成任务的照片。"
+    },
+    "raffle_name_required": {
+      "message": "请给抽奖起个名字。"
+    },
+    "raffle_ticket_cost_range": {
+      "message": "每张彩票的价格为 1 到 {max}。"
+    },
+    "raffle_draw_required": {
+      "message": "请选择开奖时间。"
+    },
+    "raffle_field_required": {
+      "message": "{field} 为必填项"
+    },
+    "raffle_draw_in_past": {
+      "message": "开奖时间必须在将来。"
+    },
+    "raffle_not_found": {
+      "message": "未找到抽奖"
+    },
+    "raffle_not_open_edit": {
+      "message": "只有进行中的抽奖才能修改。"
+    },
+    "raffle_price_locked": {
+      "message": "已有人买了彩票，价格不能再改。"
+    },
+    "raffle_closed": {
+      "message": "这个抽奖已经结束了。"
+    },
+    "raffle_drawing": {
+      "message": "这个抽奖正在开奖。"
+    },
+    "raffle_not_open_to": {
+      "message": "这个抽奖不对 {child_name} 开放。"
+    },
+    "raffle_min_tickets": {
+      "message": "至少买一张彩票。"
+    },
+    "raffle_max_tickets": {
+      "message": "你最多只能持有 {max} 张彩票。"
+    },
+    "raffle_not_enough_points": {
+      "message": "积分不够买这么多彩票。"
+    },
+    "raffle_already_closed": {
+      "message": "这个抽奖已经结束了。"
+    },
+    "roulette_off": {
+      "message": "家务轮盘已关闭"
+    },
+    "roulette_no_spins": {
+      "message": "今天没有转动次数了"
+    },
+    "roulette_nothing_left": {
+      "message": "没有可以抽的家务了"
+    },
+    "unlock_not_allowed": {
+      "message": "“{entity_id}”不在解锁允许列表中。请先在“设置”中添加，再用作奖励。"
+    },
+    "unlock_minutes_not_whole": {
+      "message": "解锁分钟数必须是整数"
+    },
+    "unlock_minutes_negative": {
+      "message": "解锁分钟数不能为负数"
+    },
+    "unlock_minutes_too_many": {
+      "message": "解锁分钟数不能超过 {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "这个头像不在目录中"
+    },
+    "avatar_locked": {
+      "message": "这个头像还没解锁"
+    },
+    "weekly_goals_off": {
+      "message": "每周目标已关闭。"
+    },
+    "weekly_goal_range": {
+      "message": "请选择 0 到 {max} 之间的目标。"
+    },
+    "weekly_goal_below_bonus": {
+      "message": "目标至少要等于它发放的奖励 {bonus}。"
+    },
+    "weekly_goal_locked": {
+      "message": "本周目标已经达成并发放奖励，周一之前不能修改。"
+    },
+    "challenge_name_required": {
+      "message": "挑战名称为必填项"
+    },
+    "challenge_target_min": {
+      "message": "目标至少为 1"
+    },
+    "challenge_not_found": {
+      "message": "未找到挑战 {challenge_id}"
+    },
+    "quest_name_required": {
+      "message": "冒险任务名称为必填项"
+    },
+    "quest_needs_step": {
+      "message": "冒险任务至少需要一个步骤"
+    },
+    "quest_not_found": {
+      "message": "未找到冒险任务 {quest_id}"
+    },
+    "admin_only": {
+      "message": "仅限管理员"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate 尚未初始化"
+    },
+    "not_allowed": {
+      "message": "不允许"
+    },
+    "handler_failed": {
+      "message": "出错了；请查看 Home Assistant 日志"
+    },
+    "chore_one_off_past_day": {
+      "message": "一次性家务不能设在已经过去的日子"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start 必须是 ISO 日期"
+    },
+    "penalty_not_found": {
+      "message": "未找到扣分项 {penalty_id}"
+    },
+    "bonus_not_found": {
+      "message": "未找到奖励分 {bonus_id}"
+    },
+    "group_not_found": {
+      "message": "未找到分组 {group_id}"
+    },
+    "chores_bulk_no_names": {
+      "message": "至少需要一个家务名称"
+    },
+    "notif_child_not_found": {
+      "message": "未找到孩子"
+    },
+    "notif_parent_not_found": {
+      "message": "未找到家长"
+    },
+    "recap_not_found": {
+      "message": "未找到回顾"
+    },
+    "voucher_not_approved": {
+      "message": "只有已批准的奖励才能打印"
+    },
+    "voucher_missing": {
+      "message": "这个奖励或孩子已经不存在了"
+    },
+    "setup_invalid_birthday": {
+      "message": "生日“{value}”不是有效日期"
+    },
+    "kiosk_pin_invalid": {
+      "message": "自助屏 PIN 必须正好是 4 位数字"
+    },
+    "time_periods_empty": {
+      "message": "time_periods 必须是非空列表"
+    },
+    "time_periods_too_many": {
+      "message": "时段太多（最多 {max} 个）"
+    },
+    "time_periods_not_object": {
+      "message": "每个时段必须是一个对象"
+    },
+    "time_periods_duplicate_id": {
+      "message": "重复的时段 ID：{period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "每个自定义时段都需要名称"
+    },
+    "time_periods_invalid_time": {
+      "message": "时段“{name}”的时间无效（请使用 HH:MM）"
+    },
+    "time_periods_start_after_end": {
+      "message": "时段“{name}”的开始时间必须早于结束时间"
+    },
+    "time_periods_overlap": {
+      "message": "“{name}”与“{other}”重叠 — 时段不能重叠"
+    },
+    "time_periods_in_use": {
+      "message": "无法删除仍被家务使用的时段：{chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods 必须是列表"
+    },
+    "vacation_periods_too_many": {
+      "message": "假期太多（最多 {max} 个）"
+    },
+    "vacation_periods_not_object": {
+      "message": "每个假期必须是一个对象"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "每个假期都需要有效的开始和结束日期（YYYY-MM-DD）"
+    },
+    "template_apply_empty": {
+      "message": "无法应用没有家务的模板"
+    },
+    "template_none_selected": {
+      "message": "至少要选择一项家务"
+    },
+    "template_no_valid_chores": {
+      "message": "所选 ID 中没有有效的家务"
+    },
+    "template_needs_chore": {
+      "message": "模板至少需要一项家务"
+    },
+    "template_builtin_modify": {
+      "message": "无法修改内置模板“{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "无法删除内置模板“{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "这看起来不像 TaskMate 合集"
+    },
+    "template_pack_wrong_format": {
+      "message": "不是 TaskMate 模板合集"
+    },
+    "template_pack_version_nan": {
+      "message": "合集版本不是数字"
+    },
+    "template_pack_too_new": {
+      "message": "此合集需要更新版本的 TaskMate（合集版本 {version}，当前版本支持 {supported}）"
+    },
+    "template_pack_empty": {
+      "message": "合集中没有模板"
+    },
+    "template_pack_too_many": {
+      "message": "合集中的模板太多（最多 {max} 个）"
+    },
+    "template_pack_malformed_template": {
+      "message": "合集中有格式错误的模板"
+    },
+    "template_pack_unnamed_template": {
+      "message": "合集中有一个模板没有名称"
+    },
+    "template_pack_template_no_chores": {
+      "message": "模板“{name}”没有家务"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "模板“{name}”的家务太多"
+    },
+    "template_pack_malformed_chore": {
+      "message": "模板“{name}”中有格式错误的家务"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "“{name}”中有一项家务没有名称"
+    },
+    "boost_bad_time": {
+      "message": "“{value}”不是像 09:30 这样的时间。"
+    },
+    "boost_multiplier_nan": {
+      "message": "倍数必须是数字。"
+    },
+    "boost_multiplier_range": {
+      "message": "请选择 ×{min} 到 ×{max} 之间的倍数。"
+    },
+    "boost_chore_not_found": {
+      "message": "未找到家务 {chore_id}。"
+    },
+    "boost_child_not_found": {
+      "message": "未找到孩子 {child_id}。"
+    },
+    "boost_start_past": {
+      "message": "加成不能从过去开始。"
+    },
+    "boost_too_far_ahead": {
+      "message": "加成最多可以提前一周安排。"
+    },
+    "boost_minutes_nan": {
+      "message": "分钟数必须是整数。"
+    },
+    "boost_minutes_range": {
+      "message": "请选择 1 到 {max} 分钟。"
+    },
+    "boost_already_ended": {
+      "message": "这个加成已经结束了。"
+    },
+    "boost_rule_no_days": {
+      "message": "至少选择一天。"
+    },
+    "boost_rule_end_before_start": {
+      "message": "结束时间必须晚于开始时间。"
+    },
+    "boost_rules_max": {
+      "message": "最多 {max} 个重复加成。"
+    },
+    "boost_rule_gone": {
+      "message": "这个重复加成已经不存在了。"
+    },
+    "season_pack_unknown": {
+      "message": "未知的季节活动包：{season}"
+    },
+    "calendar_unknown_child": {
+      "message": "未知的孩子：{child_id}"
+    },
+    "undo_already_undone": {
+      "message": "这项家务已经撤销过了。请刷新卡片。"
+    },
+    "import_invalid_payload": {
+      "message": "无效的 TaskMate 导出数据"
+    },
+    "import_data_not_object": {
+      "message": "导入数据必须是一个对象"
+    },
+    "allowance_points_min": {
+      "message": "points 必须 >= 1"
+    },
+    "allowance_not_enabled": {
+      "message": "零花钱功能未启用"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} 只有 {points} {points_name} 可以发放。"
+    },
+    "appeals_off": {
+      "message": "申诉功能已关闭。"
+    },
+    "appeals_already_appealed": {
+      "message": "这个已经申诉过了。"
+    },
+    "appeals_not_appealable": {
+      "message": "这个不能申诉。"
+    },
+    "appeals_not_found": {
+      "message": "这个申诉已经不存在了。"
+    },
+    "appeals_already_decided": {
+      "message": "这个申诉已经处理过了。"
+    },
+    "appeals_child_gone": {
+      "message": "这个孩子已经不在了。"
+    },
+    "appeals_reward_gone": {
+      "message": "这个奖励已经不存在了。"
+    },
+    "appeals_penalty_already_undone": {
+      "message": "这次扣分已经撤回了。"
+    },
+    "appeals_unknown_kind": {
+      "message": "未知的申诉类型 {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "生日必须是 YYYY-MM-DD 或 MM-DD，收到的是“{value}”"
+    },
+    "birthday_in_future": {
+      "message": "生日不能在将来"
+    },
+    "chore_reminders_off": {
+      "message": "提醒功能已关闭"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} 不是 {child} 的家务"
+    },
+    "chore_reminder_time_format": {
+      "message": "请选择像 17:30 这样的时间"
+    },
+    "chore_reminder_time_range": {
+      "message": "请选择 {earliest} 到 {latest} 之间的时间"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on 必须是 ISO 日期，例如 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "这次抽查已经不存在了。请刷新后重试。"
+    },
+    "inspection_already_decided": {
+      "message": "这次抽查已经判定或已结束。"
+    },
+    "inspections_off": {
+      "message": "突击抽查已在设置中关闭。"
+    },
+    "inspection_chore_gone": {
+      "message": "这项家务已经不存在了。"
+    },
+    "inspection_not_approved": {
+      "message": "只有已批准的家务才能抽查。"
+    },
+    "inspection_not_child_chore": {
+      "message": "只能抽查孩子自己的家务。"
+    },
+    "inspection_child_gone": {
+      "message": "这个孩子已经不存在了。"
+    },
+    "inspection_too_old": {
+      "message": "只能抽查最近 {hours} 小时内批准的家务。"
+    },
+    "inspection_already_inspected": {
+      "message": "这项家务已经抽查过了。"
+    },
+    "inspection_redo_today_only": {
+      "message": "只有今天完成的家务才能退回重做。"
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url 必须是 /路径、http(s) URL 或 noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group 不能包含空格（试试 family-chores）"
+    },
+    "notification_group_control": {
+      "message": "group 不能包含控制字符"
+    },
+    "notification_group_too_long": {
+      "message": "group 不能超过 64 个字符"
+    },
+    "notification_unknown_type": {
+      "message": "未知的通知类型 {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "未知的通知接收人 {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "分钟数必须是整数"
+    },
+    "screen_time_minutes_max": {
+      "message": "分钟数不能超过 {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "屏幕时间存钱罐已关闭"
+    },
+    "screen_time_jar_full": {
+      "message": "存钱罐满了"
+    },
+    "screen_time_jar_nothing": {
+      "message": "没有可以存的分钟"
+    },
+    "setup_unknown_age_group": {
+      "message": "未知的年龄段“{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "每个新孩子都需要自己的 ref"
+    },
+    "setup_child_needs_name": {
+      "message": "孩子需要名字"
+    },
+    "setup_chore_unknown_child": {
+      "message": "家务分配给了未知的孩子“{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "家务需要名称"
+    },
+    "setup_reward_needs_name": {
+      "message": "奖励需要名称"
+    },
+    "sibling_checks_off": {
+      "message": "兄弟姐妹互查已关闭"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "未知的结论 {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "这项家务已经检查过了。请刷新卡片。"
+    },
+    "sibling_check_own_chore": {
+      "message": "你不能检查自己的家务"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} 不能检查这个孩子的家务"
+    },
+    "sound_invalid_file_name": {
+      "message": "不是有效的音效文件名：{file}"
+    },
+    "sound_already_registered": {
+      "message": "音效 {file} 已注册"
+    },
+    "sound_unknown_custom": {
+      "message": "未知的自定义音效：{file}"
+    },
+    "tour_adult": {
+      "message": "成人档案不显示指引"
+    },
+    "tour_bad_status": {
+      "message": "status 必须是 'done' 或 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "未知的指引步骤 {step}"
+    },
+    "tour_already_speaking": {
+      "message": "正在朗读中；请稍后再试"
+    },
+    "tts_no_media_player": {
+      "message": "没有指定媒体播放器，设置中也没有默认值"
+    },
+    "tts_no_entity": {
+      "message": "没有找到文字转语音实体。请在设置中设置，或传入 tts_entity。"
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} 今天不是 {child} 的家务。"
+    },
+    "wellbeing_unknown_mood": {
+      "message": "未知的心情“{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "固定时间必须是列表。"
+    },
+    "set_times_too_many": {
+      "message": "一项家务最多可设置 {max} 个固定时间。"
+    },
+    "set_times_timed": {
+      "message": "计时家务不能设置固定时间。"
+    },
+    "set_times_open_ended": {
+      "message": "开放式家务不能设置固定时间。"
+    },
+    "set_times_quantity": {
+      "message": "计数式家务不能设置固定时间。"
+    },
+    "set_times_teamwork": {
+      "message": "团队家务不能设置固定时间。"
+    },
+    "set_times_need_start_end": {
+      "message": "每个固定时间都需要开始和结束。"
+    },
+    "set_times_bad_format": {
+      "message": "固定时间需要像 07:30 这样的开始和结束时间。"
+    },
+    "set_times_end_before_start": {
+      "message": "固定时间的结束必须晚于开始，且在同一天。"
+    },
+    "set_times_overlap": {
+      "message": "有两个固定时间重叠了。请调整其中一个。"
+    },
+    "template_not_found": {
+      "message": "未找到模板 {template_id}"
+    },
+    "upload_admin_required": {
+      "message": "需要管理员权限"
+    },
+    "upload_file_too_large": {
+      "message": "文件太大"
+    },
+    "upload_expected_multipart": {
+      "message": "需要 multipart 表单"
+    },
+    "upload_too_many_parts": {
+      "message": "表单部分太多"
+    },
+    "upload_no_file": {
+      "message": "未提供文件"
+    },
+    "upload_image_unsupported": {
+      "message": "不支持的图片格式（JPEG、PNG 或 WebP）"
+    },
+    "upload_image_storage_full": {
+      "message": "图片存储已满"
+    },
+    "upload_image_store_failed": {
+      "message": "无法保存图片"
+    },
+    "upload_photo_rate_limited": {
+      "message": "上传太频繁，请稍后再试"
+    },
+    "upload_photo_busy": {
+      "message": "同时上传太多，请稍后再试"
+    },
+    "upload_photo_storage_full": {
+      "message": "照片存储已满"
+    },
+    "upload_photo_timeout": {
+      "message": "上传时间过长"
+    },
+    "upload_photo_invalid": {
+      "message": "不是有效的图片"
+    },
+    "upload_photo_store_failed": {
+      "message": "无法保存照片"
+    },
+    "upload_photo_pending_limit": {
+      "message": "你有太多照片等待附加到家务上。请先提交或移除它们。"
+    },
+    "upload_sound_unsupported": {
+      "message": "不支持的音效格式（MP3、OGG、WAV 或 M4A）"
+    },
+    "upload_sound_storage_full": {
+      "message": "音效存储已满"
+    },
+    "upload_sound_store_failed": {
+      "message": "无法保存音效"
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate 无法向 {who} 发送通知",
+      "description": "TaskMate 设置为通过 `{service}` 通知 {who}，但该服务已不存在 — 通常是因为手机在 Mobile App 集成中被移除或重命名。\n\n打开 TaskMate 管理面板 → 通知，为 {who} 选择当前的服务。服务存在后，此修复提示会自动消失。"
+    },
+    "child_entity_missing": {
+      "title": "{child} 的档案使用了不存在的实体",
+      "description": "{child} 的档案使用了 `{entity}`，但它已不存在。依赖它的空闲状态、基于在家状态的提醒或头像照片将无法工作。\n\n打开 TaskMate 管理面板 → 孩子，编辑 {child} 并选择一个存在的实体（或清空该字段）。"
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}”使用了不存在的实体",
+      "description": "“{chore}”通过检查 `{entity}` 来决定何时显示，但该实体已不存在，因此会跳过检查。\n\n打开 TaskMate 管理面板 → 家务，编辑“{chore}”并选择一个存在的实体（或清空）。"
+    },
+    "chore_assigned_to_nobody": {
+      "title": "家务“{chore}”没有分配给任何人",
+      "description": "“{chore}”分配的所有孩子都已被移除，因此没有人会看到它。\n\n打开 TaskMate 管理面板 → 家务，把“{chore}”分配给一个孩子，或删除它。"
+    },
+    "chore_dependency_missing": {
+      "title": "家务“{chore}”永远无法解锁",
+      "description": "“{chore}”需要先等另一项家务完成，但那项家务已被删除，因此“{chore}”会一直锁定。\n\n打开 TaskMate 管理面板 → 家务，编辑“{chore}”并移除缺失的依赖。"
+    },
+    "reward_assigned_to_nobody": {
+      "title": "没有孩子能领取奖励“{reward}”",
+      "description": "“{reward}”针对的所有孩子都已被移除，因此没有人能领取它。\n\n打开 TaskMate 管理面板 → 奖励，选择“{reward}”给谁，或删除它。"
+    },
+    "reward_unlock_not_allowed": {
+      "title": "奖励“{reward}”不会解锁任何东西",
+      "description": "“{reward}”设置为打开 `{entity}`，但该实体已不在 TaskMate 的解锁允许列表中，因此批准奖励时不会有任何效果。\n\n打开 TaskMate 管理面板 → 设置，把 `{entity}` 添加到解锁允许列表，或编辑“{reward}”。"
+    }
+  }
+}

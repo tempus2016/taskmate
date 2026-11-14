@@ -129,9 +129,9 @@ test('no "${a} / ${b}" template renders without an isolate', () => {
 test("messages whose placeholders form a number run are isolated where they are used", () => {
   const en = JSON.parse(readFileSync(path.join(WWW, "locales/en.json"), "utf8"));
   // Spaced ratios, "{n}-day", and visible "{x} of {y}" counts (aria-labels are
-  // read aloud, not laid out, so the two that only feed one are left alone).
+  // read aloud, not laid out, so the keys that only feed one are left alone).
   const pattern = /\{\w+\}\s+\/\s*\{\w+\}|\{\w+\}\s*\/\s+\{\w+\}|\{\w+\}-\p{L}|^\{\w+\} of \{\w+\}/u;
-  const ARIA_ONLY = ["panel.today_ring_label", "wishlist.progress_label"];
+  const ARIA_ONLY = ["panel.today_ring_label", "wishlist.progress_label", "child.list_progress", "child.list_progress_waiting"];
   const keys = Object.keys(en).filter((k) => pattern.test(en[k]) && !ARIA_ONLY.includes(k));
   for (const k of ["child.team_progress", "panel.today_streak", "kiosk.progress", "badges.count_label"]) assert.ok(keys.includes(k), k);
 

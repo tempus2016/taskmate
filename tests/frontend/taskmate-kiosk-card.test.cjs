@@ -264,6 +264,45 @@ test("a first-come chore is marked up for grabs", async () => {
   assert.equal((markup.match(new RegExp(localize("kiosk.up_for_grabs"), "g")) || []).length, 1);
 });
 
+test("a first-come chore a sibling got first says who, and isn't counted", async () => {
+  const now = new Date().toISOString();
+  const card = await childView({
+    chores: [
+      chore("dishes"),
+      chore("bins", { assignment_mode: "first_come", requires_approval: false }),
+      chore("bed", { assignment_mode: "first_come" }),
+      chore("lawn", { assignment_mode: "first_come", assigned_to: ["malia", "isla"] }),
+      chore("car"),
+    ],
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] },
+    completions: [
+      { completion_id: "c1", chore_id: "bins", child_id: "malia", approved: true, completed_at: now },
+      { completion_id: "c2", chore_id: "bed", child_id: "__parent__", approved: true, completed_at: now },
+      // Not in Vaiha's pool, and not first-come: neither shows.
+      { completion_id: "c3", chore_id: "lawn", child_id: "malia", approved: true, completed_at: now },
+      { completion_id: "c4", chore_id: "car", child_id: "malia", approved: true, completed_at: now },
+    ],
+  });
+  const { markup } = view(card);
+  assert.equal((markup.match(/km-row taken/g) || []).length, 2);
+  assert.match(markup, new RegExp(localize("kiosk.taken_by", { name: "Malia" })));
+  assert.match(markup, new RegExp(localize("kiosk.taken_by_grownup")));
+  assert.doesNotMatch(markup, /Lawn|Car/);
+  assert.doesNotMatch(markup, /km-row taken grab/, "a lost race is no longer up for grabs");
+  const { done, total } = card._progress(card._entry("vaiha").child);
+  assert.deepEqual([done, total], [0, 1], "only the chore still Vaiha's to do");
+});
+
+test("taken first-come chores hide with completed_mode: hide", async () => {
+  const card = await childView({
+    config: { completed_mode: "hide" },
+    chores: [chore("dishes"), chore("bins", { assignment_mode: "first_come" })],
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] },
+    completions: [{ completion_id: "c1", chore_id: "bins", child_id: "malia", approved: true, completed_at: new Date().toISOString() }],
+  });
+  assert.doesNotMatch(view(card).markup, /km-row taken/);
+});
+
 test("undo follows the #918 window and goes through undo_chore", async () => {
   const card = await childView({
     status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: [] }] },

@@ -59,7 +59,7 @@ function rowTitle(card) {
   return row.attr("title");
 }
 
-const CLICK = localize("child.click_to_complete");
+const CLICK = localize("child.tap_to_complete");
 
 const REASONS = [
   {
@@ -70,7 +70,8 @@ const REASONS = [
   {
     name: "past its time window",
     args: { chores: [chore({ time_category: "morning" })], config: { debug_time_period: "evening", time_category: "all" } },
-    expect: localize("child.time_has_passed"),
+    // Says when it closed (the morning period ends at 12:00), not just "time has passed".
+    expect: localize("child.time_closed_at", { time: "12:00" }),
   },
   {
     name: "not due today",
@@ -141,6 +142,22 @@ test("classic tooltip: a lock with no reason to give says nothing rather than in
 test("classic tooltip: an open chore still invites the tap", () => {
   const row = render(makeCard({ chores: [chore()] }).render()).control(/class="chore-card/);
   assert.equal(row.attr("title"), CLICK);
+});
+
+test("classic tooltip: a past period's chore counts its claim allowance in the closing time", () => {
+  const title = rowTitle(makeCard({
+    chores: [chore({ time_category: "morning", claim_allowance_minutes: 30 })],
+    config: { debug_time_period: "evening", time_category: "all" },
+  }));
+  assert.equal(title, localize("child.time_closed_at", { time: "12:30" }));
+});
+
+test("classic tooltip: a recurring chore in its cooldown says when it's back", () => {
+  const card = makeCard({ chores: [chore({ schedule_mode: "recurring", recurrence: "every_3_days" })], availability: { zz: { kid1: false } } });
+  card.hass.states[ENTITY].attributes.chore_next_open = { zz: { kid1: "2030-01-04" } };
+  const title = rowTitle(card);
+  assert.equal(title, localize("child.recurrence_back_on", { day: card._dayLabel("2030-01-04") }));
+  assert.notEqual(title, localize("child.recurrence_locked"));
 });
 
 test("child.recurrence_locked is translated in every locale", () => {

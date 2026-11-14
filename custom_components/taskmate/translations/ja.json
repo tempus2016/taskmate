@@ -1,0 +1,3551 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TaskMate へようこそ！",
+        "description": "家族のお手伝い管理システムを設定します。子どもが獲得するポイントの呼び名を自由に決められます。",
+        "data": {
+          "points_name": "ポイントの呼び名（例: スター、コイン、メダル）",
+          "points_icon": "ポイントのアイコン"
+        }
+      }
+    },
+    "error": {
+      "name_required": "名前は必須です"
+    },
+    "abort": {
+      "already_configured": "TaskMate はすでに設定されています"
+    },
+    "create_entry": {
+      "default": "TaskMate の準備ができました。[TaskMate パネルを開いて](/taskmate-admin)、年齢に合ったお手伝いを提案するセットアップウィザードで子どもを追加しましょう。"
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "変更を保存",
+        "re_enable": "お手伝いを再度有効にする",
+        "disable": "お手伝いを無効にする",
+        "delete": "このお手伝いを削除"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "変更を保存",
+        "delete": "ごほうびを削除"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "朝",
+        "afternoon": "午後",
+        "evening": "夕方",
+        "night": "夜",
+        "anytime": "いつでも"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "特定の曜日",
+        "recurring": "繰り返し（N日/週/月ごと）",
+        "one_shot": "1回限りのタスク（1日だけ）"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "月曜日",
+        "tuesday": "火曜日",
+        "wednesday": "水曜日",
+        "thursday": "木曜日",
+        "friday": "金曜日",
+        "saturday": "土曜日",
+        "sunday": "日曜日"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "2日ごと",
+        "weekly": "毎週",
+        "every_2_weeks": "2週間ごと",
+        "monthly": "毎月",
+        "every_3_months": "3か月ごと",
+        "every_6_months": "6か月ごと"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "月曜日",
+        "tuesday": "火曜日",
+        "wednesday": "水曜日",
+        "thursday": "木曜日",
+        "friday": "金曜日",
+        "saturday": "土曜日",
+        "sunday": "日曜日",
+        "any_day": "どの曜日でも"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "すぐに利用可能",
+        "wait_for_first_occurrence": "最初の予定日まで待つ"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "リセット — できなかった日に連続記録が0になる",
+        "pause": "一時停止 — 次に完了するまで連続記録を維持"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "フィルターなし — 常にお手伝いを表示",
+        "equals": "等しい — エンティティの状態が完全に一致するとき表示",
+        "not_equals": "等しくない — エンティティの状態が一致しないとき表示",
+        "gte": "以上（≥）— 数値が目標値以上のとき表示",
+        "lte": "以下（≤）— 数値が目標値以下のとき表示",
+        "gt": "より大きい（>）— 数値が目標値より大きいとき表示",
+        "lt": "より小さい（<）— 数値が目標値より小さいとき表示"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "全員 — 割り当てられた子ども全員に表示",
+        "alternating": "交互 — 割り当てられた子どもが1日1人ずつ順番に担当",
+        "random": "ランダム — 毎日、割り当てられた子どもからランダムに1人を選ぶ",
+        "balanced": "均等 — 今日の均等割り当てのお手伝いを子どもたちに均等に分配",
+        "first_come": "早い者勝ち — 最初に完了した子どもが獲得し、ほかの子どもには非表示",
+        "unassigned": "未割り当て — どの子どもにも表示しない"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "固定 — グループ内のすべてのお手伝いを同じ子どもが担当",
+        "spread": "分散 — 今日はグループ内で異なる子どもが担当"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "変更を保存",
+        "delete": "グループを削除"
+      }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "音なし",
+        "coin": "コイン",
+        "levelup": "レベルアップ",
+        "fanfare": "ファンファーレ",
+        "chime": "チャイム",
+        "powerup": "パワーアップ",
+        "undo": "元に戻す",
+        "fart1": "おなら 1",
+        "fart2": "おなら 2",
+        "fart3": "おなら 3",
+        "fart4": "おなら 4",
+        "fart5": "おなら 5",
+        "fart6": "おなら 6",
+        "fart7": "おなら 7",
+        "fart8": "おなら 8",
+        "fart9": "おなら 9",
+        "fart10": "おなら 10",
+        "fart_random": "ランダムおなら"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "かんたん",
+        "medium": "ふつう",
+        "hard": "むずかしい"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "全員が満額をもらう",
+        "split": "ポイントを均等に分ける（切り捨て）"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "予定ごと",
+        "week": "毎週",
+        "month": "毎月"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "ブロンズ",
+        "silver": "シルバー",
+        "gold": "ゴールド",
+        "platinum": "プラチナ"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "すべて満たす（かつ）",
+        "or": "いずれかを満たす（または）"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1時間",
+        "2h": "2時間",
+        "4h": "4時間",
+        "bed": "就寝時刻まで"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "最高",
+        "good": "よかった",
+        "ok": "ふつう",
+        "sad": "悲しい",
+        "upset": "怒ってる"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "お手伝い",
+        "reward": "ごほうび",
+        "penalty": "ペナルティ"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "ドラゴン",
+        "cat": "ねこ",
+        "dog": "いぬ",
+        "bunny": "うさぎ",
+        "dino": "きょうりゅう",
+        "unicorn": "ユニコーン"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "できてるよ",
+        "not_yet": "まだだよ"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "お手伝いを完了",
+      "description": "子どものお手伝いを完了にします",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "完了するお手伝いのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "お手伝いを完了する子どものID"
+        },
+        "note": {
+          "name": "メモ",
+          "description": "子どもが自分の言葉で書いた、やったこと。自由記入のお手伝いでは必須で、承認時に保護者に表示されます。"
+        },
+        "suggested_points": {
+          "name": "希望ポイント",
+          "description": "子どもが考える作業の価値。承認する保護者への参考で、これだけでは何も付与されません。"
+        },
+        "quantity": {
+          "name": "数量",
+          "description": "数量のお手伝い（「20ページ読む」）で、子どもがいくつやったか。そのお手伝いでは子どもからの入力が必須で、お手伝いのポイントは1単位ごとに支払われます。"
+        },
+        "time_id": {
+          "name": "決まった時刻",
+          "description": "決まった時刻のお手伝いで、どの時刻にチェックを付けるか。空欄なら今開いている時刻です。"
+        },
+        "as_parent": {
+          "name": "保護者として",
+          "description": "子どもの代わりに完了し、承認を省いてすぐにポイントを付与します。"
+        },
+        "photo_url": {
+          "name": "写真のURL",
+          "description": "完了の証拠として提出する写真の URL またはパス（任意、例: カメラのスナップショット）。承認時に保護者に表示されます。"
+        },
+        "completed_date": {
+          "name": "実施日",
+          "description": "実施したのにチェックされていなかった過去の日（今日を除く7日前まで）の分を記録します。保護者のみ、すぐに承認されます。その日の回数上限は適用されます。"
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "ボーナスのサブタスクを完了",
+      "description": "親となるお手伝いの完了後に、ボーナスのサブタスクを完了します",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "親となるお手伝いのID"
+        },
+        "bonus_subtask_id": {
+          "name": "ボーナスのサブタスクID",
+          "description": "完了するボーナスのサブタスクのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ボーナスのサブタスクを完了する子どものID"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "お手伝いを承認",
+      "description": "完了したお手伝いを承認し、ポイントを付与します",
+      "fields": {
+        "completion_id": {
+          "name": "完了ID",
+          "description": "承認するお手伝いの完了ID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "お手伝い本来の値の代わりに、このポイントを付与します。空欄ならお手伝いのポイントを使います。"
+        },
+        "rating": {
+          "name": "できばえ評価",
+          "description": "お手伝いのできばえを1〜3つ星で評価（任意）。できばえ評価が有効なら、その星の倍率でポイントが変わります。空欄なら100%支払われます。"
+        },
+        "note": {
+          "name": "ほめ言葉",
+          "description": "子どもへの短いメッセージ（任意）。今日、子どものカードに表示されます（最大120文字）。"
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "すべてのお手伝いを承認",
+      "description": "承認待ちのお手伝い（または指定したもの）をすべて承認し、ポイントを付与します",
+      "fields": {
+        "completion_ids": {
+          "name": "完了ID一覧",
+          "description": "承認する完了IDの指定。省略すると承認待ちをすべて承認します"
+        },
+        "rating": {
+          "name": "できばえ評価",
+          "description": "この呼び出しで承認するすべてのお手伝いに付ける1〜3つ星の評価（任意、できばえ評価が有効である必要があります）。"
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "お手伝いを却下",
+      "description": "完了したお手伝いを却下します",
+      "fields": {
+        "completion_id": {
+          "name": "完了ID",
+          "description": "却下するお手伝いの完了ID"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "子どもに表示する理由（任意）"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "お手伝いを取り消す",
+      "description": "子どもが自分のお手伝いを取り消せるようにします — 保護者が確認するまでの承認待ちの提出、またはお手伝いの取り消し可能時間内の自動承認されたもの。TaskMate の設定でこの時間を0より大きくしない限りオフで、保護者が確認したものは保護者が取り消す必要があります。",
+      "fields": {
+        "completion_id": {
+          "name": "完了ID",
+          "description": "取り消す子どものお手伝いの完了ID"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "お手伝いの承認を取り消す",
+      "description": "誤って承認したお手伝いを元に戻します — 付与したポイントを差し引き、完了を承認待ちに戻すので再度承認できます。",
+      "fields": {
+        "completion_id": {
+          "name": "完了ID",
+          "description": "承認待ちに戻す、承認済みのお手伝いの完了ID"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "取引を取り消す",
+      "description": "IDを指定してポイントの取引を取り消します — ペナルティ、ボーナス、手動の追加・削除の調整、プレゼント（双方）。自動の取引（週末・連続記録・パーフェクトウィークのボーナス、共同貯金の移動、目減り、利息）は取り消せません。",
+      "fields": {
+        "transaction_id": {
+          "name": "取引ID",
+          "description": "取り消すポイントの取引のID"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "ごほうびを申請",
+      "description": "子どもがポイントを使ってごほうびを申請します",
+      "fields": {
+        "reward_id": {
+          "name": "ごほうびID",
+          "description": "申請するごほうびのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ごほうびを申請する子どものID"
+        },
+        "recipient_id": {
+          "name": "受け取る人のID",
+          "description": "代わりにきょうだいのために買います。申請した子どもが支払います。「子ども同士でごほうびを買えるようにする」がオンである必要があります。"
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "ごほうびを承認",
+      "description": "ごほうびの申請を承認します",
+      "fields": {
+        "claim_id": {
+          "name": "申請ID",
+          "description": "承認するごほうびの申請のID"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "共同貯金にポイントを入れる",
+      "description": "子どもの使えるポイントから、ごほうびの共同貯金（固定）にポイントを移します。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "ポイントを入れる子どものID"
+        },
+        "reward_id": {
+          "name": "ごほうびID",
+          "description": "入金先のごほうびの共同貯金のID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "入れるポイント数（共同貯金の残り容量と使えるポイントが上限）"
+        }
+      }
+    },
+    "add_points": {
+      "name": "ポイントを追加",
+      "description": "子どもにボーナスポイントを追加します",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "ポイントを追加する子どものID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "追加するポイント数"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "ボーナスの理由（任意）"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "ポイントを減らす",
+      "description": "子どものポイントを減らします（ペナルティ）",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "ポイントを減らす子どものID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "減らすポイント数"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "ペナルティの理由（任意）"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "ごほうびを却下",
+      "description": "ごほうびの申請を却下します",
+      "fields": {
+        "claim_id": {
+          "name": "申請ID",
+          "description": "却下するごほうびの申請のID"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "子どもに表示する理由（任意）"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "音を試聴",
+      "description": "ブラウザーで完了時の効果音を試聴します",
+      "fields": {
+        "sound": {
+          "name": "音",
+          "description": "試聴する音"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "お手伝いの順番を設定",
+      "description": "子どものお手伝いの表示順を設定します",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "お手伝いの順番を設定する子どものID"
+        },
+        "chore_order": {
+          "name": "お手伝いの順番",
+          "description": "並べたお手伝いIDのリスト"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "ペナルティを追加",
+      "description": "新しいペナルティを作成します",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "ペナルティの名前"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "適用時に差し引くポイント数"
+        },
+        "description": {
+          "name": "説明",
+          "description": "ペナルティの説明（任意）"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "ペナルティの MDI アイコン"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "このペナルティの対象となる子どもIDのリスト"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "ペナルティを更新",
+      "description": "既存のペナルティを更新します",
+      "fields": {
+        "penalty_id": {
+          "name": "ペナルティID",
+          "description": "更新するペナルティのID"
+        },
+        "name": {
+          "name": "名前",
+          "description": "ペナルティの新しい名前"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "新しいポイント値"
+        },
+        "description": {
+          "name": "説明",
+          "description": "新しい説明"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "新しいアイコン"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "新しい子どもIDのリスト"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "ペナルティを削除",
+      "description": "ペナルティを削除します",
+      "fields": {
+        "penalty_id": {
+          "name": "ペナルティID",
+          "description": "削除するペナルティのID"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "ペナルティを適用",
+      "description": "子どもにペナルティを適用し、ポイントを差し引きます",
+      "fields": {
+        "penalty_id": {
+          "name": "ペナルティID",
+          "description": "適用するペナルティのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ペナルティを適用する子どものID"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "ボーナスを追加",
+      "description": "新しいボーナスを作成します",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "ボーナスの名前"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "適用時に付与するポイント数"
+        },
+        "description": {
+          "name": "説明",
+          "description": "ボーナスの説明（任意）"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "ボーナスの MDI アイコン"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "このボーナスの対象となる子どもIDのリスト"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "ボーナスを更新",
+      "description": "既存のボーナスを更新します",
+      "fields": {
+        "bonus_id": {
+          "name": "ボーナスID",
+          "description": "更新するボーナスのID"
+        },
+        "name": {
+          "name": "名前",
+          "description": "ボーナスの新しい名前"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "新しいポイント値"
+        },
+        "description": {
+          "name": "説明",
+          "description": "新しい説明"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "新しいアイコン"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "新しい子どもIDのリスト"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "ボーナスを削除",
+      "description": "ボーナスを削除します",
+      "fields": {
+        "bonus_id": {
+          "name": "ボーナスID",
+          "description": "削除するボーナスのID"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "ボーナスを適用",
+      "description": "子どもにボーナスを適用し、ポイントを付与します",
+      "fields": {
+        "bonus_id": {
+          "name": "ボーナスID",
+          "description": "適用するボーナスのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ボーナスを適用する子どものID"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "お手伝いを追加",
+      "description": "新しいお手伝いを動的に作成します（通常はオートメーションやスクリプトから）",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "お手伝いの名前"
+        },
+        "description": {
+          "name": "説明",
+          "description": "お手伝いの説明（任意）"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "このお手伝いを完了したときに付与するポイント"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "このお手伝いを割り当てる子ども（名前またはID）。空欄ならすべての子どもに割り当てます"
+        },
+        "time_category": {
+          "name": "時間帯",
+          "description": "このお手伝いをする時間帯: morning、afternoon、evening、night、anytime"
+        },
+        "one_shot": {
+          "name": "1回限り",
+          "description": "true の場合、完了後またはその日の終わりに期限切れになる1回限りのお手伝いです"
+        },
+        "requires_approval": {
+          "name": "承認が必要",
+          "description": "true の場合、ポイントが付与される前に保護者が完了を承認する必要があります"
+        },
+        "team_size": {
+          "name": "チームの人数",
+          "description": "この人数の異なる子どもが参加して初めてカウントされるチームワークのお手伝いにします。チームがそろうと全員分が提出されます。0 = 通常のお手伝い。"
+        },
+        "team_points_mode": {
+          "name": "チームのポイント",
+          "description": "チームワークのお手伝いの支払い方法: \"each\" は参加者全員に満額、\"split\" は均等に分配（切り捨て）。"
+        },
+        "team_bonus": {
+          "name": "チームボーナス",
+          "description": "チームワークのお手伝いが完了したとき、参加者それぞれがもらえる追加ポイント。"
+        },
+        "times": {
+          "name": "決まった時刻",
+          "description": "1日の決まった時刻にあるお手伝いにします（例: 朝食・昼食・夕食の前に手を洗う）。最大5つの時刻のリストで、それぞれ name、start と end（\"HH:MM\"、同じ日、重なりなし）、points を指定します。"
+        },
+        "times_bonus": {
+          "name": "全時刻達成ボーナス",
+          "description": "すべての決まった時刻を終えたとき、1日1回支払われる追加ポイント。"
+        },
+        "assignment_mode": {
+          "name": "割り当て方法",
+          "description": "毎日誰がお手伝いをするか: everyone、alternating（交代）、random、balanced（いちばん少ない人）、first_come（最初に引き受けた子ども）、unassigned。"
+        },
+        "assignment_rotation_period": {
+          "name": "交代の期間",
+          "description": "交互のお手伝いの場合: each_time（お手伝いのたびに次の子ども）、week（1人が週単位で担当）、month（月単位）。"
+        },
+        "assignment_rotation_every": {
+          "name": "交代の間隔",
+          "description": "交代の期間がある交互のお手伝いを、各子どもが何週・何か月担当するか（2 = 隔週）。"
+        },
+        "assignment_rotation_weekday": {
+          "name": "交代する曜日",
+          "description": "毎週の交代で次の子どもに渡す曜日。"
+        },
+        "assignment_rotation_month_day": {
+          "name": "交代する日（毎月）",
+          "description": "毎月の交代で次の子どもに渡す日（短い月は月末）。"
+        },
+        "schedule_mode": {
+          "name": "スケジュール",
+          "description": "specific_days（予定曜日の曜日、なければ毎日）、recurring（繰り返しの周期）、one_shot（今日だけ）。"
+        },
+        "due_days": {
+          "name": "予定曜日",
+          "description": "specific_days スケジュールでお手伝いがある曜日。空欄なら毎日です。"
+        },
+        "recurrence": {
+          "name": "繰り返し",
+          "description": "繰り返しのお手伝いの頻度: weekly、every_2_weeks、monthly、every_3_months、every_6_months、または every_N_days（N は2〜365、例: every_10_days）。"
+        },
+        "recurrence_day": {
+          "name": "繰り返しの曜日",
+          "description": "weekly または every_2_weeks のお手伝いがある曜日。"
+        },
+        "recurrence_start": {
+          "name": "繰り返しの開始日",
+          "description": "繰り返しのお手伝いの周期が始まる日付（YYYY-MM-DD）。"
+        },
+        "due_time": {
+          "name": "期限の時刻",
+          "description": "お手伝いの期限の時刻（\"HH:MM\"）。それまでに終えると早めボーナス、過ぎると遅れペナルティ。空欄なら期限なし。"
+        },
+        "daily_limit": {
+          "name": "1日の回数上限",
+          "description": "1日にお手伝いを完了できる回数。1回限りのお手伝いは常に1です。"
+        },
+        "difficulty": {
+          "name": "難しさ",
+          "description": "難しさのランク。ランクの倍率で付与ポイントが変わります（medium = ×1.0 が基準）"
+        },
+        "expires_in_minutes": {
+          "name": "期限（分後）",
+          "description": "今から指定した分数後に期限がある、反応型のお手伝いにします（例: 洗濯機が終わったので30分以内に取り出す）。期限が過ぎるとお手伝いは消えて無効になります。0 = 期限なし。"
+        },
+        "speed_bonus_points": {
+          "name": "スピードボーナスポイント",
+          "description": "期限までにお手伝いを完了したときに付与する追加ポイント。expires_in_minutes が必要です。"
+        }
+      }
+    },
+    "update_chore": {
+      "name": "お手伝いを更新",
+      "description": "IDを指定して既存のお手伝いを変更します。設定した項目だけが変わり、ほかはそのままです。",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "変更するお手伝いのID"
+        },
+        "name": {
+          "name": "名前",
+          "description": "お手伝いの新しい名前"
+        },
+        "description": {
+          "name": "説明",
+          "description": "お手伝いの新しい説明"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "このお手伝いを完了したときに付与するポイント"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "このお手伝いを割り当てる子ども（名前またはID）。空のリストならすべての子どもに割り当てます"
+        },
+        "time_category": {
+          "name": "時間帯",
+          "description": "このお手伝いをする時間帯: morning、afternoon、evening、night、anytime"
+        },
+        "difficulty": {
+          "name": "難しさ",
+          "description": "難しさのランク: easy、medium、hard。付与ポイントが変わります（medium = ×1.0）。"
+        },
+        "requires_approval": {
+          "name": "承認が必要",
+          "description": "true の場合、ポイントが付与される前に保護者が完了を承認する必要があります"
+        },
+        "enabled": {
+          "name": "有効",
+          "description": "お手伝いをオフ（false）にすると削除せずにどこにも表示しなくなり、オン（true）で元に戻ります。"
+        },
+        "speed_bonus_points": {
+          "name": "スピードボーナスポイント",
+          "description": "期限までにお手伝いを完了したときに付与する追加ポイント。"
+        },
+        "team_size": {
+          "name": "チームの人数",
+          "description": "この人数の異なる子どもが参加して初めてカウントされるチームワークのお手伝いにします。チームがそろうと全員分が提出されます。0 = 通常のお手伝い。"
+        },
+        "team_points_mode": {
+          "name": "チームのポイント",
+          "description": "チームワークのお手伝いの支払い方法: \"each\" は参加者全員に満額、\"split\" は均等に分配（切り捨て）。"
+        },
+        "team_bonus": {
+          "name": "チームボーナス",
+          "description": "チームワークのお手伝いが完了したとき、参加者それぞれがもらえる追加ポイント。"
+        },
+        "times": {
+          "name": "決まった時刻",
+          "description": "お手伝いの決まった時刻を置き換えます。最大5つの時刻のリストで、それぞれ name、start と end（\"HH:MM\"、同じ日、重なりなし）、points を指定します。空のリストで削除します。"
+        },
+        "times_bonus": {
+          "name": "全時刻達成ボーナス",
+          "description": "すべての決まった時刻を終えたとき、1日1回支払われる追加ポイント。"
+        },
+        "assignment_mode": {
+          "name": "割り当て方法",
+          "description": "毎日誰がお手伝いをするか: everyone、alternating（交代）、random、balanced（いちばん少ない人）、first_come（最初に引き受けた子ども）、unassigned。"
+        },
+        "assignment_rotation_period": {
+          "name": "交代の期間",
+          "description": "交互のお手伝いの場合: each_time（お手伝いのたびに次の子ども）、week（1人が週単位で担当）、month（月単位）。"
+        },
+        "assignment_rotation_every": {
+          "name": "交代の間隔",
+          "description": "交代の期間がある交互のお手伝いを、各子どもが何週・何か月担当するか（2 = 隔週）。"
+        },
+        "assignment_rotation_weekday": {
+          "name": "交代する曜日",
+          "description": "毎週の交代で次の子どもに渡す曜日。"
+        },
+        "assignment_rotation_month_day": {
+          "name": "交代する日（毎月）",
+          "description": "毎月の交代で次の子どもに渡す日（短い月は月末）。"
+        },
+        "schedule_mode": {
+          "name": "スケジュール",
+          "description": "specific_days（予定曜日の曜日、なければ毎日）、recurring（繰り返しの周期）、one_shot（今日だけ）。"
+        },
+        "due_days": {
+          "name": "予定曜日",
+          "description": "specific_days スケジュールでお手伝いがある曜日。空欄なら毎日です。"
+        },
+        "recurrence": {
+          "name": "繰り返し",
+          "description": "繰り返しのお手伝いの頻度: weekly、every_2_weeks、monthly、every_3_months、every_6_months、または every_N_days（N は2〜365、例: every_10_days）。"
+        },
+        "recurrence_day": {
+          "name": "繰り返しの曜日",
+          "description": "weekly または every_2_weeks のお手伝いがある曜日。"
+        },
+        "recurrence_start": {
+          "name": "繰り返しの開始日",
+          "description": "繰り返しのお手伝いの周期が始まる日付（YYYY-MM-DD）。"
+        },
+        "due_time": {
+          "name": "期限の時刻",
+          "description": "お手伝いの期限の時刻（\"HH:MM\"）。それまでに終えると早めボーナス、過ぎると遅れペナルティ。空欄なら期限なし。"
+        },
+        "daily_limit": {
+          "name": "1日の回数上限",
+          "description": "1日にお手伝いを完了できる回数。1回限りのお手伝いは常に1です。"
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "お手伝いを削除",
+      "description": "IDを指定して、パネルと同じ後処理でお手伝いを削除します。パネルの「最近削除したもの」に7日間残るので、復元できます。",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "削除するお手伝いのID"
+        },
+        "confirm": {
+          "name": "確認",
+          "description": "true にする必要があります。お手伝いを誤って削除しないための安全策です。"
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "お手伝いをスキップ",
+      "description": "今日の交代を今の担当の次に進めます。一時的なもので、明日の交代は通常どおりです。",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "スキップするお手伝いのID"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "交代の開始担当を設定",
+      "description": "交代制のお手伝いを最初に担当する子どもを設定します。交互モードでは担当の順番を並べ替え、ランダム/均等では今日の担当だけを変更します。",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "更新するお手伝いのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "交代を開始する子どものID"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "タスクグループを追加",
+      "description": "タスクグループを作成します（sticky = 同じ子ども、spread = 異なる子ども）。",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "グループの表示名"
+        },
+        "policy": {
+          "name": "方式",
+          "description": "sticky（同じ子ども）または spread（異なる子ども）"
+        },
+        "chore_ids": {
+          "name": "お手伝いID一覧",
+          "description": "グループ内のお手伝いIDのリスト。sticky では最初のお手伝いがリーダーです。"
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "タスクグループを更新",
+      "description": "タスクグループの名前、方式、メンバーを更新します。",
+      "fields": {
+        "group_id": {
+          "name": "グループID",
+          "description": "更新するグループのID"
+        },
+        "name": {
+          "name": "名前",
+          "description": "新しい表示名"
+        },
+        "policy": {
+          "name": "方式",
+          "description": "新しい方式（sticky または spread）"
+        },
+        "chore_ids": {
+          "name": "お手伝いID一覧",
+          "description": "置き換えるお手伝いIDのリスト。sticky では最初のお手伝いがリーダーです。"
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "タスクグループを削除",
+      "description": "タスクグループを削除します。メンバーのお手伝いには影響しません。",
+      "fields": {
+        "group_id": {
+          "name": "グループID",
+          "description": "削除するグループのID"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "時間制タスクを開始",
+      "description": "時間制タスクのタイマーを開始または再開します",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "時間制のお手伝いのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "タイマーを開始する子どものID"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "チームワークのお手伝いから抜ける",
+      "description": "チームがそろう前に、今日参加したチームワークのお手伝いから子どもを抜けさせます",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "チームワークのお手伝いのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "チームから抜ける子どものID"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "次のお手伝いを完了",
+      "description": "子どもカードに表示される順番で、子どもの次の未完了のお手伝いを完了します。写真、メモ、タイマー、チームが必要なお手伝いはスキップします。スマートウォッチのボタンやショートカット用で、通常の承認ルールが適用されます。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "次のお手伝いを完了する子どものID"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "懸賞を出す",
+      "description": "決まったポイントの1回限りの仕事を懸賞ボードに出します。対象の子どもなら誰でも引き受けられ、完了すると通常の承認待ちに入ります。",
+      "fields": {
+        "title": {
+          "name": "タイトル",
+          "description": "仕事の内容（例: \"車を洗う\"）"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "保護者が完了を承認したときに支払う固定ポイント"
+        },
+        "description": {
+          "name": "説明",
+          "description": "子どもへの追加の説明（任意）"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "ボードに表示する MDI アイコン"
+        },
+        "expires_at": {
+          "name": "期限",
+          "description": "誰も引き受けなかった場合に懸賞がボードから消える日時（任意）。空欄なら期限なし。"
+        },
+        "eligible_child_ids": {
+          "name": "対象の子ども",
+          "description": "引き受けられる子どものID。空欄 = すべての子ども。"
+        },
+        "claim_hours": {
+          "name": "確保時間（時間）",
+          "description": "引き受けてから懸賞がボードに戻るまでの時間"
+        },
+        "require_photo": {
+          "name": "写真が必要",
+          "description": "完了にするとき、子どもは写真を添付する必要があります"
+        },
+        "notify_children": {
+          "name": "子どもに知らせる",
+          "description": "対象の子どもに「新しい懸賞」通知を送ります"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "懸賞を更新",
+      "description": "懸賞を編集します。引き受けられた後は、ポイントと期限だけを変更できます。",
+      "fields": {
+        "bounty_id": {
+          "name": "懸賞ID",
+          "description": "編集する懸賞のID"
+        },
+        "title": {
+          "name": "タイトル",
+          "description": "仕事の内容（例: \"車を洗う\"）"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "保護者が完了を承認したときに支払う固定ポイント"
+        },
+        "description": {
+          "name": "説明",
+          "description": "子どもへの追加の説明（任意）"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "ボードに表示する MDI アイコン"
+        },
+        "expires_at": {
+          "name": "期限",
+          "description": "誰も引き受けなかった場合に懸賞がボードから消える日時（任意）。空欄なら期限なし。"
+        },
+        "eligible_child_ids": {
+          "name": "対象の子ども",
+          "description": "引き受けられる子どものID。空欄 = すべての子ども。"
+        },
+        "claim_hours": {
+          "name": "確保時間（時間）",
+          "description": "引き受けてから懸賞がボードに戻るまでの時間"
+        },
+        "require_photo": {
+          "name": "写真が必要",
+          "description": "完了にするとき、子どもは写真を添付する必要があります"
+        },
+        "notify_children": {
+          "name": "子どもに知らせる",
+          "description": "対象の子どもに「新しい懸賞」通知を送ります"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "懸賞を削除",
+      "description": "懸賞をボードから外します。完了した仕事が承認待ちの間はできません。",
+      "fields": {
+        "bounty_id": {
+          "name": "懸賞ID",
+          "description": "削除する懸賞のID"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "懸賞を引き受ける",
+      "description": "子どもが懸賞を引き受け、確保時間の間その子ども専用にします。子どもが同時に引き受けられるのは1件だけです。",
+      "fields": {
+        "bounty_id": {
+          "name": "懸賞ID",
+          "description": "引き受ける懸賞のID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "引き受ける子どものID"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "懸賞を返す",
+      "description": "引き受けた懸賞をボードに返し、ほかの子どもが引き受けられるようにします",
+      "fields": {
+        "bounty_id": {
+          "name": "懸賞ID",
+          "description": "引き受けた懸賞のID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "引き受けた子どものID"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "懸賞を完了",
+      "description": "引き受けた懸賞を完了にします。お手伝いと同じように承認待ちに入ります。",
+      "fields": {
+        "bounty_id": {
+          "name": "懸賞ID",
+          "description": "引き受けた懸賞のID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "引き受けた子どものID"
+        },
+        "photo_url": {
+          "name": "写真のURL",
+          "description": "完了した仕事の写真（懸賞が写真を求めている場合は必須）"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "時間制タスクを一時停止",
+      "description": "動いている時間制タスクのタイマーを一時停止します",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "時間制のお手伝いのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "タイマーを一時停止する子どものID"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "時間制タスクを停止",
+      "description": "時間制タスクのタイマーを停止し、承認に提出します",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "時間制のお手伝いのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "タイマーを停止する子どものID"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "バッジを追加",
+      "description": "カスタムバッジを作成します。",
+      "fields": {
+        "name": {
+          "name": "名前",
+          "description": "バッジの表示名"
+        },
+        "description": {
+          "name": "説明",
+          "description": "バッジの獲得方法の説明"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "バッジのアイコン（例: mdi:beach）"
+        },
+        "tier": {
+          "name": "ランク",
+          "description": "バッジのランク: bronze、silver、gold、platinum"
+        },
+        "point_bonus": {
+          "name": "ボーナスポイント",
+          "description": "バッジを獲得したとき子どもに加算されるポイント"
+        },
+        "criteria": {
+          "name": "条件",
+          "description": "metric / operator / value の辞書のリスト。空 = 手動付与のみ。"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "子どもIDのリスト（空 = 全員）"
+        },
+        "notify_on_earn": {
+          "name": "獲得時に通知",
+          "description": "バッジを獲得したときに通知を送ります"
+        },
+        "combinator": {
+          "name": "条件の組み合わせ",
+          "description": "複数の条件の組み合わせ方: AND（すべて満たす）または OR（いずれか）。既定は AND。"
+        }
+      }
+    },
+    "update_badge": {
+      "name": "バッジを更新",
+      "description": "既存のバッジを更新します。組み込みバッジで編集できるのは point_bonus、tier、assigned_to、enabled、notify_on_earn のみです。",
+      "fields": {
+        "badge_id": {
+          "name": "バッジID",
+          "description": "更新するバッジのID"
+        },
+        "name": {
+          "name": "名前",
+          "description": "バッジの新しい表示名"
+        },
+        "description": {
+          "name": "説明",
+          "description": "バッジの新しい説明"
+        },
+        "icon": {
+          "name": "アイコン",
+          "description": "バッジの新しいアイコン"
+        },
+        "tier": {
+          "name": "ランク",
+          "description": "バッジのランク: bronze、silver、gold、platinum"
+        },
+        "point_bonus": {
+          "name": "ボーナスポイント",
+          "description": "バッジを獲得したとき子どもに加算されるポイント"
+        },
+        "criteria": {
+          "name": "条件",
+          "description": "metric / operator / value の辞書のリスト。空 = 手動付与のみ。"
+        },
+        "assigned_to": {
+          "name": "対象",
+          "description": "子どもIDのリスト（空 = 全員）"
+        },
+        "enabled": {
+          "name": "有効",
+          "description": "バッジを有効にするかどうか"
+        },
+        "notify_on_earn": {
+          "name": "獲得時に通知",
+          "description": "バッジを獲得したときに通知を送ります"
+        },
+        "combinator": {
+          "name": "条件の組み合わせ",
+          "description": "複数の条件の組み合わせ方: AND（すべて満たす）または OR（いずれか）。既定は AND。"
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "バッジを削除",
+      "description": "カスタムバッジを削除します。組み込みバッジは削除できません。",
+      "fields": {
+        "badge_id": {
+          "name": "バッジID",
+          "description": "削除するバッジのID"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "バッジを手動で付与",
+      "description": "子どもにバッジを手動で付与します。",
+      "fields": {
+        "badge_id": {
+          "name": "バッジID",
+          "description": "付与するバッジのID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "バッジを受け取る子どものID"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "バッジを取り消す",
+      "description": "付与したバッジを取り消します。ボーナスポイントが加算されていた場合は取り消されます。",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "付与済みバッジID",
+          "description": "取り消す付与済みバッジ記録のID"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "バッジを再判定",
+      "description": "すべての子どものすべてのバッジを、通知なしで再判定します（通知もボーナスポイントもなし）。"
+    },
+    "apply_mandatory_penalty": {
+      "name": "必須のペナルティを適用",
+      "description": "できなかった必須のお手伝いに設定されたペナルティポイントを差し引き、確認項目を消します。",
+      "fields": {
+        "miss_id": {
+          "name": "未実施ID",
+          "description": "必須の未実施の確認項目のID"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "アバターを選ぶ",
+      "description": "子どもがアンロックしたアバターに切り替えます。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "子どものID"
+        },
+        "icon": {
+          "name": "アバターのアイコン",
+          "description": "アンロック済みのカタログのアバターの mdi アイコン（例: mdi:rocket-launch）。"
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "必須のお手伝いを見送る",
+      "description": "できなかった必須のお手伝いの確認項目を、ペナルティなしで消します。",
+      "fields": {
+        "miss_id": {
+          "name": "未実施ID",
+          "description": "必須の未実施の確認項目のID"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "ポイントを贈る",
+      "description": "使えるポイントをある子どもから別の子どもに移します（保護者が操作）。",
+      "fields": {
+        "from_child_id": {
+          "name": "贈る子どものID",
+          "description": "ポイントを贈る子どものID"
+        },
+        "to_child_id": {
+          "name": "受け取る子どものID",
+          "description": "ポイントを受け取る子どものID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "移すポイント数"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "連続記録キープを調整",
+      "description": "子どもに連続記録キープのチケットを与える（正の数）か、取り上げます（負の数）。付与は streak_freeze_max の上限を超えません。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "チケットを変更する子どものID"
+        },
+        "amount": {
+          "name": "量",
+          "description": "追加（正の数）または削除（負の数）するチケット数"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "必須のお手伝いを延期",
+      "description": "できなかった必須のお手伝いを、ペナルティなしで次の時間帯（または明日）に回し、確認項目を消します。",
+      "fields": {
+        "miss_id": {
+          "name": "未実施ID",
+          "description": "必須の未実施の確認項目のID"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "お手伝いの交代をお願い",
+      "description": "子どもが今日の交代制のお手伝いの担当を引き受けたいとお願いします（保護者の承認待ち）。",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "引き受けるお手伝いのID"
+        },
+        "requester_id": {
+          "name": "お願いする子どものID",
+          "description": "交代をお願いする子どものID"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "テスト通知",
+      "description": "指定した種類のサンプル通知を、有効な受信者に送ります（送信先を確認できるよう、全体のオン/オフは無視します）。",
+      "fields": {
+        "type_id": {
+          "name": "通知の種類",
+          "description": "通知の種類のID（例: pending_chore_approval、badge_earned、streak_milestone）"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "おこづかいの支払いを記録",
+      "description": "ポイントを差し引き、実際のおこづかいの支払いを台帳に記録します（固定の換算率、保護者が操作）。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "支払いを受け取る子どものID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "現金に換算して差し引くポイント"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "ほしいものを追加",
+      "description": "子どもが貯めて手に入れたいものを追加します。保護者の承認を待ちます。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "ほしいものを追加する子どものID"
+        },
+        "name": {
+          "name": "名前",
+          "description": "子どもがほしいもの"
+        },
+        "target": {
+          "name": "目標",
+          "description": "希望する値段（ポイント）。保護者が承認時に変更できます。"
+        },
+        "link": {
+          "name": "リンク",
+          "description": "そのもののウェブアドレス（http または https、任意）"
+        },
+        "photo_url": {
+          "name": "写真",
+          "description": "TaskMate の写真エンドポイントでアップロードしたばかりの写真（任意）"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "ほしいものを取り下げる",
+      "description": "子どもが承認待ちのほしいものを取り下げるか、却下されたものを消します。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ほしいものの持ち主の子どものID"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "ほしいものにポイントを入れる",
+      "description": "子どもの使えるポイントから、承認済みのほしいものの1つにポイントを移します。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ほしいものの持ち主の子どものID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "移すポイント数（残高と、ほしいものにまだ必要な分が上限）"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "ほしいものからポイントを取り出す",
+      "description": "子どもが自分で貯めたポイントの一部を、ほしいものから戻します。寄付されたポイントは戻りません。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ほしいものの持ち主の子どものID"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "取り出す貯金ポイント数（子どもが貯めた分が上限）"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "ほしいものの交換をお願い",
+      "description": "目標額に達したほしいものを、保護者の承認待ちのごほうび申請にします。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ほしいものの持ち主の子どものID"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "ほしいものを承認",
+      "description": "承認待ちのほしいものを貯金の目標にします。目標額を変えることもできます。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "target": {
+          "name": "目標",
+          "description": "ほしいものの値段（ポイント）。空欄なら子どもの希望のままです。"
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "ほしいものを却下",
+      "description": "ほしいものを却下します。貯めたポイントは子どもに戻り、寄付は無効になります。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "子どもに表示する理由（任意）"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "ほしいものに寄付",
+      "description": "親戚などが子どものほしいものに寄付したポイントを記録します。どの残高にも影響しません。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "name": {
+          "name": "送り主",
+          "description": "寄付した人（例: おばあちゃん）"
+        },
+        "points": {
+          "name": "ポイント",
+          "description": "寄付するポイント数（ほしいものにまだ必要な分が上限）"
+        },
+        "message": {
+          "name": "メッセージ",
+          "description": "子どもへのメッセージ（任意）"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "ほしいものへの寄付を削除",
+      "description": "寄付を取り消します。ほしいものが交換されるまで可能です。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        },
+        "pledge_id": {
+          "name": "寄付ID",
+          "description": "削除する寄付のID"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "ほしいものを削除",
+      "description": "ほしいものを削除します。貯めたポイントは子どもに戻り、寄付は無効になります。",
+      "fields": {
+        "wish_id": {
+          "name": "ほしいものID",
+          "description": "ほしいもののID"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "チェックを開始",
+      "description": "24時間以内に承認したお手伝いに、抜き打ちチェックの印を付けます。期限内に合否を決めてください。未判定のチェックは静かに終了します。",
+      "fields": {
+        "completion_id": {
+          "name": "完了ID",
+          "description": "チェックする承認済みのお手伝いの完了ID"
+        },
+        "bonus": {
+          "name": "ボーナス",
+          "description": "合格したときに支払うポイント。既定は設定の値です。"
+        },
+        "window": {
+          "name": "期限",
+          "description": "チェックするまでの時間: 1h、2h、4h、bed（就寝時刻まで）。既定は設定の値です。"
+        },
+        "tell_child": {
+          "name": "子どもに知らせる",
+          "description": "今すぐ子どものカードに「チェックが来るよ」と表示します。秘密のチェックにするならオフにします。"
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "チェックに合格",
+      "description": "チェックしたお手伝いが合格しました。ボーナスを通常のポイントとして支払い、子どものカードでお祝いします。",
+      "fields": {
+        "inspection_id": {
+          "name": "チェックID",
+          "description": "進行中のチェックのID"
+        },
+        "bonus": {
+          "name": "ボーナス",
+          "description": "支払うポイント。既定はチェック開始時に設定したボーナスです。"
+        },
+        "note": {
+          "name": "メモ",
+          "description": "子どもに表示するメモ（任意）"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "チェックで不合格",
+      "description": "チェックしたお手伝いは合格しませんでした。ポイントは引かれません。やり直しに差し戻せますが、やり直しで追加のポイントはありません。",
+      "fields": {
+        "inspection_id": {
+          "name": "チェックID",
+          "description": "進行中のチェックのID"
+        },
+        "redo": {
+          "name": "やり直しに差し戻す",
+          "description": "お手伝いを今日の未完了として子どもの一覧に戻します。既定は設定の値です。"
+        },
+        "note": {
+          "name": "メモ",
+          "description": "子どもに表示するメモ（任意、直すところ）"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "チェックを中止",
+      "description": "進行中のチェックを、始めなかったことにして中止します。",
+      "fields": {
+        "inspection_id": {
+          "name": "チェックID",
+          "description": "進行中のチェックのID"
+        }
+      }
+    },
+    "request_help": {
+      "name": "助けを求める",
+      "description": "子どもがお手伝いで困っていることを伝えます。保護者に通知が届き、何も完了やスキップはされません。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "助けを求める子ども"
+        },
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "困っているお手伝い"
+        },
+        "message": {
+          "name": "メッセージ",
+          "description": "子どもからのひとこと（任意、例: \"棚に手が届かない\"）。"
+        }
+      }
+    },
+    "answer_help": {
+      "name": "助けのお願いに応える",
+      "description": "子どもの助けのお願いを対応済みにし、カードの「助けが向かっているよ」表示を消します。",
+      "fields": {
+        "request_id": {
+          "name": "お願いID",
+          "description": "閉じる助けのお願い"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "気分を記録",
+      "description": "子どもがその日の気分を伝えます。1日1回で、もう一度記録すると置き換わります。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "子ども"
+        },
+        "mood": {
+          "name": "気分",
+          "description": "great、good、ok、sad、upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "お休みの日を設定",
+      "description": "子どもにお休みの日を与えます。お手伝いは非表示になり、連続記録はキープされ、必須のお手伝いも未実施になりません。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "具合が悪い子ども"
+        },
+        "date": {
+          "name": "日付",
+          "description": "日付（既定は今日）。1週間前から1か月先まで。"
+        },
+        "sick": {
+          "name": "お休み",
+          "description": "オフにするとお休みの日を取り消します。"
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "今週の目標を設定",
+      "description": "子ども自身の今週のポイント目標を設定します。達成すると家族の週間目標ボーナスが週1回支払われます。0 で消去します。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "子ども"
+        },
+        "target": {
+          "name": "目標",
+          "description": "今週獲得するポイント"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "抽選チケットを買う",
+      "description": "子どもがポイントを使って抽選会のチケットを買います。チケット1枚で抽選のチャンスが1回です。",
+      "fields": {
+        "raffle_id": {
+          "name": "抽選会ID",
+          "description": "抽選会"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "買う子ども"
+        },
+        "tickets": {
+          "name": "チケット",
+          "description": "買うチケットの枚数"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "抽選する",
+      "description": "抽選日時を待たずに、今すぐ抽選会の当選者を決めます。",
+      "fields": {
+        "raffle_id": {
+          "name": "抽選会ID",
+          "description": "抽選する抽選会"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "ペットをおむかえ",
+      "description": "子どもがバーチャルペットをおむかえ（または名前を変更）します。これから終えるお手伝いのたびに成長します。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "子ども"
+        },
+        "species": {
+          "name": "種類",
+          "description": "dragon、cat、dog、bunny、dino、unicorn"
+        },
+        "name": {
+          "name": "名前",
+          "description": "ペットの名前"
+        },
+        "hatch_egg": {
+          "name": "たまごをかえす",
+          "description": "大人のペットが産んだたまごをかえして新しいペットにします。前のペットはペットファミリーに加わります。"
+        }
+      }
+    },
+    "buy_pet_item": {
+      "name": "ペットのアイテムを買う",
+      "description": "子どもが使えるポイントでペットショップのアイテムを買います。保護者の承認の上限を超える場合は、保護者の承認を待ちます。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "買う子ども"
+        },
+        "item_id": {
+          "name": "アイテムID",
+          "description": "ペットショップのアイテム"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "ペットを着せかえ",
+      "description": "持っているアイテムやレベルでアンロックしたアイテムを子どものペットに着けます（その部位のものと入れ替え）。または外します。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "子ども"
+        },
+        "item_id": {
+          "name": "アイテムID",
+          "description": "ペットショップのアイテム、または bow、top_hat、scarf、crown"
+        },
+        "wear": {
+          "name": "着ける",
+          "description": "オンで着け、オフで外します。"
+        }
+      }
+    },
+    "mark_reward_delivered": {
+      "name": "ごほうびを渡し済みにする",
+      "description": "交換済みのごほうびを渡したので、未渡しリストから外します。子ども自身が確認する場合は child_id を指定します。",
+      "fields": {
+        "claim_id": {
+          "name": "申請ID",
+          "description": "承認済みのごほうびの申請"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "受け取ったことを確認する子ども（保護者が操作する場合は空欄）"
+        }
+      }
+    },
+    "start_boost": {
+      "name": "ブーストを開始",
+      "description": "ブーストの時間帯を開始します。その間に完了したお手伝いには倍率がかかります。chore_ids や child_ids を空にするとすべてが対象です。",
+      "fields": {
+        "multiplier": {
+          "name": "倍率",
+          "description": "対象のお手伝いの倍率（例: 2倍なら 2、1.1〜5）"
+        },
+        "minutes": {
+          "name": "分",
+          "description": "ブーストが続く時間"
+        },
+        "chore_ids": {
+          "name": "お手伝いID一覧",
+          "description": "対象のお手伝い（空 = すべてのお手伝い）"
+        },
+        "child_ids": {
+          "name": "子どもID一覧",
+          "description": "対象の子ども（空 = 全員）"
+        },
+        "starts_at": {
+          "name": "開始日時",
+          "description": "今ではなくあとで開始します（1週間先まで）"
+        },
+        "name": {
+          "name": "名前",
+          "description": "カードに表示する名前（任意、例: \"6時にお客さん\"）"
+        },
+        "notify": {
+          "name": "通知",
+          "description": "対象の子どもにブーストの通知を送ります（その通知がオンの場合）"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "ブーストを終了",
+      "description": "ブーストを早めに終了するか、まだ始まっていないものを中止します。",
+      "fields": {
+        "boost_id": {
+          "name": "ブーストID",
+          "description": "sensor.taskmate_overview の boosts 属性にあるブースト"
+        }
+      }
+    },
+    "appeal": {
+      "name": "異議申し立て",
+      "description": "子どもが、過去48時間以内に却下されたお手伝い、却下されたごほうびの申請、またはペナルティの再確認をお願いします。異議申し立てがオンである必要があります。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "異議を申し立てる子ども"
+        },
+        "kind": {
+          "name": "種類",
+          "description": "異議の対象"
+        },
+        "target_id": {
+          "name": "対象ID",
+          "description": "sensor.taskmate_overview の子どもの項目にある appealable 属性の項目"
+        },
+        "message": {
+          "name": "メッセージ",
+          "description": "子どもからのひとこと（任意、最大200文字）"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "異議申し立てを判断",
+      "description": "異議を認める（お手伝いの支払い、ごほうびの承認、ペナルティの取り消し）か、元の判断を維持します。",
+      "fields": {
+        "appeal_id": {
+          "name": "異議申し立てID",
+          "description": "異議申し立て"
+        },
+        "overturn": {
+          "name": "認める",
+          "description": "true で認め、false で維持"
+        },
+        "note": {
+          "name": "メモ",
+          "description": "子どもへのひとこと（任意、最大200文字）"
+        }
+      }
+    },
+    "adjust_screen_time": {
+      "name": "画面時間を調整",
+      "description": "子どもの画面時間の残高に分を追加するか、負の数で減らします。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "残高を変更する子ども"
+        },
+        "minutes": {
+          "name": "分",
+          "description": "追加する分数。負の数で減らします。残高が0を下回ることはありません。"
+        },
+        "reason": {
+          "name": "理由",
+          "description": "残高の履歴に残す短いメモ"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "画面時間を貯める",
+      "description": "子どもの使っていない画面時間を週末の貯金箱に移します。今日の無料分から先に、次に貯めた時間を、貯金箱の上限まで入れます。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "時間を貯める子ども"
+        },
+        "minutes": {
+          "name": "分",
+          "description": "貯める分数。空欄なら入るだけすべて貯めます。"
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "ごほうびを評価",
+      "description": "子どもがもらったごほうびを1〜3つ星で評価します。ごほうびを渡したあと（受け渡し管理がオフなら承認後）3日間可能です。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "ごほうびをもらった子ども"
+        },
+        "claim_id": {
+          "name": "申請ID",
+          "description": "評価するごほうびの申請"
+        },
+        "stars": {
+          "name": "星",
+          "description": "1〜3つ星"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "きょうだいチェック",
+      "description": "子どもが、承認待ちのきょうだいのお手伝いをチェックします。done で承認し、チェックした子どもにきょうだいチェックのボーナスを支払います。not_yet ではメモ付きで保護者の確認待ちのままにします。",
+      "fields": {
+        "child_id": {
+          "name": "チェックする子どものID",
+          "description": "チェックする子ども（お手伝いをした子どもではない）"
+        },
+        "completion_id": {
+          "name": "完了ID",
+          "description": "sensor.taskmate_overview のチェックする子どもの項目にある sibling_checks 属性の、承認待ちの完了"
+        },
+        "verdict": {
+          "name": "判定",
+          "description": "done（できている）または not_yet"
+        },
+        "note": {
+          "name": "メモ",
+          "description": "not_yet のときの保護者へのひとこと（任意、最大120文字）"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "お手伝いのリマインダーを設定",
+      "description": "子どもが、TaskMate の設定で決めた最も早い時刻と遅い時刻の間で、自分のお手伝いのリマインド時刻を選びます。時刻を空欄にすると消去します。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "リマインドしてほしい子ども"
+        },
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "リマインドするお手伝い"
+        },
+        "time": {
+          "name": "時刻",
+          "description": "HH:MM（例: 17:30）。空欄でリマインダーを消去します。"
+        }
+      }
+    },
+    "read_aloud": {
+      "name": "お手伝いを読み上げ",
+      "description": "メディアプレーヤーで子どもの未完了のお手伝いを読み上げます（例: \"エラ、残りは3つだよ…\"）。カスタムの読み上げテンプレートがなければ、Home Assistant の言語の読み上げ文を使います。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "お手伝いを読み上げる子どものID"
+        },
+        "media_player": {
+          "name": "メディアプレーヤー",
+          "description": "読み上げる場所。設定の既定を使います。"
+        },
+        "tts_entity": {
+          "name": "音声合成エンティティ",
+          "description": "使用する TTS サービス。設定の値、次に唯一インストールされているものを使います。"
+        },
+        "message": {
+          "name": "メッセージの上書き",
+          "description": "自動生成のまとめの代わりにこれを読み上げます。"
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "お手伝いルーレットを回す",
+      "description": "子どもの未完了のお手伝いからランダムに1つ選び、ポイント倍率をかけます。オプトイン: TaskMate パネルの設定でオンにし、倍率と1日に回せる回数を設定してください。",
+      "fields": {
+        "child_id": {
+          "name": "子どもID",
+          "description": "ルーレットを回す子どものID"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "件",
+        "name": "{child} 統計"
+      },
+      "child_badges": {
+        "unit_of_measurement": "個",
+        "name": "{child} バッジ"
+      },
+      "child_watch": {
+        "state": {
+          "left": "残り #",
+          "all_done": "すべて完了",
+          "no_chores": "お手伝いなし"
+        },
+        "name": "{child} ウォッチ"
+      },
+      "overview": {
+        "name": "TaskMate 概要"
+      },
+      "chores": {
+        "name": "TaskMate お手伝い"
+      },
+      "chore_availability": {
+        "name": "TaskMate お手伝いの利用可否"
+      },
+      "rewards": {
+        "name": "TaskMate ごほうび"
+      },
+      "activity": {
+        "name": "TaskMate アクティビティ"
+      },
+      "incentives": {
+        "name": "TaskMate インセンティブ"
+      },
+      "bounties": {
+        "name": "TaskMate 懸賞"
+      },
+      "auctions": {
+        "name": "TaskMate オークション"
+      },
+      "chore_board": {
+        "name": "TaskMate お手伝いボード"
+      },
+      "child_points": {
+        "name": "{child} ポイント"
+      },
+      "child_wishlist": {
+        "name": "{child} ほしいものリスト"
+      },
+      "pending_approvals": {
+        "name": "承認待ち"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "週末の倍率"
+      },
+      "perfect_week_bonus": {
+        "name": "パーフェクトウィークボーナス"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "連続記録のリセット方法",
+        "state": {
+          "reset": "リセット — できなかった日に連続記録が0になる",
+          "pause": "一時停止 — 次に完了するまで連続記録を維持"
+        }
+      },
+      "card_design": {
+        "name": "カードデザイン",
+        "state": {
+          "classic": "クラシック",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "見やすさ重視",
+          "graphite": "Graphite"
+        }
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "{child} アクティビティ",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "お手伝い完了",
+              "chore_approved": "お手伝い承認",
+              "chore_rejected": "お手伝い却下",
+              "chore_approval_undone": "お手伝いの承認取り消し",
+              "reward_claimed": "ごほうび申請",
+              "reward_approved": "ごほうび承認",
+              "reward_rejected": "ごほうび却下",
+              "badge_earned": "バッジ獲得",
+              "level_up": "レベルアップ",
+              "streak_updated": "連続記録更新",
+              "streak_freeze_used": "連続記録キープを使用",
+              "perfect_week": "パーフェクトウィーク",
+              "weekly_target_reached": "週の目標達成",
+              "quest_completed": "クエストクリア",
+              "challenge_completed": "チャレンジ達成",
+              "bonus_applied": "ボーナス適用",
+              "penalty_applied": "ペナルティ適用",
+              "surprise_bonus": "サプライズボーナス",
+              "mandatory_missed": "必須のお手伝いを未実施",
+              "team_chore_completed": "チームのお手伝い完了",
+              "points_gifted": "ポイントのプレゼント",
+              "help_requested": "助けのお願い",
+              "mood_logged": "気分を記録",
+              "weekly_goal_reached": "今週の目標達成",
+              "sick_day": "お休みの日",
+              "chore_auto_approved": "お手伝いの自動承認",
+              "penalty_redeemed": "ペナルティを取り戻した",
+              "raffle_won": "抽選に当選",
+              "pet_evolved": "ペットが成長した",
+              "pet_item_bought": "ペットのアイテム購入",
+              "reward_delivered": "ごほうびを渡した",
+              "personal_best": "自己ベスト",
+              "appeal_submitted": "異議申し立て",
+              "appeal_decided": "異議の結果",
+              "screen_time_low": "画面時間が残りわずか",
+              "screen_time_out": "画面時間がなくなった",
+              "screen_time_changed": "画面時間の変更",
+              "screen_time_saved": "画面時間を貯めた",
+              "screen_time_jar_opened": "画面時間の貯金箱が開いた",
+              "points_expired": "ポイントの期限切れ",
+              "points_expiring": "ポイントの期限切れ間近",
+              "reward_rated": "ごほうびの評価",
+              "penalty_warning": "ペナルティの注意",
+              "sibling_check": "きょうだいチェック"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "家族のアクティビティ",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "家族の目標達成",
+              "season_champion": "シーズンチャンピオン",
+              "bounty_posted": "懸賞の掲示",
+              "scheduled_change_applied": "予約した変更の適用",
+              "raffle_drawn": "抽選の実施",
+              "boost_started": "ブースト開始",
+              "boost_ended": "ブースト終了",
+              "bin_day": "ゴミの日のお手伝い",
+              "shopping_job": "買い物リストのお手伝い"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "承認待ちあり"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: {chore}を完了"
+      },
+      "claim_reward": {
+        "name": "{child}: {reward}を申請"
+      }
+    }
+  },
+  "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore}はまだ始められません — 先に{chores}をしてください。"
+    },
+    "calendar_unknown_event": {
+      "message": "この予定は、この子どものカレンダー上の TaskMate のお手伝いではありません。"
+    },
+    "calendar_series_not_supported": {
+      "message": "繰り返しのお手伝いは、カレンダーからは1日ずつしか移動・削除できません。全体を変更するには TaskMate でお手伝いを編集してください。"
+    },
+    "calendar_repeating_create": {
+      "message": "繰り返しの予定はカレンダーから追加できません。代わりに TaskMate で繰り返しのお手伝いを作成してください。"
+    },
+    "calendar_rename_series": {
+      "message": "繰り返しのお手伝いの名前は TaskMate で変更してください。カレンダーからは1日分の移動か削除だけができます。"
+    },
+    "calendar_time_follows_chore": {
+      "message": "繰り返しのお手伝いは時間帯を保ちます。カレンダーから変更できるのは1回分の日付だけです。"
+    },
+    "calendar_past_date": {
+      "message": "過去の日へのお手伝いの追加、移動、また過去の日からの移動はできません。"
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore}はすでに{date}にあります。"
+    },
+    "calendar_empty_title": {
+      "message": "お手伝いにタイトルを付けてください。"
+    },
+    "calendar_own_event": {
+      "message": "この予定は TaskMate 自身が公開したものなので、新しいお手伝いとして追加されません。"
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore}はまだ始まっていません — やる時間になってから助けを求めてね。"
+    },
+    "help_chore_time_passed": {
+      "message": "{chore}の時間は過ぎたので、今は助けを求めることはないよ。"
+    },
+    "help_chore_not_available": {
+      "message": "{chore}は今はできないので、まだ助けを求めることはないよ。"
+    },
+    "help_already_on_its_way": {
+      "message": "{chore}の助けはもう向かっているよ。"
+    },
+    "help_cooldown": {
+      "message": "もう一度助けを求めるまで、少し待ってね。"
+    },
+    "rate_limited": {
+      "message": "このアカウントからのリクエストが多すぎます。1分後にもう一度試してください。"
+    },
+    "child_not_found": {
+      "message": "子ども {child_id} が見つかりません"
+    },
+    "chore_not_found": {
+      "message": "お手伝い {chore_id} が見つかりません"
+    },
+    "reward_not_found": {
+      "message": "ごほうび {reward_id} が見つかりません"
+    },
+    "teamwork_size_not_number": {
+      "message": "チームの人数は整数にしてください。"
+    },
+    "teamwork_size_range": {
+      "message": "チームワークのお手伝いには2〜{max}人の子どもが必要です（通常のお手伝いなら0）。"
+    },
+    "teamwork_points_mode": {
+      "message": "チームのポイントは 'each' または 'split' にしてください。"
+    },
+    "teamwork_open_ended": {
+      "message": "チームワークのお手伝いは自由記入にできません。"
+    },
+    "teamwork_assignment_mode": {
+      "message": "チームワークのお手伝いは全員に割り当てる必要があります — 早い者勝ちや交代制は不可です。"
+    },
+    "teamwork_timed": {
+      "message": "時間制タスクはチームワークのお手伝いにできません。"
+    },
+    "teamwork_not_team_chore": {
+      "message": "お手伝い「{name}」はチームワークのお手伝いではありません"
+    },
+    "swap_only_rotation": {
+      "message": "交代できるのは交代制のお手伝いだけです"
+    },
+    "swap_won_at_auction": {
+      "message": "このお手伝いは今日オークションで落札されたため、交代できません"
+    },
+    "swap_already_assigned": {
+      "message": "お手伝いは今日すでにその子どもに割り当てられています"
+    },
+    "swap_already_pending": {
+      "message": "このお手伝いの交代のお願いはすでに承認待ちです"
+    },
+    "swap_too_many_pending": {
+      "message": "承認待ちの交代のお願いが多すぎます"
+    },
+    "swap_request_not_found": {
+      "message": "交代のお願い {request_id} が見つかりません"
+    },
+    "bulk_unknown_action": {
+      "message": "不明な一括操作 {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "{fields} は一括編集できません"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "不明な子ども {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "不明な時間帯 {period}"
+    },
+    "chore_unknown": {
+      "message": "不明なお手伝い: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "'everyone' の割り当て方法ではスキップできません"
+    },
+    "skip_sticky_follower": {
+      "message": "固定グループのフォロワーはスキップできません。代わりにリーダーのお手伝いをスキップしてください"
+    },
+    "skip_pool_too_small": {
+      "message": "スキップには2人以上の子どもの交代リストが必要です"
+    },
+    "manual_start_everyone_mode": {
+      "message": "'everyone' の割り当て方法では開始担当を設定できません"
+    },
+    "manual_start_not_in_pool": {
+      "message": "子ども {child_id} はこのお手伝いの担当リストにいません"
+    },
+    "chore_photo_required": {
+      "message": "このお手伝いには証拠の写真が必要です。"
+    },
+    "chore_note_required": {
+      "message": "提出するには、何をしたか書いてね。"
+    },
+    "chore_quantity_required": {
+      "message": "{unit}をいくつやったか入れてね。"
+    },
+    "backdate_day_range": {
+      "message": "今日より前の、過去{days}日以内の日を選んでください。"
+    },
+    "backdate_switched_off": {
+      "message": "「{name}」はオフになっています。"
+    },
+    "backdate_not_assigned": {
+      "message": "「{name}」は{child}のお手伝いではありません。"
+    },
+    "backdate_rotation_team": {
+      "message": "「{name}」は交代制またはチームが必要なため、過去の日の分は記録できません。"
+    },
+    "backdate_open_ended": {
+      "message": "「{name}」は自由記入のため、子どものメモと値段が必要です。子どものカードを使ってください。"
+    },
+    "backdate_set_times": {
+      "message": "「{name}」は決まった時刻があるため、過去の日の分は記録できません。"
+    },
+    "backdate_holiday": {
+      "message": "{weekday}は休日だったため、お手伝いの予定はありませんでした。"
+    },
+    "backdate_sick_day": {
+      "message": "{weekday}は{child}のお休みの日だったため、お手伝いの予定はありませんでした。"
+    },
+    "backdate_birthday": {
+      "message": "{weekday}は{child}の誕生日で、お手伝いはお休みでした。"
+    },
+    "backdate_auction": {
+      "message": "「{name}」はその日オークションで落札されたため、あとから記録できません。"
+    },
+    "backdate_weekly_target_met": {
+      "message": "「{name}」はその週すでに目標の{target}に達しています。"
+    },
+    "backdate_not_due": {
+      "message": "「{name}」は{weekday}の予定ではありませんでした。"
+    },
+    "backdate_daily_limit": {
+      "message": "「{name}」は{weekday}にすでに{done}/{limit}回行われています。"
+    },
+    "chore_disabled": {
+      "message": "お手伝い「{name}」は無効です"
+    },
+    "parent_complete_one_shot": {
+      "message": "お手伝い「{name}」は1回限りのお手伝いのため、保護者が代わりに完了できません"
+    },
+    "parent_complete_no_children": {
+      "message": "お手伝い「{name}」には対象の子どもがいません"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "お手伝い「{name}」は交代制で共有されているため、全員分としてしか完了できません"
+    },
+    "parent_complete_not_assigned": {
+      "message": "お手伝い「{name}」はその子どもに割り当てられていません"
+    },
+    "bonus_subtask_not_found": {
+      "message": "お手伝い「{name}」にボーナスのサブタスク {subtask_id} が見つかりません"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "ボーナスのサブタスク「{subtask}」は{child}に割り当てられていません。"
+    },
+    "bonus_subtask_parent_first": {
+      "message": "ボーナスのサブタスク「{subtask}」を完了できません — 今日、先に親となるお手伝い「{name}」を完了する必要があります。"
+    },
+    "bonus_subtask_already_done": {
+      "message": "ボーナスのサブタスク「{subtask}」は今日すでに完了しています。"
+    },
+    "undo_window_passed": {
+      "message": "このお手伝いはもう取り消せません。保護者に取り消してもらってください。"
+    },
+    "undo_points_spent": {
+      "message": "このお手伝いは今は取り消せません: ポイントがすでに使われています。保護者に聞いてください。"
+    },
+    "completion_not_found": {
+      "message": "完了 {completion_id} が見つかりません"
+    },
+    "completion_not_approved": {
+      "message": "完了は承認されていないため、取り消すものはありません"
+    },
+    "chore_sort_unknown": {
+      "message": "不明な並べ方「{sort}」"
+    },
+    "task_group_duplicate_chore": {
+      "message": "グループ内でお手伝いが重複しています: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "お手伝い「{name}」は 'everyone' モードのため、グループに参加できません"
+    },
+    "task_group_already_member": {
+      "message": "お手伝い「{name}」はすでにグループ「{group}」に所属しています"
+    },
+    "task_group_unknown_policy": {
+      "message": "不明なタスクグループの方式: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "不明なタスクグループ: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "amount は0以外にしてください"
+    },
+    "streak_freeze_off_max0": {
+      "message": "連続記録キープはオフです（streak_freeze_max が 0）"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child}はすでに上限の{cap}枚の連続記録キープを持っています"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child}はすでに上限の{cap}枚の連続記録キープを持っています"
+    },
+    "streak_freeze_off": {
+      "message": "連続記録キープはオフです"
+    },
+    "points_non_negative": {
+      "message": "points は0以上にしてください"
+    },
+    "transaction_not_found": {
+      "message": "取引 {transaction_id} が見つかりません"
+    },
+    "undo_not_undoable": {
+      "message": "この操作は取り消せません"
+    },
+    "gift_undo_too_old": {
+      "message": "このプレゼントは取り消し機能より前のものなので、自動では取り消せません。"
+    },
+    "gift_undo_spent": {
+      "message": "{child}はすでにこのプレゼントの一部を使っているため、取り消せません。"
+    },
+    "gift_amount_positive": {
+      "message": "プレゼントの量は正の数にしてください"
+    },
+    "gift_same_child": {
+      "message": "同じ子どもにはプレゼントできません"
+    },
+    "gift_child_not_found": {
+      "message": "贈る人または受け取る人が見つかりません"
+    },
+    "gift_not_enough_points": {
+      "message": "ポイントが足りません: {child}は{points}、プレゼントは{gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "「{name}」は共有のジャックポットで、共同貯金がまだいっぱいではありません。{cost}必要で、貯まっているのは{saved}です"
+    },
+    "reward_not_available_to": {
+      "message": "ごほうび「{name}」は{child}には利用できません"
+    },
+    "reward_sold_out": {
+      "message": "ごほうび「{name}」は売り切れです"
+    },
+    "reward_expired": {
+      "message": "ごほうび「{name}」は期限切れです"
+    },
+    "reward_not_available_now": {
+      "message": "ごほうび「{name}」は今は利用できません"
+    },
+    "reward_claim_already_waiting": {
+      "message": "「{name}」の申請はすでに承認待ちです"
+    },
+    "reward_claims_too_many": {
+      "message": "承認待ちのごほうびの申請が多すぎます"
+    },
+    "reward_not_enough_points": {
+      "message": "ポイントが足りません。{cost}必要で、使えるのは{available}です"
+    },
+    "reward_spending_cap": {
+      "message": "使用上限に達しました: 期間の上限{cap}をすでに使っています"
+    },
+    "reward_claim_target_missing": {
+      "message": "申請 {claim_id} のごほうびまたは子どもが見つかりません"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "承認するにはポイントが足りません。{cost}必要で、持っているのは{points}です"
+    },
+    "reward_claim_already_approved": {
+      "message": "「{name}」はすでに承認されているため、却下できません"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "「このごほうび」はすでに承認されているため、却下できません"
+    },
+    "pool_allocate_min": {
+      "message": "入れるポイントは1以上にしてください"
+    },
+    "pool_no_spendable": {
+      "message": "{child}の使えるポイントがありません"
+    },
+    "pool_full": {
+      "message": "ごほうび「{name}」の共同貯金はすでにいっぱいです"
+    },
+    "reward_limit_once_day": {
+      "message": "{child}が{name}をもらえるのは1日1回です。次は{date}にもらえます"
+    },
+    "reward_limit_once_week": {
+      "message": "{child}が{name}をもらえるのは週1回です。次は{date}にもらえます"
+    },
+    "reward_limit_once_month": {
+      "message": "{child}が{name}をもらえるのは月1回です。次は{date}にもらえます"
+    },
+    "reward_limit_times_day": {
+      "message": "{child}が{name}をもらえるのは1日{count}回です。次は{date}にもらえます"
+    },
+    "reward_limit_times_week": {
+      "message": "{child}が{name}をもらえるのは週{count}回です。次は{date}にもらえます"
+    },
+    "reward_limit_times_month": {
+      "message": "{child}が{name}をもらえるのは月{count}回です。次は{date}にもらえます"
+    },
+    "reward_gift_off": {
+      "message": "子ども同士でごほうびを買う機能はオフです"
+    },
+    "reward_gift_children_only": {
+      "message": "ごほうびは子どもにしか買えません"
+    },
+    "reward_gift_not_giftable": {
+      "message": "「{name}」はほかの人のために買えません"
+    },
+    "reward_rating_stars": {
+      "message": "1〜3つ星を選んでね"
+    },
+    "reward_rating_not_yet": {
+      "message": "そのごほうびはまだ評価できません"
+    },
+    "reward_rating_not_holder": {
+      "message": "評価できるのは、ごほうびをもらった子どもだけです"
+    },
+    "reward_rating_already": {
+      "message": "そのごほうびはすでに評価されています"
+    },
+    "service_unknown_child": {
+      "message": "不明な子ども「{ref}」。有効な子ども: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "「{ref}」という名前の子どもが複数います。代わりに子どもIDを使ってください（{ids}）"
+    },
+    "service_nothing_to_update": {
+      "message": "更新するものがありません: 変更する項目を1つ以上指定してください"
+    },
+    "service_confirm_delete": {
+      "message": "お手伝いを削除するには confirm: true を設定してください"
+    },
+    "penalty_already_earned_back": {
+      "message": "そのペナルティはすでに取り戻されています。"
+    },
+    "fulfilment_not_waiting": {
+      "message": "そのごほうびは受け渡し待ちではありません。"
+    },
+    "fulfilment_already_delivered": {
+      "message": "そのごほうびはすでに渡し済みになっています。"
+    },
+    "fulfilment_wrong_child": {
+      "message": "そのごほうびは{child}のものです。"
+    },
+    "scheduled_field_not_allowed": {
+      "message": "「{field}」は予約で変更できません"
+    },
+    "scheduled_expects_bool": {
+      "message": "「{field}」には true または false を指定してください"
+    },
+    "scheduled_expects_int": {
+      "message": "「{field}」には整数を指定してください"
+    },
+    "scheduled_negative": {
+      "message": "「{field}」は負の数にできません"
+    },
+    "scheduled_expects_list": {
+      "message": "「{field}」にはリストを指定してください"
+    },
+    "scheduled_expects_text": {
+      "message": "「{field}」にはテキストを指定してください"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on は ISO 形式の日付にしてください（例: 2026-09-01）"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on は未来の日付にしてください"
+    },
+    "scheduled_no_fields": {
+      "message": "予約した変更では、少なくとも1つの項目を変更する必要があります"
+    },
+    "scheduled_change_not_found": {
+      "message": "予約した変更 {change_id} が見つかりません"
+    },
+    "timed_not_timed": {
+      "message": "お手伝い「{name}」は時間制タスクではありません"
+    },
+    "timed_already_running": {
+      "message": "タイマーはすでに動いています"
+    },
+    "timed_daily_cap": {
+      "message": "1日の上限に達しました（{minutes}分）"
+    },
+    "timed_not_available": {
+      "message": "「{name}」は今{child}には利用できません"
+    },
+    "timed_no_running": {
+      "message": "一時停止する動作中のタイマーがありません"
+    },
+    "timed_no_active": {
+      "message": "停止する有効なタイマーがありません"
+    },
+    "set_time_unknown": {
+      "message": "その時刻はこのお手伝いの決まった時刻ではありません。"
+    },
+    "sick_day_range": {
+      "message": "1週間前から1か月先までの日を選んでください。"
+    },
+    "trash_nothing_to_restore": {
+      "message": "復元するものがありません: 削除されていないか、すでに完全に消去されています"
+    },
+    "trash_id_exists": {
+      "message": "ID {item_id} のものがすでに存在します"
+    },
+    "wish_not_found": {
+      "message": "ほしいものが見つかりません"
+    },
+    "wish_target_not_whole": {
+      "message": "目標は整数にしてください"
+    },
+    "wish_target_range": {
+      "message": "目標は1〜{max}にしてください"
+    },
+    "wish_name_required": {
+      "message": "ほしいものに名前を付けてね"
+    },
+    "wish_link_invalid": {
+      "message": "リンクは http:// または https:// で始まるウェブアドレスにしてください"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name}はすでにほしいものが{max}個あります"
+    },
+    "wish_picture_unusable": {
+      "message": "その写真は使えません"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "取り下げられるのは、承認待ちか却下されたほしいものだけです"
+    },
+    "wish_not_open_for_saving": {
+      "message": "「{name}」は貯金を受け付けていません"
+    },
+    "wish_move_min": {
+      "message": "移すポイントは1以上にしてください"
+    },
+    "wish_fully_funded": {
+      "message": "「{name}」はすでに目標額に達しています"
+    },
+    "wish_no_spendable": {
+      "message": "{child_name}の使えるポイントがありません"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "今は「{name}」からポイントを取り出せません"
+    },
+    "wish_take_back_min": {
+      "message": "取り出すポイントは1以上にしてください"
+    },
+    "wish_nothing_saved": {
+      "message": "「{name}」には取り出せる貯金がありません"
+    },
+    "wish_cannot_redeem": {
+      "message": "「{name}」は今は交換できません"
+    },
+    "wish_needs_more_points": {
+      "message": "「{name}」はまずあと{points}ポイント必要です"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "承認待ちのごほうびの申請が多すぎます"
+    },
+    "wish_not_waiting_approval": {
+      "message": "「{name}」は承認待ちではありません"
+    },
+    "wish_cannot_decline": {
+      "message": "「{name}」はもう却下できません"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "「{name}」は寄付を受け付けていません"
+    },
+    "wish_pledge_name_required": {
+      "message": "誰からの寄付か入力してください"
+    },
+    "wish_pledge_min": {
+      "message": "寄付は1ポイント以上にしてください"
+    },
+    "wish_too_many_pledges": {
+      "message": "「{name}」にはすでに{max}件の寄付があります"
+    },
+    "wish_pledges_locked": {
+      "message": "「{name}」への寄付はもう変更できません"
+    },
+    "wish_pledge_not_found": {
+      "message": "寄付が見つかりません"
+    },
+    "wish_claim_missing": {
+      "message": "申請 {claim_id} のほしいものまたは子どもが見つかりません"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "「{name}」はもう交換待ちではありません"
+    },
+    "wish_not_funded": {
+      "message": "「{name}」はもう目標額に達していません"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "画像は絵文字にしてください（最大{max}文字）。"
+    },
+    "pet_shop_colour_invalid": {
+      "message": "色は #ff8800 のような形式か、'rainbow' にしてください。"
+    },
+    "pet_shop_item_not_found": {
+      "message": "そのアイテムはショップにありません。"
+    },
+    "pet_shop_name_too_long": {
+      "message": "名前は{max}文字以内にしてください。"
+    },
+    "pet_shop_name_required": {
+      "message": "アイテムに名前を付けてください。"
+    },
+    "pet_shop_unknown_slot": {
+      "message": "不明な部位「{slot}」"
+    },
+    "pet_shop_not_whole": {
+      "message": "値段とレベルは整数にしてください。"
+    },
+    "pet_shop_cost_range": {
+      "message": "値段は1〜{max}にしてください。"
+    },
+    "pet_shop_level_range": {
+      "message": "レベルは0〜{max}にしてください。"
+    },
+    "pet_shop_full": {
+      "message": "ショップのアイテムは最大{max}個です。"
+    },
+    "pets_switched_off": {
+      "message": "ペットはオフになっています。"
+    },
+    "pet_adopt_first": {
+      "message": "まずペットをおむかえしてね。"
+    },
+    "pet_shop_not_unlocked": {
+      "message": "それはまだアンロックされていないよ。"
+    },
+    "pet_shop_closed": {
+      "message": "ペットショップは閉まっています。"
+    },
+    "pet_shop_buy_first": {
+      "message": "まず買ってね。"
+    },
+    "pet_shop_not_for_sale": {
+      "message": "そのアイテムは売っていないよ。"
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "それはレベル{level}でアンロックされるよ。"
+    },
+    "pet_shop_already_owned": {
+      "message": "それはもう持っているよ。"
+    },
+    "pet_shop_already_pending": {
+      "message": "それはもう保護者の返事待ちだよ。"
+    },
+    "pet_shop_not_enough_points": {
+      "message": "まだポイントが足りないよ。"
+    },
+    "pet_shop_purchase_gone": {
+      "message": "その購入はもう承認待ちではありません。"
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "その子どもかアイテムがなくなっています。代わりに却下してください。"
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "{child_name}は今それを買うのに十分なポイントを持っていません。"
+    },
+    "pet_unknown_species": {
+      "message": "不明なペット「{species}」"
+    },
+    "pet_name_required": {
+      "message": "ペットに名前をつけてね。"
+    },
+    "pet_no_egg": {
+      "message": "まだかえせるたまごはないよ。"
+    },
+    "auction_not_found": {
+      "message": "そのオークションはもうありません。カードを更新してください。"
+    },
+    "auction_refuse_off": {
+      "message": "そのお手伝いはオフになっています。"
+    },
+    "auction_refuse_unassigned": {
+      "message": "未割り当てのお手伝いは誰にも割り当てられないため、オークションにできません。"
+    },
+    "auction_refuse_team": {
+      "message": "チームワークのお手伝いはチームで分担するため、オークションにできません。"
+    },
+    "auction_refuse_timed": {
+      "message": "時間制のお手伝いは分単位で支払うため、オークションにできません。"
+    },
+    "auction_refuse_open_ended": {
+      "message": "自由記入のお手伝いは保護者がポイントを決めるため、オークションにできません。"
+    },
+    "auction_invalid_date": {
+      "message": "無効な日付: {date}"
+    },
+    "auction_pick_future": {
+      "message": "明日以降の回を選んでください。"
+    },
+    "auction_not_scheduled": {
+      "message": "「{chore}」は{date}に予定されていません。"
+    },
+    "auction_already_exists": {
+      "message": "その回にはすでにオークションがあります。"
+    },
+    "auction_points_not_whole": {
+      "message": "ポイントは整数にしてください。"
+    },
+    "auction_max_range": {
+      "message": "最大入札額は1〜{max}ポイントです。"
+    },
+    "auction_min_range": {
+      "message": "最小入札額は1から最大額までにしてください。"
+    },
+    "auction_needs_close": {
+      "message": "オークションには締め切り時刻が必要です。"
+    },
+    "auction_close_in_past": {
+      "message": "締め切り時刻はすでに過ぎています。"
+    },
+    "auction_close_before_day": {
+      "message": "入札はお手伝いの日より前に締め切る必要があります。"
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "入札できるのは、このお手伝いができる子どもだけです。"
+    },
+    "auction_no_bidders": {
+      "message": "入札できる子どもを1人以上選んでください。"
+    },
+    "auction_already_closed": {
+      "message": "このオークションはすでに締め切られました。"
+    },
+    "auction_already_cancelled": {
+      "message": "このオークションはすでに取り消されています。"
+    },
+    "auction_occurrence_passed": {
+      "message": "その回はすでに過ぎています。"
+    },
+    "auction_still_live": {
+      "message": "このオークションはまだ受付中です。代わりに取り消してください。"
+    },
+    "auction_not_for_you": {
+      "message": "このオークションはあなた向けではないよ。"
+    },
+    "auction_bidding_closed": {
+      "message": "このオークションの入札は締め切られたよ。"
+    },
+    "auction_bid_not_whole": {
+      "message": "入札はポイントの整数だよ。"
+    },
+    "auction_bid_range": {
+      "message": "{min}〜{max}ポイントで入札してね。"
+    },
+    "auction_no_bid": {
+      "message": "これにはまだ入札していないよ。"
+    },
+    "bounty_invalid_expiry": {
+      "message": "無効な期限: {value}"
+    },
+    "bounty_not_found": {
+      "message": "その懸賞はもうありません。カードを更新してください。"
+    },
+    "bounty_title_required": {
+      "message": "懸賞にはタイトルが必要です。"
+    },
+    "bounty_points_not_whole": {
+      "message": "ポイントは整数にしてください。"
+    },
+    "bounty_points_range": {
+      "message": "懸賞のポイントは1〜{max}です。"
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "確保時間は整数（時間）にしてください。"
+    },
+    "bounty_claim_hours_range": {
+      "message": "確保時間は1〜{max}時間です。"
+    },
+    "bounty_expiry_in_past": {
+      "message": "期限はすでに過ぎています。"
+    },
+    "bounty_finished_locked": {
+      "message": "完了した懸賞は編集できません。"
+    },
+    "bounty_claimed_locked": {
+      "message": "懸賞が引き受けられたあとは、ポイントと期限だけを変更できます。"
+    },
+    "bounty_review_before_remove": {
+      "message": "この懸賞を削除する前に、完了した仕事を承認または却下してください。"
+    },
+    "bounty_release_not_claimed": {
+      "message": "解除できるのは引き受けられた懸賞だけです。"
+    },
+    "bounty_not_for_you": {
+      "message": "この懸賞はあなた向けではないよ。"
+    },
+    "bounty_taken": {
+      "message": "ほかの人が先に引き受けたよ — この懸賞はもうボードにないよ。"
+    },
+    "bounty_one_at_a_time": {
+      "message": "先に「{title}」を終わらせてね — 懸賞は1つずつしか引き受けられないよ。"
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "この懸賞を引き受けていないよ。"
+    },
+    "bounty_claim_expired": {
+      "message": "この懸賞の確保時間が切れたよ。"
+    },
+    "bounty_photo_required": {
+      "message": "この懸賞には、終わったところの写真が必要だよ。"
+    },
+    "raffle_name_required": {
+      "message": "抽選会に名前を付けてください。"
+    },
+    "raffle_ticket_cost_range": {
+      "message": "チケットの値段は1〜{max}です。"
+    },
+    "raffle_draw_required": {
+      "message": "抽選の日時を選んでください。"
+    },
+    "raffle_field_required": {
+      "message": "{field} は必須です"
+    },
+    "raffle_draw_in_past": {
+      "message": "抽選は未来の日時にしてください。"
+    },
+    "raffle_not_found": {
+      "message": "抽選会が見つかりません"
+    },
+    "raffle_not_open_edit": {
+      "message": "変更できるのは受付中の抽選会だけです。"
+    },
+    "raffle_price_locked": {
+      "message": "チケットが購入されているため、値段は変更できません。"
+    },
+    "raffle_closed": {
+      "message": "この抽選会は締め切られました。"
+    },
+    "raffle_drawing": {
+      "message": "この抽選会は抽選中です。"
+    },
+    "raffle_not_open_to": {
+      "message": "この抽選会は{child_name}には参加できません。"
+    },
+    "raffle_min_tickets": {
+      "message": "チケットを1枚以上買ってね。"
+    },
+    "raffle_max_tickets": {
+      "message": "持てるチケットは最大{max}枚だよ。"
+    },
+    "raffle_not_enough_points": {
+      "message": "その枚数のチケットを買うにはポイントが足りないよ。"
+    },
+    "raffle_already_closed": {
+      "message": "この抽選会はすでに締め切られました。"
+    },
+    "roulette_off": {
+      "message": "お手伝いルーレットはオフです"
+    },
+    "roulette_no_spins": {
+      "message": "今日はもう回せないよ"
+    },
+    "roulette_nothing_left": {
+      "message": "もう回して選べるお手伝いはないよ"
+    },
+    "unlock_not_allowed": {
+      "message": "「{entity_id}」は解除の許可リストにありません。ごほうびとして使う前に、設定で追加してください。"
+    },
+    "unlock_minutes_not_whole": {
+      "message": "解除の分数は整数にしてください"
+    },
+    "unlock_minutes_negative": {
+      "message": "解除の分数は負の数にできません"
+    },
+    "unlock_minutes_too_many": {
+      "message": "解除の分数は{max}を超えられません"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "そのアバターはカタログにありません"
+    },
+    "avatar_locked": {
+      "message": "そのアバターはまだアンロックされていません"
+    },
+    "weekly_goals_off": {
+      "message": "今週の目標はオフになっています。"
+    },
+    "weekly_goal_range": {
+      "message": "0〜{max}の目標を選んでね。"
+    },
+    "weekly_goal_below_bonus": {
+      "message": "目標は、支払われるボーナスの{bonus}以上にしてね。"
+    },
+    "weekly_goal_locked": {
+      "message": "今週の目標はすでに達成して支払われたので、月曜日まで変更できないよ。"
+    },
+    "challenge_name_required": {
+      "message": "チャレンジの名前は必須です"
+    },
+    "challenge_target_min": {
+      "message": "目標は1以上にしてください"
+    },
+    "challenge_not_found": {
+      "message": "チャレンジ {challenge_id} が見つかりません"
+    },
+    "quest_name_required": {
+      "message": "クエストの名前は必須です"
+    },
+    "quest_needs_step": {
+      "message": "クエストには少なくとも1つのステップが必要です"
+    },
+    "quest_not_found": {
+      "message": "クエスト {quest_id} が見つかりません"
+    },
+    "admin_only": {
+      "message": "管理者のみ"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate が初期化されていません"
+    },
+    "not_allowed": {
+      "message": "許可されていません"
+    },
+    "handler_failed": {
+      "message": "問題が発生しました。Home Assistant のログを確認してください"
+    },
+    "chore_one_off_past_day": {
+      "message": "1回限りのお手伝いは、過ぎた日には設定できません"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start は ISO 形式の日付にしてください"
+    },
+    "penalty_not_found": {
+      "message": "ペナルティ {penalty_id} が見つかりません"
+    },
+    "bonus_not_found": {
+      "message": "ボーナス {bonus_id} が見つかりません"
+    },
+    "group_not_found": {
+      "message": "グループ {group_id} が見つかりません"
+    },
+    "chores_bulk_no_names": {
+      "message": "お手伝いの名前が少なくとも1つ必要です"
+    },
+    "notif_child_not_found": {
+      "message": "子どもが見つかりません"
+    },
+    "notif_parent_not_found": {
+      "message": "保護者が見つかりません"
+    },
+    "recap_not_found": {
+      "message": "ふりかえりが見つかりません"
+    },
+    "voucher_not_approved": {
+      "message": "印刷できるのは承認済みのごほうびだけです"
+    },
+    "voucher_missing": {
+      "message": "そのごほうびまたは子どもはもう存在しません"
+    },
+    "setup_invalid_birthday": {
+      "message": "誕生日「{value}」は有効な日付ではありません"
+    },
+    "kiosk_pin_invalid": {
+      "message": "キオスクPINはちょうど4桁の数字にしてください"
+    },
+    "time_periods_empty": {
+      "message": "time_periods は空でないリストにしてください"
+    },
+    "time_periods_too_many": {
+      "message": "時間帯が多すぎます（最大{max}）"
+    },
+    "time_periods_not_object": {
+      "message": "各時間帯はオブジェクトにしてください"
+    },
+    "time_periods_duplicate_id": {
+      "message": "時間帯IDが重複しています: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "カスタムの時間帯にはすべて名前が必要です"
+    },
+    "time_periods_invalid_time": {
+      "message": "時間帯「{name}」の時刻が無効です（HH:MM を使用）"
+    },
+    "time_periods_start_after_end": {
+      "message": "時間帯「{name}」は終了より前に開始する必要があります"
+    },
+    "time_periods_overlap": {
+      "message": "「{name}」と「{other}」が重なっています — 時間帯は重ねられません"
+    },
+    "time_periods_in_use": {
+      "message": "お手伝いで使用中の時間帯は削除できません: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods はリストにしてください"
+    },
+    "vacation_periods_too_many": {
+      "message": "休暇期間が多すぎます（最大{max}）"
+    },
+    "vacation_periods_not_object": {
+      "message": "各休暇期間はオブジェクトにしてください"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "各休暇期間には有効な開始日と終了日（YYYY-MM-DD）が必要です"
+    },
+    "template_apply_empty": {
+      "message": "お手伝いのないテンプレートは適用できません"
+    },
+    "template_none_selected": {
+      "message": "お手伝いを少なくとも1つ選んでください"
+    },
+    "template_no_valid_chores": {
+      "message": "選んだIDに有効なお手伝いが見つかりません"
+    },
+    "template_needs_chore": {
+      "message": "テンプレートには少なくとも1つのお手伝いが必要です"
+    },
+    "template_builtin_modify": {
+      "message": "組み込みテンプレート「{template_id}」は変更できません"
+    },
+    "template_builtin_delete": {
+      "message": "組み込みテンプレート「{template_id}」は削除できません"
+    },
+    "template_pack_not_pack": {
+      "message": "TaskMate のパックではないようです"
+    },
+    "template_pack_wrong_format": {
+      "message": "TaskMate のテンプレートパックではありません"
+    },
+    "template_pack_version_nan": {
+      "message": "パックのバージョンが数値ではありません"
+    },
+    "template_pack_too_new": {
+      "message": "このパックには新しい TaskMate が必要です（パックのバージョン {version}、このバージョンが対応するのは {supported}）"
+    },
+    "template_pack_empty": {
+      "message": "パックにテンプレートが含まれていません"
+    },
+    "template_pack_too_many": {
+      "message": "パックのテンプレートが多すぎます（最大{max}）"
+    },
+    "template_pack_malformed_template": {
+      "message": "パックに不正な形式のテンプレートが含まれています"
+    },
+    "template_pack_unnamed_template": {
+      "message": "パック内のテンプレートに名前がありません"
+    },
+    "template_pack_template_no_chores": {
+      "message": "テンプレート「{name}」にお手伝いがありません"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "テンプレート「{name}」のお手伝いが多すぎます"
+    },
+    "template_pack_malformed_chore": {
+      "message": "テンプレート「{name}」に不正な形式のお手伝いがあります"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "「{name}」内のお手伝いに名前がありません"
+    },
+    "boost_bad_time": {
+      "message": "「{value}」は 09:30 のような時刻ではありません。"
+    },
+    "boost_multiplier_nan": {
+      "message": "倍率は数値にしてください。"
+    },
+    "boost_multiplier_range": {
+      "message": "倍率は ×{min} 〜 ×{max} から選んでください。"
+    },
+    "boost_chore_not_found": {
+      "message": "お手伝い {chore_id} が見つかりません。"
+    },
+    "boost_child_not_found": {
+      "message": "子ども {child_id} が見つかりません。"
+    },
+    "boost_start_past": {
+      "message": "ブーストを過去に開始することはできません。"
+    },
+    "boost_too_far_ahead": {
+      "message": "ブーストは1週間先まで予約できます。"
+    },
+    "boost_minutes_nan": {
+      "message": "分は整数にしてください。"
+    },
+    "boost_minutes_range": {
+      "message": "1〜{max}分から選んでください。"
+    },
+    "boost_already_ended": {
+      "message": "そのブーストはすでに終了しています。"
+    },
+    "boost_rule_no_days": {
+      "message": "曜日を1つ以上選んでください。"
+    },
+    "boost_rule_end_before_start": {
+      "message": "終了時刻は開始時刻より後にしてください。"
+    },
+    "boost_rules_max": {
+      "message": "繰り返しのブーストは最大{max}件です。"
+    },
+    "boost_rule_gone": {
+      "message": "その繰り返しのブーストはもうありません。"
+    },
+    "season_pack_unknown": {
+      "message": "不明な季節パック: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "不明な子ども: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "このお手伝いはすでに取り消されています。カードを更新してください。"
+    },
+    "import_invalid_payload": {
+      "message": "無効な TaskMate エクスポートデータです"
+    },
+    "import_data_not_object": {
+      "message": "インポートデータはオブジェクトにしてください"
+    },
+    "allowance_points_min": {
+      "message": "points は1以上にしてください"
+    },
+    "allowance_not_enabled": {
+      "message": "おこづかいは有効になっていません"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name}が支払いに使えるのは{points} {points_name}だけです。"
+    },
+    "appeals_off": {
+      "message": "異議申し立てはオフになっています。"
+    },
+    "appeals_already_appealed": {
+      "message": "それはすでに異議が申し立てられています。"
+    },
+    "appeals_not_appealable": {
+      "message": "それには異議を申し立てられません。"
+    },
+    "appeals_not_found": {
+      "message": "その異議申し立てはもうありません。"
+    },
+    "appeals_already_decided": {
+      "message": "その異議申し立てはすでに判断されています。"
+    },
+    "appeals_child_gone": {
+      "message": "その子どもはもういません。"
+    },
+    "appeals_reward_gone": {
+      "message": "そのごほうびはもうありません。"
+    },
+    "appeals_penalty_already_undone": {
+      "message": "そのペナルティはすでに取り消されています。"
+    },
+    "appeals_unknown_kind": {
+      "message": "不明な異議の種類 {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "誕生日は YYYY-MM-DD または MM-DD にしてください（入力値: 「{value}」）"
+    },
+    "birthday_in_future": {
+      "message": "誕生日を未来の日付にはできません"
+    },
+    "chore_reminders_off": {
+      "message": "リマインダーはオフになっています"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore}は{child}のお手伝いではありません"
+    },
+    "chore_reminder_time_format": {
+      "message": "17:30 のような時刻を選んでね"
+    },
+    "chore_reminder_time_range": {
+      "message": "{earliest}から{latest}の間で時刻を選んでね"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on は ISO 形式の日付にしてください（例: 2026-08-31）"
+    },
+    "inspection_not_found": {
+      "message": "そのチェックはもうありません。更新してもう一度試してください。"
+    },
+    "inspection_already_decided": {
+      "message": "そのチェックはすでに判定済みか、終了しています。"
+    },
+    "inspections_off": {
+      "message": "抜き打ちチェックは設定でオフになっています。"
+    },
+    "inspection_chore_gone": {
+      "message": "そのお手伝いはもうありません。"
+    },
+    "inspection_not_approved": {
+      "message": "チェックできるのは承認済みのお手伝いだけです。"
+    },
+    "inspection_not_child_chore": {
+      "message": "チェックできるのは子ども自身のお手伝いだけです。"
+    },
+    "inspection_child_gone": {
+      "message": "その子どもはもういません。"
+    },
+    "inspection_too_old": {
+      "message": "チェックできるのは、過去{hours}時間以内に承認したお手伝いだけです。"
+    },
+    "inspection_already_inspected": {
+      "message": "そのお手伝いはすでにチェック済みです。"
+    },
+    "inspection_redo_today_only": {
+      "message": "やり直しに差し戻せるのは、今日完了したお手伝いだけです。"
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url は /パス、http(s) の URL、または noAction にしてください"
+    },
+    "notification_group_spaces": {
+      "message": "group にスペースを含めることはできません（family-chores などを試してください）"
+    },
+    "notification_group_control": {
+      "message": "group に制御文字を含めることはできません"
+    },
+    "notification_group_too_long": {
+      "message": "group は64文字以内にしてください"
+    },
+    "notification_unknown_type": {
+      "message": "不明な通知の種類 {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "不明な通知の受信者 {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "分は整数にしてください"
+    },
+    "screen_time_minutes_max": {
+      "message": "分は{max}を超えられません"
+    },
+    "screen_time_jar_off": {
+      "message": "画面時間の貯金箱はオフです"
+    },
+    "screen_time_jar_full": {
+      "message": "貯金箱はいっぱいです"
+    },
+    "screen_time_jar_nothing": {
+      "message": "貯める時間がありません"
+    },
+    "setup_unknown_age_group": {
+      "message": "不明な年齢グループ「{value}」"
+    },
+    "setup_child_needs_ref": {
+      "message": "新しい子どもには、それぞれ固有の ref が必要です"
+    },
+    "setup_child_needs_name": {
+      "message": "子どもには名前が必要です"
+    },
+    "setup_chore_unknown_child": {
+      "message": "不明な子ども「{who}」に割り当てられたお手伝いがあります"
+    },
+    "setup_chore_needs_name": {
+      "message": "お手伝いには名前が必要です"
+    },
+    "setup_reward_needs_name": {
+      "message": "ごほうびには名前が必要です"
+    },
+    "sibling_checks_off": {
+      "message": "きょうだいチェックはオフです"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "不明な判定 {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "そのお手伝いはすでにチェックされています。カードを更新してね。"
+    },
+    "sibling_check_own_chore": {
+      "message": "自分のお手伝いはチェックできないよ"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name}はこの子どものお手伝いをチェックできません"
+    },
+    "sound_invalid_file_name": {
+      "message": "有効な音声ファイル名ではありません: {file}"
+    },
+    "sound_already_registered": {
+      "message": "音 {file} はすでに登録されています"
+    },
+    "sound_unknown_custom": {
+      "message": "不明なカスタム音: {file}"
+    },
+    "tour_adult": {
+      "message": "大人のプロフィールにはツアーはありません"
+    },
+    "tour_bad_status": {
+      "message": "status は 'done' または 'skipped' にしてください"
+    },
+    "tour_unknown_step": {
+      "message": "不明なツアーのステップ {step}"
+    },
+    "tour_already_speaking": {
+      "message": "読み上げ中です。少ししてからもう一度試してください"
+    },
+    "tts_no_media_player": {
+      "message": "メディアプレーヤーが指定されておらず、設定にも既定がありません"
+    },
+    "tts_no_entity": {
+      "message": "音声合成エンティティが見つかりません。設定で指定するか、tts_entity を渡してください。"
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore}は今日の{child}のお手伝いではありません。"
+    },
+    "wellbeing_unknown_mood": {
+      "message": "不明な気分「{mood}」"
+    },
+    "set_times_not_list": {
+      "message": "決まった時刻はリストにしてください。"
+    },
+    "set_times_too_many": {
+      "message": "決まった時刻は1つのお手伝いにつき最大{max}個です。"
+    },
+    "set_times_timed": {
+      "message": "時間制のお手伝いに決まった時刻は設定できません。"
+    },
+    "set_times_open_ended": {
+      "message": "自由記入のお手伝いに決まった時刻は設定できません。"
+    },
+    "set_times_quantity": {
+      "message": "数量のお手伝いに決まった時刻は設定できません。"
+    },
+    "set_times_teamwork": {
+      "message": "チームワークのお手伝いに決まった時刻は設定できません。"
+    },
+    "set_times_need_start_end": {
+      "message": "各決まった時刻には開始と終了が必要です。"
+    },
+    "set_times_bad_format": {
+      "message": "決まった時刻には 07:30 のような開始と終了が必要です。"
+    },
+    "set_times_end_before_start": {
+      "message": "決まった時刻は、同じ日のうちに開始より後に終了する必要があります。"
+    },
+    "set_times_overlap": {
+      "message": "2つの決まった時刻が重なっています。重ならないようにずらしてください。"
+    },
+    "template_not_found": {
+      "message": "テンプレート {template_id} が見つかりません"
+    },
+    "upload_admin_required": {
+      "message": "管理者権限が必要です"
+    },
+    "upload_file_too_large": {
+      "message": "ファイルが大きすぎます"
+    },
+    "upload_expected_multipart": {
+      "message": "multipart フォームが必要です"
+    },
+    "upload_too_many_parts": {
+      "message": "フォームのパートが多すぎます"
+    },
+    "upload_no_file": {
+      "message": "ファイルがありません"
+    },
+    "upload_image_unsupported": {
+      "message": "対応していない画像です（JPEG、PNG、WebP）"
+    },
+    "upload_image_storage_full": {
+      "message": "画像の保存容量がいっぱいです"
+    },
+    "upload_image_store_failed": {
+      "message": "画像を保存できませんでした"
+    },
+    "upload_photo_rate_limited": {
+      "message": "アップロードが多すぎます。少ししてからもう一度試してください"
+    },
+    "upload_photo_busy": {
+      "message": "同時のアップロードが多すぎます。少ししてからもう一度試してください"
+    },
+    "upload_photo_storage_full": {
+      "message": "写真の保存容量がいっぱいです"
+    },
+    "upload_photo_timeout": {
+      "message": "アップロードに時間がかかりすぎました"
+    },
+    "upload_photo_invalid": {
+      "message": "有効な画像ではありません"
+    },
+    "upload_photo_store_failed": {
+      "message": "写真を保存できませんでした"
+    },
+    "upload_photo_pending_limit": {
+      "message": "お手伝いへの添付待ちの写真が多すぎます。先にそれらを提出するか削除してください。"
+    },
+    "upload_sound_unsupported": {
+      "message": "対応していない音声です（MP3、OGG、WAV、M4A）"
+    },
+    "upload_sound_storage_full": {
+      "message": "音の保存容量がいっぱいです"
+    },
+    "upload_sound_store_failed": {
+      "message": "音を保存できませんでした"
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate から{who}に通知を送れません",
+      "description": "TaskMate は `{service}` で{who}に通知するよう設定されていますが、そのサービスはもう存在しません — 多くの場合、Mobile App 統合でスマホが削除されたか名前が変わったことが原因です。\n\nTaskMate 管理パネル → 通知 を開き、{who}の現在のサービスを選んでください。サービスが存在するようになると、この修復項目は自動で消えます。"
+    },
+    "child_entity_missing": {
+      "title": "{child}のプロフィールが存在しないエンティティを使っています",
+      "description": "{child}のプロフィールは `{entity}` を使っていますが、そのエンティティはもう存在しません。それに依存する在宅状況、在宅に応じたリマインダー、プロフィール写真は動作しません。\n\nTaskMate 管理パネル → 子ども を開き、{child}を編集して存在するエンティティを選んでください（または欄を空にしてください）。"
+    },
+    "chore_entity_missing": {
+      "title": "「{chore}」が存在しないエンティティを使っています",
+      "description": "「{chore}」は表示するかどうかを `{entity}` で判断していますが、そのエンティティはもう存在しないため、判定はスキップされています。\n\nTaskMate 管理パネル → お手伝い を開き、「{chore}」を編集して存在するエンティティを選んでください（または空にしてください）。"
+    },
+    "chore_assigned_to_nobody": {
+      "title": "お手伝い「{chore}」は誰にも割り当てられていません",
+      "description": "「{chore}」が割り当てられていた子どもが全員削除されたため、誰にも表示されません。\n\nTaskMate 管理パネル → お手伝い を開き、「{chore}」を子どもに割り当てるか、削除してください。"
+    },
+    "chore_dependency_missing": {
+      "title": "お手伝い「{chore}」は解除されることがありません",
+      "description": "「{chore}」は別のお手伝いが先に終わるのを待っていますが、そのお手伝いは削除されたため、「{chore}」はずっとロックされたままです。\n\nTaskMate 管理パネル → お手伝い を開き、「{chore}」を編集して存在しない前提のお手伝いを外してください。"
+    },
+    "reward_assigned_to_nobody": {
+      "title": "ごほうび「{reward}」を申請できる子どもがいません",
+      "description": "「{reward}」の対象だった子どもが全員削除されたため、誰も申請できません。\n\nTaskMate 管理パネル → ごほうび を開き、「{reward}」の対象を選ぶか、削除してください。"
+    },
+    "reward_unlock_not_allowed": {
+      "title": "ごほうび「{reward}」で何も解除されません",
+      "description": "「{reward}」は `{entity}` をオンにするよう設定されていますが、そのエンティティはもう TaskMate の解除の許可リストにないため、ごほうびを承認しても何も起きません。\n\nTaskMate 管理パネル → 設定 を開き、`{entity}` を解除の許可リストに追加するか、「{reward}」を編集してください。"
+    }
+  }
+}
