@@ -165,17 +165,51 @@ test("celebration: approval chores don't claim the points as earned", () => {
   assert.match(paid, /\+5/);
 });
 
-test("playroom: the undo chip on a waiting row doesn't celebrate", () => {
-  const waiting = render(makeCard({ design: "playroom", completions: [done(false)] }).render()).markup;
-  assert.ok(!waiting.includes("! 🎉"), "no party popper on the chip while a grown-up still has to check");
-  assert.ok(waiting.includes("⏳"));
-  const approved = render(makeCard({ design: "playroom", completions: [done(true)] }).render()).markup;
-  assert.ok(approved.includes("! 🎉"), "an approved chore still celebrates");
-});
+// "Done" is the open row's action. On a finished row the undo chip shows a
+// tick, on a waiting row "⏳ Waiting", and both carry the undo arrow, so the
+// same word never means both "tap to finish" and "finished".
+const DONE_WORD = localize("child.done");
+const WAITING_CHIP = localize("child.waiting_chip");
+const undoChip = (design, approved) =>
+  render(makeCard({ design, completions: [done(approved)] }).render()).controls.find((c) => /tmd-undochip/.test(c.attrs));
 
-for (const design of ["cleanpro", "accessible", "graphite"]) {
-  test(`${design}: the status on a waiting row carries the hourglass too`, () => {
-    const { markup } = render(makeCard({ design, completions: [done(false)] }).render());
-    assert.match(markup, /c-done[^>]*>[^<]*⏳/);
+for (const design of DESIGNS.filter((d) => d !== "classic")) {
+  test(`${design}: a waiting row's chip says "⏳ Waiting" with the undo arrow`, () => {
+    const chip = undoChip(design, false);
+    assert.ok(chip, "the undo chip is on the row");
+    assert.match(chip.attrs, /\bwaiting-chip\b/, "styled as the amber waiting chip");
+    assert.ok(chip.text.includes(`⏳ ${WAITING_CHIP}`), chip.text);
+    assert.ok(chip.text.includes("↩"), "it still shows it can be undone");
+    assert.ok(!chip.text.includes(DONE_WORD), "never \"Done\" as a state");
+    assert.ok(!chip.text.includes("🎉"), "no party popper while a grown-up still has to check");
+  });
+
+  test(`${design}: a finished row's chip is a tick and the undo arrow`, () => {
+    const chip = undoChip(design, true);
+    assert.ok(chip, "the undo chip is on the row");
+    assert.doesNotMatch(chip.attrs, /\bwaiting-chip\b/);
+    assert.ok(chip.text.includes("↩"), chip.text);
+    if (design !== "console") assert.ok(chip.text.includes("✓"), chip.text);
+    assert.ok(!chip.text.includes(DONE_WORD), "never \"Done\" as a state");
+    assert.ok(!chip.text.includes("Completed") && !chip.text.includes("🎉"), chip.text);
+  });
+
+  test(`${design}: the open row's button still says Done`, () => {
+    const view = render(makeCard({ design }).render());
+    assert.ok(view.controls.some((c) => c.tag === "button" && c.text === DONE_WORD), "the action keeps its word");
   });
 }
+
+test("classic: no row says Done as a state", () => {
+  for (const approved of [true, false]) {
+    const { markup } = render(makeCard({ design: "classic", completions: [done(approved)] }).render());
+    assert.doesNotMatch(markup.replace(/<[^>]*>/g, " "), new RegExp(`\\b${DONE_WORD}\\b`), "the checkbox carries the state");
+  }
+});
+
+test("pre-reader: a waiting tile has one hourglass under the picture, not a corner one", () => {
+  const { markup } = render(makeCard({ design: "classic", completions: [done(false)], config: { pre_reader: true } }).render());
+  assert.equal((markup.match(/mdi:timer-sand/g) || []).length, 1, "a single hourglass");
+  assert.match(markup, /class="pre-tile-wait"[^>]*>\s*<ha-icon[^>]*mdi:timer-sand/);
+  assert.doesNotMatch(markup, /class="pre-tile-tick"/, "no full-tile tick on a waiting tile");
+});
