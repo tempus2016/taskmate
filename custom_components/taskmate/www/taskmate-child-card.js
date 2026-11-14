@@ -84,6 +84,7 @@ class TaskMateChildCard extends LitElement {
       _helpSent: { type: Object },
       _moodSent: { type: Object },
       _inspCelebration: { type: Object },
+      _showFinished: { type: Boolean },
     };
   }
 
@@ -361,7 +362,11 @@ class TaskMateChildCard extends LitElement {
         --fun-cyan: #1abc9c;
       }
 
-      ha-card { overflow: hidden; }
+      /* clip, not hidden: hidden makes the card a scroll container, and the
+         sticky undo strip would then stick to the card instead of the screen.
+         Browsers without clip (iOS 15) keep hidden and the strip just sits at
+         the end of the card. */
+      ha-card, ha-card.tmd { overflow: hidden; overflow: clip; }
 
       /* ── Set times (several times a day) — shared by every design. The
          tokens fall back to classic colours; designed styles supply --tmd-*. ── */
@@ -2059,15 +2064,22 @@ class TaskMateChildCard extends LitElement {
       .birthday-banner .bday-title { font-weight: 800; font-size: 1rem; }
       .birthday-banner .bday-sub { font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
       /* Child undo strip (#918). The --tmd-* tokens only exist under a
-         designed style, so classic falls through to the HA theme. */
+         designed style, so classic falls through to the HA theme.
+         It sits at the end of the card and sticks to the bottom of the
+         screen while the card runs past it: appearing there moves no row,
+         and it stays under the thumb on a long list. */
       .tm-child-undo {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 10px 16px;
-        border-bottom: 1px solid var(--tmd-border, var(--divider-color, #e0e0e0));
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--tmd-border, var(--divider-color, #e0e0e0));
+        background: var(--tmd-surface, var(--ha-card-background, var(--card-background-color, #fff)));
       }
-      .tmd-bd .tm-child-undo { padding: 0 0 10px; border-bottom: none; }
+      .tmd-bd .tm-child-undo { margin-top: 12px; padding-inline: 0; }
       .tm-child-undo button {
         display: inline-flex;
         align-items: center;
@@ -2216,11 +2228,13 @@ class TaskMateChildCard extends LitElement {
         font-family: var(--tmd-font-display); font-weight: 800; color: #fff;
         background: var(--ac, var(--tmd-accent));
       }
-      .tmd-chore .ch-emoji { font-size: 22px; flex: none; }
+      .tmd-chore .ch-emoji {
+        font-size: 22px; flex: none;
+        inline-size: 30px; display: grid; place-items: center;
+      }
       .tmd-chore .ch-mid { flex: 1; min-width: 0; }
       .tmd-chore .ch-name {
         font-weight: 800; font-size: 15px;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .tmd-chore.done .ch-name { text-decoration: line-through; }
       .tmd-chore.done { opacity: 0.6; }
@@ -2239,7 +2253,6 @@ class TaskMateChildCard extends LitElement {
       .tmd-quest .q-mid { flex: 1; min-width: 0; }
       .tmd-quest .q-name {
         font-weight: 700;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .tmd-quest.done { opacity: 0.55; }
       .tmd-quest.done .q-name { text-decoration: line-through; }
@@ -2262,11 +2275,18 @@ class TaskMateChildCard extends LitElement {
       .tmd-check .c-mid { flex: 1; min-width: 0; }
       .tmd-check .c-name {
         font-weight: 600;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
       .tmd-check.done { opacity: 0.55; }
       .tmd-check.done .c-name { text-decoration: line-through; }
       .tmd-check .c-pts { background: transparent; }
+      /* Chore names wrap to two lines before they clip, so "Empty the
+         dishwasher and…" still says which job it is. overflow-wrap breaks a
+         long compound or a pasted link that has no space to wrap at. */
+      .tmd-chore .ch-name, .tmd-quest .q-name, .tmd-check .c-name {
+        display: -webkit-box; -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2; line-clamp: 2;
+        overflow: hidden; overflow-wrap: anywhere; line-height: 1.25;
+      }
       .tmd-check .c-done {
         background: transparent; border-color: transparent; color: var(--tmd-good);
       }
@@ -2428,6 +2448,26 @@ class TaskMateChildCard extends LitElement {
       /* Chores first: the countdown is a quiet note on the title row. */
       .tmd-countdown { font-weight: 600; font-variant-numeric: tabular-nums; }
       .tmd-countdown ha-icon { --mdc-icon-size: 13px; }
+      /* Done/total under the section title: finished in good, waiting for
+         a grown-up in warn, the rest is track. */
+      .tmd-progress {
+        flex: 1 0 100%; display: flex; block-size: 4px; margin-top: 4px;
+        border-radius: 999px; overflow: hidden; background: var(--tmd-border);
+      }
+      .tmd-progress i { display: block; block-size: 100%; }
+      .tmd-progress .fin { background: var(--tmd-good); }
+      .tmd-progress .wait { background: var(--tmd-warn); }
+      /* "Show N finished" at the end of a long list. */
+      .tmd-finished-toggle {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        inline-size: 100%; min-block-size: 44px; margin-top: 10px; padding: 8px 12px;
+        border: 1px dashed var(--tmd-border); border-radius: var(--tmd-radius-sm, 12px);
+        background: transparent; color: var(--tmd-dim);
+        font: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+      }
+      .tmd-finished-toggle ha-icon { --mdc-icon-size: 20px; }
+      .tmd-finished-toggle:focus-visible { outline: 3px solid var(--tmd-accent); outline-offset: 2px; }
+      .tmd-finished { margin-top: 10px; }
       .tmd-goals > * { margin: 12px 0 0; }
 
       /* Designed: badge strip */
@@ -2579,6 +2619,7 @@ class TaskMateChildCard extends LitElement {
       .compact .tmd-check { padding: 5px 2px; gap: 8px; }
       .compact .tmd-chore .num-badge, .compact .tmd-check .c-num { width: 22px; height: 22px; border-radius: 7px; font-size: 11px; }
       .compact .tmd-chore .ch-emoji, .compact .tmd-quest .q-emoji, .compact .tmd-check .c-emoji { font-size: 15px; }
+      .compact .tmd-chore .ch-emoji { inline-size: 22px; }
       .compact .tmd-chore .ch-name, .compact .tmd-check .c-name, .compact .tmd-quest .q-name { font-size: 14px; }
       .compact .ch-mid, .compact .q-mid, .compact .c-mid { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; }
       .compact .ch-mid .ch-name, .compact .q-mid .q-name, .compact .c-mid .c-name { flex: 0 1 auto; min-width: 0; }
@@ -2797,7 +2838,6 @@ class TaskMateChildCard extends LitElement {
 
         ${this._renderBirthdayBanner(child, false)}
         ${this._renderInspectionBanners(child, false, pointsName)}
-        ${this._renderChildUndo(child, todaysCompletions)}
 
         ${attrs.vacation_active ? html`
           <div class="vacation-banner">
@@ -2886,6 +2926,7 @@ class TaskMateChildCard extends LitElement {
 
         ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "classic")}
         ${this._renderSwappable(allChores, child, pointsIcon)}
+        ${this._renderChildUndo(child, todaysCompletions)}
 
         ${this._celebrating ? this._renderCelebration() : ""}
         ${this._renderInspectionCelebration(pointsIcon)}${this._renderBoostTakeover()}
@@ -3276,6 +3317,10 @@ class TaskMateChildCard extends LitElement {
         chore, child, done, loading, onAct, index: i, dimmed, blocked, recLocked, firstComeLocked, weeklyDone, stLocked, locked, shared,
         tone: this._designTone(i),
         glyph: this._choreGlyph(chore),
+        // A picture the chore really has: its own image or icon, or an emoji
+        // the name matched. The generic ⭐ fallback does not count.
+        hasPicture: window.__taskmate_chore_visual(chore).kind !== "none" || this._choreEmoji(chore) !== "⭐",
+        completions,
         points: this._boostPoints(chore, child),
         boost: this._boostMult(chore, child),
         timed: chore.task_type === "timed",
@@ -3291,6 +3336,24 @@ class TaskMateChildCard extends LitElement {
 
     const remaining = rows.filter(r => !r.done).length;
     const tone = this._designTone(children.indexOf(child));
+
+    // Long lists: a slim done/total bar under the section title, and past
+    // eight rows the finished ones fold into a "Show N finished" disclosure
+    // at the end. A row still waiting for a grown-up is not finished, so it
+    // never folds away. _isAwaitingApproval lives on
+    // feat/child-card-awaiting-approval; without it, read the completion's
+    // own approved flag.
+    const isWaiting = (r) => r.done && (typeof this._isAwaitingApproval === "function"
+      ? this._isAwaitingApproval(r.chore, r.child, r.completions)
+      : (r.completions || []).some(c => c.approved === false));
+    const waitingCount = rows.filter(isWaiting).length;
+    const finishedRows = rows.filter(r => r.done && !isWaiting(r));
+    const foldFinished = this.config.pre_reader !== true && rows.length > 8 && finishedRows.length > 0;
+    const listRows = foldFinished ? rows.filter(r => !finishedRows.includes(r)) : rows;
+    const progressLabel = waitingCount > 0
+      ? this._t("child.list_progress_waiting", { done: __tmNum(this.hass, finishedRows.length), total: __tmNum(this.hass, rows.length), waiting: __tmNum(this.hass, waitingCount) })
+      : this._t("child.list_progress", { done: __tmNum(this.hass, finishedRows.length), total: __tmNum(this.hass, rows.length) });
+    const pct = (n) => (rows.length ? Math.round((n / rows.length) * 1000) / 10 : 0);
 
     // Badge strip (show_badges) — resolve the per-child badges sensor like classic.
     const badgesEntity = this._resolveBadgesEntity(child);
@@ -3309,6 +3372,10 @@ class TaskMateChildCard extends LitElement {
         ${this._renderMinutesLeft(childChores, child, todaysCompletions, "tmd-countdown tm-minutes-left")}
         ${countdown ? html`<span class="tmd-countdown ${countdown.soon ? "soon" : ""}">
           <ha-icon icon="mdi:clock-outline"></ha-icon>${countdown.label}</span>` : ""}
+        <div class="tmd-progress" role="progressbar" aria-label="${progressLabel}"
+          aria-valuemin="0" aria-valuemax="${rows.length}" aria-valuenow="${finishedRows.length}">
+          <i class="fin" style="inline-size:${pct(finishedRows.length)}%"></i><i class="wait" style="inline-size:${pct(waitingCount)}%"></i>
+        </div>
       </div>`;
 
     // Pre-reader mode replaces the chore list with picture tiles. It has to be
@@ -3316,22 +3383,31 @@ class TaskMateChildCard extends LitElement {
     // silently ignored under every designed style — including accessible,
     // which is the one a child who needs picture tiles is most likely on.
     // The tiles keep the designed shell (header, tokens) around them.
+    const renderList = (list) =>
+      design === "playroom" ? this._designPlayroom(child, list, remaining, tone) :
+      design === "console"  ? this._designConsole(child, list, remaining, tone) :
+                              this._designCleanpro(child, list, remaining, tone);
     const body = this.config.pre_reader === true
       ? html`
         <div class="pre-reader-grid">
           ${childChores.map((chore) =>
             this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
         </div>`
-      : design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
-        design === "console"  ? this._designConsole(child, rows, remaining, tone) :
-                                this._designCleanpro(child, rows, remaining, tone);
+      : html`${renderList(listRows)}${foldFinished ? html`
+        <button type="button" class="tmd-finished-toggle" aria-expanded="${this._showFinished ? "true" : "false"}"
+          @click=${() => { this._showFinished = !this._showFinished; }}>
+          <ha-icon icon="${this._showFinished ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>
+          <span>${this._showFinished
+            ? this._t("child.hide_finished")
+            : this._t("child.show_finished", { count: __tmNum(this.hass, finishedRows.length) })}</span>
+        </button>
+        ${this._showFinished ? html`<div class="tmd-finished">${renderList(finishedRows)}</div>` : ""}` : ""}`;
 
     return html`<ha-card class="tmd ${this._compact() ? "compact" : ""}" style="--hd:${look.hd}${look.tint ? `;--tm-child:${look.tint}` : ""}">
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, look.season)}
       <div class="tmd-bd">
         ${this._renderBirthdayBanner(child, true)}
         ${this._renderInspectionBanners(child, true, attrs.points_name || this._t("common.stars"))}
-        ${this._renderChildUndo(child, todaysCompletions)}
         ${attrs.vacation_active ? html`
           <div class="tmd-vacation">
             <ha-icon icon="mdi:palm-tree"></ha-icon>
@@ -3382,6 +3458,7 @@ class TaskMateChildCard extends LitElement {
             </div>
           </div>` : ""}
         </div>
+        ${this._renderChildUndo(child, todaysCompletions)}
       </div>
       ${this._celebrating ? this._renderCelebration() : ""}
       ${this._renderInspectionCelebration(pointsIcon)}${this._renderBoostTakeover()}
@@ -3556,8 +3633,9 @@ class TaskMateChildCard extends LitElement {
     return html`<div class="tmd-chores">
       ${rows.map(r => r.timed ? this._designTimed(r) : html`
         <div class="tmd-chore ${r.done ? "done" : ""} ${r.mandatory ? "mandatory" : ""} ${r.dimmed ? "dimmed" : ""} ${this._inspectionRowClass(r.chore, r.child)}" style="--ac:${r.tone}">
-          <div class="num-badge" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>
-          <span class="ch-emoji">${r.glyph}</span>
+          ${r.hasPicture
+            ? html`<span class="ch-emoji">${r.glyph}</span>`
+            : html`<div class="num-badge" style="${r.done ? "--ac:var(--tmd-good)" : ""}">${r.done ? "✓" : r.index + 1}</div>`}
           <div class="ch-mid">
             <div class="ch-name">${r.chore.name}</div>
             ${r.done ? "" : html`<div class="chip soft" style="margin-top:3px">+${__tmNum(this.hass, r.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
