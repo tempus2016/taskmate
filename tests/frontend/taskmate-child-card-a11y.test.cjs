@@ -59,6 +59,8 @@ function makeCard({ chores, completions = [], config = {}, design = "classic", c
   };
   card._loading = {};
   card._optimisticCompletions = {};
+  // feat/child-card-all-done folds a fully finished list; keep the rows in view.
+  card._allDoneOpen = true;
   return card;
 }
 
