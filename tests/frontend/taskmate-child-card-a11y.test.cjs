@@ -62,6 +62,10 @@ function makeCard({ chores, completions = [], config = {}, design = "classic", c
   return card;
 }
 
+// The harness's attr() stops at an apostrophe ("I'm stuck"); read
+// double-quoted names directly.
+const ariaLabel = (c) => (c.attrs.match(/aria-label="([^"]*)"/) || [])[1];
+
 const doneToday = (id) => [{ completion_id: "c1", chore_id: id, child_id: "kid1", approved: true, completed_at: new Date().toISOString(), points: 5 }];
 
 for (const design of DESIGNED) {
@@ -83,23 +87,109 @@ for (const design of DESIGNED) {
   });
 }
 
-test("console: the bare undo arrow is named Undo {chore}", () => {
-  const view = render(makeCard({ chores: [chore()], completions: doneToday("zz"), design: "console" }).render());
-  const chip = view.control(/tmd-undochip/);
-  assert.ok(chip, "the undo chip renders");
-  assert.equal(chip.attr("aria-label"), localize("child.undo_named", { name: "Feed the cat" }));
-});
+for (const design of DESIGNED) {
+  test(`${design}: the undo chip says the chore, its state, then Undo`, () => {
+    const card = makeCard({ chores: [chore()], completions: doneToday("zz"), design });
+    const chip = render(card.render()).control(/tmd-undochip/);
+    assert.ok(chip, "the undo chip renders");
+    assert.equal(chip.attr("aria-label"), localize("child.undo_done_aria", { chore: "Feed the cat" }));
+  });
 
-test("playroom: the done chip keeps its visible word first in its name", () => {
-  const view = render(makeCard({ chores: [chore()], completions: doneToday("zz"), design: "playroom" }).render());
-  const label = view.control(/tmd-undochip/).attr("aria-label");
-  assert.ok(label.startsWith(localize("child.done_chore_aria", { chore: "Feed the cat" })), label);
-});
+  test(`${design}: an undo chip waiting for a grown-up says so`, () => {
+    const card = makeCard({ chores: [chore()], completions: doneToday("zz"), design });
+    // _isAwaitingApproval lives on feat/child-card-awaiting-approval.
+    card._isAwaitingApproval = () => true;
+    const chip = render(card.render()).control(/tmd-undochip/);
+    assert.equal(chip.attr("aria-label"), localize("child.undo_waiting_aria", { chore: "Feed the cat" }));
+  });
+
+  test(`${design}: each I'm stuck button names its chore`, () => {
+    const card = makeCard({ chores: [chore(), chore({ id: "yy", name: "Make bed" })], design });
+    card._helpEnabled = () => true;
+    const names = render(card.render()).controls
+      .filter((c) => /tm-help-btn"/.test(c.attrs) && !/tm-remind-btn/.test(c.attrs))
+      .map(ariaLabel);
+    assert.deepEqual(names.sort(), [
+      localize("child.help_ask_aria", { chore: "Feed the cat" }),
+      localize("child.help_ask_aria", { chore: "Make bed" }),
+    ].sort());
+    assert.ok(names.every((n) => !n.includes("🙋")), "no emoji in the name");
+  });
+}
 
 test("classic: a done row carries its state in its name", () => {
   const view = render(makeCard({ chores: [chore()], completions: doneToday("zz") }).render());
   const row = view.control(/class="chore-card/);
   assert.equal(row.attr("aria-label"), `Feed the cat. ${localize("child.done")}`);
+});
+
+test("classic: a done row waiting for a grown-up says so, not done", () => {
+  const card = makeCard({ chores: [chore()], completions: doneToday("zz") });
+  card._isAwaitingApproval = () => true;
+  const row = render(card.render()).control(/class="chore-card/);
+  assert.equal(row.attr("aria-label"), `Feed the cat, ${localize("child.awaiting_approval")}`);
+});
+
+test("classic: each I'm stuck button names its chore", () => {
+  const card = makeCard({ chores: [chore()] });
+  card._helpEnabled = () => true;
+  const btn = render(card.render()).controls.find((c) => /tm-help-btn"/.test(c.attrs));
+  assert.ok(btn, "the help button renders");
+  assert.equal(ariaLabel(btn), localize("child.help_ask_aria", { chore: "Feed the cat" }));
+});
+
+test("pre-reader tiles carry done, waiting and locked in their names", () => {
+  const card = makeCard({
+    chores: [chore(), chore({ id: "yy", name: "Make bed" }), chore({ id: "xx", name: "Teeth", due_days: ["monday"] })],
+    completions: [...doneToday("zz"), { ...doneToday("yy")[0], completion_id: "c2" }],
+    config: { pre_reader: true, due_days_mode: "dim" },
+  });
+  card._isAwaitingApproval = (c) => c.id === "yy";
+  const tiles = render(card.render()).controls.filter((c) => /class="pre-tile/.test(c.attrs));
+  const names = tiles.map((t) => t.attr("aria-label"));
+  assert.ok(names.includes(`Feed the cat, ${localize("child.done")}`), names.join(" | "));
+  assert.ok(names.includes(`Make bed, ${localize("child.awaiting_approval")}`), names.join(" | "));
+  assert.ok(names.includes(`Teeth, ${localize("child.chore_locked")}. ${localize("child.not_scheduled_for_today")}`), names.join(" | "));
+});
+
+test("without the awaiting-approval rule, nothing reads as waiting", () => {
+  const card = makeCard({ chores: [chore()], completions: doneToday("zz"), design: "playroom" });
+  assert.equal(typeof card._isAwaitingApproval, "undefined");
+  const chip = render(card.render()).control(/tmd-undochip/);
+  assert.equal(chip.attr("aria-label"), localize("child.undo_done_aria", { chore: "Feed the cat" }));
+});
+
+test("the pending header chip is named with the points name", () => {
+  const card = makeCard({ chores: [chore()], design: "playroom", child: { pending_points: 10 } });
+  card.hass.states[ENTITY].attributes.points_name = "Stars";
+  const { markup } = render(card.render());
+  const m = markup.match(/<span class="tmd-pending"[^>]*>/);
+  assert.ok(m, "the pending chip renders");
+  assert.match(m[0], /role="img"/);
+  assert.ok(m[0].includes(`aria-label="${localize("child.pending_points_aria", { count: "10", points_name: "Stars" })}"`), m[0]);
+});
+
+test("graphite hides its row numbers from screen readers; cleanpro keeps them", () => {
+  for (const [design, hidden] of [["graphite", "true"], ["cleanpro", "false"]]) {
+    const card = makeCard({ chores: [chore()], design });
+    card.getAttribute = (n) => (n === "data-tm-design" ? design : null);
+    const { markup } = render(card.render());
+    const m = markup.match(/<div class="c-num"[^>]*>/);
+    assert.ok(m, `${design}: the number renders`);
+    assert.match(m[0], new RegExp(`aria-hidden="${hidden}"`));
+  }
+});
+
+test("accessible's badge discs use Okabe-Ito hues, not tier metals", () => {
+  const card = makeCard({ chores: [chore()], design: "accessible" });
+  const tiers = ["bronze", "silver", "gold", "platinum"];
+  card._resolveBadgesEntity = () => ({ attributes: { earned: tiers.map((t, i) => ({ badge_id: `b${i}`, tier: t, icon: "mdi:medal" })) } });
+  const { markup } = render(card.render());
+  const fills = [...markup.matchAll(/class="tmd-badge-mini[^"]*"\s*style="--t:([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(fills, ["#D55E00", "#56B4E9", "#E69F00", "#009E73"]);
+  const pr = makeCard({ chores: [chore()], design: "playroom" });
+  pr._resolveBadgesEntity = card._resolveBadgesEntity;
+  assert.match(render(pr.render()).markup, /--t:#f1c40f/, "other styles keep the tier colours");
 });
 
 test("classic: a locked row says why, in its name and as text on the row", () => {
