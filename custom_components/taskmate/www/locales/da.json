@@ -349,6 +349,8 @@
   "child.undo_parent_actions_hidden": "Forældrehandlinger er slået fra på dette kort, så ingen kan fortryde her, heller ikke en forælder. Fortryd fra et forældre-dashboard, eller slå Vis forældrehandlinger til i kortets indstillinger.",
   "child.undo_named": "Fortryd {name}",
   "child.undo_recent": "Fortryd en pligt, du lige har klaret",
+  "child.pre_reader_progress": "{done} af {total} klaret",
+  "child.pre_reader_undo_confirm": "Tryk igen for at fortryde {name}",
   "child.evening_chores": "Aftenens pligter",
   "child.morning_chores": "Morgenens pligter",
   "child.night_chores": "Nattens pligter",

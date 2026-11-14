@@ -343,6 +343,8 @@
   "child.undo_parent_actions_hidden": "Les actions parentales sont désactivées sur cette carte : personne ne peut annuler ici, pas même un parent. Annulez depuis un tableau de bord parents, ou activez « Afficher les actions parentales » dans les réglages de la carte.",
   "child.undo_named": "Annuler {name}",
   "child.undo_recent": "Annuler une tâche que tu viens de faire",
+  "child.pre_reader_progress": "{done} sur {total} faites",
+  "child.pre_reader_undo_confirm": "Touche encore pour annuler {name}",
   "child.evening_chores": "Tâches du soir",
   "child.morning_chores": "Tâches du matin",
   "child.night_chores": "Tâches de la nuit",

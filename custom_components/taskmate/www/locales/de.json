@@ -343,6 +343,8 @@
   "child.undo_parent_actions_hidden": "Elternaktionen sind auf dieser Karte ausgeschaltet, daher kann hier niemand etwas rückgängig machen, auch Eltern nicht. Über ein Eltern-Dashboard rückgängig machen oder „Elternaktionen anzeigen“ in den Karteneinstellungen einschalten.",
   "child.undo_named": "{name} rückgängig machen",
   "child.undo_recent": "Eine gerade erledigte Aufgabe rückgängig machen",
+  "child.pre_reader_progress": "{done} von {total} erledigt",
+  "child.pre_reader_undo_confirm": "Nochmal tippen, um {name} rückgängig zu machen",
   "child.evening_chores": "Abendliche Aufgaben",
   "child.morning_chores": "Morgenaufgaben",
   "child.night_chores": "Nachtaufgaben",

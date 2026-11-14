@@ -349,6 +349,8 @@
   "child.undo_parent_actions_hidden": "Ouderknoppen staan uit op deze kaart, dus hier kan niemand iets terugnemen, ook een ouder niet. Neem het terug via een ouderdashboard, of zet Ouderknoppen tonen aan in de instellingen van deze kaart.",
   "child.undo_named": "{name} terugnemen",
   "child.undo_recent": "Neem een taak terug die je net deed",
+  "child.pre_reader_progress": "{done} van {total} gedaan",
+  "child.pre_reader_undo_confirm": "Tik nog eens om {name} terug te nemen",
   "child.evening_chores": "Avondtaken",
   "child.morning_chores": "Ochtendtaken",
   "child.night_chores": "Nachttaken",

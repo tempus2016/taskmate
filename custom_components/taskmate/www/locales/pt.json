@@ -343,6 +343,8 @@
   "child.undo_parent_actions_hidden": "As ações dos pais estão desligadas neste cartão, por isso ninguém pode desfazer aqui, nem mesmo os pais. Desfaça num painel dos pais, ou ative Mostrar ações dos pais nas definições do cartão.",
   "child.undo_named": "Anular {name}",
   "child.undo_recent": "Anular uma tarefa que acabaste de fazer",
+  "child.pre_reader_progress": "{done} de {total} feitas",
+  "child.pre_reader_undo_confirm": "Toca outra vez para anular {name}",
   "child.evening_chores": "Tarefas da Noite",
   "child.morning_chores": "Tarefas da Manhã",
   "child.night_chores": "Tarefas da Madrugada",

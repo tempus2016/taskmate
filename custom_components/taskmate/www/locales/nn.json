@@ -343,6 +343,8 @@
   "child.undo_parent_actions_hidden": "Foreldrehandlingar er slått av på dette kortet, så ingen kan angra her, heller ikkje ein forelder. Angre frå eit foreldre-dashbord, eller slå på Vis foreldrehandlingar i innstillingane til kortet.",
   "child.undo_named": "Angra {name}",
   "child.undo_recent": "Angra ei oppgåve du nettopp gjorde",
+  "child.pre_reader_progress": "{done} av {total} gjort",
+  "child.pre_reader_undo_confirm": "Trykk igjen for å angra {name}",
   "child.evening_chores": "Kveldsoppgåver",
   "child.morning_chores": "Morgonoppgåver",
   "child.night_chores": "Nattoppgåver",

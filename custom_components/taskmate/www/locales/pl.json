@@ -349,6 +349,8 @@
   "child.undo_parent_actions_hidden": "Działania rodzica są wyłączone na tej karcie, więc nikt nie może tu cofnąć, nawet rodzic. Cofnij to na panelu rodzica albo włącz „Pokaż działania rodzica” w ustawieniach karty.",
   "child.undo_named": "Cofnij {name}",
   "child.undo_recent": "Cofnij obowiązek, który właśnie wykonałeś(-aś)",
+  "child.pre_reader_progress": "Zrobione: {done} z {total}",
+  "child.pre_reader_undo_confirm": "Dotknij jeszcze raz, aby cofnąć: {name}",
   "child.evening_chores": "Obowiązki wieczorne",
   "child.morning_chores": "Obowiązki poranne",
   "child.night_chores": "Obowiązki nocne",

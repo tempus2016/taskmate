@@ -349,6 +349,8 @@
   "child.undo_parent_actions_hidden": "Parent actions are turned off on this card, so nobody can undo here, not even a parent. Undo it from a parents' dashboard, or turn on Show parent actions in this card's settings.",
   "child.undo_named": "Undo {name}",
   "child.undo_recent": "Undo a chore you just did",
+  "child.pre_reader_progress": "{done} of {total} done",
+  "child.pre_reader_undo_confirm": "Tap again to undo {name}",
   "child.evening_chores": "Evening Chores",
   "child.morning_chores": "Morning Chores",
   "child.night_chores": "Night Chores",
