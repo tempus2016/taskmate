@@ -68,7 +68,8 @@ function makeCard({ chores, completions = [], config = {}, design = "classic" })
 
 /** The markup of the tile whose aria-label is `name`. */
 function tileMarkup(markup, name) {
-  const start = markup.indexOf(`aria-label="${name}"`);
+  // Prefix match: fix/child-card-a11y appends the tile's state to its name.
+  const start = markup.search(new RegExp(`aria-label="${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["\\s,]`));
   assert.ok(start > 0, `tile "${name}" should be rendered`);
   return markup.slice(start, markup.indexOf("</button>", start));
 }
