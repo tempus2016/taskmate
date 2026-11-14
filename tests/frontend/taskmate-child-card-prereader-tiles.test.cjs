@@ -189,7 +189,7 @@ for (const design of DESIGNS) {
     card._handleUndo = (c) => { undone.push(c.id); };
     card._handleComplete = () => { throw new Error("a done tile must not complete again"); };
     try {
-      let tile = render(card.render()).control('aria-label="ZZ chore"');
+      let tile = render(card.render()).control(/aria-label="ZZ chore["\s,]/);
       await tile.click();
       assert.deepEqual(undone, [], "first tap does not undo");
       assert.equal(card._preUndoArmed, "zz");
@@ -219,7 +219,7 @@ test("pre-reader: an armed undo reverts on its own", async (t) => {
   }).get("taskmate-child-card");
   const card = Object.setPrototypeOf(makeCard({ chores: [chore()], completions: doneNow() }), Fresh.prototype);
   card._handleUndo = () => { throw new Error("must not undo"); };
-  await render(card.render()).control('aria-label="ZZ chore"').click();
+  await render(card.render()).control(/aria-label="ZZ chore["\s,]/).click();
   assert.equal(card._preUndoArmed, "zz");
   t.mock.timers.tick(2900);
   assert.equal(card._preUndoArmed, "zz", "still armed just before the window ends");
@@ -232,7 +232,7 @@ test("pre-reader: outside the child's undo window the tap still goes to _handleU
   const card = makeCard({ chores: [chore()], completions: doneNow({ child_undo_until: new Date(Date.now() - 60_000).toISOString() }) });
   const undone = [];
   card._handleUndo = (c) => { undone.push(c.id); };
-  await render(card.render()).control('aria-label="ZZ chore"').click();
+  await render(card.render()).control(/aria-label="ZZ chore["\s,]/).click();
   assert.deepEqual(undone, ["zz"], "undo rules unchanged: _handleUndo decides and refuses");
   assert.equal(card._preUndoArmed ?? null, null);
 });
