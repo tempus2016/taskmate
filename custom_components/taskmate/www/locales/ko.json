@@ -3406,6 +3406,8 @@
   "kiosk.editor.show_picker_progress_helper": "얼굴마다 아래에 “6개 중 3개 완료”",
   "kiosk.editor.completed_mode": "완료한 집안일",
   "kiosk.editor.completed_mode_helper": "숨기면 목록이 짧아져요. 오늘 합계에는 계속 포함되지만 키오스크에서 취소할 수 없어요",
+  "kiosk.editor.grabs_first": "선착순 집안일을 맨 위에",
+  "kiosk.editor.grabs_first_helper": "아직 남은 선착순 집안일을 아이 목록의 맨 위로 옮깁니다. 자기 집안일 순서가 있는 아이는 그 순서를 유지합니다",
   "kiosk.editor.completed_show": "표시 — 실행 취소 버튼과 함께",
   "kiosk.editor.completed_hide": "숨기기 — 완료했거나 어른 확인을 기다릴 때",
   "kiosk.editor.missed_mode": "시간대를 놓친 집안일",

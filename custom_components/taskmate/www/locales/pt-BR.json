@@ -3406,6 +3406,8 @@
   "kiosk.editor.show_picker_progress_helper": "“3 de 6 feitas” embaixo de cada rosto",
   "kiosk.editor.completed_mode": "Tarefas concluídas",
   "kiosk.editor.completed_mode_helper": "Ocultá-las deixa a lista curta. Elas continuam contando para o total de hoje, mas não podem ser desfeitas no quiosque",
+  "kiosk.editor.grabs_first": "Tarefas livres primeiro",
+  "kiosk.editor.grabs_first_helper": "Coloca no topo da lista da criança as tarefas \"quem chegar primeiro leva\" ainda em aberto. Uma criança com a própria ordem de tarefas a mantém",
   "kiosk.editor.completed_show": "Mostrar — com o botão Desfazer",
   "kiosk.editor.completed_hide": "Ocultar — depois de feitas ou aguardando um adulto",
   "kiosk.editor.missed_mode": "Tarefas de período do dia perdidas",

@@ -3406,6 +3406,8 @@
   "kiosk.editor.show_picker_progress_helper": "“3 van 6 klaar” onder elk gezicht",
   "kiosk.editor.completed_mode": "Afgeronde taken",
   "kiosk.editor.completed_mode_helper": "Verbergen houdt de lijst kort. Ze tellen nog mee voor het totaal van vandaag, maar kunnen op de kiosk niet worden teruggenomen",
+  "kiosk.editor.grabs_first": "Wie-het-eerst-komt-taken bovenaan",
+  "kiosk.editor.grabs_first_helper": "Zet open wie-het-eerst-komt-taken bovenaan de lijst van een kind. Een kind met een eigen takenvolgorde houdt die",
   "kiosk.editor.completed_show": "Tonen — met hun terugneemknop",
   "kiosk.editor.completed_hide": "Verbergen — zodra ze klaar zijn of op een volwassene wachten",
   "kiosk.editor.missed_mode": "Gemiste dagdeeltaken",

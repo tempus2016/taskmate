@@ -3400,6 +3400,8 @@
   "kiosk.editor.show_picker_progress_helper": "„3 von 6 erledigt“ unter jedem Gesicht",
   "kiosk.editor.completed_mode": "Erledigte Aufgaben",
   "kiosk.editor.completed_mode_helper": "Ausblenden hält die Liste kurz. Sie zählen weiter zur heutigen Summe, lassen sich am Kiosk aber nicht rückgängig machen",
+  "kiosk.editor.grabs_first": "Wer-zuerst-kommt-Aufgaben oben",
+  "kiosk.editor.grabs_first_helper": "Zeigt offene Wer-zuerst-kommt-Aufgaben oben in der Liste eines Kindes. Ein Kind mit eigener Aufgabenreihenfolge behält sie",
   "kiosk.editor.completed_show": "Anzeigen – mit Rückgängig-Taste",
   "kiosk.editor.completed_hide": "Ausblenden – sobald erledigt oder auf Prüfung wartend",
   "kiosk.editor.missed_mode": "Verpasste Aufgaben zur Tageszeit",

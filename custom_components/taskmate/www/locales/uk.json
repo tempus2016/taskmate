@@ -3406,6 +3406,8 @@
   "kiosk.editor.show_picker_progress_helper": "«Виконано 3 з 6» під кожним обличчям",
   "kiosk.editor.completed_mode": "Виконані завдання",
   "kiosk.editor.completed_mode_helper": "Якщо ховати, список коротший. Вони все одно рахуються в сьогоднішній підсумок, але скасувати їх у кіоску не можна",
+  "kiosk.editor.grabs_first": "Завдання «хто перший» угорі",
+  "kiosk.editor.grabs_first_helper": "Піднімає ще вільні завдання «хто перший» на початок списку дитини. Якщо в дитини свій порядок завдань, він зберігається",
   "kiosk.editor.completed_show": "Показати — з кнопкою «Скасувати»",
   "kiosk.editor.completed_hide": "Сховати — після виконання чи коли чекають на дорослого",
   "kiosk.editor.missed_mode": "Пропущені завдання за часом доби",

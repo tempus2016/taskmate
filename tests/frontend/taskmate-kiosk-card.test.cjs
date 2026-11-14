@@ -303,6 +303,50 @@ test("taken first-come chores hide with completed_mode: hide", async () => {
   assert.doesNotMatch(view(card).markup, /km-row taken/);
 });
 
+// grabs_first: open first-come chores move to the top, unless the child has
+// their own chore_order.
+const GRAB_CHORES = [
+  chore("dishes"),
+  chore("bins", { assignment_mode: "first_come", requires_approval: false }),
+  chore("bed"),
+  chore("lawn", { assignment_mode: "first_come" }),
+  chore("car", { assignment_mode: "first_come" }),
+];
+const GRAB_STATUS = { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes", "bins", "bed", "lawn"] }] };
+const GRAB_TAKEN = [{ completion_id: "c1", chore_id: "car", child_id: "malia", approved: true, completed_at: new Date().toISOString() }];
+const listed = (card) => plain(card._progress(card._entry("vaiha").child).rows.map((r) => r.chore.id));
+async function grabView(config, chore_order) {
+  const card = await childView({ config, chores: plain(GRAB_CHORES), status: GRAB_STATUS, completions: GRAB_TAKEN });
+  if (chore_order) card.hass.states[ENTITY].attributes.children.find((c) => c.id === "vaiha").chore_order = chore_order;
+  return card;
+}
+
+test("grabs_first is off by default: the list keeps its order", async () => {
+  assert.deepEqual(listed(await grabView({})), ["dishes", "bins", "bed", "lawn", "car"]);
+});
+
+test("grabs_first moves open first-come chores to the top, in their own order", async () => {
+  const card = await grabView({ grabs_first: true });
+  // Car went to Malia: taken, no longer up for grabs, so it stays put.
+  assert.deepEqual(listed(card), ["bins", "lawn", "dishes", "bed", "car"]);
+  assert.match(view(card).markup, /km-row todo grab[\s\S]*km-row todo grab[\s\S]*Dishes/);
+});
+
+test("grabs_first never overrides a child's own chore_order", async () => {
+  const order = ["bed", "dishes", "car", "lawn", "bins"];
+  assert.deepEqual(listed(await grabView({ grabs_first: true }, order)), order);
+});
+
+test("the editor offers grabs_first, off by default", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.config = { entity: ENTITY };
+  const field = editor._schema().find((f) => f.name === "grabs_first");
+  assert.ok(field && field.selector.boolean, "a toggle");
+  assert.equal(editor._computeLabel(field), localize("kiosk.editor.grabs_first"));
+  assert.equal(editor._computeHelper(field), localize("kiosk.editor.grabs_first_helper"));
+});
+
 test("undo follows the #918 window and goes through undo_chore", async () => {
   const card = await childView({
     status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: [] }] },
