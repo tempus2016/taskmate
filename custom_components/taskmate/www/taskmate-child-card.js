@@ -1272,7 +1272,7 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         gap: 4px;
         align-self: flex-start;
-        font-size: 0.78rem;
+        font-size: max(12px, 0.86rem);
         font-weight: 700;
         color: var(--primary-text-color);
         background: color-mix(in srgb, var(--warning-color, #ff9800) 22%, transparent);
@@ -1423,14 +1423,27 @@ class TaskMateChildCard extends LitElement {
         border-color: var(--warning-color, #ff9800);
         background: color-mix(in srgb, var(--warning-color, #ff9800) 12%, transparent);
       }
-      /* Waiting: a small hourglass badge in the corner, not the full-tile
-         tick, so the chore's own picture stays readable to a non-reader. */
-      .pre-tile.awaiting .pre-tile-tick {
-        inset: auto; inset-block-start: 8px; inset-inline-start: 8px;
-        width: 34px; height: 34px; border-radius: 50%;
+      /* Waiting: one hourglass disc, centred under the chore's picture and
+         just overlapping its foot, over a picture that is only slightly
+         dimmed. A non-reader still recognises the chore and sees it is
+         waiting rather than finished; no full-tile tick, no corner hourglass. */
+      .pre-tile.done.awaiting .pre-tile-icon > :is(ha-icon, img, .pre-tile-emoji) { opacity: 0.6; }
+      .pre-tile.awaiting .pre-tile-icon { position: relative; }
+      .pre-tile-wait {
+        position: absolute; inset-inline: 0; inset-block-end: -16px;
+        margin-inline: auto;
+        width: 40px; height: 40px; border-radius: 50%;
+        display: grid; place-items: center;
         background: var(--warning-color, #ff9800);
+        box-shadow: 0 0 0 3px var(--card-background-color, #fff), 0 2px 6px rgba(0, 0, 0, 0.2);
+        pointer-events: none;
       }
-      .pre-tile.awaiting .pre-tile-tick ha-icon { --mdc-icon-size: 20px; color: #3a2600; }
+      .pre-tile.done .pre-tile-wait ha-icon { --mdc-icon-size: 24px; color: #3a2600; opacity: 1; }
+      /* The corner undo arrow (fix/child-card-pre-reader-tiles) follows the
+         waiting colour instead of the finished green. */
+      .pre-tile.awaiting .pre-tile-badge.undo {
+        color: color-mix(in srgb, var(--warning-color, #ff9800) 60%, var(--primary-text-color, #212121));
+      }
       .pre-tile.loading { opacity: 0.6; }
 
       /* Chore roulette (#677) */
@@ -2616,12 +2629,35 @@ class TaskMateChildCard extends LitElement {
          graphite's .tmd-check.done rules in taskmate-design.js. */
       :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-chore.done.awaiting,
       :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-quest.done.awaiting,
-      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting { opacity: 0.9; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting { opacity: 1; }
       :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-chore.done.awaiting .ch-name,
       :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-quest.done.awaiting .q-name,
-      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting .c-name { text-decoration: none; }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting .c-name { text-decoration: none; color: var(--tmd-text); }
       :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-check.done.awaiting .c-num {
         background: var(--tmd-warn); border-color: var(--tmd-warn);
+      }
+      /* Amber as text: the raw warn token sits near 2:1 on the light
+         surfaces, so mix in the style's text colour (deeper on light, lifted
+         on dark) to keep the hue at 4.5:1 or better. */
+      :host([data-tm-design]:not([data-tm-design="classic"])) {
+        --tm-ink-warn: color-mix(in srgb, var(--tmd-warn) 40%, var(--tmd-text));
+      }
+      /* Undo chip: a tick (finished) or "⏳ Waiting" (a grown-up still has to
+         check it), then the undo arrow behind a hairline so the chip reads as
+         something to tap. */
+      .tmd-undochip { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex: none; }
+      .tmd-undochip .u-undo {
+        padding-inline-start: 5px;
+        border-inline-start: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-undochip:is(.done-chip, .c-done) {
+        border-color: color-mix(in srgb, currentColor 40%, transparent);
+      }
+      :host([data-tm-design]:not([data-tm-design="classic"])) .tmd-undochip.waiting-chip {
+        color: var(--tm-ink-warn);
+        background: color-mix(in srgb, var(--tmd-warn) 14%, var(--tmd-surface));
+        border-color: color-mix(in srgb, var(--tmd-warn) 55%, transparent);
+        font-size: 13px; padding-inline: 8px;
       }
       .tmd-chore.awaiting .num-badge ha-icon,
       .tmd-check.awaiting .c-num ha-icon { --mdc-icon-size: 16px; color: #3a2600; }
@@ -2632,10 +2668,6 @@ class TaskMateChildCard extends LitElement {
         margin-top: 3px; padding: 2px 8px; border-radius: var(--tmd-radius-sm);
         font-size: 12px; font-weight: 700; color: var(--tmd-text);
         background: color-mix(in srgb, var(--tmd-warn) 20%, transparent);
-      }
-      .tmd-awaiting ha-icon {
-        --mdc-icon-size: 14px;
-        color: color-mix(in srgb, var(--tmd-warn) 65%, var(--tmd-text));
       }
       /* Graphite strips chips to plain text; the waiting note follows suit
          so it never outweighs the chore name. */
@@ -3973,7 +4005,7 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: __tmNum(this.hass, r.chore._weeklyTarget) })
       : "";
     return html`
-      ${r.awaiting ? html`<div class="tmd-awaiting"><ha-icon icon="mdi:timer-sand"></ha-icon>${this._t("child.awaiting_approval")}</div>` : ""}
+      ${r.awaiting ? html`<div class="tmd-awaiting">${this._t("child.awaiting_approval")}</div>` : ""}
       ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
@@ -4047,11 +4079,26 @@ class TaskMateChildCard extends LitElement {
     const awaiting = r.awaiting ?? this._awaitingForAria(
       r.chore, r.child, this._isChoreDone(r.chore, r.child, r.todaysCompletions).completions);
     const name = this._t(awaiting ? "child.undo_waiting_aria" : "child.undo_done_aria", { chore: r.chore.name });
-    return html`<button class="chip ${cls || "done-chip"} tmd-undochip"
+    return html`<button class="chip ${cls || (r.awaiting ? "done-chip waiting-chip" : "done-chip")} tmd-undochip"
       ?disabled=${r.loading}
       title="${this._t("child.tap_to_undo")}"
       aria-label="${name}"
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
+  }
+
+  _undoArrow() {
+    return this.getAttribute?.("dir") === "rtl" ? "↪" : "↩";
+  }
+
+  // What the undo chip on a finished row says. "Done" is the open row's
+  // action word, so it never doubles as the state: a tick for a finished
+  // chore, "⏳ Waiting" for one a grown-up still has to check, and the undo
+  // arrow on both so it's clear a tap takes it back.
+  _designUndoLabel(r) {
+    const arrow = html`<span class="u-undo">${this._undoArrow()}</span>`;
+    return r.awaiting
+      ? html`<span class="u-state">⏳ ${this._t("child.waiting_chip")}</span>${arrow}`
+      : html`<span class="u-state">✓</span>${arrow}`;
   }
 
   /** Render a timed chore inside designed mode, reusing the classic timed card +
@@ -4079,7 +4126,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? this._designUndoChip(r, r.awaiting ? html`${this._t("child.done") || "Done"} ⏳` : html`${this._t("child.done") || "Done"}! 🎉`)
+            ? this._designUndoChip(r, this._designUndoLabel(r))
             : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "DONE"}` : (this._t("child.done") || "DONE"), "good")}
         </div>
         ${this._designBonus(r)}`)}
@@ -4103,7 +4150,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? this._designUndoChip(r, html`${this.getAttribute?.("dir") === "rtl" ? "↪" : "↩"}`, "q-undo")
+            ? this._designUndoChip(r, r.awaiting ? this._designUndoLabel(r) : this._undoArrow(), r.awaiting ? "q-undo waiting-chip" : "q-undo")
             : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"))}
         </div>
         ${this._designBonus(r)}`)}
@@ -4124,7 +4171,7 @@ class TaskMateChildCard extends LitElement {
             ${this._designChoreMeta(r)}
           </div>
           ${r.done
-            ? this._designUndoChip(r, r.awaiting ? `${this._t("child.done") || "Completed"} ⏳` : (this._t("child.done") || "Completed"), "c-done")
+            ? this._designUndoChip(r, this._designUndoLabel(r), r.awaiting ? "c-done waiting-chip" : "c-done")
             : html`${r.openEnded ? "" : html`<span class="chip c-pts">+${__tmNum(this.hass, r.points)}</span>`}
                 ${this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"), "sm")}`}
         </div>
@@ -5196,8 +5243,9 @@ class TaskMateChildCard extends LitElement {
             : emoji
               ? html`<span class="pre-tile-emoji" aria-hidden="true">${emoji}</span>`
               : html`<ha-icon icon="${icon}"></ha-icon>`}
+          ${isAwaiting ? html`<span class="pre-tile-wait"><ha-icon icon="mdi:timer-sand"></ha-icon></span>` : ''}
         </div>
-        ${isDone ? html`<div class="pre-tile-tick"><ha-icon icon="${isAwaiting ? 'mdi:timer-sand' : 'mdi:check-bold'}"></ha-icon></div>` : ''}
+        ${isDone && !isAwaiting ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
         ${!available
           ? html`<span class="pre-tile-badge lock" aria-hidden="true"><ha-icon icon="mdi:lock"></ha-icon></span>`
           : canUndo
