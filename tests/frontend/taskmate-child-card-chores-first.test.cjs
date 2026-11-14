@@ -71,8 +71,9 @@ for (const design of Object.keys(ROW)) {
     const markup = render(makeCard(design, { pre_reader: true }).render()).markup;
     const grid = markup.indexOf('class="pre-reader-grid"');
     assert.ok(grid > 0, "pre-reader grid rendered");
-    assert.ok(markup.indexOf('class="tmd-badges"') > grid);
-    assert.ok(markup.indexOf('class="tmd-next-badge"') > grid);
+    // Pre-reader mode may add a modifier class (fix/child-card-pre-reader-tiles).
+    assert.ok(markup.search(/class="tmd-badges[ "]/) > grid);
+    assert.ok(markup.search(/class="tmd-next-badge[ "]/) > grid);
   });
 }
 
