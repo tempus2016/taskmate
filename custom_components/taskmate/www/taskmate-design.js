@@ -226,7 +226,7 @@
 :host([data-tm-design="graphite"]) .tmd-hd .ic{border-radius:50%;background:rgba(255,255,255,.2)}
 :host([data-tm-design="graphite"]) .tmd-hd .pill{background:transparent;padding:0;font-weight:500;font-size:15px;letter-spacing:-.2px;text-transform:none}
 :host([data-tm-design="graphite"]) .tmd-hd .cnt{background:rgba(255,255,255,.22);font-weight:500;font-variant-numeric:tabular-nums}
-:host([data-tm-design="graphite"]) .tmd-hd .tmd-bal{background:rgba(255,255,255,.18);font-weight:600;letter-spacing:-.2px}
+:host([data-tm-design="graphite"]) .tmd-hd .tmd-bal{font-weight:600;letter-spacing:-.2px}
 
 /* Actions are near-black on light and near-white on dark. Deriving them from
    --tmd-text (not --tmd-accent) is what makes both directions invert. */

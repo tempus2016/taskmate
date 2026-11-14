@@ -2430,7 +2430,14 @@ class TaskMateChildCard extends LitElement {
         display: inline-flex; align-items: center; gap: 4px;
         font-family: var(--tmd-font-display); font-size: 15px; font-weight: 800;
         padding: 5px 11px; border-radius: 999px;
-        background: rgba(255,255,255,.25); color: #fff; white-space: nowrap;
+        /* A deeper shade of the header colour, not a white wash: white text
+           on a 25% white tint measured 2-3:1. Opaque, so a Playroom gradient
+           or season band under it can't lighten it; 45% header + black keeps
+           white text at 4.5:1 or better even on a white or yellow header.
+           The rgba line covers old WebKit without color-mix. */
+        background: rgba(0,0,0,.45);
+        background: color-mix(in srgb, var(--hd, var(--tmd-accent)) 45%, #000);
+        color: #fff; white-space: nowrap;
         font-variant-numeric: tabular-nums;
       }
       .tmd-bal ha-icon { --mdc-icon-size: 18px; }
@@ -2702,7 +2709,7 @@ class TaskMateChildCard extends LitElement {
         <ha-card>
           <div class="error-state">
             <ha-icon icon="mdi:account-alert"></ha-icon>
-            <div>${this._t('child.child_not_found', { child_id: this.config.child_id })}</div>
+            <div>${this._t('child.child_not_found', { child_id: this.config.child_id })}<br>${this._t('child.child_not_found_hint')}</div>
           </div>
         </ha-card>
       `;
@@ -3231,8 +3238,8 @@ class TaskMateChildCard extends LitElement {
 
     if (!child) {
       return html`<ha-card class="tmd" style="--hd:${hd}">
-        ${header(this._t("child.child_not_found", { child_id: this.config.child_id }))}
-        <div class="tmd-bd"><div class="tmd-empty">${this._t("child.child_not_found", { child_id: this.config.child_id })}</div></div>
+        ${header(this._t("child.todays_chores"))}
+        <div class="tmd-bd"><div class="tmd-empty">${this._t("child.child_not_found", { child_id: this.config.child_id })}<br>${this._t("child.child_not_found_hint")}</div></div>
       </ha-card>`;
     }
 
@@ -3425,9 +3432,18 @@ class TaskMateChildCard extends LitElement {
   _designHeaderFull(child, design, remaining, total, tone, pendingPoints, season = null) {
     const choresTitle = this._t("child.chores_title", { name: child.name });
     const title = design === "console" ? choresTitle.toUpperCase() : choresTitle;
-    const sub = design === "console"
-      ? (child.level ? `${this._t("child.level_label", { level: child.level })} · ${this._t("child.console_active", { count: __tmNum(this.hass, remaining) })}` : this._t("child.console_active", { count: __tmNum(this.hass, remaining) }))
-      : total > 0 ? _ltrNums(this._t("child.remaining_of_total", { remaining: __tmNum(this.hass, remaining), total: __tmNum(this.hass, total) })) : "";
+    // Everything done reads as a win ("All 5 done"), not "0 of 5 left".
+    const allDone = total > 0 && remaining === 0
+      ? this._t(total === 1 ? "child.remaining_all_done_one" : "child.remaining_all_done", { total: __tmNum(this.hass, total) })
+      : "";
+    const count = total > 0
+      ? (allDone || (design === "console"
+        ? this._t("child.console_active", { count: __tmNum(this.hass, remaining) })
+        : _ltrNums(this._t("child.remaining_of_total", { remaining: __tmNum(this.hass, remaining), total: __tmNum(this.hass, total) }))))
+      : "";
+    const sub = design === "console" && child.level
+      ? [this._t("child.level_label", { level: child.level }), count].filter(Boolean).join(" · ")
+      : count;
     // Avatar picker: classic makes the avatar tappable; the designed header
     // must too, or the picker only ever works on classic. Same eligibility
     // rule (allow_avatar_change + more than one unlocked option).
@@ -3606,7 +3622,7 @@ class TaskMateChildCard extends LitElement {
           </div>
           ${r.done
             ? this._designUndoChip(r, html`${this.getAttribute?.("dir") === "rtl" ? "↪" : "↩"}`, "q-undo")
-            : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "CLAIM"}` : (this._t("child.done") || "CLAIM"))}
+            : this._designDoneBtn(r, r.photo ? `📷 ${this._t("child.done") || "Done"}` : (this._t("child.done") || "Done"))}
         </div>
         ${this._designBonus(r)}`)}
     </div>`;
@@ -4862,7 +4878,7 @@ class TaskMateChildCard extends LitElement {
         : setTimeLocked && chore._setTimeState === 'missed'
           ? this._t('child.set_time_missed')
         : timeElapsed
-          ? this._t('child.time_has_passed')
+          ? this._timeElapsedReason(chore)
           : firstComeLocked
             ? (chore._firstComeCompletedByName
                 ? this._t('child.claimed_by_another', { name: chore._firstComeCompletedByName })
@@ -4872,7 +4888,9 @@ class TaskMateChildCard extends LitElement {
           // A recurring chore still in its cooldown is refused like every
           // other lock, so its tooltip must not invite a tap (#771).
           : recurrenceLocked
-            ? this._t('child.recurrence_locked')
+            ? (chore._recurrenceNextOpen
+              ? this._t('child.recurrence_back_on', { day: this._dayLabel(chore._recurrenceNextOpen) })
+              : this._t('child.recurrence_locked'))
           : setTimeLocked
             ? (chore._setTimeEntry && chore._setTimeEntry.opens
                 ? this._t('child.set_time_opens', { time: __tmClock(this.hass, chore._setTimeEntry.opens) })
@@ -5003,7 +5021,7 @@ class TaskMateChildCard extends LitElement {
           ? this._t('child.set_time_opens', { time: clk(chore._setTimeEntry.opens) })
           : '';
     }
-    if (locks.timeElapsed) return this._t('child.time_has_passed');
+    if (locks.timeElapsed) return this._timeElapsedReason(chore);
     if (locks.firstComeLocked) {
       return chore._firstComeCompletedByName
         ? this._t('child.claimed_by_another', { name: chore._firstComeCompletedByName })
@@ -5016,6 +5034,21 @@ class TaskMateChildCard extends LitElement {
       return chore.recurrence ? chore.recurrence.replace(/_/g, ' ') : this._t('child.recurring');
     }
     return '';
+  }
+
+  /**
+   * Why a past period's chore can't be ticked any more: "Too late for today —
+   * closed at 12:00", from the period's end plus any claim allowance (the same
+   * window _isChoreInClaimWindow uses). Without a known end, "Too late for today".
+   */
+  _timeElapsedReason(chore) {
+    const hours = this._getPeriodHours(chore?.time_category);
+    if (!hours) return this._t('child.time_has_passed');
+    const allowance = Math.max(0, parseInt(chore.claim_allowance_minutes, 10) || 0);
+    const end = Math.round(hours[1] * 60) + allowance;
+    if (!(end > 0 && end < 24 * 60)) return this._t('child.time_has_passed');
+    const hhmm = `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`;
+    return this._t('child.time_closed_at', { time: __tmClock(this.hass, hhmm) });
   }
 
   _renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, choreIndex) {
