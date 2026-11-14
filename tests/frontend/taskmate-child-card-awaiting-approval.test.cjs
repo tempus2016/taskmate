@@ -68,6 +68,8 @@ function makeCard({ chores = [chore()], completions = [], config = {}, design, a
   };
   card._loading = {};
   card._optimisticCompletions = {};
+  // feat/child-card-all-done folds a fully finished list; keep the rows in view.
+  card._allDoneOpen = true;
   card.undone = [];
   card._handleUndo = (c) => card.undone.push(c.id);
   return card;
