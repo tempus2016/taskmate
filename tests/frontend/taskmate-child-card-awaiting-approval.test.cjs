@@ -98,6 +98,9 @@ for (const design of DESIGNS) {
     assert.ok(tile.attrs.includes(WAITING), "its name says it is waiting");
     assert.match(view.markup, /mdi:timer-sand/);
     await tile.click();
+    // fix/child-card-pre-reader-tiles makes undo a deliberate second tap.
+    if (card.undone.length === 0) await render(card.render()).controls
+      .find((c) => c.tag === "button" && /class="pre-tile\b/.test(c.attrs)).click();
     assert.deepEqual(card.undone, ["zz"], "tapping a waiting tile still undoes it");
   });
 
