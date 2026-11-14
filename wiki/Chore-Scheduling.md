@@ -259,6 +259,8 @@ Set it in the card editor under **First-Come Chores — When Claimed**, or in YA
 
 Pre-reader tiles honour it too: a claimed chore is a locked tile that does nothing when tapped.
 
+On the [kiosk](Kiosk-Mode.md#celebrations), the child who finishes a first-come chore first gets a **You got it first!** popup. If the chore needs approval, it tells them the points come once a grown-up checks it.
+
 Timed-task cards honour it too: **Start** and **Resume** are disabled while the chore is claimed, and a session already running can still be paused or finished.
 
 > The badge/short label shown in the panel is "First come"; the full mode description reads *"First come — first child to finish wins; it hides for the rest."*

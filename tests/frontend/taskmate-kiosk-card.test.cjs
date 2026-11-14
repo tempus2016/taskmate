@@ -436,6 +436,108 @@ test("a failed completion doesn't celebrate", () => withSounds(async (played) =>
   assert.equal(card._popup, null);
 }));
 
+// ── first-come win ("You got it first!") ────────────────────────────────────
+
+const grabStatus = { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["bins", "dishes"] }] };
+const winTitle = () => new RegExp(localize("kiosk.win_title").replace("!", "\\!"));
+
+test("winning a first-come chore shows the win popup with the points", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  assert.equal(card._popup.won, true);
+  assert.equal(card._popup.check, false);
+  const { markup } = view(card);
+  assert.match(markup, /km-pop-won/);
+  assert.match(markup, winTitle());
+  assert.match(markup, new RegExp(localize("kiosk.win_message")));
+  assert.match(markup, /\+10/);
+  assert.doesNotMatch(markup, new RegExp(localize("child.celebration_title")));
+  assert.ok(card._confetti.length, "the usual confetti still drops");
+}));
+
+test("a won first-come chore that needs approval says the points come after the check", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come" }), chore("dishes")],
+    status: grabStatus,
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  const { markup } = view(card);
+  assert.match(markup, winTitle());
+  assert.match(markup, new RegExp(localize("kiosk.win_check")));
+  assert.doesNotMatch(markup, /\+10/, "no points promised before a grown-up checks");
+}));
+
+test("a first-come slot someone already took today gets the normal popup", () => withSounds(async () => {
+  for (const who of ["malia", "__parent__", "vaiha"]) {
+    const card = await childView({
+      chores: [chore("bins", { assignment_mode: "first_come", daily_limit: 3, requires_approval: false }), chore("dishes")],
+      status: grabStatus,
+      completions: [{ completion_id: "c0", chore_id: "bins", child_id: who, approved: true, completed_at: new Date().toISOString() }],
+    });
+    await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+    assert.equal(card._popup.won, false, who);
+    assert.match(view(card).markup, new RegExp(localize("child.celebration_title")), who);
+  }
+}));
+
+test("a bonus subtask on a first-come chore doesn't spoil the win", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+    completions: [{ completion_id: "b1", chore_id: "bins", child_id: "malia", bonus_subtask_id: "x", approved: true }],
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  assert.equal(card._popup.won, true);
+}));
+
+test("normal chores, offline taps and failed taps never claim a win", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+  });
+  const vaiha = card._entry("vaiha").child;
+  const [bins, dishes] = card.hass.states[ENTITY].attributes.chores;
+  await card._complete(vaiha, dishes);
+  assert.equal(card._popup.won, false);
+  // Offline: the tap is queued and may yet lose the race, so no win.
+  card.hass.connection = { connected: false };
+  await card._complete(vaiha, bins);
+  assert.equal(card._popup.won, false);
+  card._queue = [];
+  card._saveQueue();
+  card.hass.connection = { connected: true };
+  card._popup = null;
+  card.hass.callService = async () => { throw new Error("Chore 'Bins' was already completed by another child."); };
+  await card._complete(vaiha, bins);
+  assert.equal(card._popup, null);
+}));
+
+test("the win popup's medal animates once and stops under reduced motion", () => {
+  const styles = render(KioskCard.styles).markup;
+  const rule = styles.slice(styles.indexOf(".km-pop-medal {"), styles.indexOf("}", styles.indexOf(".km-pop-medal {")));
+  assert.match(rule, /animation: km-star 0\.6s ease 1;/);
+  assert.doesNotMatch(rule, /infinite/);
+  const reduced = styles.slice(styles.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.match(reduced.slice(0, reduced.indexOf("}\n", reduced.indexOf("animation: none"))), /\.km-pop-medal/);
+});
+
+for (const design of DESIGNS) {
+  test(`${design}: the first-come win popup renders`, () => withSounds(async () => {
+    const card = await childView({
+      config: { card_design: design },
+      chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+      status: grabStatus,
+    });
+    await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+    const { markup } = view(card);
+    assert.match(markup, /km-pop-won/);
+    assert.match(markup, winTitle());
+  }));
+}
+
 test("the all-done overlay replaces the chore popup; the picker clears both", () => withSounds(async () => {
   const card = await childView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });
   await view(card).control("km-done").click();

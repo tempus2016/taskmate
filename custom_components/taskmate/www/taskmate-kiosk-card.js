@@ -1046,6 +1046,9 @@ class TaskMateKioskCard extends LitElement {
     }
     this._busy = String(chore.id);
     this._armCelebrate = true;
+    // Decided before the call: once it lands, this child's own completion
+    // is in today's list too.
+    const won = this._firstWin(chore);
     try {
       // The per-chore button first, like the child card, so HA automations on
       // it fire; the service when the entity isn't registered yet. Both run
@@ -1062,7 +1065,7 @@ class TaskMateKioskCard extends LitElement {
           ...(chore._setTime ? { time_id: chore._setTime.id } : {}),
         });
       }
-      this._cheer(chore, child);
+      this._cheer(chore, child, won);
     } catch (err) {
       if (this._isConnectionError(err)) {
         this._enqueue(child, chore);
@@ -1529,16 +1532,32 @@ class TaskMateKioskCard extends LitElement {
 
   /** The child card's reward for a tap: the chore's sound, the child's own
    *  celebration (confetti unless they picked another), a popup. */
-  _cheer(chore, child) {
+  _cheer(chore, child, won = false) {
     if (this.config.play_sounds !== false) {
       this._playSound(chore.completion_sound || this.config.default_sound || "coin");
     }
     if (this.config.show_confetti !== false) this._spawnConfetti(child);
     if (this.config.show_completion_popup !== false) {
-      this._popup = { points: this._pointsFor(chore) };
+      // A won race gets its own popup. With approval on, the child has the
+      // slot but not the points yet, so it says so instead of "+10".
+      this._popup = {
+        points: this._pointsFor(chore),
+        won: !!won,
+        check: !!won && chore.requires_approval !== false,
+      };
       clearTimeout(this._popupTimer);
       this._popupTimer = setTimeout(() => { this._popup = null; }, POPUP_MS);
     }
+  }
+
+  /** A first-come chore nobody has done yet today (for a set time: that
+   *  time), so a tap that goes through is the first one: the child won. */
+  _firstWin(chore) {
+    if (chore.assignment_mode !== "first_come") return false;
+    const base = String(chore._baseId || chore.id);
+    const time = chore._setTime ? chore._setTime.id : null;
+    return !(this._attrs().todays_completions || []).some(c => String(c.chore_id) === base
+      && !c.bonus_subtask_id && (!time || !c.time_id || c.time_id === time));
   }
 
   /** Shared engine in taskmate-sounds.js; custom sounds (#856) resolve
@@ -1955,12 +1974,19 @@ class TaskMateKioskCard extends LitElement {
           </div>` : ""}
         ${this._popup && !this._celebrating ? html`
           <div class="km-idle km-pop" role="status" @click=${() => { this._popup = null; }}>
+            ${this._popup.won ? html`
+            <div class="km-pop-card km-pop-won">
+              <div class="km-pop-medal" aria-hidden="true"><ha-icon icon="mdi:medal"></ha-icon></div>
+              <h2>${this._t("kiosk.win_title")}</h2>
+              <p>${this._t(this._popup.check ? "kiosk.win_check" : "kiosk.win_message")}</p>
+              ${showPoints && !this._popup.check ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
+            </div>` : html`
             <div class="km-pop-card">
               <div class="km-pop-stars">🌟🌟🌟</div>
               <h2>${this._t("child.celebration_title")}</h2>
               <p>${this._t("child.celebration_message")}</p>
               ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
-            </div>
+            </div>`}
           </div>` : ""}
         ${this._celebrating ? html`
           <div class="km-idle km-party">
@@ -2845,13 +2871,29 @@ class TaskMateKioskCard extends LitElement {
         font-size: 1.8rem; font-weight: 800; color: var(--tmd-gold, #e67e22);
       }
       .km-pop-pts ha-icon { --mdc-icon-size: 28px; }
+      /* Won a first-come race: the same dashed border and still glow as the
+         "up for grabs" row it came from, and a medal that pops in once. */
+      .km-pop-card.km-pop-won {
+        border: 2px dashed var(--tmd-warn, #e67e22);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 0 0 4px color-mix(in srgb, var(--tmd-warn, #e67e22) 22%, transparent);
+        max-inline-size: min(520px, 100%);
+      }
+      .km-pop-won h2 { color: var(--tmd-text, var(--primary-text-color)); text-wrap: balance; }
+      .km-pop-medal {
+        inline-size: 84px; block-size: 84px; margin: 0 auto 14px; border-radius: 50%;
+        display: grid; place-items: center;
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 22%, transparent);
+        border: 2px solid var(--tmd-warn, #e67e22);
+        animation: km-star 0.6s ease 1;
+      }
+      .km-pop-medal ha-icon { --mdc-icon-size: 52px; color: var(--tmd-text, var(--primary-text-color)); }
       .km-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
       @keyframes km-fade { from { opacity: 0; } to { opacity: 1; } }
       @keyframes km-pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
       @keyframes km-star { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.2) rotate(10deg); } }
       @media (prefers-reduced-motion: reduce) {
         .km-confetti { display: none; }
-        .km-pop, .km-pop-card, .km-pop-stars { animation: none; }
+        .km-pop, .km-pop-card, .km-pop-stars, .km-pop-medal { animation: none; }
       }
 
       .km-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--tmd-dim, var(--secondary-text-color)); }

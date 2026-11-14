@@ -94,9 +94,10 @@ Tapping **Done** on the kiosk gets the same reward as on the [child card](Dashbo
 - **Sound.** The chore's own [completion sound](Completion-Sounds.md), built-in or uploaded. Chores without one play `default_sound` (a coin, unless you change it).
 - **Confetti** over the card.
 - **A popup**: "AWESOME! You did it!" with the points earned. It closes by itself after 2.5 seconds, or on a tap. If that chore was the child's last one, the "all done" celebration takes over instead.
+- **A win, for a first-come chore.** When a child is the first to finish an **Up for grabs** [first-come chore](Chore-Scheduling.md#first-come-first-served) today, the popup says **You got it first!** instead, with a medal and the same dashed border as the row. If the chore needs a grown-up's check, it says **A grown-up will check it, then the points are yours** rather than showing the points. A child who takes a later slot of a shared daily limit, or whose tap was saved while the tablet was offline, gets the usual popup.
 - **Undo** plays the undo sound, but only once the undo has actually gone through.
 
-Nothing celebrates if the tick doesn't go through. On a device set to reduce motion, there is no confetti and the popup appears without animating.
+Nothing celebrates if the tick doesn't go through. On a device set to reduce motion, there is no confetti and the popup (and the win medal) appears without animating.
 
 Each of the three can be switched off in the card's visual editor (**Sounds**, **Confetti**, **Celebration popup**) or in YAML. See [Configuration](#configuration).
 
@@ -248,7 +249,7 @@ These don't count against "all done", so a child with one of them still gets the
 
 Chores that need approval show **A grown-up will check** and change to **Waiting for a grown-up** once ticked. A [teamwork chore](Teamwork-Chores.md) shows **Waiting for your team** after the child joins. If the [child undo window](Child-Undo-Window.md) is switched on, a child can take back a mistaken tap from the kiosk too.
 
-A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border, a tinted row and a soft glow, to tell it apart from the child's own chores.
+A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border, a tinted row and a soft glow, to tell it apart from the child's own chores. The child who gets there first sees **You got it first!** (see [Celebrations](#celebrations)).
 
 Once someone finishes it, the other children still see it, dimmed, with **Malia got it first** (or **A grown-up did it**), so they know where it went. It doesn't count towards their progress, so they can still finish the day, and **Completed chores: hide** hides it along with their done chores.
 
