@@ -248,7 +248,9 @@ These don't count against "all done", so a child with one of them still gets the
 
 Chores that need approval show **A grown-up will check** and change to **Waiting for a grown-up** once ticked. A [teamwork chore](Teamwork-Chores.md) shows **Waiting for your team** after the child joins. If the [child undo window](Child-Undo-Window.md) is switched on, a child can take back a mistaken tap from the kiosk too.
 
-A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border and a tinted row, to tell it apart from the child's own chores.
+A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border, a tinted row and a soft glow, to tell it apart from the child's own chores.
+
+Once someone finishes it, the other children still see it, dimmed, with **Malia got it first** (or **A grown-up did it**), so they know where it went. It doesn't count towards their progress, so they can still finish the day, and **Completed chores: hide** hides it along with their done chores.
 
 ![A first-come chore on the kiosk: dashed row and tag, and one that also needs a grown-up's check](images/kiosk-up-for-grabs.png)
 

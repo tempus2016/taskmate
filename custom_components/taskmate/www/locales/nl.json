@@ -3360,6 +3360,8 @@
   "kiosk.waiting": "Wacht op een volwassene",
   "kiosk.needs_check": "Een volwassene kijkt na",
   "kiosk.up_for_grabs": "Wie het eerst komt, wint",
+  "kiosk.taken_by": "{name} was je voor",
+  "kiosk.taken_by_grownup": "Een volwassene heeft het gedaan",
   "kiosk.do_on_phone": "Doe deze op je telefoon",
   "kiosk.phone_group": "Doe deze op je telefoon",
   "kiosk.nothing_here": "Hier vandaag niets om af te vinken",
