@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "Libera per tutti: vince il primo",
   "kiosk.taken_by": "L'ha presa prima {name}",
   "kiosk.taken_by_grownup": "L'ha fatta un adulto",
+  "kiosk.left_today": "Ne restano {count} oggi",
+  "kiosk.left_today_one": "Ne resta {count} oggi",
   "kiosk.do_on_phone": "Questa falla dal telefono",
   "kiosk.phone_group": "Queste falle dal telefono",
   "kiosk.nothing_here": "Niente da spuntare qui oggi",

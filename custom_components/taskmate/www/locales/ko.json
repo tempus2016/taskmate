@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "선착순 — 먼저 하는 사람이 임자",
   "kiosk.taken_by": "먼저 한 사람: {name}",
   "kiosk.taken_by_grownup": "어른이 했어요",
+  "kiosk.left_today": "오늘 {count}번 남음",
+  "kiosk.left_today_one": "오늘 {count}번 남음",
   "kiosk.do_on_phone": "이건 휴대폰에서 해요",
   "kiosk.phone_group": "이것들은 휴대폰에서 해요",
   "kiosk.nothing_here": "오늘 여기서 체크할 일이 없어요",

@@ -3301,6 +3301,8 @@
   "kiosk.up_for_grabs": "Kto pierwszy, ten lepszy",
   "kiosk.taken_by": "Zrobione przez: {name}",
   "kiosk.taken_by_grownup": "Zrobione przez dorosłego",
+  "kiosk.left_today": "Zostało dziś: {count}",
+  "kiosk.left_today_one": "Zostało dziś: {count}",
   "kiosk.do_on_phone": "To zrób na swoim telefonie",
   "kiosk.phone_group": "Te zrób na swoim telefonie",
   "kiosk.nothing_here": "Dziś nie ma tu nic do odhaczenia",

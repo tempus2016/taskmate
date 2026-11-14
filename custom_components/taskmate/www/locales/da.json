@@ -3301,6 +3301,8 @@
   "kiosk.up_for_grabs": "Først til mølle — den første vinder",
   "kiosk.taken_by": "{name} nåede det først",
   "kiosk.taken_by_grownup": "En voksen gjorde det",
+  "kiosk.left_today": "{count} tilbage i dag",
+  "kiosk.left_today_one": "{count} tilbage i dag",
   "kiosk.do_on_phone": "Gør denne på din telefon",
   "kiosk.phone_group": "Gør disse på din telefon",
   "kiosk.nothing_here": "Intet at sætte flueben ved her i dag",

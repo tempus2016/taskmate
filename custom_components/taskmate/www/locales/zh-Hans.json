@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "先到先得 — 第一个完成的赢",
   "kiosk.taken_by": "{name} 先拿到了",
   "kiosk.taken_by_grownup": "大人已经做了",
+  "kiosk.left_today": "今天还剩 {count} 次",
+  "kiosk.left_today_one": "今天还剩 {count} 次",
   "kiosk.do_on_phone": "这项请在手机上完成",
   "kiosk.phone_group": "这些请在手机上完成",
   "kiosk.nothing_here": "今天这里没有要勾选的",

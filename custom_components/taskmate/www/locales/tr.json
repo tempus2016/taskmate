@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "Kapan alır — ilk gelen kazanır",
   "kiosk.taken_by": "İlk {name} aldı",
   "kiosk.taken_by_grownup": "Bir büyük yaptı",
+  "kiosk.left_today": "Bugün {count} kaldı",
+  "kiosk.left_today_one": "Bugün {count} kaldı",
   "kiosk.do_on_phone": "Bunu telefonunda yap",
   "kiosk.phone_group": "Bunları telefonunda yap",
   "kiosk.nothing_here": "Bugün burada işaretlenecek bir şey yok",

@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "Ledig — först till kvarn",
   "kiosk.taken_by": "{name} hann först",
   "kiosk.taken_by_grownup": "En vuxen gjorde den",
+  "kiosk.left_today": "{count} kvar i dag",
+  "kiosk.left_today_one": "{count} kvar i dag",
   "kiosk.do_on_phone": "Gör den här på din mobil",
   "kiosk.phone_group": "Gör de här på din mobil",
   "kiosk.nothing_here": "Inget att bocka av här idag",

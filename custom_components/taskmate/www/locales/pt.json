@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "Quem chegar primeiro leva",
   "kiosk.taken_by": "{name} chegou primeiro",
   "kiosk.taken_by_grownup": "Feito por um adulto",
+  "kiosk.left_today": "Hoje faltam {count}",
+  "kiosk.left_today_one": "Hoje falta {count}",
   "kiosk.do_on_phone": "Faz esta no teu telemóvel",
   "kiosk.phone_group": "Faz estas no teu telemóvel",
   "kiosk.nothing_here": "Nada para marcar aqui hoje",

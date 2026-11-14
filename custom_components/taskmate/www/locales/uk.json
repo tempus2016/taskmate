@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "Хто перший — того й завдання",
   "kiosk.taken_by": "Уже зайнято: {name}",
   "kiosk.taken_by_grownup": "Зробив дорослий",
+  "kiosk.left_today": "Залишилось сьогодні: {count}",
+  "kiosk.left_today_one": "Залишилось сьогодні: {count}",
   "kiosk.do_on_phone": "Це зроби на своєму телефоні",
   "kiosk.phone_group": "Це зроби на своєму телефоні",
   "kiosk.nothing_here": "Сьогодні тут нічого відмічати",

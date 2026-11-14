@@ -250,6 +250,8 @@ Chores that need approval show **A grown-up will check** and change to **Waiting
 
 A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border, a tinted row and a soft glow, to tell it apart from the child's own chores.
 
+When the chore has a [shared daily limit](Chore-Scheduling.md#first-come-first-served) above 1, the tag also says how many are still up for grabs today, for example **2 left today**. Every child in the pool uses up the same slots, and so does a **Parent did it** for the whole pool. The count drops as the slots go. Once the last one is taken, the count goes: the row shows done if the child took part, or who got it, as below. A chore with a limit of 1 shows no count.
+
 Once someone finishes it, the other children still see it, dimmed, with **Malia got it first** (or **A grown-up did it**), so they know where it went. It doesn't count towards their progress, so they can still finish the day, and **Completed chores: hide** hides it along with their done chores.
 
 ![A first-come chore on the kiosk: dashed row and tag, and one that also needs a grown-up's check](images/kiosk-up-for-grabs.png)

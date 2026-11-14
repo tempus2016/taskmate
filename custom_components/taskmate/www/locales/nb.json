@@ -3362,6 +3362,8 @@
   "kiosk.up_for_grabs": "Førstemann til mølla — den første vinner",
   "kiosk.taken_by": "{name} rakk det først",
   "kiosk.taken_by_grownup": "En voksen gjorde det",
+  "kiosk.left_today": "{count} igjen i dag",
+  "kiosk.left_today_one": "{count} igjen i dag",
   "kiosk.do_on_phone": "Gjør denne på telefonen din",
   "kiosk.phone_group": "Gjør disse på telefonen din",
   "kiosk.nothing_here": "Ingenting å krysse av her i dag",

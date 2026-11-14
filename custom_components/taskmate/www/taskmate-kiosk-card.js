@@ -305,6 +305,16 @@ class TaskMateKioskCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  // Count strings have a `<key>_one` twin. Which form a number takes follows
+  // the language (French and Brazilian Portuguese say "1" and "0" alike), not a
+  // bare `=== 1`. Intl's "pt" is Brazilian; HA's "pt" is European.
+  _tn(key, count, params) {
+    const lang = this.hass?.language === "pt" ? "pt-PT" : this.hass?.language || "en";
+    let one;
+    try { one = new Intl.PluralRules(lang).select(Number(count)) === "one"; } catch { one = Number(count) === 1; }
+    return this._t(one ? `${key}_one` : key, params);
+  }
+
   _attrs() {
     return (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
       || this.hass?.states?.[this.config.entity]?.attributes || {};
@@ -1112,6 +1122,33 @@ class TaskMateKioskCard extends LitElement {
 
   _queued(childId, choreId) {
     return this._queue.some(q => q.child_id === String(childId) && (q.key || q.chore_id) === String(choreId));
+  }
+
+  /**
+   * First come with a shared daily limit above 1 (#1159): how many of today's
+   * completions are still up for grabs, or null when there's nothing to say
+   * (a single-winner race, or none left). Counted the way the server fills
+   * the quota: every pool child's completion today and a pool-wide "Parent
+   * did it", but not one a grown-up did for a single child (#1096). A tap
+   * held on this tablet while offline already takes a slot.
+   */
+  _grabsLeft(chore, childId) {
+    const limit = Number(chore.daily_limit) || 1;
+    if (chore.assignment_mode !== "first_come" || limit <= 1 || chore._setTime) return null;
+    const assigned = Array.isArray(chore.assigned_to) ? chore.assigned_to.map(String) : [];
+    const pool = assigned.length ? new Set(assigned) : null;
+    let used = 0;
+    for (const c of this._attrs().todays_completions || []) {
+      if (String(c.chore_id) !== String(chore.id) || c.bonus_subtask_id) continue;
+      if (c.child_id === "__parent__") {
+        if (!c.for_child_id) used += 1;
+      } else if (!pool || pool.has(String(c.child_id))) {
+        used += 1;
+      }
+    }
+    if (this._queued(childId, chore.id)) used += 1;
+    const remaining = limit - used;
+    return remaining > 0 ? remaining : null;
   }
 
   async _flushQueue() {
@@ -1983,6 +2020,7 @@ class TaskMateKioskCard extends LitElement {
     // it, so mark it as a race rather than as this child's own chore.
     const upForGrabs = chore.assignment_mode === "first_come" && !dimMissed
       && (state === "todo" || state === "elsewhere" || state === "later");
+    const grabsLeft = upForGrabs ? this._grabsLeft(chore, child.id) : null;
     let action;
     if (dimMissed) {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><span>${this._t("kiosk.missed")}</span></div>`;
@@ -2025,7 +2063,8 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-row-meta">
             <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, this._pointsFor(chore, child.id))}</span>
             ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
-            ${upForGrabs ? html`<span class="km-tag km-grab-tag"><ha-icon icon="mdi:hand-back-right"></ha-icon>${this._t("kiosk.up_for_grabs")}</span>` : ""}
+            ${upForGrabs ? html`<span class="km-tag km-grab-tag"><ha-icon icon="mdi:hand-back-right"></ha-icon>${this._t("kiosk.up_for_grabs")}${grabsLeft !== null
+              ? html`<span class="km-grab-left">${_ltrNums(this._tn("kiosk.left_today", grabsLeft, { count: __tmNum(this.hass, grabsLeft) }))}</span>` : ""}</span>` : ""}
             ${needsCheck ? html`<span class="km-tag"><ha-icon icon="mdi:account-check-outline"></ha-icon>${this._t("kiosk.needs_check")}</span>` : ""}
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
                                       aria-label="${this._t("child.undo_named", { name: chore.name })}"
@@ -2606,6 +2645,13 @@ class TaskMateKioskCard extends LitElement {
         color: var(--tmd-text, var(--primary-text-color));
         border: 1.5px dashed var(--tmd-warn, #e67e22);
         padding: 1px 8px;
+      }
+      /* "2 left today" on a race with a shared daily limit: the same tag,
+         set off by a divider so it reads as a second fact. */
+      .km-grab-left {
+        font-variant-numeric: tabular-nums;
+        padding-inline-start: 6px; margin-inline-start: 2px;
+        border-inline-start: 1.5px solid color-mix(in srgb, var(--tmd-warn, #e67e22) 70%, transparent);
       }
       .km-row-icon {
         width: 50px; height: 50px; min-width: 50px; border-radius: 50%;
