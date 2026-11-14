@@ -113,3 +113,73 @@ test("classic open-ended row names who sets the points", () => {
   const { markup } = render(makeCard("classic", TWO).render());
   assert.ok(markup.includes(localize("child.open_ended_points")));
 });
+
+// ── Round 2: copy that says what it means ─────────────────────────────────
+
+const DONE_TWO = (design) => {
+  const card = makeCard(design, TWO);
+  card.hass.states[ENTITY].attributes.todays_completions = ["a", "b"].map((id) => ({
+    chore_id: id, child_id: "kid1", approved: true, completed_at: new Date().toISOString(),
+  }));
+  return card;
+};
+
+for (const design of DESIGNED) {
+  test(`${design}: everything done says "All 2 done", not "0 of 2 left"`, () => {
+    const { markup } = render(DONE_TWO(design).render());
+    assert.ok(markup.includes(localize("child.remaining_all_done", { total: 2 })));
+    assert.ok(!markup.includes(localize("child.remaining_of_total", { remaining: 0, total: 2 })));
+    assert.ok(!markup.includes(localize("child.console_active", { count: 0 })));
+  });
+}
+
+test("a single finished chore says \"All done\"", () => {
+  const card = makeCard("cleanpro", [chore({ id: "a" })]);
+  card.hass.states[ENTITY].attributes.todays_completions = [
+    { chore_id: "a", child_id: "kid1", approved: true, completed_at: new Date().toISOString() },
+  ];
+  const { markup } = render(card.render());
+  assert.ok(markup.includes(localize("child.remaining_all_done_one", { total: 1 })));
+});
+
+test("console counts what's left in plain words, after the level", () => {
+  const { markup } = render(makeCard("console", TWO).render());
+  const want = `${localize("child.level_label", { level: 29 })} · ${localize("child.console_active", { count: 2 })}`;
+  assert.ok(markup.includes(want), `expected "${want}"`);
+  assert.doesNotMatch(markup, /ACTIVE|CLAIM/);
+});
+
+test("console with no chores leaves the count out", () => {
+  const { markup } = render(makeCard("console", []).render());
+  assert.ok(!markup.includes(localize("child.console_active", { count: 0 })));
+});
+
+test("console button never falls back to \"CLAIM\"", () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-child-card.js"), "utf8");
+  assert.doesNotMatch(src, /"CLAIM"/);
+});
+
+test("the balance pill sits on a darkened header shade, not a white wash", () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-child-card.js"), "utf8");
+  const rule = src.match(/\.tmd-bal \{[\s\S]*?\}/)[0];
+  assert.match(rule, /color-mix\(in srgb, var\(--hd, var\(--tmd-accent\)\) 45%, #000\)/);
+  assert.match(rule, /background: rgba\(0,0,0,\.45\)/, "old-WebKit fallback");
+  assert.doesNotMatch(rule, /rgba\(255,255,255/);
+  const design = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-design.js"), "utf8");
+  const graphite = design.match(/graphite"\]\) \.tmd-hd \.tmd-bal\{[^}]*\}/)[0];
+  assert.doesNotMatch(graphite, /background/, "Graphite must not put the white wash back");
+});
+
+for (const design of ["classic", ...DESIGNED]) {
+  test(`${design}: a missing child is reported once, with a hint for the parent`, () => {
+    const card = makeCard(design, TWO);
+    card.config = { ...card.config, child_id: "nobody" };
+    const { markup } = render(card.render());
+    const msg = localize("child.child_not_found", { child_id: "nobody" });
+    assert.equal(markup.split(msg).length - 1, 1, "shown exactly once");
+    assert.ok(markup.includes(localize("child.child_not_found_hint")));
+  });
+}

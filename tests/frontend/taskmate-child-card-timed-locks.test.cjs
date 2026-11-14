@@ -183,7 +183,7 @@ test("the timed card takes its locks from _choreLocks", () => {
 
 const REASON_TEXT = {
   "before its time period (locked preview)": [localize("child.chore_locked_until", { time: "17:00" }), true],
-  "past its time window (elapsed, dim)": [localize("child.time_has_passed"), true],
+  "past its time window (elapsed, dim)": [localize("child.time_closed_at", { time: "12:00" }), true],
   "not due today (due_days_mode dim)": [localize("child.not_scheduled_for_today"), true],
   // The translated cadence (fix/recurrence-label-i18n), not the raw key.
   "in its recurrence cooldown": [localize("child.recurrence_every_n_days", { count: 3 }), true],
