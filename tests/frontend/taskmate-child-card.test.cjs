@@ -298,8 +298,8 @@ test("weekly target: under the quota a multi-per-day chore stays outstanding", (
 // widest row's min-content sets the column, and a nowrap name makes that the
 // whole name, so the Done button slid off a phone-width card. There is no
 // layout engine here, so pin the two halves of the fix: each designed list
-// renders into a container whose column can shrink, and the name still
-// truncates rather than wrapping.
+// renders into a container whose column can shrink, and the name clamps to
+// two lines rather than growing the row without limit.
 
 const STYLES = render(ChildCard.styles).markup;
 
@@ -349,9 +349,13 @@ for (const { design, method, name } of [
     assert.ok(shrinkable, `.${outer[1]} needs grid-template-columns: minmax(0, 1fr)`);
   });
 
-  test(`long names: the ${design} chore name still truncates with an ellipsis`, () => {
+  // Names wrap to two lines, then clip (the line clamp draws the ellipsis);
+  // overflow-wrap breaks a long compound or link that has no space.
+  test(`long names: the ${design} chore name clamps to two lines`, () => {
     const body = rulesFor(name);
-    assert.match(body, /white-space:\s*nowrap/);
-    assert.match(body, /text-overflow:\s*ellipsis/);
+    assert.doesNotMatch(body, /white-space:\s*nowrap/);
+    assert.match(body, /-webkit-line-clamp:\s*2/);
+    assert.match(body, /overflow:\s*hidden/);
+    assert.match(body, /overflow-wrap:\s*anywhere/);
   });
 }
