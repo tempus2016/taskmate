@@ -209,6 +209,9 @@ for (const design of DESIGNS.filter((d) => d !== "classic")) {
     });
     let undone = 0;
     card._handleUndo = () => { undone += 1; };
+    // Its only chore is done, so the list sits folded under the all-done
+    // banner; open it first.
+    await render(card.render()).control(/tm-alldone-toggle/).click();
     const chip = render(card.render()).controls.find((c) => /tmd-undochip/.test(c.attrs));
     assert.ok(chip, "the undo chip should be rendered");
     assert.equal(chip.disabled, false);
