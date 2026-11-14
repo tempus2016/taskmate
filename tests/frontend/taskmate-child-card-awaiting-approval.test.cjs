@@ -79,7 +79,8 @@ for (const design of DESIGNS) {
   test(`${design}: a completion awaiting approval shows the waiting state`, () => {
     const { markup } = render(makeCard({ design, completions: [done(false)] }).render());
     assert.ok(markup.includes(WAITING), "the row says it is waiting for a grown-up");
-    assert.match(markup, /mdi:timer-sand/, "with an hourglass");
+    // An hourglass icon, or the ⏳ on the waiting chip when the row shows a picture.
+    assert.match(markup, /mdi:timer-sand|⏳/, "with an hourglass");
     assert.match(markup, /class="[^"]*\bawaiting\b/, "and the awaiting row class");
   });
 
