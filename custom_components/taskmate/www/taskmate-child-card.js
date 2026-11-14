@@ -2740,17 +2740,6 @@ class TaskMateChildCard extends LitElement {
       .tmd-check.awaiting .c-num ha-icon { --mdc-icon-size: 16px; color: #3a2600; }
       :host([data-tm-design="graphite"]:not([data-tm-dark])) .tmd-check.awaiting .c-num ha-icon { color: #fff; }
       .tmd-quest.awaiting .q-num ha-icon { --mdc-icon-size: 16px; }
-      .tmd-awaiting {
-        display: inline-flex; align-items: center; gap: 4px;
-        margin-top: 3px; padding: 2px 8px; border-radius: var(--tmd-radius-sm);
-        font-size: 12px; font-weight: 700; color: var(--tmd-text);
-        background: color-mix(in srgb, var(--tmd-warn) 20%, transparent);
-      }
-      /* Graphite strips chips to plain text; the waiting note follows suit
-         so it never outweighs the chore name. */
-      :host([data-tm-design="graphite"]) .tmd-awaiting {
-        background: transparent; padding: 0; font-weight: 500; font-size: 13px;
-      }
 
       /* Designed: timed task card. The designed lists reuse the classic timed
          card (_designTimed -> _renderTimedChoreCard), so without these it kept
@@ -4156,8 +4145,10 @@ class TaskMateChildCard extends LitElement {
     const weeklyLabel = r.chore._weeklyTarget > 0
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: __tmNum(this.hass, r.chore._weeklyTarget) })
       : "";
+    // A row waiting for a grown-up says so once, on its "⏳ Waiting" undo
+    // chip (whose name reads "{chore}, waiting for a grown-up. Undo"), so
+    // there is no second note here squeezing the name.
     return html`
-      ${r.awaiting ? html`<div class="tmd-awaiting">${this._t("child.awaiting_approval")}</div>` : ""}
       ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
