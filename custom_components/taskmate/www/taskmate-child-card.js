@@ -1265,7 +1265,7 @@ class TaskMateChildCard extends LitElement {
 
       /* Done but waiting for a parent to approve: amber, not the paid green. */
       .chore-card.completed.awaiting {
-        opacity: 0.9;
+        opacity: 1;
         filter: none;
         border-color: var(--warning-color, #ff9800) !important;
         background: color-mix(in srgb, var(--warning-color, #ff9800) 14%, var(--card-background-color, #fff)) !important;
