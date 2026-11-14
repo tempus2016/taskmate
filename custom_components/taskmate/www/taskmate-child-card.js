@@ -3325,7 +3325,7 @@ class TaskMateChildCard extends LitElement {
         ` : ''}
 
         ${showBadges ? html`
-          <div class="badge-strip ${this.config.pre_reader === true ? 'pre' : ''}" role="button" tabindex="0" aria-label="${this._t('badges.label')}"
+          <div class="badge-strip${this.config.pre_reader === true ? ' pre' : ''}" role="button" tabindex="0" aria-label="${this._t('badges.label')}"
             @click=${() => this._openBadgesView()} @keydown=${(e) => this._badgeKeydown(e)} title="${this._t('badges.label')}">
             <span class="badge-strip-label">${this._t('badges.label')}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
@@ -3339,7 +3339,7 @@ class TaskMateChildCard extends LitElement {
         ` : ''}
 
         ${nextBadge ? html`
-          <div class="next-badge ${this.config.pre_reader === true ? 'pre' : ''}" role="button" tabindex="0"
+          <div class="next-badge${this.config.pre_reader === true ? ' pre' : ''}" role="button" tabindex="0"
             aria-label="${this._t('badges.next_up')} — ${nextBadge.name} ${nextBadge.label}"
             @click=${() => this._openBadgesView()}
             @keydown=${(e) => this._badgeKeydown(e)}>
@@ -3927,7 +3927,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderSwappable(allChores, child, pointsIcon)}
         <div class="tmd-goals">
         ${showBadges ? html`
-          <div class="tmd-badges ${preReader ? "pre" : ""}" role="button" tabindex="0" aria-label="${this._t("badges.label")}"
+          <div class="tmd-badges${preReader ? " pre" : ""}" role="button" tabindex="0" aria-label="${this._t("badges.label")}"
             @click=${() => this._openBadgesView()} @keydown=${(e) => this._badgeKeydown(e)} title="${this._t("badges.label")}">
             <span class="lbl">${this._t("badges.label")}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
@@ -3938,7 +3938,7 @@ class TaskMateChildCard extends LitElement {
             ${earnedBadges.length > 5 ? html`<span class="more">+${__tmNum(this.hass, earnedBadges.length - 5)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ""}
           </div>` : ""}
         ${nextBadge ? html`
-          <div class="tmd-next-badge ${preReader ? "pre" : ""}" role="button" tabindex="0"
+          <div class="tmd-next-badge${preReader ? " pre" : ""}" role="button" tabindex="0"
             aria-label="${this._t("badges.next_up")} — ${nextBadge.name} ${nextBadge.label}"
             @click=${() => this._openBadgesView()}
             @keydown=${(e) => this._badgeKeydown(e)}>
