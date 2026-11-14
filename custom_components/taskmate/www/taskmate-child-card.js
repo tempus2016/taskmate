@@ -3319,7 +3319,10 @@ class TaskMateChildCard extends LitElement {
         glyph: this._choreGlyph(chore),
         // A picture the chore really has: its own image or icon, or an emoji
         // the name matched. The generic ⭐ fallback does not count.
-        hasPicture: window.__taskmate_chore_visual(chore).kind !== "none" || this._choreEmoji(chore) !== "⭐",
+        // A real picture, not the fallback. _choreEmojiGuess (fix/child-card-pre-reader-tiles)
+        // returns null when nothing matched; without it, the fallback is ⭐.
+        hasPicture: window.__taskmate_chore_visual(chore).kind !== "none"
+          || (typeof this._choreEmojiGuess === "function" ? !!this._choreEmojiGuess(chore) : this._choreEmoji(chore) !== "⭐"),
         completions,
         points: this._boostPoints(chore, child),
         boost: this._boostMult(chore, child),
