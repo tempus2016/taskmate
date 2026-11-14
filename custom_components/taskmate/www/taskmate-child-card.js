@@ -4439,7 +4439,10 @@ class TaskMateChildCard extends LitElement {
         // A tap still in flight counts from the moment it was made.
         const opt = this._optimisticCompletions?.[`${baseId}_${child.id}`];
         const optTimes = opt ? (opt.timestamps || [opt.timestamp || now]) : [];
-        const latest = Math.max(0, ...mine.map(c => Date.parse(c.completed_at || "") || 0), ...optTimes);
+        // A stamp ahead of this browser's clock (server clock skew) counts as
+        // made just now, so the settle timer never waits longer than the
+        // settle window itself.
+        const latest = Math.min(now, Math.max(0, ...mine.map(c => Date.parse(c.completed_at || "") || 0), ...optTimes));
         if (latest && now - latest < this.constructor.AVAILABLE_FIRST_SETTLE_MS) {
           settleAt = Math.min(settleAt, latest + this.constructor.AVAILABLE_FIRST_SETTLE_MS);
           return 0;
