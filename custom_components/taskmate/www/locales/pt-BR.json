@@ -365,6 +365,8 @@
   "child.sr_undone": "{chore} desfeito",
   "child.sr_help_sent": "Você pediu ajuda com {chore}",
   "child.undo_recent": "Desfazer uma tarefa que você acabou de fazer",
+  "child.pre_reader_progress": "{done} de {total} feitas",
+  "child.pre_reader_undo_confirm": "Toque de novo para desfazer {name}",
   "child.evening_chores": "Tarefas da Noite",
   "child.morning_chores": "Tarefas da Manhã",
   "child.night_chores": "Tarefas da Madrugada",

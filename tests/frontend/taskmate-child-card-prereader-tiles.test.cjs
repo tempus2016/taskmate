@@ -68,7 +68,8 @@ function makeCard({ chores, completions = [], config = {}, design = "classic" })
 
 /** The markup of the tile whose aria-label is `name`. */
 function tileMarkup(markup, name) {
-  const start = markup.indexOf(`aria-label="${name}"`);
+  // Prefix match: fix/child-card-a11y appends the tile's state to its name.
+  const start = markup.search(new RegExp(`aria-label="${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["\\s,]`));
   assert.ok(start > 0, `tile "${name}" should be rendered`);
   return markup.slice(start, markup.indexOf("</button>", start));
 }
@@ -87,9 +88,14 @@ test("guesser: specific categories beat the catch-alls", () => {
 });
 
 test("guesser: whole words, so 'card' and 'bedroom' aren't a car and a bed", () => {
-  assert.equal(guess("Make a birthday card"), "⭐");
+  assert.equal(guess("Make a birthday card"), "📋");
   assert.equal(guess("Tidy bedroom"), "🧹");
-  assert.equal(guess("Something new"), "⭐");
+  assert.equal(guess("Something new"), "📋");
+});
+
+test("guesser: the no-match fallback is never the points star", () => {
+  assert.notEqual(guess("Something new"), "⭐");
+  assert.notEqual(guess(""), "⭐");
 });
 
 test("guesser: matches case- and accent-insensitively in every shipped locale", () => {
@@ -113,14 +119,22 @@ for (const design of DESIGNS) {
   test(`pre-reader ${design}: a chore with no picture gets the row's guess, not a clock`, () => {
     const card = makeCard({
       design,
-      chores: [chore({ id: "a", name: "Bins" }), chore({ id: "b", name: "Plants" }), chore({ id: "c", name: "Mystery" })],
+      chores: [
+        chore({ id: "a", name: "Bins" }), chore({ id: "b", name: "Plants" }), chore({ id: "c", name: "Mystery" }),
+        chore({ id: "d", name: "Puzzle", time_category: "morning" }),
+      ],
+      config: { debug_time_period: "morning" },
     });
     const { markup } = render(card.render());
     assert.match(tileMarkup(markup, "Bins"), /pre-tile-emoji[^>]*>🗑️/);
     assert.match(tileMarkup(markup, "Plants"), /pre-tile-emoji[^>]*>🪴/);
-    // Nothing guessable: the time-of-day icon is still the last resort.
-    assert.match(tileMarkup(markup, "Mystery"), /icon="mdi:clock-outline"/);
-    assert.doesNotMatch(tileMarkup(markup, "Mystery"), /pre-tile-emoji/);
+    // Nothing guessable and no real time of day: the neutral clipboard, not
+    // the meaningless "anytime" clock and not the points star.
+    assert.match(tileMarkup(markup, "Mystery"), /pre-tile-emoji[^>]*>📋/);
+    assert.doesNotMatch(tileMarkup(markup, "Mystery"), /mdi:clock-outline|⭐/);
+    // A real time of day still says something: the morning sun stays.
+    assert.match(tileMarkup(markup, "Puzzle"), /icon="mdi:weather-sunset-up"/);
+    assert.doesNotMatch(tileMarkup(markup, "Puzzle"), /pre-tile-emoji/);
   });
 
   test(`pre-reader ${design}: an explicit icon still wins over the guess`, () => {
@@ -158,5 +172,90 @@ for (const design of DESIGNS) {
     assert.equal(cue(done({ child_undo_until: new Date(now + 60_000).toISOString() }), false), true, "child inside the undo window");
     assert.equal(cue(done({ child_undo_until: new Date(now - 60_000).toISOString() }), false), false, "child after the window closed");
     assert.equal(cue(done({}), true), true, "parent");
+  });
+}
+
+// Two-step undo, header dots and the text around the tiles.
+
+const doneNow = (extra = {}) => [{
+  chore_id: "zz", child_id: "kid1", completion_id: "c1", approved: true,
+  completed_at: new Date().toISOString(), child_undo_until: new Date(Date.now() + 60_000).toISOString(), ...extra,
+}];
+
+for (const design of DESIGNS) {
+  test(`pre-reader ${design}: the first tap on a done tile only arms undo; the second undoes`, async () => {
+    const card = makeCard({ design, chores: [chore()], completions: doneNow() });
+    const undone = [];
+    card._handleUndo = (c) => { undone.push(c.id); };
+    card._handleComplete = () => { throw new Error("a done tile must not complete again"); };
+    try {
+      let tile = render(card.render()).control('aria-label="ZZ chore"');
+      await tile.click();
+      assert.deepEqual(undone, [], "first tap does not undo");
+      assert.equal(card._preUndoArmed, "zz");
+      const armed = render(card.render());
+      const start = armed.markup.indexOf("undo-armed");
+      const t = armed.markup.slice(start, armed.markup.indexOf("</button>", start));
+      assert.match(t, /undo-armed/);
+      assert.match(t, /pre-tile-undo/);
+      assert.doesNotMatch(t, /pre-tile-tick/, "the tick gives way to the undo arrow");
+      assert.match(t, /aria-label="Tap again to undo ZZ chore"/);
+      tile = armed.control("undo-armed");
+      await tile.click();
+      assert.deepEqual(undone, ["zz"], "second tap undoes");
+      assert.equal(card._preUndoArmed, null, "and disarms");
+    } finally {
+      card._disarmPreUndo();
+    }
+  });
+}
+
+test("pre-reader: an armed undo reverts on its own", async (t) => {
+  // The card's sandbox takes setTimeout when it is loaded, so load a fresh
+  // copy after the clock is mocked.
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const Fresh = loadCard("taskmate-child-card.js", {
+    window: { __taskmate_badge_id: (b) => b.badge_id, __taskmate_is_parent: () => false },
+  }).get("taskmate-child-card");
+  const card = Object.setPrototypeOf(makeCard({ chores: [chore()], completions: doneNow() }), Fresh.prototype);
+  card._handleUndo = () => { throw new Error("must not undo"); };
+  await render(card.render()).control('aria-label="ZZ chore"').click();
+  assert.equal(card._preUndoArmed, "zz");
+  t.mock.timers.tick(2900);
+  assert.equal(card._preUndoArmed, "zz", "still armed just before the window ends");
+  t.mock.timers.tick(200);
+  assert.equal(card._preUndoArmed, null, "disarmed after ~3s");
+  assert.doesNotMatch(render(card.render()).markup, /undo-armed/);
+});
+
+test("pre-reader: outside the child's undo window the tap still goes to _handleUndo (its refusal), unarmed", async () => {
+  const card = makeCard({ chores: [chore()], completions: doneNow({ child_undo_until: new Date(Date.now() - 60_000).toISOString() }) });
+  const undone = [];
+  card._handleUndo = (c) => { undone.push(c.id); };
+  await render(card.render()).control('aria-label="ZZ chore"').click();
+  assert.deepEqual(undone, ["zz"], "undo rules unchanged: _handleUndo decides and refuses");
+  assert.equal(card._preUndoArmed ?? null, null);
+});
+
+for (const design of DESIGNS) {
+  test(`pre-reader ${design}: header shows one progress dot per chore, words only in the aria-label`, () => {
+    const card = makeCard({
+      design,
+      chores: [chore(), chore({ id: "b", name: "B" }), chore({ id: "c", name: "C" })],
+      completions: doneNow(),
+    });
+    const { markup } = render(card.render());
+    const m = markup.match(/<span class="tm-pre-dots[^"]*" role="img"\s+aria-label="([^"]*)">([\s\S]*?)<\/span>/);
+    assert.ok(m, "dots rendered");
+    assert.equal(m[1], "1 of 3 done");
+    assert.equal((m[2].match(/<i /g) || []).length, 3);
+    assert.equal((m[2].match(/class="on"/g) || []).length, 1);
+    // The text around the tiles is gone: no reset countdown, no "left" count.
+    assert.doesNotMatch(markup, /reset-countdown|tmd-countdown|section-title-text/);
+  });
+
+  test(`pre-reader ${design}: off, nothing changes in the header`, () => {
+    const card = makeCard({ design, chores: [chore()], config: { pre_reader: false } });
+    assert.doesNotMatch(render(card.render()).markup, /tm-pre-dots/);
   });
 }

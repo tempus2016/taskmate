@@ -365,6 +365,8 @@
   "child.sr_undone": "{chore} rückgängig gemacht",
   "child.sr_help_sent": "Hilfe bei {chore} angefragt",
   "child.undo_recent": "Eine gerade erledigte Aufgabe rückgängig machen",
+  "child.pre_reader_progress": "{done} von {total} erledigt",
+  "child.pre_reader_undo_confirm": "Nochmal tippen, um {name} rückgängig zu machen",
   "child.evening_chores": "Abendliche Aufgaben",
   "child.morning_chores": "Morgenaufgaben",
   "child.night_chores": "Nachtaufgaben",

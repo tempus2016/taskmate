@@ -189,7 +189,10 @@ for (const design of DESIGNS) {
     assert.ok(target, "the done tile should be rendered");
     assert.match(target.attrs, /\bdone\b/);
     assert.equal(target.disabled, false);
+    // Undo on a pre-reader tile is two taps: the first arms it, the second undoes.
     await target.click();
+    assert.equal(undone, 0);
+    await render(card.render()).control("undo-armed").click();
     assert.equal(undone, 1);
     assert.deepEqual(card.completed, []);
   });

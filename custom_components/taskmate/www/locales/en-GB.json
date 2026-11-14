@@ -371,6 +371,8 @@
   "child.sr_undone": "{chore} undone",
   "child.sr_help_sent": "Asked for help with {chore}",
   "child.undo_recent": "Undo a chore you just did",
+  "child.pre_reader_progress": "{done} of {total} done",
+  "child.pre_reader_undo_confirm": "Tap again to undo {name}",
   "child.evening_chores": "Evening Chores",
   "child.morning_chores": "Morning Chores",
   "child.night_chores": "Night Chores",

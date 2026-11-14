@@ -371,6 +371,8 @@
   "child.sr_undone": "Cofnięto {chore}",
   "child.sr_help_sent": "Poproszono o pomoc przy {chore}",
   "child.undo_recent": "Cofnij obowiązek, który właśnie wykonałeś(-aś)",
+  "child.pre_reader_progress": "Zrobione: {done} z {total}",
+  "child.pre_reader_undo_confirm": "Dotknij jeszcze raz, aby cofnąć: {name}",
   "child.evening_chores": "Obowiązki wieczorne",
   "child.morning_chores": "Obowiązki poranne",
   "child.night_chores": "Obowiązki nocne",

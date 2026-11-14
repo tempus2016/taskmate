@@ -371,6 +371,8 @@
   "child.sr_undone": "{chore} er fortrudt",
   "child.sr_help_sent": "Bad om hjælp til {chore}",
   "child.undo_recent": "Fortryd en pligt, du lige har klaret",
+  "child.pre_reader_progress": "{done} af {total} klaret",
+  "child.pre_reader_undo_confirm": "Tryk igen for at fortryde {name}",
   "child.evening_chores": "Aftenens pligter",
   "child.morning_chores": "Morgenens pligter",
   "child.night_chores": "Nattens pligter",

@@ -365,6 +365,8 @@
   "child.sr_undone": "{chore} annulé",
   "child.sr_help_sent": "Aide demandée pour {chore}",
   "child.undo_recent": "Annuler une tâche que tu viens de faire",
+  "child.pre_reader_progress": "{done} sur {total} faites",
+  "child.pre_reader_undo_confirm": "Touche encore pour annuler {name}",
   "child.evening_chores": "Tâches du soir",
   "child.morning_chores": "Tâches du matin",
   "child.night_chores": "Tâches de la nuit",

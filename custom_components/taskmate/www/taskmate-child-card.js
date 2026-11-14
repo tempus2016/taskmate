@@ -67,6 +67,12 @@ const __TM_CHORE_EMOJI = [
   ["🧽", "vacuum*, hoover*, staubsaug*, saug*, aspirateur*, aspirer, stofzuig*, stovsug*, odkurz*, aspirar, aspirador*"],
 ].map(([emoji, words]) => [emoji, words.split(", ")]);
 
+// The picture for a chore nothing matches. Deliberately not ⭐: that is what
+// the points look like, so a starred chore read as "a star to collect".
+const CHORE_EMOJI_FALLBACK = "📋";
+// How long the first tap on a done pre-reader tile keeps undo armed.
+const PRE_UNDO_ARM_MS = 3000;
+
 /** Lower-case, accent-free, single-spaced words padded with a space each side. */
 const __tmFoldWords = (text) => ` ${String(text || "").toLowerCase()
   .replace(/ß/g, "ss").replace(/æ/g, "ae").replace(/[øœ]/g, "o").replace(/ł/g, "l")
@@ -175,6 +181,9 @@ class TaskMateChildCard extends LitElement {
     clearTimeout(this._settleTimer);
     this._settleTimer = null;
     clearTimeout(this._announceTimer);
+    clearTimeout(this._preUndoTimer);
+    this._preUndoTimer = null;
+    this._preUndoArmed = null;
     if (this._justEarnedTimeout) {
       clearTimeout(this._justEarnedTimeout);
       this._justEarnedTimeout = null;
@@ -1344,7 +1353,11 @@ class TaskMateChildCard extends LitElement {
         width: 6px;
         background: var(--fun-red);
       }
-      /* Pre-reader mode (#683) — picture-only, huge targets */
+      /* Pre-reader mode (#683) — picture-only, huge targets.
+         Colours, border, radius and font come from the --tmd-* tokens, so
+         under a designed style the tiles look like that style (light and
+         dark). The tokens only exist under a designed style; each fallback is
+         the original classic value, so classic tiles are unchanged. */
       .pre-reader-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
@@ -1356,41 +1369,45 @@ class TaskMateChildCard extends LitElement {
         display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 8px;
         min-height: 140px; padding: 16px 10px;
-        border: 3px solid var(--divider-color, #e0e0e0);
-        border-radius: 26px;
-        background: var(--card-background-color, #fff);
-        font-family: inherit; cursor: pointer;
+        border: 3px solid var(--tmd-border, var(--divider-color, #e0e0e0));
+        border-radius: var(--tmd-radius, 26px);
+        background: var(--tmd-surface, var(--card-background-color, #fff));
+        color: var(--tmd-text, var(--primary-text-color));
+        box-shadow: var(--tmd-shadow, none);
+        font-family: var(--tmd-font-display, inherit); cursor: pointer;
         transition: transform 0.12s ease, border-color 0.12s ease;
       }
       .pre-tile:active { transform: scale(0.96); }
-      .pre-tile:focus-visible { outline: 4px solid var(--primary-color); outline-offset: 3px; }
-      .pre-tile-icon ha-icon { --mdc-icon-size: 64px; color: var(--primary-color); }
+      .pre-tile:focus-visible { outline: 4px solid var(--tmd-accent, var(--primary-color)); outline-offset: 3px; }
+      .pre-tile-icon ha-icon { --mdc-icon-size: 64px; color: var(--tmd-accent, var(--primary-color)); }
       .pre-tile-stars { display: flex; gap: 2px; }
-      .pre-tile-stars ha-icon { --mdc-icon-size: 18px; color: #f1c40f; }
+      .pre-tile-stars ha-icon { --mdc-icon-size: 18px; color: var(--tmd-gold, #f1c40f); }
       .pre-tile-points {
         display: flex; align-items: center; gap: 4px;
-        font-size: 1.15rem; font-weight: 700; color: var(--primary-text-color);
+        font-size: 1.15rem; font-weight: 700; color: var(--tmd-text, var(--primary-text-color));
+        font-variant-numeric: tabular-nums;
       }
-      .pre-tile-points ha-icon { --mdc-icon-size: 20px; color: #f1c40f; }
+      .pre-tile-points ha-icon { --mdc-icon-size: 20px; color: var(--tmd-gold, #f1c40f); }
       .pre-tile-label {
         font-size: 0.85rem; font-weight: 700; text-align: center;
-        color: var(--secondary-text-color); line-height: 1.2;
+        font-family: var(--tmd-font-body, inherit);
+        color: var(--tmd-dim, var(--secondary-text-color)); line-height: 1.2;
       }
       .pre-tile.done {
-        border-color: var(--success-color, #2ecc71);
-        background: rgba(46, 204, 113, 0.10);
+        border-color: var(--tmd-good, var(--success-color, #2ecc71));
+        background: color-mix(in srgb, var(--tmd-good, rgb(46, 204, 113)) 10%, var(--tmd-surface, transparent));
       }
       .pre-tile.done .pre-tile-icon ha-icon { opacity: 0.35; }
       .pre-tile.done .pre-tile-stars { opacity: 0.35; }
       .pre-tile.done .pre-tile-points { opacity: 0.35; }
-      .pre-tile-tick {
+      .pre-tile-tick, .pre-tile-undo {
         position: absolute; inset: 0;
         display: grid; place-items: center;
         pointer-events: none;
       }
       .pre-tile-tick ha-icon {
         --mdc-icon-size: 72px;
-        color: var(--success-color, #2ecc71);
+        color: var(--tmd-good, var(--success-color, #2ecc71));
       }
       .pre-tile-emoji { display: block; font-size: 60px; line-height: 64px; height: 64px; }
       .pre-tile.done .pre-tile-emoji { opacity: 0.35; }
@@ -1404,21 +1421,41 @@ class TaskMateChildCard extends LitElement {
         pointer-events: none;
       }
       .pre-tile-badge ha-icon { --mdc-icon-size: 20px; }
-      /* Same colour source as the tile itself (HA's card background), so the
-         badge contrasts with the tile under every style and theme. */
+      /* Same colour source as the tile itself, so the badge contrasts with
+         the tile under every style and theme. */
       .pre-tile-badge.lock {
-        background: var(--primary-text-color, #212121);
-        color: var(--card-background-color, #fff);
+        background: var(--tmd-text, var(--primary-text-color, #212121));
+        color: var(--tmd-surface, var(--card-background-color, #fff));
       }
       .pre-tile-badge.undo {
-        background: var(--card-background-color, #fff);
-        color: var(--success-color, #2ecc71);
+        background: var(--tmd-surface, var(--card-background-color, #fff));
+        color: var(--tmd-good, var(--success-color, #2ecc71));
         border: 2px solid currentColor;
       }
-      /* Fade the picture, not the padlock: a uniformly faded tile reads as
-         broken rather than "not yet". */
+      /* Undo armed (first tap on a done tile): the tick gives way to a big
+         undo arrow in the accent colour; a second tap undoes. */
+      .pre-tile.undo-armed {
+        border-color: var(--tmd-accent, var(--primary-color, #03a9f4));
+        background: color-mix(in srgb, var(--tmd-accent, var(--primary-color, #03a9f4)) 12%, var(--tmd-surface, var(--card-background-color, #fff)));
+      }
+      .pre-tile.undo-armed > :not(.pre-tile-undo) { opacity: 0.25; }
+      .pre-tile-undo ha-icon {
+        --mdc-icon-size: 76px;
+        color: var(--tmd-accent, var(--primary-color, #03a9f4));
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .pre-tile-undo { animation: tm-pre-undo-in 0.18s ease-out; }
+      }
+      @keyframes tm-pre-undo-in { from { opacity: 0; transform: scale(0.8); } }
+      /* Locked: the picture stays recognisable (greyed, not faded away) and
+         the padlock grows so it is the first thing a child sees. */
       .pre-tile.locked { cursor: default; border-style: dashed; }
-      .pre-tile.locked > :not(.pre-tile-badge) { opacity: 0.4; }
+      .pre-tile.locked > :not(.pre-tile-badge) { opacity: 0.6; filter: grayscale(1); }
+      .pre-tile.locked .pre-tile-badge {
+        width: 44px; height: 44px; inset-block-start: 6px; inset-inline-end: 6px;
+        box-shadow: 0 0 0 3px var(--tmd-surface, var(--card-background-color, #fff));
+      }
+      .pre-tile.locked .pre-tile-badge ha-icon { --mdc-icon-size: 26px; }
       .pre-tile.done.awaiting {
         border-color: var(--warning-color, #ff9800);
         background: color-mix(in srgb, var(--warning-color, #ff9800) 12%, transparent);
@@ -1445,6 +1482,26 @@ class TaskMateChildCard extends LitElement {
         color: color-mix(in srgb, var(--warning-color, #ff9800) 60%, var(--primary-text-color, #212121));
       }
       .pre-tile.loading { opacity: 0.6; }
+      /* Pre-reader header progress: one dot per chore, filled when done. */
+      .tm-pre-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+      .tm-pre-dots i {
+        width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
+        border: 2px solid currentColor; opacity: 0.85;
+      }
+      .tm-pre-dots i.on { background: currentColor; opacity: 1; }
+      .child-name-container .tm-pre-dots { color: inherit; }
+      /* Pre-reader: badges as pictures only. The earned badges are rewards a
+         child recognises by sight and the next badge is a filling bar, so
+         both keep working without the words (aria-label/title keep them). */
+      .badge-strip.pre .badge-strip-label, .badge-strip.pre .badge-strip-more,
+      .next-badge.pre .next-badge-top, .next-badge.pre .next-badge-nudge,
+      .tmd-badges.pre .lbl, .tmd-badges.pre .more,
+      .tmd-next-badge.pre .top, .tmd-next-badge.pre .nudge { display: none; }
+      .next-badge.pre .next-badge-bar, .tmd-next-badge.pre .bar { height: 10px; }
+      /* Pre-reader, classic: with only the generic clock left (no real time
+         of day to show), the section line has nothing to say to a child. */
+      .section-title.pre-hidden { display: none; }
+      .tmd-section.pre ha-icon { --mdc-icon-size: 26px; color: var(--tmd-accent); }
 
       /* Chore roulette (#677) */
       .roulette {
@@ -3219,6 +3276,7 @@ class TaskMateChildCard extends LitElement {
             })()}
             <div class="child-name-container">
               <div class="child-name">${child.name}</div>
+              ${this.config.pre_reader === true ? this._renderPreReaderDots(childChores, child, todaysCompletions) : ''}
               ${child.level ? html`
                 <div class="child-level" title="${_ltrNums(`${__tmNum(this.hass, child.level_progress || 0)} / ${__tmNum(this.hass, child.level_target || 100)}`)} ${this._t("common.xp")}">
                   <span class="level-badge">${this._t('child.level_label', { level: child.level })}</span>
@@ -3267,7 +3325,7 @@ class TaskMateChildCard extends LitElement {
         ` : ''}
 
         ${showBadges ? html`
-          <div class="badge-strip" role="button" tabindex="0" aria-label="${this._t('badges.label')}"
+          <div class="badge-strip ${this.config.pre_reader === true ? 'pre' : ''}" role="button" tabindex="0" aria-label="${this._t('badges.label')}"
             @click=${() => this._openBadgesView()} @keydown=${(e) => this._badgeKeydown(e)} title="${this._t('badges.label')}">
             <span class="badge-strip-label">${this._t('badges.label')}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
@@ -3281,7 +3339,7 @@ class TaskMateChildCard extends LitElement {
         ` : ''}
 
         ${nextBadge ? html`
-          <div class="next-badge" role="button" tabindex="0"
+          <div class="next-badge ${this.config.pre_reader === true ? 'pre' : ''}" role="button" tabindex="0"
             aria-label="${this._t('badges.next_up')} — ${nextBadge.name} ${nextBadge.label}"
             @click=${() => this._openBadgesView()}
             @keydown=${(e) => this._badgeKeydown(e)}>
@@ -3315,11 +3373,12 @@ class TaskMateChildCard extends LitElement {
             ? this._renderEmptyState(this._emptyIsAllDone(child, todaysCompletions))
             : html`
                 ${allDone.banner ? this._renderAllDone(child, childChores, todaysCompletions, "classic") : ""}
-                ${allDone.collapsed ? "" : html`<div class="section-title">
+                ${allDone.collapsed ? "" : html`<div class="section-title ${this.config.pre_reader === true && this._getTimeCategoryIcon(this._effectiveTimeCategory()) === 'mdi:clock-outline' ? 'pre-hidden' : ''}">
                   <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
+                  ${this.config.pre_reader === true ? '' : html`
                   <span class="section-title-text">${this._getDynamicTitle()}</span>
-                  ${this._renderMinutesLeft(childChores, child, todaysCompletions, 'reset-countdown tm-minutes-left')}
-                  ${this.config.show_countdown !== false ? (() => {
+                  ${this._renderMinutesLeft(childChores, child, todaysCompletions, 'reset-countdown tm-minutes-left')}`}
+                  ${this.config.show_countdown !== false && this.config.pre_reader !== true ? (() => {
                     const countdown = this._getMidnightCountdown();
                     return countdown ? html`
                       <div class="reset-countdown ${countdown.soon ? 'soon' : ''}">
@@ -3527,7 +3586,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   _choreEmoji(chore) {
-    return this._choreEmojiGuess(chore) || "⭐";
+    return this._choreEmojiGuess(chore) || CHORE_EMOJI_FALLBACK;
   }
 
   /** The keyword guess alone (null when nothing matches), so the pre-reader
@@ -3802,12 +3861,22 @@ class TaskMateChildCard extends LitElement {
     const nextTier = nextBadge
       ? (design === "accessible" ? "var(--tmd-accent)" : this._tierColor(nextBadge.badge.tier)) : "";
     const pendingPoints = child.pending_points || 0;
-    const countdown = this.config.show_countdown !== false ? this._getMidnightCountdown() : null;
+    const preReader = this.config.pre_reader === true;
+    const countdown = this.config.show_countdown !== false && !preReader ? this._getMidnightCountdown() : null;
 
     // Chores first: on the designed styles today's list leads the body. The
     // section line is one slim row (title + quiet countdown), and the badge
     // strip and next-badge goal sit in .tmd-goals under the list.
-    const sectionLine = rows.length === 0 || allDone.collapsed ? "" : html`
+    // Pre-reader: no words around the tiles. The section line keeps only a
+    // real time-of-day picture (a sun, a moon); the generic clock says
+    // nothing to a child, so then the line is left out altogether.
+    const preIcon = preReader ? this._getTimeCategoryIcon(this._effectiveTimeCategory()) : "";
+    const sectionLine = rows.length === 0 || allDone.collapsed ? "" : preReader
+      ? (preIcon && preIcon !== "mdi:clock-outline" ? html`
+      <div class="tmd-section pre" role="img" aria-label="${this._getDynamicTitle()}">
+        <ha-icon icon="${preIcon}"></ha-icon>
+      </div>` : "")
+      : html`
       <div class="tmd-section">
         <span>${this._getDynamicTitle()}</span>
         ${this._renderMinutesLeft(childChores, child, todaysCompletions, "tmd-countdown tm-minutes-left")}
@@ -3834,7 +3903,8 @@ class TaskMateChildCard extends LitElement {
                                 this._designCleanpro(child, listRows, remaining, tone);
 
     return html`<ha-card class="tmd ${this._compact() ? "compact" : ""}" style="--hd:${look.hd}${look.tint ? `;--tm-child:${look.tint}` : ""}">
-      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, look.season)}
+      ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, look.season,
+        preReader ? this._renderPreReaderDots(childChores, child, todaysCompletions) : null)}
       <div class="tmd-bd">
         ${this._renderBirthdayBanner(child, true)}
         ${this._renderInspectionBanners(child, true, attrs.points_name || this._t("common.stars"))}
@@ -3857,7 +3927,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderSwappable(allChores, child, pointsIcon)}
         <div class="tmd-goals">
         ${showBadges ? html`
-          <div class="tmd-badges" role="button" tabindex="0" aria-label="${this._t("badges.label")}"
+          <div class="tmd-badges ${preReader ? "pre" : ""}" role="button" tabindex="0" aria-label="${this._t("badges.label")}"
             @click=${() => this._openBadgesView()} @keydown=${(e) => this._badgeKeydown(e)} title="${this._t("badges.label")}">
             <span class="lbl">${this._t("badges.label")}</span>
             ${earnedBadges.slice(0, 5).map(b => html`
@@ -3868,7 +3938,7 @@ class TaskMateChildCard extends LitElement {
             ${earnedBadges.length > 5 ? html`<span class="more">+${__tmNum(this.hass, earnedBadges.length - 5)} ${this.getAttribute?.("dir") === "rtl" ? "←" : "→"}</span>` : ""}
           </div>` : ""}
         ${nextBadge ? html`
-          <div class="tmd-next-badge" role="button" tabindex="0"
+          <div class="tmd-next-badge ${preReader ? "pre" : ""}" role="button" tabindex="0"
             aria-label="${this._t("badges.next_up")} — ${nextBadge.name} ${nextBadge.label}"
             @click=${() => this._openBadgesView()}
             @keydown=${(e) => this._badgeKeydown(e)}>
@@ -3918,7 +3988,7 @@ class TaskMateChildCard extends LitElement {
   }
 
   /** Designed header: avatar/title, remaining pill, pending-points chip. */
-  _designHeaderFull(child, design, remaining, total, tone, pendingPoints, season = null) {
+  _designHeaderFull(child, design, remaining, total, tone, pendingPoints, season = null, preDots = null) {
     const choresTitle = this._t("child.chores_title", { name: child.name });
     const title = design === "console" ? choresTitle.toUpperCase() : choresTitle;
     // Everything done reads as a win ("All 5 done"), not "0 of 5 left".
@@ -3954,7 +4024,7 @@ class TaskMateChildCard extends LitElement {
              @keydown=${(e) => this._avatarKeydown(e)}
              title="${this._t("child.avatar_change")}">${avFace}
         </div>` : html`<div class="tmd-av-wrap">${avFace}</div>`}
-        <span class="tt">${title}${sub ? html`<small>${sub}</small>` : ""}</span>
+        <span class="tt">${title}${preDots || sub ? html`<small>${preDots || sub}</small>` : ""}</span>
         ${remaining === 0 && total > 0 ? html`<span class="pill">🎉</span>` : ""}
         ${this._renderFreezeBadge(child, "tmd-freeze")}
         <span class="tmd-hd-end">
@@ -5173,17 +5243,7 @@ class TaskMateChildCard extends LitElement {
    * rounded star count contradicted the balance on the rest of the dashboard.
    */
   _renderPreReaderTile(chore, child, pointsIcon, todaysCompletions = []) {
-    const dailyLimit = chore.daily_limit || 1;
-    // Counted the same way the standard row does: pending completions hold a
-    // place too, and a parent completing on behalf lands under "__parent__".
-    const childCompletionsToday = todaysCompletions.filter(
-      (comp) => comp.chore_id === chore.id
-        && (comp.child_id === child.id || this._parentDidItFor(comp, child.id))
-        && !comp.bonus_subtask_id
-    );
-    const isDone = chore.assignment_mode === "first_come"
-      ? this._isChoreDone(chore, child, todaysCompletions).done
-      : childCompletionsToday.length >= dailyLimit;
+    const { isDone, childCompletionsToday } = this._preReaderDone(chore, child, todaysCompletions);
     const isAwaiting = isDone && this._isAwaitingApproval(chore, child, childCompletionsToday);
     const isLoading = this._loading[chore.id];
     // The same locks the classic row refuses a tap for — a recurring chore in
@@ -5216,39 +5276,53 @@ class TaskMateChildCard extends LitElement {
     // "Plants" as two identical clocks.
     const v = window.__taskmate_chore_visual(chore);
     const emoji = v.kind === "image" || v.kind === "icon" ? null : this._choreEmojiGuess(chore);
-    const icon = (v.kind === "icon" ? v.icon : "")
-      || this._getTimeCategoryIcon(chore.time_category)
-      || 'mdi:checkbox-marked-circle-outline';
-    // A second tap on a done tile undoes it. Show that as a picture, but only
+    // Nothing guessable: a real time of day (a sun, a moon) still tells a
+    // child something, but the generic "anytime" clock does not, so that one
+    // gives way to the same neutral clipboard the designed rows fall back to.
+    const periodIcon = this._getTimeCategoryIcon(chore.time_category);
+    const fallbackEmoji = !emoji && v.kind !== "image" && v.kind !== "icon"
+      && (!periodIcon || periodIcon === "mdi:clock-outline") ? CHORE_EMOJI_FALLBACK : null;
+    const icon = (v.kind === "icon" ? v.icon : "") || periodIcon || 'mdi:checkbox-marked-circle-outline';
+    const picture = emoji || fallbackEmoji;
+    // A tap on a done tile can undo it. Show that as a picture, but only
     // when the tap will actually undo: always for a parent, and for a child
     // only inside their undo window (_handleUndo refuses it otherwise).
     const canUndo = isDone && !isLoading && (this._isParent()
       || this._childCanUndo(this._latestCompletion(childCompletionsToday)));
+    // Undo is two taps here: the first only arms it (a big undo arrow over
+    // the tile for a few seconds), the second undoes. A child who pats a
+    // finished tile again should not lose it to one stray tap.
+    const armed = canUndo && this._preUndoArmed === chore.id;
 
     return html`
       <button
-        class="pre-tile ${isDone ? 'done' : ''} ${isAwaiting ? 'awaiting' : ''} ${isLoading ? 'loading' : ''} ${available ? '' : 'locked'}"
+        class="pre-tile ${isDone ? 'done' : ''} ${isAwaiting ? 'awaiting' : ''} ${armed ? 'undo-armed' : ''} ${isLoading ? 'loading' : ''} ${available ? '' : 'locked'}"
         ?disabled=${isLoading || !available}
-        aria-label="${tileLabel}"
+        aria-label="${armed ? this._t("child.pre_reader_undo_confirm", { name: chore.name }) : tileLabel}"
         title="${isAwaiting ? `${chore.name}, ${this._t('child.awaiting_approval')}` : chore.name}"
         @click=${() => {
           if (isLoading || !available) return;
-          if (isDone) this._handleUndo(chore, child, childCompletionsToday);
-          else this._handleComplete(chore, child);
+          if (!isDone) this._handleComplete(chore, child);
+          else if (canUndo && !armed) this._armPreUndo(chore.id);
+          else {
+            this._disarmPreUndo();
+            this._handleUndo(chore, child, childCompletionsToday);
+          }
         }}
       >
         <div class="pre-tile-icon">
           ${v.kind === "image"
             ? html`<img src="${v.url}" alt="" loading="lazy">`
-            : emoji
-              ? html`<span class="pre-tile-emoji" aria-hidden="true">${emoji}</span>`
+            : picture
+              ? html`<span class="pre-tile-emoji" aria-hidden="true">${picture}</span>`
               : html`<ha-icon icon="${icon}"></ha-icon>`}
           ${isAwaiting ? html`<span class="pre-tile-wait"><ha-icon icon="mdi:timer-sand"></ha-icon></span>` : ''}
         </div>
-        ${isDone && !isAwaiting ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
+        ${isDone && !isAwaiting && !armed ? html`<div class="pre-tile-tick"><ha-icon icon="mdi:check-bold"></ha-icon></div>` : ''}
+        ${armed ? html`<div class="pre-tile-undo" aria-hidden="true"><ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon></div>` : ''}
         ${!available
           ? html`<span class="pre-tile-badge lock" aria-hidden="true"><ha-icon icon="mdi:lock"></ha-icon></span>`
-          : canUndo
+          : canUndo && !armed
             ? html`<span class="pre-tile-badge undo" aria-hidden="true"><ha-icon class="tm-rtl-flip" icon="mdi:undo-variant"></ha-icon></span>`
             : ''}
         ${showPoints
@@ -5266,6 +5340,50 @@ class TaskMateChildCard extends LitElement {
           ? this._renderTeamProgress(this._teamState(chore, child), 'pre-tile-team') : ''}
       </button>
     `;
+  }
+
+  /** Whether a pre-reader tile is finished, counted the same way the
+   *  standard row does: pending completions hold a place too, and a parent
+   *  completing on behalf lands under "__parent__". Shared by the tile and
+   *  the header's progress dots so the two can never disagree. */
+  _preReaderDone(chore, child, todaysCompletions = []) {
+    const childCompletionsToday = todaysCompletions.filter(
+      (comp) => comp.chore_id === chore.id
+        && (comp.child_id === child.id || this._parentDidItFor(comp, child.id))
+        && !comp.bonus_subtask_id
+    );
+    const isDone = chore.assignment_mode === "first_come"
+      ? this._isChoreDone(chore, child, todaysCompletions).done
+      : childCompletionsToday.length >= (chore.daily_limit || 1);
+    return { isDone, childCompletionsToday };
+  }
+
+  /** First tap on a done pre-reader tile: arm the undo for a few seconds.
+   *  Only one tile is armed at a time; it disarms itself if not tapped. */
+  _armPreUndo(choreId) {
+    clearTimeout(this._preUndoTimer);
+    this._preUndoArmed = choreId;
+    this._preUndoTimer = setTimeout(() => this._disarmPreUndo(), PRE_UNDO_ARM_MS);
+    this.requestUpdate();
+  }
+
+  _disarmPreUndo() {
+    clearTimeout(this._preUndoTimer);
+    this._preUndoTimer = null;
+    if (this._preUndoArmed == null) return;
+    this._preUndoArmed = null;
+    this.requestUpdate();
+  }
+
+  /** Pre-reader header progress: one dot per chore, filled when it's done.
+   *  The words stay in the aria-label for the grown-up's screen reader. */
+  _renderPreReaderDots(childChores, child, todaysCompletions, cls = "") {
+    if (!childChores.length) return "";
+    const done = childChores.map((c) => this._preReaderDone(c, child, todaysCompletions).isDone);
+    const n = done.filter(Boolean).length;
+    return html`<span class="tm-pre-dots ${cls}" role="img"
+      aria-label="${_ltrNums(this._t("child.pre_reader_progress", { done: __tmNum(this.hass, n), total: __tmNum(this.hass, done.length) }))}">${
+      done.map((d) => html`<i class="${d ? "on" : ""}"></i>`)}</span>`;
   }
 
   /** The coloured badge at the head of a chore row.

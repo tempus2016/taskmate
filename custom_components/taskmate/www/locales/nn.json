@@ -365,6 +365,8 @@
   "child.sr_undone": "{chore} er angra",
   "child.sr_help_sent": "Bad om hjelp med {chore}",
   "child.undo_recent": "Angra ei oppgåve du nettopp gjorde",
+  "child.pre_reader_progress": "{done} av {total} gjort",
+  "child.pre_reader_undo_confirm": "Trykk igjen for å angra {name}",
   "child.evening_chores": "Kveldsoppgåver",
   "child.morning_chores": "Morgonoppgåver",
   "child.night_chores": "Nattoppgåver",
