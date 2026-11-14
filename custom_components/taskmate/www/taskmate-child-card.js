@@ -1918,6 +1918,53 @@ class TaskMateChildCard extends LitElement {
       .tm-mood .face:active { transform: scale(.92); }
       .tm-mood.said { font-weight: 700; padding: 10px; }
       .tm-mood.classic { margin: 12px 16px 16px; }
+      /* All-done moment: banner, then the mood check-in, then the fold. Classic
+         keeps its own palette; the designed styles draw from their tokens. */
+      .tm-alldone { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px;
+        border: 2px solid var(--fun-green); color: var(--primary-text-color);
+        background: color-mix(in srgb, var(--fun-green) 14%, var(--card-background-color, #fff)); }
+      .tm-alldone-ic { --mdc-icon-size: 34px; flex: none; color: var(--fun-orange); }
+      .tm-alldone-txt { min-width: 0; }
+      .tm-alldone-title { font-size: 1.3rem; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+      .tm-alldone-sub { margin-block-start: 2px; font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .chores-container .tm-mood.classic { margin: 0; }
+      .tm-alldone-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; inline-size: 100%;
+        min-block-size: 44px; padding: 8px 14px; border-radius: 12px; cursor: pointer; font: inherit; font-weight: 600;
+        color: var(--primary-text-color); background: var(--secondary-background-color, #f3f3f3);
+        border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12)); }
+      .tm-alldone-toggle ha-icon { --mdc-icon-size: 20px; }
+      .tm-alldone-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+      .tmd .tm-alldone { margin-block-end: 10px; border: 1px solid color-mix(in srgb, var(--tmd-good) 45%, var(--tmd-border));
+        border-radius: var(--tmd-radius-sm); color: var(--tmd-text); font-family: var(--tmd-font-body);
+        background: color-mix(in srgb, var(--tmd-good) 14%, var(--tmd-surface)); }
+      .tmd .tm-alldone-ic { color: var(--tmd-good); }
+      .tmd .tm-alldone-title { font-family: var(--tmd-font-display, inherit); }
+      .tmd .tm-alldone-toggle { margin-block: 10px; color: var(--tmd-text); background: var(--tmd-surface-2);
+        border-color: var(--tmd-border); border-radius: var(--tmd-radius-sm); font-family: var(--tmd-font-body); }
+      /* One short entrance on the change to all done; finite, and only when
+         motion is welcome (the card's reduce block stays the only one). */
+      @media (prefers-reduced-motion: no-preference) {
+        .tm-alldone.enter { animation: tm-alldone-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+      }
+      @keyframes tm-alldone-in {
+        from { opacity: 0.4; transform: translateY(6px) scale(0.98); }
+        to { opacity: 1; transform: none; }
+      }
+      /* Celebration overlay: names the chore, so the title wraps and scales
+         instead of growing past the screen. Classic keeps its purple/orange;
+         a designed style paints it from its own tokens, light and dark. */
+      .celebration-content { box-sizing: border-box; max-inline-size: min(90vw, 440px); }
+      .celebration-content .celebration-title { font-size: clamp(1.6rem, 7vw, 2.5rem); line-height: 1.15;
+        overflow-wrap: anywhere; text-wrap: balance; }
+      .tmd .celebration-content { color: var(--tmd-text); font-family: var(--tmd-font-body);
+        border: 1px solid var(--tmd-border); border-radius: var(--tmd-radius); box-shadow: var(--tmd-shadow);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--tmd-accent) 14%, var(--tmd-surface)), var(--tmd-surface) 60%); }
+      .tmd .celebration-content .celebration-title { font-family: var(--tmd-font-display, inherit); color: var(--tmd-text); }
+      .tmd .celebration-message, .tmd .celebration-points, .tmd .celebration-weekly-bonus { color: var(--tmd-text); }
+      .tmd .celebration-points { font-variant-numeric: tabular-nums; }
+      .tmd .celebration-points ha-icon { color: var(--tmd-gold); }
+      /* The pending note (feat/child-card-awaiting-approval) follows the style too. */
+      .tmd .celebration-pending { color: var(--tmd-text); }
       .extra-points { font-size: 1.05rem; font-weight: 800; }
       .extra-note:focus, .extra-points:focus { outline: none; border-color: var(--fun-purple); }
       .extra-points-label {
@@ -3112,6 +3159,7 @@ class TaskMateChildCard extends LitElement {
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const look = this._look(child, attrs, "classic", "#9b59b6");
+    const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
 
     return html`
       <ha-card class="${this._compact() ? "compact" : ""}" style="${look.tint ? `--tm-child:${look.tint}` : ""}">
@@ -3234,7 +3282,8 @@ class TaskMateChildCard extends LitElement {
             : childChores.length === 0
             ? this._renderEmptyState(this._emptyIsAllDone(child, todaysCompletions))
             : html`
-                <div class="section-title">
+                ${allDone.banner ? this._renderAllDone(child, childChores, todaysCompletions, "classic") : ""}
+                ${allDone.collapsed ? "" : html`<div class="section-title">
                   <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
                   <span class="section-title-text">${this._getDynamicTitle()}</span>
                   ${this._renderMinutesLeft(childChores, child, todaysCompletions, 'reset-countdown tm-minutes-left')}
@@ -3248,13 +3297,13 @@ class TaskMateChildCard extends LitElement {
                     ` : '';
                   })() : ''}
                 </div>
-                ${this._renderRoulette(child, childChores, pointsIcon)}
+                ${this._renderRoulette(child, childChores, pointsIcon)}`}
                 ${this.config.pre_reader === true ? html`
                   <div class="pre-reader-grid">
                     ${childChores.map((chore) =>
                       this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
-                ` : childChores.map((chore, index) => html`
+                ` : allDone.list.map((chore, index) => html`
                   ${chore.task_type === 'timed'
                     ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
                     : html`
@@ -3265,7 +3314,7 @@ class TaskMateChildCard extends LitElement {
               `}
         </div>
 
-        ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "classic")}
+        ${allDone.banner ? "" : this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "classic")}
         ${this._renderSwappable(allChores, child, pointsIcon)}
 
         ${this._celebrating ? this._renderCelebration() : ""}
@@ -3708,6 +3757,8 @@ class TaskMateChildCard extends LitElement {
 
     const remaining = rows.filter(r => !r.done).length;
     const tone = this._designTone(children.indexOf(child));
+    const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
+    const listRows = allDone.collapsed ? rows.filter(r => r.openEnded) : rows;
 
     // Badge strip (show_badges) — resolve the per-child badges sensor like classic.
     const badgesEntity = this._resolveBadgesEntity(child);
@@ -3724,7 +3775,7 @@ class TaskMateChildCard extends LitElement {
     // Chores first: on the designed styles today's list leads the body. The
     // section line is one slim row (title + quiet countdown), and the badge
     // strip and next-badge goal sit in .tmd-goals under the list.
-    const sectionLine = rows.length === 0 ? "" : html`
+    const sectionLine = rows.length === 0 || allDone.collapsed ? "" : html`
       <div class="tmd-section">
         <span>${this._getDynamicTitle()}</span>
         ${this._renderMinutesLeft(childChores, child, todaysCompletions, "tmd-countdown tm-minutes-left")}
@@ -3745,9 +3796,10 @@ class TaskMateChildCard extends LitElement {
           ${childChores.map((chore) =>
             this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
         </div>`
-      : design === "playroom" ? this._designPlayroom(child, rows, remaining, tone) :
-        design === "console"  ? this._designConsole(child, rows, remaining, tone) :
-                                this._designCleanpro(child, rows, remaining, tone);
+      : allDone.collapsed && listRows.length === 0 ? ""
+      : design === "playroom" ? this._designPlayroom(child, listRows, remaining, tone) :
+        design === "console"  ? this._designConsole(child, listRows, remaining, tone) :
+                                this._designCleanpro(child, listRows, remaining, tone);
 
     return html`<ha-card class="tmd ${this._compact() ? "compact" : ""}" style="--hd:${look.hd}${look.tint ? `;--tm-child:${look.tint}` : ""}">
       ${this._designHeaderFull(child, design, remaining, rows.length, tone, pendingPoints, look.season)}
@@ -3765,10 +3817,11 @@ class TaskMateChildCard extends LitElement {
         ${this._renderDayTabs(child, allChores, "tmd")}
         ${this._showingTomorrow(child, allChores)
           ? this._renderTomorrow(child, allChores, "tmd")
-          : html`${sectionLine}
-        ${this._renderRoulette(child, childChores, pointsIcon)}
+          : html`${allDone.banner ? this._renderAllDone(child, childChores, todaysCompletions, "tmd") : ""}
+        ${sectionLine}
+        ${allDone.collapsed ? "" : this._renderRoulette(child, childChores, pointsIcon)}
         ${body}`}
-        ${this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "tmd")}
+        ${allDone.banner ? "" : this._renderMoodStrip(child, ...this._moodCounts(childChores, child, todaysCompletions), "tmd")}
         ${this._renderSwappable(allChores, child, pointsIcon)}
         <div class="tmd-goals">
         ${showBadges ? html`
@@ -5941,7 +5994,7 @@ class TaskMateChildCard extends LitElement {
         @click="${this._closeCelebration}">
         <div class="celebration-content" @click="${(e) => e.stopPropagation()}">
           <div class="celebration-stars">&#127775;&#127775;&#127775;</div>
-          <div class="celebration-title">${this._t('child.celebration_title')}</div>
+          <div class="celebration-title">${this._celebrationTitle(attrs.chores, this._celebrating)}</div>
           <div class="celebration-message">${this._t('child.celebration_message')}</div>
           <div class="celebration-points ${awaiting ? "awaiting" : ""}">
             <ha-icon icon="${pointsIcon}"></ha-icon>
@@ -7310,6 +7363,95 @@ class TaskMateChildCard extends LitElement {
     const owed = (chores || []).filter(c => !c.open_ended && !c._isLockedPreview
       && !(c._hasDueDays && !c._isDueToday) && !c._isRecurrenceLocked && !c._isFirstComeLocked);
     return [owed.length, owed.filter(c => !this._isDoneForToday(c, child, todaysCompletions)).length];
+  }
+
+  /* ── All-done moment ─────────────────────────────────────────────────
+     Every chore owed today is ticked off: a banner names the child and
+     today's total, and the finished rows fold under one disclosure. Zero
+     chores owed is "nothing to do", never "all done". Not owed: the
+     open-ended "something extra" row, a chore not due today, one in its
+     cooldown, one a sibling claimed first, or one already at its weekly
+     target. A chore from a later part of the day (locked preview) or one not
+     open yet still counts, so the banner never shows with more to come.
+     A sick day hides the open chores, so it never reads as all done. */
+  _allDoneToday(chores, child, todaysCompletions) {
+    if (child?.sick_today) return false;
+    const owed = (chores || []).filter(c => !c.open_ended
+      && !(c._hasDueDays && !c._isDueToday) && !c._isRecurrenceLocked
+      && !c._isFirstComeLocked && !c._weeklyTargetMet);
+    return owed.length > 0
+      && owed.every(c => this._isChoreDone(c, child, todaysCompletions).done);
+  }
+
+  /** Today's points for this child: paid already, and still with a grown-up. */
+  _pointsToday(child, todaysCompletions) {
+    let earned = 0;
+    let pending = 0;
+    for (const c of todaysCompletions || []) {
+      if (String(c.child_id) !== String(child.id)) continue;
+      const pts = Number(c.points) || 0;
+      if (c.approved === false) pending += pts;
+      else earned += pts;
+    }
+    return { earned, pending };
+  }
+
+  /* Whether the banner shows and the list folds. The entrance plays only on
+     the change from not-done to done while the card is open, never on a
+     page load or a re-render, and never under reduced motion. Pre-reader
+     tiles stay out: a child who can't read can't use a "Show" button. */
+  _allDoneView(chores, child, todaysCompletions, allChores) {
+    const done = this._allDoneToday(chores, child, todaysCompletions);
+    if (!done) {
+      this._allDoneOpen = false;
+      this._allDoneEnter = false;
+    } else if (this._allDoneWas === false) {
+      this._allDoneEnter = true;
+    }
+    this._allDoneWas = done;
+    const banner = done && !this._showingTomorrow(child, allChores);
+    const collapsed = banner && !this._allDoneOpen && this.config.pre_reader !== true;
+    return { banner, collapsed, list: collapsed ? (chores || []).filter(c => c.open_ended) : chores };
+  }
+
+  /** "All done, Mia!" + today's total, the mood check-in, then the disclosure. */
+  _renderAllDone(child, chores, todaysCompletions, mode) {
+    const { earned, pending } = this._pointsToday(child, todaysCompletions);
+    const pointsName = this._pointsNameFor();
+    const open = !!this._allDoneOpen;
+    const toggle = () => { this._allDoneOpen = !this._allDoneOpen; this.requestUpdate(); };
+    return html`
+      <div class="tm-alldone ${mode} ${this._allDoneEnter ? "enter" : ""}" role="status">
+        <ha-icon class="tm-alldone-ic" icon="mdi:party-popper" aria-hidden="true"></ha-icon>
+        <div class="tm-alldone-txt">
+          <div class="tm-alldone-title">${child.name
+            ? this._t("child.all_done_name", { name: child.name })
+            : this._t("child.all_done")}</div>
+          ${earned > 0 ? html`<div class="tm-alldone-sub">${this._t("child.all_done_earned",
+            { points: __tmNum(this.hass, earned), points_name: pointsName })}</div>` : ""}
+          ${pending > 0 ? html`<div class="tm-alldone-sub">${this._t("child.all_done_pending",
+            { points: __tmNum(this.hass, pending), points_name: pointsName })}</div>` : ""}
+        </div>
+      </div>
+      ${this._renderMoodStrip(child, ...this._moodCounts(chores, child, todaysCompletions), mode)}
+      ${this.config.pre_reader === true ? "" : html`
+        <button type="button" class="tm-alldone-toggle ${mode}" aria-expanded="${open ? "true" : "false"}"
+          @click=${toggle}>
+          <span>${this._t(open ? "child.all_done_hide" : "child.all_done_show")}</span>
+          <ha-icon icon="${open ? "mdi:chevron-up" : "mdi:chevron-down"}" aria-hidden="true"></ha-icon>
+        </button>`}`;
+  }
+
+  /** "Make bed done!": the overlay names the chore it celebrates. A set-time
+   *  row celebrates as "<chore>@<time>", so it falls back to the chore id. */
+  _celebrationTitle(chores, celebratingId) {
+    const id = String(celebratingId ?? "");
+    const list = chores || [];
+    const chore = list.find(c => String(c.id) === id)
+      || list.find(c => String(c.id) === id.split("@")[0]);
+    return chore && chore.name
+      ? this._t("child.celebration_chore_done", { chore: chore.name })
+      : this._t("child.celebration_title");
   }
 
   /** End-of-day mood check-in, once everything's done (or once said). */
