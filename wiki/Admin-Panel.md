@@ -332,16 +332,26 @@ The admin panel is fully translated in all supported languages:
 
 | Language | Code |
 |----------|------|
+| Chinese (Simplified) | `zh-Hans` |
 | Danish | `da` |
 | Dutch | `nl` |
 | English | `en` |
 | English (GB) | `en-GB` |
 | French | `fr` |
 | German | `de` |
+| Italian | `it` |
+| Japanese | `ja` |
+| Korean | `ko` |
 | Norwegian Bokmål | `nb` |
 | Norwegian Nynorsk | `nn` |
+| Polish | `pl` |
 | Portuguese | `pt` |
 | Portuguese (Brazil) | `pt-BR` |
+| Russian | `ru` |
+| Spanish | `es` |
+| Swedish | `sv` |
+| Turkish | `tr` |
+| Ukrainian | `uk` |
 
 The panel follows your Home Assistant language setting automatically.
 

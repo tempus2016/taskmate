@@ -23,7 +23,7 @@ const _BASE = '/taskmate/locales';
 
 // BEGIN locale-bundles — scripts/split_locales.py reads this block: keep it valid JSON.
 const _BUNDLES = {
-  "langs": ["da", "de", "en", "en-GB", "fr", "nb", "nl", "nn", "pl", "pt", "pt-BR"],
+  "langs": ["da", "de", "en", "en-GB", "es", "fr", "it", "ja", "ko", "nb", "nl", "nn", "pl", "pt", "pt-BR", "ru", "sv", "tr", "uk", "zh-Hans"],
   "fallback": "en-GB",
   "bundles": ["cards", "editor", "panel"],
   "default": "cards",
@@ -73,7 +73,7 @@ function _bundleFor(key) {
 
 /**
  * The shipped language to load for a Home Assistant language code:
- * "pt-BR" → "pt-BR", "de-CH" → "de", "es" → "en-GB".
+ * "pt-BR" → "pt-BR", "de-CH" → "de", "fi" → "en-GB".
  */
 function _resolveLang(lang) {
   if (!lang) return _FALLBACK;

@@ -1,0 +1,3551 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Benvenuto in TaskMate!",
+        "description": "Configura il sistema di gestione delle faccende di famiglia. Puoi personalizzare la valuta dei punti che i bambini guadagneranno.",
+        "data": {
+          "points_name": "Nome della valuta dei punti (es. Stelle, Monete, Gettoni)",
+          "points_icon": "Icona dei punti"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Il nome è obbligatorio"
+    },
+    "abort": {
+      "already_configured": "TaskMate è già configurato"
+    },
+    "create_entry": {
+      "default": "TaskMate è pronto. [Apri il pannello di TaskMate](/taskmate-admin) per aggiungere i tuoi bambini con la configurazione guidata, che suggerisce faccende adatte alla loro età."
+    }
+  },
+  "selector": {
+    "chore_action": {
+      "options": {
+        "save": "Salva modifiche",
+        "re_enable": "Riattiva faccenda",
+        "disable": "Disattiva faccenda",
+        "delete": "Elimina questa faccenda"
+      }
+    },
+    "reward_action": {
+      "options": {
+        "save": "Salva modifiche",
+        "delete": "Elimina premio"
+      }
+    },
+    "time_category": {
+      "options": {
+        "morning": "Mattino",
+        "afternoon": "Pomeriggio",
+        "evening": "Sera",
+        "night": "Notte",
+        "anytime": "In qualsiasi momento"
+      }
+    },
+    "schedule_mode": {
+      "options": {
+        "specific_days": "Giorni specifici della settimana",
+        "recurring": "Ricorrente (ogni N giorni/settimane/mesi)",
+        "one_shot": "Faccenda una tantum (un solo giorno)"
+      }
+    },
+    "due_days_option": {
+      "options": {
+        "monday": "Lunedì",
+        "tuesday": "Martedì",
+        "wednesday": "Mercoledì",
+        "thursday": "Giovedì",
+        "friday": "Venerdì",
+        "saturday": "Sabato",
+        "sunday": "Domenica"
+      }
+    },
+    "recurrence": {
+      "options": {
+        "every_2_days": "Ogni 2 giorni",
+        "weekly": "Settimanale",
+        "every_2_weeks": "Ogni 2 settimane",
+        "monthly": "Mensile",
+        "every_3_months": "Ogni 3 mesi",
+        "every_6_months": "Ogni 6 mesi"
+      }
+    },
+    "recurrence_day_option": {
+      "options": {
+        "monday": "Lunedì",
+        "tuesday": "Martedì",
+        "wednesday": "Mercoledì",
+        "thursday": "Giovedì",
+        "friday": "Venerdì",
+        "saturday": "Sabato",
+        "sunday": "Domenica",
+        "any_day": "Qualsiasi giorno"
+      }
+    },
+    "first_occurrence_mode": {
+      "options": {
+        "available_immediately": "Disponibile subito",
+        "wait_for_first_occurrence": "Attendi la prima occorrenza programmata"
+      }
+    },
+    "streak_reset_mode": {
+      "options": {
+        "reset": "Azzera — la serie torna a 0 nel giorno saltato",
+        "pause": "Pausa — la serie resta fino al prossimo completamento"
+      }
+    },
+    "visibility_operator": {
+      "options": {
+        "none": "Nessun filtro — mostra sempre la faccenda",
+        "equals": "Uguale — mostra quando lo stato dell'entità corrisponde esattamente",
+        "not_equals": "Diverso — mostra quando lo stato dell'entità non corrisponde",
+        "gte": "Maggiore o uguale (≥) — mostra quando il valore numerico è ≥ al valore indicato",
+        "lte": "Minore o uguale (≤) — mostra quando il valore numerico è ≤ al valore indicato",
+        "gt": "Maggiore di (>) — mostra quando il valore numerico è > del valore indicato",
+        "lt": "Minore di (<) — mostra quando il valore numerico è < del valore indicato"
+      }
+    },
+    "assignment_mode": {
+      "options": {
+        "everyone": "Tutti — ogni bambino assegnato vede la faccenda",
+        "alternating": "Alternata — a turno tra i bambini assegnati, uno al giorno",
+        "random": "Casuale — sceglie ogni giorno un bambino assegnato a caso",
+        "balanced": "Bilanciata — divide le faccende bilanciate di oggi in modo equo tra i bambini assegnati",
+        "first_come": "Chi prima arriva — vince il primo bambino che la completa; per gli altri sparisce",
+        "unassigned": "Non assegnata — nessun bambino vede questa faccenda"
+      }
+    },
+    "task_group_policy": {
+      "options": {
+        "sticky": "Fissa — stesso bambino per tutte le faccende del gruppo",
+        "spread": "Distribuita — bambini diversi nel gruppo oggi"
+      }
+    },
+    "task_group_action": {
+      "options": {
+        "save": "Salva modifiche",
+        "delete": "Elimina gruppo"
+      }
+    },
+    "completion_sound": {
+      "options": {
+        "none": "Nessun suono",
+        "coin": "Moneta",
+        "levelup": "Livello superiore",
+        "fanfare": "Fanfara",
+        "chime": "Campanello",
+        "powerup": "Potenziamento",
+        "undo": "Annulla",
+        "fart1": "Pernacchia 1",
+        "fart2": "Pernacchia 2",
+        "fart3": "Pernacchia 3",
+        "fart4": "Pernacchia 4",
+        "fart5": "Pernacchia 5",
+        "fart6": "Pernacchia 6",
+        "fart7": "Pernacchia 7",
+        "fart8": "Pernacchia 8",
+        "fart9": "Pernacchia 9",
+        "fart10": "Pernacchia 10",
+        "fart_random": "Pernacchia casuale"
+      }
+    },
+    "difficulty": {
+      "options": {
+        "easy": "Facile",
+        "medium": "Media",
+        "hard": "Difficile"
+      }
+    },
+    "team_points_mode": {
+      "options": {
+        "each": "Tutti ricevono i punti completi",
+        "split": "Dividi i punti in parti uguali (arrotondati per difetto)"
+      }
+    },
+    "assignment_rotation_period": {
+      "options": {
+        "each_time": "Ogni volta che è prevista",
+        "week": "Ogni settimana",
+        "month": "Ogni mese"
+      }
+    },
+    "badge_tier": {
+      "options": {
+        "bronze": "Bronzo",
+        "silver": "Argento",
+        "gold": "Oro",
+        "platinum": "Platino"
+      }
+    },
+    "badge_combinator": {
+      "options": {
+        "and": "Richiedi tutti (E)",
+        "or": "Richiedine uno (O)"
+      }
+    },
+    "inspection_window": {
+      "options": {
+        "1h": "1 ora",
+        "2h": "2 ore",
+        "4h": "4 ore",
+        "bed": "Fino all'ora di andare a letto"
+      }
+    },
+    "mood": {
+      "options": {
+        "great": "Benissimo",
+        "good": "Bene",
+        "ok": "Così così",
+        "sad": "Triste",
+        "upset": "Arrabbiato"
+      }
+    },
+    "appeal_kind": {
+      "options": {
+        "chore": "Faccenda",
+        "reward": "Premio",
+        "penalty": "Penalità"
+      }
+    },
+    "pet_species": {
+      "options": {
+        "dragon": "Drago",
+        "cat": "Gatto",
+        "dog": "Cane",
+        "bunny": "Coniglietto",
+        "dino": "Dinosauro",
+        "unicorn": "Unicorno"
+      }
+    },
+    "sibling_check_verdict": {
+      "options": {
+        "done": "Sembra fatta",
+        "not_yet": "Non ancora"
+      }
+    }
+  },
+  "services": {
+    "complete_chore": {
+      "name": "Completa faccenda",
+      "description": "Segna una faccenda come completata da un bambino",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda da completare"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che completa la faccenda"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Cosa ha fatto il bambino, con parole sue. Obbligatoria quando la faccenda è libera, e mostrata al genitore durante l'approvazione."
+        },
+        "suggested_points": {
+          "name": "Punti suggeriti",
+          "description": "Quanto pensa il bambino che valga il lavoro. Un suggerimento per il genitore che approva: da solo non assegna nulla."
+        },
+        "quantity": {
+          "name": "Quantità",
+          "description": "Quante unità ha fatto il bambino, per una faccenda a quantità (\"leggi 20 pagine\"). Obbligatoria da parte di un bambino su quelle faccende; i punti della faccenda sono pagati per unità."
+        },
+        "time_id": {
+          "name": "Orario fisso",
+          "description": "Per una faccenda a orari fissi, quale orario spuntare. Lascia vuoto per quello aperto ora."
+        },
+        "as_parent": {
+          "name": "Come genitore",
+          "description": "Completa per conto del bambino e assegna subito i punti, saltando l'approvazione."
+        },
+        "photo_url": {
+          "name": "URL della foto",
+          "description": "URL o percorso facoltativo di una foto inviata come prova del completamento (es. un'istantanea di una telecamera). Mostrata al genitore durante l'approvazione."
+        },
+        "completed_date": {
+          "name": "Fatta il",
+          "description": "Registra il lavoretto per un giorno precedente (fino a 7 giorni fa, non oggi) in cui è stato fatto ma non spuntato. Solo genitori; approvato subito. Il limite giornaliero di quel giorno vale comunque."
+        }
+      }
+    },
+    "complete_bonus_subtask": {
+      "name": "Completa sotto-attività bonus",
+      "description": "Completa una sotto-attività bonus dopo che la faccenda principale è fatta",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda principale"
+        },
+        "bonus_subtask_id": {
+          "name": "ID sotto-attività bonus",
+          "description": "L'ID della sotto-attività bonus da completare"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che completa la sotto-attività bonus"
+        }
+      }
+    },
+    "approve_chore": {
+      "name": "Approva faccenda",
+      "description": "Approva una faccenda completata e assegna i punti",
+      "fields": {
+        "completion_id": {
+          "name": "ID completamento",
+          "description": "L'ID del completamento della faccenda da approvare"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Assegna questi punti invece del valore della faccenda. Lascia vuoto per usare i punti della faccenda."
+        },
+        "rating": {
+          "name": "Valutazione della qualità",
+          "description": "Valutazione facoltativa da 1 a 3 stelle di quanto bene è stata fatta la faccenda. Quando le valutazioni di qualità sono attive, scala i punti con il moltiplicatore di quelle stelle; lascia vuoto per pagare il 100%."
+        },
+        "note": {
+          "name": "Nota di lode",
+          "description": "Breve messaggio facoltativo per il bambino, mostrato oggi sulla sua scheda (fino a 120 caratteri)."
+        }
+      }
+    },
+    "approve_all_chores": {
+      "name": "Approva tutte le faccende",
+      "description": "Approva tutti i completamenti di faccende in attesa (o un insieme specifico) e assegna i punti",
+      "fields": {
+        "completion_ids": {
+          "name": "ID completamenti",
+          "description": "ID specifici dei completamenti da approvare; ometti per approvare tutti quelli in attesa"
+        },
+        "rating": {
+          "name": "Valutazione della qualità",
+          "description": "Valutazione facoltativa da 1 a 3 stelle applicata a ogni faccenda approvata da questa chiamata (le valutazioni di qualità devono essere attive)."
+        }
+      }
+    },
+    "reject_chore": {
+      "name": "Rifiuta faccenda",
+      "description": "Rifiuta una faccenda completata",
+      "fields": {
+        "completion_id": {
+          "name": "ID completamento",
+          "description": "L'ID del completamento della faccenda da rifiutare"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo facoltativo mostrato al bambino"
+        }
+      }
+    },
+    "undo_chore": {
+      "name": "Annulla faccenda",
+      "description": "Permette a un bambino di ritirare una propria faccenda: un invio in attesa finché un genitore non lo verifica, o una approvata automaticamente entro il tempo per annullare. Disattivato a meno che il tempo non sia impostato sopra 0 nelle impostazioni di TaskMate; ciò che un genitore ha verificato richiede un genitore per essere annullato.",
+      "fields": {
+        "completion_id": {
+          "name": "ID completamento",
+          "description": "L'ID del completamento della faccenda del bambino da ritirare"
+        }
+      }
+    },
+    "undo_chore_approval": {
+      "name": "Annulla approvazione faccenda",
+      "description": "Annulla un'approvazione accidentale: toglie i punti assegnati e rimette il completamento in attesa così può essere approvato di nuovo.",
+      "fields": {
+        "completion_id": {
+          "name": "ID completamento",
+          "description": "L'ID del completamento approvato da rimettere in attesa"
+        }
+      }
+    },
+    "undo_transaction": {
+      "name": "Annulla movimento",
+      "description": "Storna un movimento di punti tramite il suo ID: penalità, bonus, aggiunte/rimozioni manuali e regali (entrambe le parti). I movimenti automatici (bonus weekend/serie/settimana perfetta, spostamenti nei fondi, deprezzamento, interessi) non si possono annullare.",
+      "fields": {
+        "transaction_id": {
+          "name": "ID movimento",
+          "description": "L'ID del movimento di punti da stornare"
+        }
+      }
+    },
+    "claim_reward": {
+      "name": "Richiedi premio",
+      "description": "Il bambino richiede un premio usando i suoi punti",
+      "fields": {
+        "reward_id": {
+          "name": "ID premio",
+          "description": "L'ID del premio da richiedere"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che richiede il premio"
+        },
+        "recipient_id": {
+          "name": "ID destinatario",
+          "description": "Compralo invece per un fratello o una sorella. Paga il bambino che lo richiede; richiede che \"I bambini possono comprarsi premi a vicenda\" sia attivo."
+        }
+      }
+    },
+    "approve_reward": {
+      "name": "Approva premio",
+      "description": "Approva una richiesta di premio",
+      "fields": {
+        "claim_id": {
+          "name": "ID richiesta",
+          "description": "L'ID della richiesta di premio da approvare"
+        }
+      }
+    },
+    "allocate_points_to_pool": {
+      "name": "Versa punti nel fondo",
+      "description": "Sposta punti dal saldo spendibile di un bambino al fondo di risparmio di un premio (bloccati).",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che versa"
+        },
+        "reward_id": {
+          "name": "ID premio",
+          "description": "L'ID del fondo del premio in cui versare"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Numero di punti da versare (limitato dalla capienza del fondo e dal saldo spendibile)"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Aggiungi punti",
+      "description": "Aggiungi punti bonus a un bambino",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui aggiungere punti"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Il numero di punti da aggiungere"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo facoltativo del bonus"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Togli punti",
+      "description": "Togli punti a un bambino (penalità)",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui togliere punti"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Il numero di punti da togliere"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo facoltativo della penalità"
+        }
+      }
+    },
+    "reject_reward": {
+      "name": "Rifiuta premio",
+      "description": "Rifiuta una richiesta di premio",
+      "fields": {
+        "claim_id": {
+          "name": "ID richiesta",
+          "description": "L'ID della richiesta di premio da rifiutare"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo facoltativo mostrato al bambino"
+        }
+      }
+    },
+    "preview_sound": {
+      "name": "Anteprima suono",
+      "description": "Ascolta l'anteprima di un suono di completamento nel browser",
+      "fields": {
+        "sound": {
+          "name": "Suono",
+          "description": "Il suono da ascoltare"
+        }
+      }
+    },
+    "set_chore_order": {
+      "name": "Imposta ordine delle faccende",
+      "description": "Imposta l'ordine in cui vengono mostrate le faccende di un bambino",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino di cui impostare l'ordine delle faccende"
+        },
+        "chore_order": {
+          "name": "Ordine delle faccende",
+          "description": "Elenco ordinato di ID faccenda"
+        }
+      }
+    },
+    "add_penalty": {
+      "name": "Aggiungi penalità",
+      "description": "Crea una nuova penalità",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Il nome della penalità"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Il numero di punti da togliere quando viene applicata"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Descrizione facoltativa della penalità"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona MDI della penalità"
+        },
+        "assigned_to": {
+          "name": "Assegnata a",
+          "description": "Elenco degli ID bambino a cui si applica questa penalità"
+        }
+      }
+    },
+    "update_penalty": {
+      "name": "Aggiorna penalità",
+      "description": "Aggiorna una penalità esistente",
+      "fields": {
+        "penalty_id": {
+          "name": "ID penalità",
+          "description": "L'ID della penalità da aggiornare"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nuovo nome della penalità"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Nuovo valore in punti"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Nuova descrizione"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Nuova icona"
+        },
+        "assigned_to": {
+          "name": "Assegnata a",
+          "description": "Nuovo elenco di ID bambino"
+        }
+      }
+    },
+    "remove_penalty": {
+      "name": "Rimuovi penalità",
+      "description": "Rimuovi una penalità",
+      "fields": {
+        "penalty_id": {
+          "name": "ID penalità",
+          "description": "L'ID della penalità da rimuovere"
+        }
+      }
+    },
+    "apply_penalty": {
+      "name": "Applica penalità",
+      "description": "Applica una penalità a un bambino, togliendo punti",
+      "fields": {
+        "penalty_id": {
+          "name": "ID penalità",
+          "description": "L'ID della penalità da applicare"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui applicare la penalità"
+        }
+      }
+    },
+    "add_bonus": {
+      "name": "Aggiungi bonus",
+      "description": "Crea un nuovo bonus",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Il nome del bonus"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Il numero di punti da assegnare quando viene applicato"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Descrizione facoltativa del bonus"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona MDI del bonus"
+        },
+        "assigned_to": {
+          "name": "Assegnato a",
+          "description": "Elenco degli ID bambino a cui si applica questo bonus"
+        }
+      }
+    },
+    "update_bonus": {
+      "name": "Aggiorna bonus",
+      "description": "Aggiorna un bonus esistente",
+      "fields": {
+        "bonus_id": {
+          "name": "ID bonus",
+          "description": "L'ID del bonus da aggiornare"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nuovo nome del bonus"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Nuovo valore in punti"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Nuova descrizione"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Nuova icona"
+        },
+        "assigned_to": {
+          "name": "Assegnato a",
+          "description": "Nuovo elenco di ID bambino"
+        }
+      }
+    },
+    "remove_bonus": {
+      "name": "Rimuovi bonus",
+      "description": "Rimuovi un bonus",
+      "fields": {
+        "bonus_id": {
+          "name": "ID bonus",
+          "description": "L'ID del bonus da rimuovere"
+        }
+      }
+    },
+    "apply_bonus": {
+      "name": "Applica bonus",
+      "description": "Applica un bonus a un bambino, assegnando punti",
+      "fields": {
+        "bonus_id": {
+          "name": "ID bonus",
+          "description": "L'ID del bonus da applicare"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui applicare il bonus"
+        }
+      }
+    },
+    "add_chore": {
+      "name": "Aggiungi faccenda",
+      "description": "Crea una nuova faccenda in modo dinamico, di solito da un'automazione o uno script",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Il nome della faccenda"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Descrizione facoltativa della faccenda"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Punti assegnati quando questa faccenda viene completata"
+        },
+        "assigned_to": {
+          "name": "Assegnata a",
+          "description": "Bambini a cui assegnare questa faccenda, per nome o ID. Lascia vuoto per assegnarla a tutti i bambini"
+        },
+        "time_category": {
+          "name": "Fascia oraria",
+          "description": "Quando va completata questa faccenda: morning, afternoon, evening, night o anytime"
+        },
+        "one_shot": {
+          "name": "Una tantum",
+          "description": "Se true, è una faccenda una tantum che scade dopo essere stata completata o alla fine della giornata"
+        },
+        "requires_approval": {
+          "name": "Richiede approvazione",
+          "description": "Se true, un genitore deve approvare il completamento prima che vengano assegnati i punti"
+        },
+        "team_size": {
+          "name": "Dimensione squadra",
+          "description": "Rendila una faccenda di squadra che conta solo quando si sono uniti questo numero di bambini diversi. Quando la squadra è completa, viene inviata per tutti. 0 = una faccenda normale."
+        },
+        "team_points_mode": {
+          "name": "Punti della squadra",
+          "description": "Come paga una faccenda di squadra: \"each\" dà a ogni partecipante i punti completi, \"split\" li divide in parti uguali (arrotondati per difetto)."
+        },
+        "team_bonus": {
+          "name": "Bonus squadra",
+          "description": "Punti extra che ogni partecipante guadagna quando una faccenda di squadra viene completata."
+        },
+        "times": {
+          "name": "Orari fissi",
+          "description": "Rendila una faccenda che compare a orari fissi della giornata, es. lavarsi le mani a colazione, pranzo e cena. Un elenco di massimo 5 orari, ognuno con nome, inizio e fine (\"HH:MM\", stesso giorno, senza sovrapposizioni) e punti."
+        },
+        "times_bonus": {
+          "name": "Bonus tutti gli orari",
+          "description": "Punti extra pagati una volta al giorno quando tutti gli orari fissi sono fatti."
+        },
+        "assignment_mode": {
+          "name": "Modalità di assegnazione",
+          "description": "Chi fa la faccenda ogni giorno: everyone (tutti), alternating (a turno), random (casuale), balanced (chi l'ha fatta meno), first_come (il primo bambino che la prende) o unassigned (non assegnata)."
+        },
+        "assignment_rotation_period": {
+          "name": "Periodo di rotazione",
+          "description": "Per le faccende alternate: each_time (il bambino successivo ogni volta che la faccenda è prevista), week (un bambino la tiene per settimane intere) o month (mesi interi)."
+        },
+        "assignment_rotation_every": {
+          "name": "Ruota ogni",
+          "description": "Per quante settimane o mesi ogni bambino tiene una faccenda alternata che ha un periodo di rotazione (2 = ogni due settimane)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Giorno del cambio",
+          "description": "Il giorno della settimana in cui una rotazione settimanale passa al bambino successivo."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Giorno del mese del cambio",
+          "description": "Il giorno del mese in cui una rotazione mensile passa al bambino successivo (l'ultimo giorno nei mesi più corti)."
+        },
+        "schedule_mode": {
+          "name": "Programmazione",
+          "description": "specific_days (i giorni in Giorni previsti, o ogni giorno se nessuno), recurring (secondo il ritmo di Ricorrenza) o one_shot (solo oggi)."
+        },
+        "due_days": {
+          "name": "Giorni previsti",
+          "description": "Giorni della settimana in cui la faccenda è prevista, per la programmazione specific_days. Lascia vuoto per ogni giorno."
+        },
+        "recurrence": {
+          "name": "Ricorrenza",
+          "description": "Ogni quanto torna una faccenda ricorrente: weekly, every_2_weeks, monthly, every_3_months, every_6_months oppure every_N_days con N da 2 a 365 (es. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Giorno della ricorrenza",
+          "description": "Il giorno della settimana in cui cade una faccenda weekly o every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Inizio della ricorrenza",
+          "description": "La data da cui parte il ritmo di una faccenda ricorrente (AAAA-MM-GG)."
+        },
+        "due_time": {
+          "name": "Orario di scadenza",
+          "description": "Ora del giorno entro cui va fatta la faccenda (\"HH:MM\"). Finire entro quell'ora dà il bonus anticipo, dopo la penalità ritardo. Vuoto per nessun orario di scadenza."
+        },
+        "daily_limit": {
+          "name": "Limite giornaliero",
+          "description": "Quante volte al giorno si può completare la faccenda. Le faccende una tantum sono sempre 1."
+        },
+        "difficulty": {
+          "name": "Difficoltà",
+          "description": "Livello di difficoltà; scala i punti assegnati con il moltiplicatore del livello (medium = base ×1.0)"
+        },
+        "expires_in_minutes": {
+          "name": "Scade tra (minuti)",
+          "description": "Rendila una faccenda reattiva con una scadenza tra questo numero di minuti, es. la lavatrice ha finito, svuotala entro 30 minuti. La faccenda sparisce e viene disattivata quando la scadenza passa. 0 = nessuna scadenza."
+        },
+        "speed_bonus_points": {
+          "name": "Punti bonus velocità",
+          "description": "Punti extra assegnati se la faccenda viene completata prima della scadenza. Richiede expires_in_minutes."
+        }
+      }
+    },
+    "update_chore": {
+      "name": "Aggiorna faccenda",
+      "description": "Modifica una faccenda esistente tramite il suo ID. Cambiano solo i campi che imposti; tutto il resto resta com'è.",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda da modificare"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nuovo nome della faccenda"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Nuova descrizione della faccenda"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Punti assegnati quando questa faccenda viene completata"
+        },
+        "assigned_to": {
+          "name": "Assegnata a",
+          "description": "Bambini a cui assegnare questa faccenda, per nome o ID. Un elenco vuoto la assegna a tutti i bambini"
+        },
+        "time_category": {
+          "name": "Fascia oraria",
+          "description": "Quando va completata questa faccenda: morning, afternoon, evening, night o anytime"
+        },
+        "difficulty": {
+          "name": "Difficoltà",
+          "description": "Livello di difficoltà: easy, medium o hard. Scala i punti assegnati (medium = ×1.0)."
+        },
+        "requires_approval": {
+          "name": "Richiede approvazione",
+          "description": "Se true, un genitore deve approvare il completamento prima che vengano assegnati i punti"
+        },
+        "enabled": {
+          "name": "Attiva",
+          "description": "Disattiva la faccenda (false) per nasconderla ovunque senza eliminarla, o riattivala (true)."
+        },
+        "speed_bonus_points": {
+          "name": "Punti bonus velocità",
+          "description": "Punti extra assegnati se la faccenda viene completata prima della sua scadenza."
+        },
+        "team_size": {
+          "name": "Dimensione squadra",
+          "description": "Rendila una faccenda di squadra che conta solo quando si sono uniti questo numero di bambini diversi. Quando la squadra è completa, viene inviata per tutti. 0 = una faccenda normale."
+        },
+        "team_points_mode": {
+          "name": "Punti della squadra",
+          "description": "Come paga una faccenda di squadra: \"each\" dà a ogni partecipante i punti completi, \"split\" li divide in parti uguali (arrotondati per difetto)."
+        },
+        "team_bonus": {
+          "name": "Bonus squadra",
+          "description": "Punti extra che ogni partecipante guadagna quando una faccenda di squadra viene completata."
+        },
+        "times": {
+          "name": "Orari fissi",
+          "description": "Sostituisce gli orari fissi della faccenda. Un elenco di massimo 5 orari, ognuno con nome, inizio e fine (\"HH:MM\", stesso giorno, senza sovrapposizioni) e punti. Un elenco vuoto li rimuove."
+        },
+        "times_bonus": {
+          "name": "Bonus tutti gli orari",
+          "description": "Punti extra pagati una volta al giorno quando tutti gli orari fissi sono fatti."
+        },
+        "assignment_mode": {
+          "name": "Modalità di assegnazione",
+          "description": "Chi fa la faccenda ogni giorno: everyone (tutti), alternating (a turno), random (casuale), balanced (chi l'ha fatta meno), first_come (il primo bambino che la prende) o unassigned (non assegnata)."
+        },
+        "assignment_rotation_period": {
+          "name": "Periodo di rotazione",
+          "description": "Per le faccende alternate: each_time (il bambino successivo ogni volta che la faccenda è prevista), week (un bambino la tiene per settimane intere) o month (mesi interi)."
+        },
+        "assignment_rotation_every": {
+          "name": "Ruota ogni",
+          "description": "Per quante settimane o mesi ogni bambino tiene una faccenda alternata che ha un periodo di rotazione (2 = ogni due settimane)."
+        },
+        "assignment_rotation_weekday": {
+          "name": "Giorno del cambio",
+          "description": "Il giorno della settimana in cui una rotazione settimanale passa al bambino successivo."
+        },
+        "assignment_rotation_month_day": {
+          "name": "Giorno del mese del cambio",
+          "description": "Il giorno del mese in cui una rotazione mensile passa al bambino successivo (l'ultimo giorno nei mesi più corti)."
+        },
+        "schedule_mode": {
+          "name": "Programmazione",
+          "description": "specific_days (i giorni in Giorni previsti, o ogni giorno se nessuno), recurring (secondo il ritmo di Ricorrenza) o one_shot (solo oggi)."
+        },
+        "due_days": {
+          "name": "Giorni previsti",
+          "description": "Giorni della settimana in cui la faccenda è prevista, per la programmazione specific_days. Lascia vuoto per ogni giorno."
+        },
+        "recurrence": {
+          "name": "Ricorrenza",
+          "description": "Ogni quanto torna una faccenda ricorrente: weekly, every_2_weeks, monthly, every_3_months, every_6_months oppure every_N_days con N da 2 a 365 (es. every_10_days)."
+        },
+        "recurrence_day": {
+          "name": "Giorno della ricorrenza",
+          "description": "Il giorno della settimana in cui cade una faccenda weekly o every_2_weeks."
+        },
+        "recurrence_start": {
+          "name": "Inizio della ricorrenza",
+          "description": "La data da cui parte il ritmo di una faccenda ricorrente (AAAA-MM-GG)."
+        },
+        "due_time": {
+          "name": "Orario di scadenza",
+          "description": "Ora del giorno entro cui va fatta la faccenda (\"HH:MM\"). Finire entro quell'ora dà il bonus anticipo, dopo la penalità ritardo. Vuoto per nessun orario di scadenza."
+        },
+        "daily_limit": {
+          "name": "Limite giornaliero",
+          "description": "Quante volte al giorno si può completare la faccenda. Le faccende una tantum sono sempre 1."
+        }
+      }
+    },
+    "delete_chore": {
+      "name": "Elimina faccenda",
+      "description": "Elimina una faccenda tramite il suo ID, con la stessa pulizia del pannello. Finisce in Eliminati di recente nel pannello per 7 giorni, così può essere ripristinata.",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda da eliminare"
+        },
+        "confirm": {
+          "name": "Conferma",
+          "description": "Deve essere true. Una protezione perché una faccenda non venga mai eliminata per sbaglio."
+        }
+      }
+    },
+    "skip_chore": {
+      "name": "Salta faccenda",
+      "description": "Fa avanzare la rotazione di oggi oltre l'assegnatario attuale. Temporaneo: domani la rotazione riprende normalmente.",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda da saltare"
+        }
+      }
+    },
+    "set_chore_manual_start": {
+      "name": "Imposta il bambino iniziale",
+      "description": "Imposta quale bambino inizia una faccenda a rotazione. In modalità alternata riordina il gruppo; in casuale/bilanciata cambia solo l'assegnatario di oggi.",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda da aggiornare"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che deve iniziare la rotazione"
+        }
+      }
+    },
+    "add_task_group": {
+      "name": "Aggiungi gruppo di faccende",
+      "description": "Crea un gruppo di faccende (sticky = stesso bambino, spread = bambini diversi).",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Nome visualizzato del gruppo"
+        },
+        "policy": {
+          "name": "Regola",
+          "description": "sticky (stesso bambino) o spread (bambini diversi)"
+        },
+        "chore_ids": {
+          "name": "ID faccende",
+          "description": "Elenco degli ID faccenda nel gruppo. Per sticky, la prima faccenda è quella guida."
+        }
+      }
+    },
+    "update_task_group": {
+      "name": "Aggiorna gruppo di faccende",
+      "description": "Aggiorna nome, regola o membri di un gruppo di faccende.",
+      "fields": {
+        "group_id": {
+          "name": "ID gruppo",
+          "description": "L'ID del gruppo da aggiornare"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nuovo nome visualizzato"
+        },
+        "policy": {
+          "name": "Regola",
+          "description": "Nuova regola (sticky o spread)"
+        },
+        "chore_ids": {
+          "name": "ID faccende",
+          "description": "Elenco sostitutivo di ID faccenda. Per sticky, la prima faccenda è quella guida."
+        }
+      }
+    },
+    "remove_task_group": {
+      "name": "Rimuovi gruppo di faccende",
+      "description": "Elimina un gruppo di faccende. Le faccende del gruppo non vengono toccate.",
+      "fields": {
+        "group_id": {
+          "name": "ID gruppo",
+          "description": "L'ID del gruppo da eliminare"
+        }
+      }
+    },
+    "start_timed_task": {
+      "name": "Avvia faccenda a tempo",
+      "description": "Avvia o riprende il timer di una faccenda a tempo",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda a tempo"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che avvia il timer"
+        }
+      }
+    },
+    "leave_team_chore": {
+      "name": "Esci dalla faccenda di squadra",
+      "description": "Fa uscire un bambino da una faccenda di squadra a cui si è unito oggi, prima che la squadra sia completa",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda di squadra"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che esce dalla squadra"
+        }
+      }
+    },
+    "complete_next_chore": {
+      "name": "Completa la prossima faccenda",
+      "description": "Completa la prossima faccenda da fare del bambino, nell'ordine mostrato dalla scheda bambino. Le faccende che richiedono una foto, una nota, un timer o una squadra vengono saltate. Pensata per pulsanti dello smartwatch e scorciatoie; valgono le normali regole di approvazione.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino di cui completare la prossima faccenda"
+        }
+      }
+    },
+    "post_bounty": {
+      "name": "Pubblica taglia",
+      "description": "Pubblica un lavoretto una tantum sulla bacheca delle taglie per un numero fisso di punti. Qualsiasi bambino idoneo può prenderlo; finirlo passa dalla normale coda di approvazione.",
+      "fields": {
+        "title": {
+          "name": "Titolo",
+          "description": "Di che lavoretto si tratta, es. \"Lavare la macchina\""
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Punti fissi pagati quando un genitore approva il lavoro finito"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Dettagli extra facoltativi per i bambini"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona MDI mostrata sulla bacheca"
+        },
+        "expires_at": {
+          "name": "Scade il",
+          "description": "Data e ora facoltative in cui la taglia lascia la bacheca se nessuno l'ha presa. Lascia vuoto per nessuna scadenza."
+        },
+        "eligible_child_ids": {
+          "name": "Bambini idonei",
+          "description": "ID dei bambini che possono prenderla. Vuoto = tutti i bambini."
+        },
+        "claim_hours": {
+          "name": "Blocco della presa (ore)",
+          "description": "Quanto dura una presa prima che la taglia torni sulla bacheca"
+        },
+        "require_photo": {
+          "name": "Richiedi foto",
+          "description": "Il bambino deve allegare una foto quando la segna come fatta"
+        },
+        "notify_children": {
+          "name": "Avvisa i bambini",
+          "description": "Invia la notifica \"Nuova taglia\" ai bambini idonei"
+        }
+      }
+    },
+    "update_bounty": {
+      "name": "Aggiorna taglia",
+      "description": "Modifica una taglia. Una volta presa, si possono cambiare solo i punti e la scadenza.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID taglia",
+          "description": "L'ID della taglia da modificare"
+        },
+        "title": {
+          "name": "Titolo",
+          "description": "Di che lavoretto si tratta, es. \"Lavare la macchina\""
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Punti fissi pagati quando un genitore approva il lavoro finito"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Dettagli extra facoltativi per i bambini"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona MDI mostrata sulla bacheca"
+        },
+        "expires_at": {
+          "name": "Scade il",
+          "description": "Data e ora facoltative in cui la taglia lascia la bacheca se nessuno l'ha presa. Lascia vuoto per nessuna scadenza."
+        },
+        "eligible_child_ids": {
+          "name": "Bambini idonei",
+          "description": "ID dei bambini che possono prenderla. Vuoto = tutti i bambini."
+        },
+        "claim_hours": {
+          "name": "Blocco della presa (ore)",
+          "description": "Quanto dura una presa prima che la taglia torni sulla bacheca"
+        },
+        "require_photo": {
+          "name": "Richiedi foto",
+          "description": "Il bambino deve allegare una foto quando la segna come fatta"
+        },
+        "notify_children": {
+          "name": "Avvisa i bambini",
+          "description": "Invia la notifica \"Nuova taglia\" ai bambini idonei"
+        }
+      }
+    },
+    "remove_bounty": {
+      "name": "Rimuovi taglia",
+      "description": "Toglie una taglia dalla bacheca. Non consentito mentre un lavoro finito è in attesa di approvazione.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID taglia",
+          "description": "L'ID della taglia da rimuovere"
+        }
+      }
+    },
+    "claim_bounty": {
+      "name": "Prendi taglia",
+      "description": "Prende una taglia per un bambino, bloccandola per lui per il periodo di presa. Un bambino può tenere una sola presa alla volta.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID taglia",
+          "description": "L'ID della taglia da prendere"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che la prende"
+        }
+      }
+    },
+    "give_back_bounty": {
+      "name": "Restituisci taglia",
+      "description": "Rimette sulla bacheca una taglia presa così un altro bambino può prenderla",
+      "fields": {
+        "bounty_id": {
+          "name": "ID taglia",
+          "description": "L'ID della taglia presa"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che l'ha presa"
+        }
+      }
+    },
+    "complete_bounty": {
+      "name": "Completa taglia",
+      "description": "Segna come fatta una taglia presa. Va nella coda di approvazione come una faccenda.",
+      "fields": {
+        "bounty_id": {
+          "name": "ID taglia",
+          "description": "L'ID della taglia presa"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che l'ha presa"
+        },
+        "photo_url": {
+          "name": "URL della foto",
+          "description": "Foto del lavoro finito (obbligatoria quando la taglia la richiede)"
+        }
+      }
+    },
+    "pause_timed_task": {
+      "name": "Metti in pausa faccenda a tempo",
+      "description": "Mette in pausa il timer in corso di una faccenda a tempo",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda a tempo"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che mette in pausa il timer"
+        }
+      }
+    },
+    "stop_timed_task": {
+      "name": "Ferma faccenda a tempo",
+      "description": "Ferma il timer di una faccenda a tempo e la invia per l'approvazione",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda a tempo"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che ferma il timer"
+        }
+      }
+    },
+    "add_badge": {
+      "name": "Aggiungi distintivo",
+      "description": "Crea un distintivo personalizzato.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Il nome visualizzato del distintivo"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Descrizione di come si ottiene il distintivo"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Icona del distintivo (es. mdi:beach)"
+        },
+        "tier": {
+          "name": "Livello",
+          "description": "Livello del distintivo: bronze, silver, gold o platinum"
+        },
+        "point_bonus": {
+          "name": "Bonus in punti",
+          "description": "Punti accreditati al bambino quando ottiene il distintivo"
+        },
+        "criteria": {
+          "name": "Criteri",
+          "description": "Elenco di dizionari metric / operator / value. Vuoto = solo assegnazione manuale."
+        },
+        "assigned_to": {
+          "name": "Assegnato a",
+          "description": "Elenco di ID bambino (vuoto = tutti)"
+        },
+        "notify_on_earn": {
+          "name": "Notifica all'ottenimento",
+          "description": "Invia una notifica quando il distintivo viene ottenuto"
+        },
+        "combinator": {
+          "name": "Combinazione",
+          "description": "Come si combinano più criteri: AND (devono essere veri tutti) o OR (basta uno). Predefinito AND."
+        }
+      }
+    },
+    "update_badge": {
+      "name": "Aggiorna distintivo",
+      "description": "Aggiorna un distintivo esistente. Per quelli predefiniti si possono modificare solo point_bonus, tier, assigned_to, enabled, notify_on_earn.",
+      "fields": {
+        "badge_id": {
+          "name": "ID distintivo",
+          "description": "L'ID del distintivo da aggiornare"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Nuovo nome visualizzato del distintivo"
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Nuova descrizione del distintivo"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Nuova icona del distintivo"
+        },
+        "tier": {
+          "name": "Livello",
+          "description": "Livello del distintivo: bronze, silver, gold o platinum"
+        },
+        "point_bonus": {
+          "name": "Bonus in punti",
+          "description": "Punti accreditati al bambino quando ottiene il distintivo"
+        },
+        "criteria": {
+          "name": "Criteri",
+          "description": "Elenco di dizionari metric / operator / value. Vuoto = solo assegnazione manuale."
+        },
+        "assigned_to": {
+          "name": "Assegnato a",
+          "description": "Elenco di ID bambino (vuoto = tutti)"
+        },
+        "enabled": {
+          "name": "Attivo",
+          "description": "Se il distintivo è attivo"
+        },
+        "notify_on_earn": {
+          "name": "Notifica all'ottenimento",
+          "description": "Invia una notifica quando il distintivo viene ottenuto"
+        },
+        "combinator": {
+          "name": "Combinazione",
+          "description": "Come si combinano più criteri: AND (devono essere veri tutti) o OR (basta uno). Predefinito AND."
+        }
+      }
+    },
+    "remove_badge": {
+      "name": "Rimuovi distintivo",
+      "description": "Rimuove un distintivo personalizzato. Quelli predefiniti non si possono rimuovere.",
+      "fields": {
+        "badge_id": {
+          "name": "ID distintivo",
+          "description": "L'ID del distintivo da rimuovere"
+        }
+      }
+    },
+    "award_badge_manually": {
+      "name": "Assegna distintivo manualmente",
+      "description": "Assegna manualmente un distintivo a un bambino.",
+      "fields": {
+        "badge_id": {
+          "name": "ID distintivo",
+          "description": "L'ID del distintivo da assegnare"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che riceve il distintivo"
+        }
+      }
+    },
+    "revoke_badge": {
+      "name": "Revoca distintivo",
+      "description": "Revoca un distintivo assegnato. Se era stato accreditato un bonus in punti, viene stornato.",
+      "fields": {
+        "awarded_badge_id": {
+          "name": "ID distintivo assegnato",
+          "description": "L'ID della registrazione del distintivo assegnato da revocare"
+        }
+      }
+    },
+    "rebuild_badges": {
+      "name": "Ricalcola distintivi",
+      "description": "Rivaluta in silenzio tutti i distintivi per tutti i bambini (niente notifiche, niente bonus in punti)."
+    },
+    "apply_mandatory_penalty": {
+      "name": "Applica penalità per obbligatoria",
+      "description": "Toglie i punti di penalità configurati per una faccenda obbligatoria saltata e chiude l'elemento da verificare.",
+      "fields": {
+        "miss_id": {
+          "name": "ID mancanza",
+          "description": "L'ID dell'elemento da verificare per la faccenda obbligatoria saltata"
+        }
+      }
+    },
+    "choose_avatar": {
+      "name": "Scegli avatar",
+      "description": "Un bambino passa a un avatar che ha sbloccato.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino"
+        },
+        "icon": {
+          "name": "Icona dell'avatar",
+          "description": "L'icona mdi di un avatar sbloccato del catalogo (es. mdi:rocket-launch)."
+        }
+      }
+    },
+    "dismiss_mandatory_chore": {
+      "name": "Ignora faccenda obbligatoria",
+      "description": "Chiude senza penalità l'elemento da verificare di una faccenda obbligatoria saltata.",
+      "fields": {
+        "miss_id": {
+          "name": "ID mancanza",
+          "description": "L'ID dell'elemento da verificare per la faccenda obbligatoria saltata"
+        }
+      }
+    },
+    "gift_points": {
+      "name": "Regala punti",
+      "description": "Trasferisce punti spendibili da un bambino a un altro (controllato dal genitore).",
+      "fields": {
+        "from_child_id": {
+          "name": "ID bambino mittente",
+          "description": "L'ID del bambino che invia i punti"
+        },
+        "to_child_id": {
+          "name": "ID bambino destinatario",
+          "description": "L'ID del bambino che riceve i punti"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Il numero di punti da trasferire"
+        }
+      }
+    },
+    "adjust_streak_freezes": {
+      "name": "Rettifica scudi serie",
+      "description": "Dà a un bambino gettoni scudo serie (importo positivo) o ne toglie (negativo). Un'aggiunta non supera mai il limite streak_freeze_max.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino i cui gettoni cambiano"
+        },
+        "amount": {
+          "name": "Quantità",
+          "description": "Gettoni da aggiungere (positivo) o togliere (negativo)"
+        }
+      }
+    },
+    "postpone_mandatory_chore": {
+      "name": "Rimanda faccenda obbligatoria",
+      "description": "Dà a una faccenda obbligatoria saltata un'altra fascia (o domani) senza penalità e chiude l'elemento da verificare.",
+      "fields": {
+        "miss_id": {
+          "name": "ID mancanza",
+          "description": "L'ID dell'elemento da verificare per la faccenda obbligatoria saltata"
+        }
+      }
+    },
+    "request_swap": {
+      "name": "Chiedi scambio di faccenda",
+      "description": "Un bambino chiede di prendere l'assegnazione a rotazione di oggi di una faccenda (in attesa di approvazione del genitore).",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID della faccenda da prendere"
+        },
+        "requester_id": {
+          "name": "ID bambino richiedente",
+          "description": "L'ID del bambino che chiede lo scambio"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Notifica di prova",
+      "description": "Invia una notifica di esempio del tipo indicato ai suoi destinatari attivi (ignora l'interruttore generale così si può verificare l'instradamento).",
+      "fields": {
+        "type_id": {
+          "name": "Tipo di notifica",
+          "description": "ID del tipo di notifica, es. pending_chore_approval, badge_earned, streak_milestone"
+        }
+      }
+    },
+    "record_allowance_payout": {
+      "name": "Registra pagamento paghetta",
+      "description": "Toglie punti e registra nel registro un pagamento della paghetta in denaro reale (tasso di conversione fisso; controllato dal genitore).",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che riceve il pagamento"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Punti da convertire in denaro e togliere"
+        }
+      }
+    },
+    "add_wish": {
+      "name": "Aggiungi desiderio",
+      "description": "Un bambino aggiunge qualcosa per cui vuole risparmiare. Aspetta l'approvazione di un genitore.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che esprime il desiderio"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Cosa desidera il bambino"
+        },
+        "target": {
+          "name": "Traguardo",
+          "description": "Numero di punti suggerito che costa. Il genitore può cambiarlo quando approva."
+        },
+        "link": {
+          "name": "Link",
+          "description": "Indirizzo web facoltativo (http o https) dell'oggetto"
+        },
+        "photo_url": {
+          "name": "Immagine",
+          "description": "Immagine facoltativa appena caricata tramite l'endpoint foto di TaskMate"
+        }
+      }
+    },
+    "withdraw_wish": {
+      "name": "Ritira desiderio",
+      "description": "Un bambino ritira un desiderio ancora in attesa di approvazione, o ne cancella uno rifiutato.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui appartiene il desiderio"
+        }
+      }
+    },
+    "move_points_to_wish": {
+      "name": "Sposta punti sul desiderio",
+      "description": "Sposta punti dal saldo spendibile di un bambino a uno dei suoi desideri approvati.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui appartiene il desiderio"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Quanti punti spostare (limitati dal saldo e da quanto manca al desiderio)"
+        }
+      }
+    },
+    "take_points_from_wish": {
+      "name": "Riprendi punti dal desiderio",
+      "description": "Restituisce al bambino parte dei punti che ha messo da parte in un desiderio. I punti promessi non escono mai.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui appartiene il desiderio"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Quanti punti messi da parte riprendere (limitati da quanto ha messo da parte il bambino)"
+        }
+      }
+    },
+    "request_wish_redeem": {
+      "name": "Chiedi di riscattare il desiderio",
+      "description": "Un desiderio completamente finanziato diventa una richiesta di premio in attesa dell'approvazione del genitore.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino a cui appartiene il desiderio"
+        }
+      }
+    },
+    "approve_wish": {
+      "name": "Approva desiderio",
+      "description": "Trasforma un desiderio in attesa in un obiettivo di risparmio, eventualmente con un traguardo diverso.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "target": {
+          "name": "Traguardo",
+          "description": "Punti che costa il desiderio. Lascia vuoto per mantenere il suggerimento del bambino."
+        }
+      }
+    },
+    "decline_wish": {
+      "name": "Rifiuta desiderio",
+      "description": "Di' di no a un desiderio. I punti messi da parte tornano al bambino e le promesse vengono annullate.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Motivo facoltativo mostrato al bambino"
+        }
+      }
+    },
+    "pledge_to_wish": {
+      "name": "Promessa per un desiderio",
+      "description": "Registra i punti che un parente mette per il desiderio di un bambino. Non toccano mai nessun saldo.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "name": {
+          "name": "Da",
+          "description": "Da chi arriva la promessa, es. Nonna"
+        },
+        "points": {
+          "name": "Punti",
+          "description": "Quanti punti promettere (limitati da quanto manca al desiderio)"
+        },
+        "message": {
+          "name": "Messaggio",
+          "description": "Messaggio facoltativo per il bambino"
+        }
+      }
+    },
+    "remove_wish_pledge": {
+      "name": "Rimuovi promessa",
+      "description": "Annulla una promessa. Consentito finché il desiderio non viene riscattato.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        },
+        "pledge_id": {
+          "name": "ID promessa",
+          "description": "L'ID della promessa da rimuovere"
+        }
+      }
+    },
+    "remove_wish": {
+      "name": "Rimuovi desiderio",
+      "description": "Elimina un desiderio. I punti messi da parte tornano al bambino e le promesse vengono annullate.",
+      "fields": {
+        "wish_id": {
+          "name": "ID desiderio",
+          "description": "L'ID del desiderio"
+        }
+      }
+    },
+    "start_inspection": {
+      "name": "Avvia ispezione",
+      "description": "Segnala per un'ispezione a sorpresa una faccenda approvata nelle ultime 24 ore. Decidi se è superata prima che la finestra si chiuda; un'ispezione non decisa si chiude senza esito.",
+      "fields": {
+        "completion_id": {
+          "name": "ID completamento",
+          "description": "L'ID del completamento approvato da ispezionare"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Punti pagati se superata. Predefinito: il valore delle Impostazioni."
+        },
+        "window": {
+          "name": "Finestra",
+          "description": "Quanto tempo hai per controllare: 1h, 2h, 4h o bed (fino all'ora di andare a letto). Predefinito: il valore delle Impostazioni."
+        },
+        "tell_child": {
+          "name": "Avvisa il bambino",
+          "description": "Mostra subito \"Ispezione in arrivo\" sulla scheda del bambino. Disattiva per un controllo segreto."
+        }
+      }
+    },
+    "pass_inspection": {
+      "name": "Supera ispezione",
+      "description": "La faccenda ispezionata è superata. Paga il bonus come normale movimento di punti e festeggia sulla scheda del bambino.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID ispezione",
+          "description": "L'ID dell'ispezione aperta"
+        },
+        "bonus": {
+          "name": "Bonus",
+          "description": "Punti da pagare. Predefinito: il bonus impostato all'avvio dell'ispezione."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota facoltativa mostrata al bambino"
+        }
+      }
+    },
+    "fail_inspection": {
+      "name": "Ispezione non superata",
+      "description": "La faccenda ispezionata non è superata. Non vengono tolti punti. Può essere rimandata da rifare; rifarla non dà nulla in più.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID ispezione",
+          "description": "L'ID dell'ispezione aperta"
+        },
+        "redo": {
+          "name": "Rimanda da rifare",
+          "description": "Rimette la faccenda nell'elenco del bambino come non fatta per oggi. Predefinito: il valore delle Impostazioni."
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Nota facoltativa mostrata al bambino (cosa sistemare)"
+        }
+      }
+    },
+    "cancel_inspection": {
+      "name": "Annulla ispezione",
+      "description": "Annulla un'ispezione aperta, come se non fosse mai iniziata.",
+      "fields": {
+        "inspection_id": {
+          "name": "ID ispezione",
+          "description": "L'ID dell'ispezione aperta"
+        }
+      }
+    },
+    "request_help": {
+      "name": "Chiedi aiuto",
+      "description": "Un bambino dice di essere bloccato su una faccenda. Invia una notifica ai genitori; nulla viene completato o saltato.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che chiede aiuto"
+        },
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "La faccenda su cui è bloccato"
+        },
+        "message": {
+          "name": "Messaggio",
+          "description": "Parole facoltative del bambino, es. \"Non arrivo allo scaffale\"."
+        }
+      }
+    },
+    "answer_help": {
+      "name": "Rispondi a una richiesta di aiuto",
+      "description": "Segna come risolta la richiesta di aiuto di un bambino, così la sua scheda smette di dire che l'aiuto sta arrivando.",
+      "fields": {
+        "request_id": {
+          "name": "ID richiesta",
+          "description": "La richiesta di aiuto da chiudere"
+        }
+      }
+    },
+    "log_mood": {
+      "name": "Registra umore",
+      "description": "Un bambino dice com'è andata la sua giornata. Uno al giorno; registrarlo di nuovo lo sostituisce.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino"
+        },
+        "mood": {
+          "name": "Umore",
+          "description": "great, good, ok, sad o upset"
+        }
+      }
+    },
+    "set_sick_day": {
+      "name": "Imposta giorno di malattia",
+      "description": "Dà a un bambino un giorno di malattia. Le sue faccende sono nascoste, la serie è congelata e nessuna faccenda obbligatoria risulta saltata.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che non sta bene"
+        },
+        "date": {
+          "name": "Data",
+          "description": "Il giorno (predefinito oggi). Da una settimana fa a un mese avanti."
+        },
+        "sick": {
+          "name": "Malato",
+          "description": "Disattiva per ritirare il giorno di malattia."
+        }
+      }
+    },
+    "set_weekly_goal": {
+      "name": "Imposta obiettivo settimanale",
+      "description": "Imposta l'obiettivo personale di punti settimanali di un bambino. Raggiungerlo paga il bonus obiettivo settimanale della famiglia una volta a settimana. 0 lo cancella.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino"
+        },
+        "target": {
+          "name": "Obiettivo",
+          "description": "Punti da guadagnare questa settimana"
+        }
+      }
+    },
+    "buy_raffle_tickets": {
+      "name": "Compra biglietti della lotteria",
+      "description": "Un bambino spende punti in biglietti per una lotteria. Ogni biglietto è una possibilità nell'estrazione.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID lotteria",
+          "description": "La lotteria"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che compra"
+        },
+        "tickets": {
+          "name": "Biglietti",
+          "description": "Quanti biglietti comprare"
+        }
+      }
+    },
+    "draw_raffle": {
+      "name": "Estrai lotteria",
+      "description": "Estrae subito il vincitore di una lotteria invece di aspettare l'ora dell'estrazione.",
+      "fields": {
+        "raffle_id": {
+          "name": "ID lotteria",
+          "description": "La lotteria da estrarre"
+        }
+      }
+    },
+    "adopt_pet": {
+      "name": "Adotta un animaletto",
+      "description": "Un bambino adotta (o rinomina) il suo animaletto virtuale. Da ora cresce con ogni faccenda che finisce.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino"
+        },
+        "species": {
+          "name": "Specie",
+          "description": "dragon, cat, dog, bunny, dino o unicorn"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Il nome dell'animaletto"
+        },
+        "hatch_egg": {
+          "name": "Schiudi l'uovo",
+          "description": "Fa schiudere l'uovo deposto dall'animaletto adulto in un nuovo animaletto. Quello vecchio entra nella famiglia di animaletti."
+        }
+      }
+    },
+    "buy_pet_item": {
+      "name": "Compra un oggetto per l'animaletto",
+      "description": "Un bambino compra un oggetto dal negozio animaletti con i suoi punti spendibili. Oltre la soglia di approvazione dei genitori, aspetta invece un genitore.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che compra"
+        },
+        "item_id": {
+          "name": "ID oggetto",
+          "description": "L'oggetto del negozio animaletti"
+        }
+      }
+    },
+    "equip_pet_item": {
+      "name": "Vesti l'animaletto",
+      "description": "Mette all'animaletto del bambino un oggetto posseduto o sbloccato col livello (sostituendo ciò che c'è in quella posizione), oppure lo toglie.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino"
+        },
+        "item_id": {
+          "name": "ID oggetto",
+          "description": "Un oggetto del negozio animaletti, oppure bow, top_hat, scarf o crown"
+        },
+        "wear": {
+          "name": "Indossalo",
+          "description": "Attivo lo mette; disattivo lo toglie."
+        }
+      }
+    },
+    "mark_reward_delivered": {
+      "name": "Segna premio come consegnato",
+      "description": "Un premio riscattato è stato consegnato, quindi esce dall'elenco da consegnare. Indica child_id quando è il bambino a confermare il proprio.",
+      "fields": {
+        "claim_id": {
+          "name": "ID richiesta",
+          "description": "La richiesta di premio approvata"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che conferma di averlo ricevuto (lascia vuoto quando lo segna un genitore)"
+        }
+      }
+    },
+    "start_boost": {
+      "name": "Avvia un boost",
+      "description": "Apre una finestra di boost. Le faccende fatte al suo interno pagano il moltiplicatore. Lascia vuoti chore_ids o child_ids per includerli tutti.",
+      "fields": {
+        "multiplier": {
+          "name": "Moltiplicatore",
+          "description": "Quanto valgono le faccende coinvolte, es. 2 per il doppio (da 1.1 a 5)"
+        },
+        "minutes": {
+          "name": "Minuti",
+          "description": "Quanto dura il boost"
+        },
+        "chore_ids": {
+          "name": "ID faccende",
+          "description": "Le faccende coinvolte (vuoto = tutte le faccende)"
+        },
+        "child_ids": {
+          "name": "ID bambini",
+          "description": "I bambini coinvolti (vuoto = tutti)"
+        },
+        "starts_at": {
+          "name": "Inizia alle",
+          "description": "Inizia più tardi invece che subito (fino a una settimana dopo)"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Etichetta facoltativa mostrata sulle schede, es. \"Ospiti alle sei\""
+        },
+        "notify": {
+          "name": "Notifica",
+          "description": "Invia la notifica del boost ai bambini coinvolti (quando quella notifica è attiva)"
+        }
+      }
+    },
+    "end_boost": {
+      "name": "Termina un boost",
+      "description": "Ferma un boost in anticipo o annulla uno che non è ancora iniziato.",
+      "fields": {
+        "boost_id": {
+          "name": "ID boost",
+          "description": "Il boost, dall'attributo boosts di sensor.taskmate_overview"
+        }
+      }
+    },
+    "appeal": {
+      "name": "Ricorso",
+      "description": "Un bambino chiede di ricontrollare una faccenda rifiutata, una richiesta di premio rifiutata o una penalità delle ultime 48 ore. Richiede che i ricorsi siano attivi.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che fa ricorso"
+        },
+        "kind": {
+          "name": "Tipo",
+          "description": "Su cosa si fa ricorso"
+        },
+        "target_id": {
+          "name": "ID oggetto",
+          "description": "L'elemento, dall'attributo appealable della voce del bambino in sensor.taskmate_overview"
+        },
+        "message": {
+          "name": "Messaggio",
+          "description": "Parole facoltative del bambino, fino a 200 caratteri"
+        }
+      }
+    },
+    "decide_appeal": {
+      "name": "Decidi un ricorso",
+      "description": "Accoglie un ricorso (paga la faccenda, approva il premio o annulla la penalità) oppure conferma la decisione originale.",
+      "fields": {
+        "appeal_id": {
+          "name": "ID ricorso",
+          "description": "Il ricorso"
+        },
+        "overturn": {
+          "name": "Accogli",
+          "description": "true per accogliere, false per confermare"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Parole facoltative per il bambino, fino a 200 caratteri"
+        }
+      }
+    },
+    "adjust_screen_time": {
+      "name": "Rettifica tempo schermo",
+      "description": "Aggiunge minuti al saldo del tempo schermo di un bambino, o ne toglie con un numero negativo.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino il cui saldo cambia"
+        },
+        "minutes": {
+          "name": "Minuti",
+          "description": "Minuti da aggiungere; negativi per toglierli. Il saldo non va mai sotto zero."
+        },
+        "reason": {
+          "name": "Motivo",
+          "description": "Una breve nota per lo storico del saldo"
+        }
+      }
+    },
+    "save_screen_time": {
+      "name": "Metti da parte tempo schermo",
+      "description": "Sposta i minuti di tempo schermo non usati di un bambino nel suo barattolo del weekend. Prima va la quota di oggi, poi i minuti accumulati, fino al limite del barattolo.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che mette da parte i minuti"
+        },
+        "minutes": {
+          "name": "Minuti",
+          "description": "Quanti minuti mettere da parte. Lascia vuoto per mettere da parte tutto quello che ci sta."
+        }
+      }
+    },
+    "rate_reward": {
+      "name": "Valuta un premio",
+      "description": "Il bambino dà da 1 a 3 stelle a un premio ricevuto. Possibile per 3 giorni da quando il premio è consegnato (o approvato, se il monitoraggio della consegna è disattivato).",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che ha ricevuto il premio"
+        },
+        "claim_id": {
+          "name": "ID richiesta",
+          "description": "La richiesta di premio da valutare"
+        },
+        "stars": {
+          "name": "Stelle",
+          "description": "Da 1 a 3 stelle"
+        }
+      }
+    },
+    "sibling_check": {
+      "name": "Controllo tra fratelli",
+      "description": "Un bambino controlla la faccenda di un fratello in attesa di approvazione. done la approva e paga a chi controlla il bonus controllo tra fratelli; not_yet la lascia in attesa di un genitore, con una nota.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino che controlla",
+          "description": "Il bambino che fa il controllo (non quello che ha fatto la faccenda)"
+        },
+        "completion_id": {
+          "name": "ID completamento",
+          "description": "Il completamento in attesa, dall'attributo sibling_checks della voce di chi controlla in sensor.taskmate_overview"
+        },
+        "verdict": {
+          "name": "Esito",
+          "description": "done (sembra fatta) o not_yet"
+        },
+        "note": {
+          "name": "Nota",
+          "description": "Parole facoltative per il genitore con un not_yet, fino a 120 caratteri"
+        }
+      }
+    },
+    "set_chore_reminder": {
+      "name": "Imposta promemoria faccenda",
+      "description": "Un bambino sceglie quando ricevere un promemoria per una delle sue faccende, entro gli orari più presto e più tardi impostati in TaskMate. Lascia vuoto l'orario per cancellarlo.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "Il bambino che vuole il promemoria"
+        },
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "La faccenda per cui ricevere il promemoria"
+        },
+        "time": {
+          "name": "Orario",
+          "description": "HH:MM, es. 17:30. Vuoto cancella il promemoria."
+        }
+      }
+    },
+    "read_aloud": {
+      "name": "Leggi le faccende ad alta voce",
+      "description": "Legge su un lettore multimediale le faccende da fare di un bambino, per esempio \"Ella, ti restano tre cose…\". Usa le frasi di lettura nella lingua di Home Assistant, salvo modelli di lettura personalizzati.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino le cui faccende vengono lette"
+        },
+        "media_player": {
+          "name": "Lettore multimediale",
+          "description": "Dove parlare. Se vuoto usa il predefinito delle Impostazioni."
+        },
+        "tts_entity": {
+          "name": "Entità di sintesi vocale",
+          "description": "Quale servizio TTS usare. Se vuoto usa quello delle Impostazioni, poi l'unico installato."
+        },
+        "message": {
+          "name": "Messaggio personalizzato",
+          "description": "Di' questo invece del riepilogo generato."
+        }
+      }
+    },
+    "spin_roulette": {
+      "name": "Gira la roulette delle faccende",
+      "description": "Sceglie a caso una faccenda da fare per un bambino con un moltiplicatore di punti. Facoltativa: attivala e imposta il moltiplicatore e i giri giornalieri nelle impostazioni del pannello di TaskMate.",
+      "fields": {
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che gira"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "child_stats": {
+        "unit_of_measurement": "faccende",
+        "name": "Statistiche {child}"
+      },
+      "child_badges": {
+        "unit_of_measurement": "distintivi",
+        "name": "Distintivi {child}"
+      },
+      "child_watch": {
+        "state": {
+          "left": "Ancora #",
+          "all_done": "Tutto fatto",
+          "no_chores": "Nessuna faccenda"
+        },
+        "name": "Smartwatch {child}"
+      },
+      "overview": {
+        "name": "TaskMate Panoramica"
+      },
+      "chores": {
+        "name": "TaskMate Faccende"
+      },
+      "chore_availability": {
+        "name": "TaskMate Disponibilità faccende"
+      },
+      "rewards": {
+        "name": "TaskMate Premi"
+      },
+      "activity": {
+        "name": "TaskMate Attività"
+      },
+      "incentives": {
+        "name": "TaskMate Incentivi"
+      },
+      "bounties": {
+        "name": "TaskMate Taglie"
+      },
+      "auctions": {
+        "name": "TaskMate Aste"
+      },
+      "chore_board": {
+        "name": "TaskMate Tabellone faccende"
+      },
+      "child_points": {
+        "name": "Punti {child}"
+      },
+      "child_wishlist": {
+        "name": "Lista dei desideri {child}"
+      },
+      "pending_approvals": {
+        "name": "Approvazioni in attesa"
+      }
+    },
+    "number": {
+      "weekend_multiplier": {
+        "name": "Moltiplicatore weekend"
+      },
+      "perfect_week_bonus": {
+        "name": "Bonus settimana perfetta"
+      }
+    },
+    "select": {
+      "streak_reset_mode": {
+        "name": "Modalità di azzeramento serie",
+        "state": {
+          "reset": "Azzera — la serie torna a 0 nel giorno saltato",
+          "pause": "Pausa — la serie resta fino al prossimo completamento"
+        }
+      },
+      "card_design": {
+        "name": "Stile delle schede",
+        "state": {
+          "classic": "Classico",
+          "playroom": "Playroom",
+          "console": "Console",
+          "cleanpro": "Clean Pro",
+          "accessible": "Accessibile",
+          "graphite": "Graphite"
+        }
+      }
+    },
+    "event": {
+      "child_activity": {
+        "name": "Attività {child}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "chore_completed": "Faccenda completata",
+              "chore_approved": "Faccenda approvata",
+              "chore_rejected": "Faccenda rifiutata",
+              "chore_approval_undone": "Approvazione faccenda annullata",
+              "reward_claimed": "Premio richiesto",
+              "reward_approved": "Premio approvato",
+              "reward_rejected": "Premio rifiutato",
+              "badge_earned": "Distintivo ottenuto",
+              "level_up": "Livello superiore",
+              "streak_updated": "Serie aggiornata",
+              "streak_freeze_used": "Scudo serie usato",
+              "perfect_week": "Settimana perfetta",
+              "weekly_target_reached": "Obiettivo settimanale della faccenda raggiunto",
+              "quest_completed": "Missione completata",
+              "challenge_completed": "Sfida completata",
+              "bonus_applied": "Bonus applicato",
+              "penalty_applied": "Penalità applicata",
+              "surprise_bonus": "Bonus a sorpresa",
+              "mandatory_missed": "Faccenda obbligatoria saltata",
+              "team_chore_completed": "Faccenda di squadra completata",
+              "points_gifted": "Punti regalati",
+              "help_requested": "Aiuto richiesto",
+              "mood_logged": "Umore registrato",
+              "weekly_goal_reached": "Obiettivo settimanale raggiunto",
+              "sick_day": "Giorno di malattia",
+              "chore_auto_approved": "Faccenda approvata automaticamente",
+              "penalty_redeemed": "Penalità recuperata",
+              "raffle_won": "Lotteria vinta",
+              "pet_evolved": "L'animaletto è cresciuto",
+              "pet_item_bought": "Oggetto per l'animaletto comprato",
+              "reward_delivered": "Premio consegnato",
+              "personal_best": "Record personale",
+              "appeal_submitted": "Ricorso inviato",
+              "appeal_decided": "Ricorso deciso",
+              "screen_time_low": "Tempo schermo quasi finito",
+              "screen_time_out": "Tempo schermo finito",
+              "screen_time_changed": "Tempo schermo modificato",
+              "screen_time_saved": "Tempo schermo messo da parte",
+              "screen_time_jar_opened": "Barattolo del tempo schermo aperto",
+              "points_expired": "Punti scaduti",
+              "points_expiring": "Punti in scadenza",
+              "reward_rated": "Premio valutato",
+              "penalty_warning": "Avviso di penalità",
+              "sibling_check": "Controllo tra fratelli"
+            }
+          }
+        }
+      },
+      "family_activity": {
+        "name": "Attività della famiglia",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "family_goal_reached": "Obiettivo di famiglia raggiunto",
+              "season_champion": "Campione della stagione",
+              "bounty_posted": "Taglia pubblicata",
+              "scheduled_change_applied": "Modifica programmata applicata",
+              "raffle_drawn": "Lotteria estratta",
+              "boost_started": "Boost iniziato",
+              "boost_ended": "Boost terminato",
+              "bin_day": "Faccenda del giorno dei rifiuti",
+              "shopping_job": "Lavoretto dalla lista della spesa"
+            }
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "has_pending_approvals": {
+        "name": "Approvazioni in attesa presenti"
+      }
+    },
+    "button": {
+      "complete_chore": {
+        "name": "{child}: completa {chore}"
+      },
+      "claim_reward": {
+        "name": "{child}: richiedi {reward}"
+      }
+    }
+  },
+  "exceptions": {
+    "timed_start_dependency": {
+      "message": "{chore} non può ancora iniziare: prima fai {chores}."
+    },
+    "calendar_unknown_event": {
+      "message": "Questo evento non è una faccenda di TaskMate sul calendario di questo bambino."
+    },
+    "calendar_series_not_supported": {
+      "message": "Dal calendario una faccenda ricorrente si può spostare o rimuovere solo un giorno alla volta. Per cambiare tutta la serie, modifica la faccenda in TaskMate."
+    },
+    "calendar_repeating_create": {
+      "message": "Gli eventi ricorrenti non si possono aggiungere dal calendario. Crea invece una faccenda ricorrente in TaskMate."
+    },
+    "calendar_rename_series": {
+      "message": "Rinomina una faccenda ricorrente in TaskMate. Dal calendario puoi solo spostare o rimuovere un singolo giorno."
+    },
+    "calendar_time_follows_chore": {
+      "message": "Una faccenda ricorrente mantiene la sua fascia oraria. Dal calendario si può cambiare solo la data di una singola occorrenza."
+    },
+    "calendar_past_date": {
+      "message": "Le faccende non si possono aggiungere, spostare verso o da un giorno passato."
+    },
+    "calendar_already_scheduled": {
+      "message": "{chore} è già prevista il {date}."
+    },
+    "calendar_empty_title": {
+      "message": "Dai un titolo alla faccenda."
+    },
+    "calendar_own_event": {
+      "message": "Questo evento è stato pubblicato da TaskMate stesso, quindi non viene aggiunto come nuova faccenda."
+    },
+    "help_chore_not_open_yet": {
+      "message": "{chore} non è ancora aperta: chiedi aiuto quando sarà il momento di farla."
+    },
+    "help_chore_time_passed": {
+      "message": "Il tempo per {chore} è passato, quindi ora non c'è niente per cui chiedere aiuto."
+    },
+    "help_chore_not_available": {
+      "message": "{chore} non si può fare adesso, quindi non c'è ancora niente per cui chiedere aiuto."
+    },
+    "help_already_on_its_way": {
+      "message": "L'aiuto per {chore} sta già arrivando."
+    },
+    "help_cooldown": {
+      "message": "Aspetta un minuto prima di chiedere di nuovo aiuto."
+    },
+    "rate_limited": {
+      "message": "Troppe richieste da questo account. Riprova tra un minuto."
+    },
+    "child_not_found": {
+      "message": "Bambino {child_id} non trovato"
+    },
+    "chore_not_found": {
+      "message": "Faccenda {chore_id} non trovata"
+    },
+    "reward_not_found": {
+      "message": "Premio {reward_id} non trovato"
+    },
+    "teamwork_size_not_number": {
+      "message": "La dimensione della squadra deve essere un numero intero."
+    },
+    "teamwork_size_range": {
+      "message": "Una faccenda di squadra richiede tra 2 e {max} bambini (o 0 per una faccenda normale)."
+    },
+    "teamwork_points_mode": {
+      "message": "I punti della squadra devono essere 'each' o 'split'."
+    },
+    "teamwork_open_ended": {
+      "message": "Una faccenda di squadra non può essere anche libera."
+    },
+    "teamwork_assignment_mode": {
+      "message": "Una faccenda di squadra deve essere assegnata a tutti, non \"chi prima arriva\" né a rotazione."
+    },
+    "teamwork_timed": {
+      "message": "Una faccenda a tempo non può essere una faccenda di squadra."
+    },
+    "teamwork_not_team_chore": {
+      "message": "La faccenda “{name}” non è una faccenda di squadra"
+    },
+    "swap_only_rotation": {
+      "message": "Si possono scambiare solo le faccende a rotazione"
+    },
+    "swap_won_at_auction": {
+      "message": "Questa faccenda è stata vinta all'asta oggi, quindi non si può scambiare"
+    },
+    "swap_already_assigned": {
+      "message": "La faccenda è già assegnata a quel bambino oggi"
+    },
+    "swap_already_pending": {
+      "message": "C'è già una richiesta di scambio in attesa per questa faccenda"
+    },
+    "swap_too_many_pending": {
+      "message": "Troppe richieste di scambio in attesa"
+    },
+    "swap_request_not_found": {
+      "message": "Richiesta di scambio {request_id} non trovata"
+    },
+    "bulk_unknown_action": {
+      "message": "Azione multipla sconosciuta {action}"
+    },
+    "bulk_edit_unknown_fields": {
+      "message": "Impossibile modificare in blocco {fields}"
+    },
+    "bulk_edit_unknown_child": {
+      "message": "Bambino sconosciuto {child_id}"
+    },
+    "bulk_edit_unknown_period": {
+      "message": "Fascia oraria sconosciuta {period}"
+    },
+    "chore_unknown": {
+      "message": "Faccenda sconosciuta: {chore_id}"
+    },
+    "skip_everyone_mode": {
+      "message": "Saltare non è supportato per la modalità di assegnazione 'everyone'"
+    },
+    "skip_sticky_follower": {
+      "message": "Impossibile saltare una faccenda secondaria di un gruppo fisso; salta invece la faccenda guida"
+    },
+    "skip_pool_too_small": {
+      "message": "Per saltare serve una rotazione di 2 o più bambini"
+    },
+    "manual_start_everyone_mode": {
+      "message": "L'inizio manuale non è supportato per la modalità di assegnazione 'everyone'"
+    },
+    "manual_start_not_in_pool": {
+      "message": "Il bambino {child_id} non è nella rotazione di questa faccenda"
+    },
+    "chore_photo_required": {
+      "message": "Questa faccenda richiede una foto come prova."
+    },
+    "chore_note_required": {
+      "message": "Di' cosa hai fatto per inviarla."
+    },
+    "chore_quantity_required": {
+      "message": "Di' quante {unit} hai fatto."
+    },
+    "backdate_day_range": {
+      "message": "Scegli un giorno negli ultimi {days} giorni, prima di oggi."
+    },
+    "backdate_switched_off": {
+      "message": "“{name}” è disattivata."
+    },
+    "backdate_not_assigned": {
+      "message": "“{name}” non è uno dei lavoretti di {child}."
+    },
+    "backdate_rotation_team": {
+      "message": "“{name}” è a rotazione o richiede una squadra, quindi non si può registrare per un giorno passato."
+    },
+    "backdate_open_ended": {
+      "message": "“{name}” è libera, quindi richiede la nota del bambino e un prezzo. Usa la scheda del bambino."
+    },
+    "backdate_set_times": {
+      "message": "“{name}” ha orari fissi, quindi non si può registrare per un giorno passato."
+    },
+    "backdate_holiday": {
+      "message": "{weekday} era vacanza, quindi non c'erano lavoretti previsti."
+    },
+    "backdate_sick_day": {
+      "message": "{weekday} era il giorno di malattia di {child}, quindi non c'erano lavoretti previsti."
+    },
+    "backdate_birthday": {
+      "message": "{weekday} era il compleanno di {child}, un giorno libero dai lavoretti."
+    },
+    "backdate_auction": {
+      "message": "“{name}” è stata vinta all'asta quel giorno, quindi non si può registrare dopo."
+    },
+    "backdate_weekly_target_met": {
+      "message": "“{name}” aveva già raggiunto il suo obiettivo di {target} quella settimana."
+    },
+    "backdate_not_due": {
+      "message": "“{name}” non era prevista {weekday}."
+    },
+    "backdate_daily_limit": {
+      "message": "“{name}” era già stata fatta {done}/{limit} volte {weekday}."
+    },
+    "chore_disabled": {
+      "message": "La faccenda “{name}” è disattivata"
+    },
+    "parent_complete_one_shot": {
+      "message": "La faccenda “{name}” è una tantum e non può essere completata dal genitore"
+    },
+    "parent_complete_no_children": {
+      "message": "La faccenda “{name}” non ha bambini da escludere"
+    },
+    "parent_complete_rotation_shared": {
+      "message": "La faccenda “{name}” è condivisa da una rotazione e si può fare solo per tutti"
+    },
+    "parent_complete_not_assigned": {
+      "message": "La faccenda “{name}” non è assegnata a quel bambino"
+    },
+    "bonus_subtask_not_found": {
+      "message": "Sotto-attività bonus {subtask_id} non trovata nella faccenda “{name}”"
+    },
+    "bonus_subtask_not_assigned": {
+      "message": "La sotto-attività bonus “{subtask}” non è assegnata a {child}."
+    },
+    "bonus_subtask_parent_first": {
+      "message": "Impossibile completare la sotto-attività bonus “{subtask}”: prima va completata oggi la faccenda principale “{name}”."
+    },
+    "bonus_subtask_already_done": {
+      "message": "Sotto-attività bonus “{subtask}” già completata oggi."
+    },
+    "undo_window_passed": {
+      "message": "Questa faccenda non si può più annullare. Chiedi a un genitore di annullarla."
+    },
+    "undo_points_spent": {
+      "message": "Ora questa faccenda non si può annullare: i suoi punti sono già stati spesi. Chiedi a un genitore."
+    },
+    "completion_not_found": {
+      "message": "Completamento {completion_id} non trovato"
+    },
+    "completion_not_approved": {
+      "message": "Il completamento non è approvato; niente da annullare"
+    },
+    "chore_sort_unknown": {
+      "message": "Ordinamento sconosciuto “{sort}”"
+    },
+    "task_group_duplicate_chore": {
+      "message": "Faccenda duplicata nel gruppo: {chore_id}"
+    },
+    "task_group_everyone_mode": {
+      "message": "La faccenda “{name}” usa la modalità 'everyone' e non può entrare in un gruppo"
+    },
+    "task_group_already_member": {
+      "message": "La faccenda “{name}” fa già parte del gruppo “{group}”"
+    },
+    "task_group_unknown_policy": {
+      "message": "Regola del gruppo di faccende sconosciuta: {policy}"
+    },
+    "task_group_unknown": {
+      "message": "Gruppo di faccende sconosciuto: {group_id}"
+    },
+    "points_amount_zero": {
+      "message": "amount non può essere 0"
+    },
+    "streak_freeze_off_max0": {
+      "message": "Gli scudi serie sono disattivati (streak_freeze_max è 0)"
+    },
+    "streak_freeze_holds_max": {
+      "message": "{child} ha già il massimo di {cap} scudi serie"
+    },
+    "streak_freeze_has_max": {
+      "message": "{child} ha già il massimo di {cap} scudi serie"
+    },
+    "streak_freeze_off": {
+      "message": "Gli scudi serie sono disattivati"
+    },
+    "points_non_negative": {
+      "message": "points non può essere negativo"
+    },
+    "transaction_not_found": {
+      "message": "Movimento {transaction_id} non trovato"
+    },
+    "undo_not_undoable": {
+      "message": "Questa azione non può essere annullata"
+    },
+    "gift_undo_too_old": {
+      "message": "Questo regalo è precedente al supporto per l'annullamento e non può essere stornato automaticamente."
+    },
+    "gift_undo_spent": {
+      "message": "{child} ha già speso parte di questo regalo, quindi non può essere annullato."
+    },
+    "gift_amount_positive": {
+      "message": "L'importo del regalo deve essere positivo"
+    },
+    "gift_same_child": {
+      "message": "Impossibile regalare allo stesso bambino"
+    },
+    "gift_child_not_found": {
+      "message": "Mittente o destinatario non trovato"
+    },
+    "gift_not_enough_points": {
+      "message": "Punti insufficienti: {child} ha {points}, regalo {gift}"
+    },
+    "reward_jackpot_pool_short": {
+      "message": "“{name}” è un jackpot condiviso e il suo fondo non è completo. Servono {cost}, messi da parte {saved}"
+    },
+    "reward_not_available_to": {
+      "message": "Il premio “{name}” non è disponibile per {child}"
+    },
+    "reward_sold_out": {
+      "message": "Il premio “{name}” è esaurito"
+    },
+    "reward_expired": {
+      "message": "Il premio “{name}” è scaduto"
+    },
+    "reward_not_available_now": {
+      "message": "Il premio “{name}” non è disponibile in questo momento"
+    },
+    "reward_claim_already_waiting": {
+      "message": "Una richiesta per “{name}” è già in attesa di approvazione"
+    },
+    "reward_claims_too_many": {
+      "message": "Troppe richieste di premi sono già in attesa di approvazione"
+    },
+    "reward_not_enough_points": {
+      "message": "Punti insufficienti. Servono {cost}, disponibili {available}"
+    },
+    "reward_spending_cap": {
+      "message": "Limite di spesa raggiunto: {cap} per periodo già usati"
+    },
+    "reward_claim_target_missing": {
+      "message": "Premio o bambino non trovato per la richiesta {claim_id}"
+    },
+    "reward_not_enough_points_approve": {
+      "message": "Punti insufficienti per approvare. Servono {cost}, disponibili {points}"
+    },
+    "reward_claim_already_approved": {
+      "message": "“{name}” è già stato approvato e non può più essere rifiutato"
+    },
+    "reward_claim_already_approved_unnamed": {
+      "message": "'Questo premio' è già stato approvato e non può più essere rifiutato"
+    },
+    "pool_allocate_min": {
+      "message": "I punti da versare devono essere almeno 1"
+    },
+    "pool_no_spendable": {
+      "message": "Nessun punto spendibile disponibile per {child}"
+    },
+    "pool_full": {
+      "message": "Il fondo del premio “{name}” è già completo"
+    },
+    "reward_limit_once_day": {
+      "message": "{child} può avere {name} una volta al giorno. Sarà di nuovo disponibile il {date}"
+    },
+    "reward_limit_once_week": {
+      "message": "{child} può avere {name} una volta a settimana. Sarà di nuovo disponibile il {date}"
+    },
+    "reward_limit_once_month": {
+      "message": "{child} può avere {name} una volta al mese. Sarà di nuovo disponibile il {date}"
+    },
+    "reward_limit_times_day": {
+      "message": "{child} può avere {name} {count} volte al giorno. Sarà di nuovo disponibile il {date}"
+    },
+    "reward_limit_times_week": {
+      "message": "{child} può avere {name} {count} volte a settimana. Sarà di nuovo disponibile il {date}"
+    },
+    "reward_limit_times_month": {
+      "message": "{child} può avere {name} {count} volte al mese. Sarà di nuovo disponibile il {date}"
+    },
+    "reward_gift_off": {
+      "message": "Comprarsi premi a vicenda è disattivato"
+    },
+    "reward_gift_children_only": {
+      "message": "I premi si possono comprare solo per i bambini"
+    },
+    "reward_gift_not_giftable": {
+      "message": "“{name}” non si può comprare per qualcun altro"
+    },
+    "reward_rating_stars": {
+      "message": "Scegli da 1 a 3 stelle"
+    },
+    "reward_rating_not_yet": {
+      "message": "Quel premio non si può ancora valutare"
+    },
+    "reward_rating_not_holder": {
+      "message": "Solo il bambino che ha ricevuto il premio può valutarlo"
+    },
+    "reward_rating_already": {
+      "message": "Quel premio è già stato valutato"
+    },
+    "service_unknown_child": {
+      "message": "Bambino sconosciuto “{ref}”. Bambini validi: {valid}"
+    },
+    "service_ambiguous_child": {
+      "message": "Più di un bambino si chiama “{ref}”; usa invece l'id del bambino ({ids})"
+    },
+    "service_nothing_to_update": {
+      "message": "Niente da aggiornare: indica almeno un campo da cambiare"
+    },
+    "service_confirm_delete": {
+      "message": "Imposta confirm: true per eliminare la faccenda"
+    },
+    "penalty_already_earned_back": {
+      "message": "Quella penalità è già stata recuperata."
+    },
+    "fulfilment_not_waiting": {
+      "message": "Quel premio non è in attesa di essere consegnato."
+    },
+    "fulfilment_already_delivered": {
+      "message": "Quel premio è già stato segnato come consegnato."
+    },
+    "fulfilment_wrong_child": {
+      "message": "Quel premio appartiene a {child}."
+    },
+    "scheduled_field_not_allowed": {
+      "message": "“{field}” non può essere cambiato con una programmazione"
+    },
+    "scheduled_expects_bool": {
+      "message": "“{field}” richiede true o false"
+    },
+    "scheduled_expects_int": {
+      "message": "“{field}” richiede un numero intero"
+    },
+    "scheduled_negative": {
+      "message": "“{field}” non può essere negativo"
+    },
+    "scheduled_expects_list": {
+      "message": "“{field}” richiede un elenco"
+    },
+    "scheduled_expects_text": {
+      "message": "“{field}” richiede del testo"
+    },
+    "scheduled_apply_on_format": {
+      "message": "apply_on deve essere una data ISO, es. 2026-09-01"
+    },
+    "scheduled_apply_on_future": {
+      "message": "apply_on deve essere una data futura"
+    },
+    "scheduled_no_fields": {
+      "message": "Una modifica programmata deve cambiare almeno un campo"
+    },
+    "scheduled_change_not_found": {
+      "message": "Modifica programmata {change_id} non trovata"
+    },
+    "timed_not_timed": {
+      "message": "La faccenda “{name}” non è a tempo"
+    },
+    "timed_already_running": {
+      "message": "Il timer è già in corso"
+    },
+    "timed_daily_cap": {
+      "message": "Limite giornaliero raggiunto ({minutes} min)"
+    },
+    "timed_not_available": {
+      "message": "“{name}” non è disponibile per {child} in questo momento"
+    },
+    "timed_no_running": {
+      "message": "Nessun timer in corso da mettere in pausa"
+    },
+    "timed_no_active": {
+      "message": "Nessun timer attivo da fermare"
+    },
+    "set_time_unknown": {
+      "message": "Quell'orario non è uno degli orari fissi di questa faccenda."
+    },
+    "sick_day_range": {
+      "message": "Scegli un giorno da una settimana fa a un mese avanti."
+    },
+    "trash_nothing_to_restore": {
+      "message": "Niente da ripristinare: non è mai stato eliminato o è stato cancellato definitivamente"
+    },
+    "trash_id_exists": {
+      "message": "Esiste già qualcosa con id {item_id}"
+    },
+    "wish_not_found": {
+      "message": "Desiderio non trovato"
+    },
+    "wish_target_not_whole": {
+      "message": "Il traguardo deve essere un numero intero"
+    },
+    "wish_target_range": {
+      "message": "Il traguardo deve essere tra 1 e {max}"
+    },
+    "wish_name_required": {
+      "message": "Dai un nome al desiderio"
+    },
+    "wish_link_invalid": {
+      "message": "I link devono essere un indirizzo web che inizia con http:// o https://"
+    },
+    "wish_too_many_open": {
+      "message": "{child_name} ha già {max} desideri in corso"
+    },
+    "wish_picture_unusable": {
+      "message": "Quell'immagine non si può usare"
+    },
+    "wish_withdraw_not_allowed": {
+      "message": "Si può ritirare solo un desiderio in attesa o rifiutato"
+    },
+    "wish_not_open_for_saving": {
+      "message": "“{name}” non è aperto al risparmio"
+    },
+    "wish_move_min": {
+      "message": "I punti da spostare devono essere almeno 1"
+    },
+    "wish_fully_funded": {
+      "message": "“{name}” ha già raggiunto il traguardo"
+    },
+    "wish_no_spendable": {
+      "message": "Nessun punto spendibile disponibile per {child_name}"
+    },
+    "wish_take_back_not_allowed": {
+      "message": "Ora non si possono riprendere punti da “{name}”"
+    },
+    "wish_take_back_min": {
+      "message": "I punti da riprendere devono essere almeno 1"
+    },
+    "wish_nothing_saved": {
+      "message": "Niente di messo da parte in “{name}” da riprendere"
+    },
+    "wish_cannot_redeem": {
+      "message": "“{name}” non si può riscattare in questo momento"
+    },
+    "wish_needs_more_points": {
+      "message": "A “{name}” servono prima altri {points} punti"
+    },
+    "wish_too_many_pending_claims": {
+      "message": "Troppe richieste di premi sono già in attesa di approvazione"
+    },
+    "wish_not_waiting_approval": {
+      "message": "“{name}” non è in attesa di approvazione"
+    },
+    "wish_cannot_decline": {
+      "message": "“{name}” non può più essere rifiutato"
+    },
+    "wish_not_open_for_pledges": {
+      "message": "“{name}” non è aperto alle promesse"
+    },
+    "wish_pledge_name_required": {
+      "message": "Indica da chi arriva la promessa"
+    },
+    "wish_pledge_min": {
+      "message": "Una promessa deve essere di almeno 1 punto"
+    },
+    "wish_too_many_pledges": {
+      "message": "“{name}” ha già {max} promesse"
+    },
+    "wish_pledges_locked": {
+      "message": "Le promesse su “{name}” non possono più essere cambiate"
+    },
+    "wish_pledge_not_found": {
+      "message": "Promessa non trovata"
+    },
+    "wish_claim_missing": {
+      "message": "Desiderio o bambino non trovato per la richiesta {claim_id}"
+    },
+    "wish_no_longer_redeemable": {
+      "message": "“{name}” non è più in attesa di riscatto"
+    },
+    "wish_not_funded": {
+      "message": "“{name}” non ha più raggiunto il traguardo"
+    },
+    "pet_shop_emoji_invalid": {
+      "message": "L'immagine deve essere un'emoji (fino a {max} caratteri)."
+    },
+    "pet_shop_colour_invalid": {
+      "message": "Un colore deve essere nel formato #ff8800, oppure 'rainbow'."
+    },
+    "pet_shop_item_not_found": {
+      "message": "Quell'oggetto non è nel negozio."
+    },
+    "pet_shop_name_too_long": {
+      "message": "Il nome può avere al massimo {max} caratteri."
+    },
+    "pet_shop_name_required": {
+      "message": "Dai un nome all'oggetto."
+    },
+    "pet_shop_unknown_slot": {
+      "message": "Posizione sconosciuta “{slot}”"
+    },
+    "pet_shop_not_whole": {
+      "message": "Costo e livello devono essere numeri interi."
+    },
+    "pet_shop_cost_range": {
+      "message": "Il costo deve essere tra 1 e {max}."
+    },
+    "pet_shop_level_range": {
+      "message": "Il livello deve essere tra 0 e {max}."
+    },
+    "pet_shop_full": {
+      "message": "Il negozio contiene al massimo {max} oggetti."
+    },
+    "pets_switched_off": {
+      "message": "Gli animaletti sono disattivati."
+    },
+    "pet_adopt_first": {
+      "message": "Prima adotta un animaletto."
+    },
+    "pet_shop_not_unlocked": {
+      "message": "Non è ancora sbloccato."
+    },
+    "pet_shop_closed": {
+      "message": "Il negozio degli animaletti è chiuso."
+    },
+    "pet_shop_buy_first": {
+      "message": "Prima compralo."
+    },
+    "pet_shop_not_for_sale": {
+      "message": "Quell'oggetto non è in vendita."
+    },
+    "pet_shop_unlocks_at_level": {
+      "message": "Si sblocca al livello {level}."
+    },
+    "pet_shop_already_owned": {
+      "message": "Ce l'hai già."
+    },
+    "pet_shop_already_pending": {
+      "message": "È già in attesa di un genitore."
+    },
+    "pet_shop_not_enough_points": {
+      "message": "Non hai ancora abbastanza punti."
+    },
+    "pet_shop_purchase_gone": {
+      "message": "Quell'acquisto non è più in attesa."
+    },
+    "pet_shop_purchase_orphaned": {
+      "message": "Quel bambino o quell'oggetto non c'è più; rifiutalo invece."
+    },
+    "pet_shop_child_cannot_afford": {
+      "message": "Ora {child_name} non ha abbastanza punti per comprarlo."
+    },
+    "pet_unknown_species": {
+      "message": "Animaletto sconosciuto “{species}”"
+    },
+    "pet_name_required": {
+      "message": "Dai un nome al tuo animaletto."
+    },
+    "pet_no_egg": {
+      "message": "Non c'è ancora nessun uovo da schiudere."
+    },
+    "auction_not_found": {
+      "message": "Quell'asta non esiste più. Aggiorna la scheda."
+    },
+    "auction_refuse_off": {
+      "message": "Quella faccenda è disattivata."
+    },
+    "auction_refuse_unassigned": {
+      "message": "Una faccenda non assegnata non può essere data a nessuno, quindi non può andare all'asta."
+    },
+    "auction_refuse_team": {
+      "message": "Una faccenda di squadra è condivisa da una squadra, quindi non può andare all'asta."
+    },
+    "auction_refuse_timed": {
+      "message": "Una faccenda a tempo è pagata al minuto, quindi non può andare all'asta."
+    },
+    "auction_refuse_open_ended": {
+      "message": "Il prezzo di una faccenda libera lo decide il genitore, quindi non può andare all'asta."
+    },
+    "auction_invalid_date": {
+      "message": "Data non valida: {date}"
+    },
+    "auction_pick_future": {
+      "message": "Scegli un'occorrenza da domani in poi."
+    },
+    "auction_not_scheduled": {
+      "message": "“{chore}” non è prevista il {date}."
+    },
+    "auction_already_exists": {
+      "message": "Quell'occorrenza ha già un'asta."
+    },
+    "auction_points_not_whole": {
+      "message": "I punti devono essere numeri interi."
+    },
+    "auction_max_range": {
+      "message": "L'offerta massima è tra 1 e {max} punti."
+    },
+    "auction_min_range": {
+      "message": "L'offerta minima deve essere tra 1 e la massima."
+    },
+    "auction_needs_close": {
+      "message": "Un'asta ha bisogno di un orario di chiusura."
+    },
+    "auction_close_in_past": {
+      "message": "L'orario di chiusura è già passato."
+    },
+    "auction_close_before_day": {
+      "message": "Le offerte devono chiudersi prima del giorno della faccenda."
+    },
+    "auction_bidder_not_in_pool": {
+      "message": "Possono fare offerte solo i bambini che possono fare questa faccenda."
+    },
+    "auction_no_bidders": {
+      "message": "Scegli almeno un bambino che può offrire."
+    },
+    "auction_already_closed": {
+      "message": "Quest'asta è già chiusa."
+    },
+    "auction_already_cancelled": {
+      "message": "Quest'asta è già stata annullata."
+    },
+    "auction_occurrence_passed": {
+      "message": "Quell'occorrenza è già passata."
+    },
+    "auction_still_live": {
+      "message": "Quest'asta è ancora in corso. Annullala invece."
+    },
+    "auction_not_for_you": {
+      "message": "Quest'asta non è per te."
+    },
+    "auction_bidding_closed": {
+      "message": "Le offerte per quest'asta sono chiuse."
+    },
+    "auction_bid_not_whole": {
+      "message": "Un'offerta è un numero intero di punti."
+    },
+    "auction_bid_range": {
+      "message": "Offri tra {min} e {max} punti."
+    },
+    "auction_no_bid": {
+      "message": "Non hai fatto offerte su questa."
+    },
+    "bounty_invalid_expiry": {
+      "message": "Orario di scadenza non valido: {value}"
+    },
+    "bounty_not_found": {
+      "message": "Quella taglia non esiste più. Aggiorna la scheda."
+    },
+    "bounty_title_required": {
+      "message": "Una taglia ha bisogno di un titolo."
+    },
+    "bounty_points_not_whole": {
+      "message": "I punti devono essere un numero intero."
+    },
+    "bounty_points_range": {
+      "message": "Una taglia vale tra 1 e {max} punti."
+    },
+    "bounty_claim_hours_not_whole": {
+      "message": "Il blocco della presa deve essere un numero intero di ore."
+    },
+    "bounty_claim_hours_range": {
+      "message": "Il blocco della presa è tra 1 e {max} ore."
+    },
+    "bounty_expiry_in_past": {
+      "message": "La scadenza è già passata."
+    },
+    "bounty_finished_locked": {
+      "message": "Una taglia finita non si può modificare."
+    },
+    "bounty_claimed_locked": {
+      "message": "Una volta presa una taglia, si possono cambiare solo i punti e la scadenza."
+    },
+    "bounty_review_before_remove": {
+      "message": "Approva o rifiuta il lavoro finito prima di rimuovere questa taglia."
+    },
+    "bounty_release_not_claimed": {
+      "message": "Si può liberare solo una taglia presa."
+    },
+    "bounty_not_for_you": {
+      "message": "Questa taglia non è per te."
+    },
+    "bounty_taken": {
+      "message": "Qualcun altro è arrivato prima: questa taglia non è più sulla bacheca."
+    },
+    "bounty_one_at_a_time": {
+      "message": "Prima finisci “{title}”: puoi tenere una sola taglia alla volta."
+    },
+    "bounty_not_claimed_by_you": {
+      "message": "Non hai preso questa taglia."
+    },
+    "bounty_claim_expired": {
+      "message": "La tua presa su questa taglia è scaduta."
+    },
+    "bounty_photo_required": {
+      "message": "Questa taglia richiede una foto del lavoro finito."
+    },
+    "raffle_name_required": {
+      "message": "Dai un nome alla lotteria."
+    },
+    "raffle_ticket_cost_range": {
+      "message": "Un biglietto costa da 1 a {max}."
+    },
+    "raffle_draw_required": {
+      "message": "Scegli quando estrarre la lotteria."
+    },
+    "raffle_field_required": {
+      "message": "{field} è obbligatorio"
+    },
+    "raffle_draw_in_past": {
+      "message": "L'estrazione deve essere nel futuro."
+    },
+    "raffle_not_found": {
+      "message": "Lotteria non trovata"
+    },
+    "raffle_not_open_edit": {
+      "message": "Si può modificare solo una lotteria aperta."
+    },
+    "raffle_price_locked": {
+      "message": "Sono già stati comprati biglietti, quindi il prezzo non può cambiare."
+    },
+    "raffle_closed": {
+      "message": "Questa lotteria è chiusa."
+    },
+    "raffle_drawing": {
+      "message": "Questa lotteria è in fase di estrazione."
+    },
+    "raffle_not_open_to": {
+      "message": "Questa lotteria non è aperta a {child_name}."
+    },
+    "raffle_min_tickets": {
+      "message": "Compra almeno un biglietto."
+    },
+    "raffle_max_tickets": {
+      "message": "Puoi tenere al massimo {max} biglietti."
+    },
+    "raffle_not_enough_points": {
+      "message": "Punti insufficienti per così tanti biglietti."
+    },
+    "raffle_already_closed": {
+      "message": "Questa lotteria è già chiusa."
+    },
+    "roulette_off": {
+      "message": "La roulette delle faccende è disattivata"
+    },
+    "roulette_no_spins": {
+      "message": "Nessun giro rimasto oggi"
+    },
+    "roulette_nothing_left": {
+      "message": "Non è rimasto niente da estrarre"
+    },
+    "unlock_not_allowed": {
+      "message": "“{entity_id}” non è nell'elenco sblocchi consentiti. Aggiungilo in Impostazioni prima di usarlo come premio."
+    },
+    "unlock_minutes_not_whole": {
+      "message": "I minuti di sblocco devono essere un numero intero"
+    },
+    "unlock_minutes_negative": {
+      "message": "I minuti di sblocco non possono essere negativi"
+    },
+    "unlock_minutes_too_many": {
+      "message": "I minuti di sblocco non possono superare {max}"
+    },
+    "avatar_not_in_catalogue": {
+      "message": "Quell'avatar non è nel catalogo"
+    },
+    "avatar_locked": {
+      "message": "Quell'avatar non è ancora sbloccato"
+    },
+    "weekly_goals_off": {
+      "message": "Gli obiettivi settimanali sono disattivati."
+    },
+    "weekly_goal_range": {
+      "message": "Scegli un obiettivo da 0 a {max}."
+    },
+    "weekly_goal_below_bonus": {
+      "message": "Un obiettivo deve essere almeno {bonus}, il bonus che paga."
+    },
+    "weekly_goal_locked": {
+      "message": "L'obiettivo di questa settimana è già stato raggiunto e pagato, quindi non può cambiare fino a lunedì."
+    },
+    "challenge_name_required": {
+      "message": "Il nome della sfida è obbligatorio"
+    },
+    "challenge_target_min": {
+      "message": "L'obiettivo deve essere almeno 1"
+    },
+    "challenge_not_found": {
+      "message": "Sfida {challenge_id} non trovata"
+    },
+    "quest_name_required": {
+      "message": "Il nome della missione è obbligatorio"
+    },
+    "quest_needs_step": {
+      "message": "Una missione ha bisogno di almeno una tappa"
+    },
+    "quest_not_found": {
+      "message": "Missione {quest_id} non trovata"
+    },
+    "admin_only": {
+      "message": "Solo amministratori"
+    },
+    "taskmate_not_initialised": {
+      "message": "TaskMate non inizializzato"
+    },
+    "not_allowed": {
+      "message": "Non consentito"
+    },
+    "handler_failed": {
+      "message": "Qualcosa è andato storto; controlla il log di Home Assistant"
+    },
+    "chore_one_off_past_day": {
+      "message": "Una faccenda una tantum non può essere impostata per un giorno già passato"
+    },
+    "print_chart_bad_week_start": {
+      "message": "week_start deve essere una data ISO"
+    },
+    "penalty_not_found": {
+      "message": "Penalità {penalty_id} non trovata"
+    },
+    "bonus_not_found": {
+      "message": "Bonus {bonus_id} non trovato"
+    },
+    "group_not_found": {
+      "message": "Gruppo {group_id} non trovato"
+    },
+    "chores_bulk_no_names": {
+      "message": "Serve almeno il nome di una faccenda"
+    },
+    "notif_child_not_found": {
+      "message": "Bambino non trovato"
+    },
+    "notif_parent_not_found": {
+      "message": "Genitore non trovato"
+    },
+    "recap_not_found": {
+      "message": "Riepilogo non trovato"
+    },
+    "voucher_not_approved": {
+      "message": "Si può stampare solo un premio approvato"
+    },
+    "voucher_missing": {
+      "message": "Quel premio o quel bambino non esiste più"
+    },
+    "setup_invalid_birthday": {
+      "message": "Il compleanno “{value}” non è una data valida"
+    },
+    "kiosk_pin_invalid": {
+      "message": "Un PIN kiosk deve essere di esattamente 4 cifre"
+    },
+    "time_periods_empty": {
+      "message": "time_periods deve essere un elenco non vuoto"
+    },
+    "time_periods_too_many": {
+      "message": "troppe fasce (max {max})"
+    },
+    "time_periods_not_object": {
+      "message": "ogni fascia deve essere un oggetto"
+    },
+    "time_periods_duplicate_id": {
+      "message": "id di fascia duplicato: {period_id}"
+    },
+    "time_periods_needs_name": {
+      "message": "ogni fascia personalizzata ha bisogno di un nome"
+    },
+    "time_periods_invalid_time": {
+      "message": "orario non valido per la fascia “{name}” (usa HH:MM)"
+    },
+    "time_periods_start_after_end": {
+      "message": "la fascia “{name}” deve iniziare prima di finire"
+    },
+    "time_periods_overlap": {
+      "message": "“{name}” si sovrappone a “{other}”: le fasce non possono sovrapporsi"
+    },
+    "time_periods_in_use": {
+      "message": "impossibile eliminare una fascia ancora usata da faccende: {chores}"
+    },
+    "vacation_periods_not_list": {
+      "message": "vacation_periods deve essere un elenco"
+    },
+    "vacation_periods_too_many": {
+      "message": "troppi periodi di vacanza (max {max})"
+    },
+    "vacation_periods_not_object": {
+      "message": "ogni periodo di vacanza deve essere un oggetto"
+    },
+    "vacation_periods_bad_dates": {
+      "message": "ogni periodo di vacanza ha bisogno di date di inizio e fine valide (AAAA-MM-GG)"
+    },
+    "template_apply_empty": {
+      "message": "Impossibile applicare un modello senza faccende"
+    },
+    "template_none_selected": {
+      "message": "Bisogna selezionare almeno una faccenda"
+    },
+    "template_no_valid_chores": {
+      "message": "Nessuna faccenda valida trovata per gli ID selezionati"
+    },
+    "template_needs_chore": {
+      "message": "Il modello deve avere almeno una faccenda"
+    },
+    "template_builtin_modify": {
+      "message": "Impossibile modificare il modello predefinito “{template_id}”"
+    },
+    "template_builtin_delete": {
+      "message": "Impossibile eliminare il modello predefinito “{template_id}”"
+    },
+    "template_pack_not_pack": {
+      "message": "Non sembra un pacchetto di TaskMate"
+    },
+    "template_pack_wrong_format": {
+      "message": "Non è un pacchetto di modelli di TaskMate"
+    },
+    "template_pack_version_nan": {
+      "message": "La versione del pacchetto non è un numero"
+    },
+    "template_pack_too_new": {
+      "message": "Questo pacchetto richiede un TaskMate più recente (versione del pacchetto {version}, questo supporta {supported})"
+    },
+    "template_pack_empty": {
+      "message": "Il pacchetto non contiene modelli"
+    },
+    "template_pack_too_many": {
+      "message": "Il pacchetto ha troppi modelli (max {max})"
+    },
+    "template_pack_malformed_template": {
+      "message": "Il pacchetto contiene un modello non valido"
+    },
+    "template_pack_unnamed_template": {
+      "message": "Un modello nel pacchetto non ha nome"
+    },
+    "template_pack_template_no_chores": {
+      "message": "Il modello “{name}” non ha faccende"
+    },
+    "template_pack_template_too_many_chores": {
+      "message": "Il modello “{name}” ha troppe faccende"
+    },
+    "template_pack_malformed_chore": {
+      "message": "Il modello “{name}” ha una faccenda non valida"
+    },
+    "template_pack_unnamed_chore": {
+      "message": "Una faccenda in “{name}” non ha nome"
+    },
+    "boost_bad_time": {
+      "message": "“{value}” non è un orario come 09:30."
+    },
+    "boost_multiplier_nan": {
+      "message": "Il moltiplicatore deve essere un numero."
+    },
+    "boost_multiplier_range": {
+      "message": "Scegli un moltiplicatore da ×{min} a ×{max}."
+    },
+    "boost_chore_not_found": {
+      "message": "Faccenda {chore_id} non trovata."
+    },
+    "boost_child_not_found": {
+      "message": "Bambino {child_id} non trovato."
+    },
+    "boost_start_past": {
+      "message": "Un boost non può iniziare nel passato."
+    },
+    "boost_too_far_ahead": {
+      "message": "Un boost si può programmare fino a una settimana prima."
+    },
+    "boost_minutes_nan": {
+      "message": "I minuti devono essere un numero intero."
+    },
+    "boost_minutes_range": {
+      "message": "Scegli da 1 a {max} minuti."
+    },
+    "boost_already_ended": {
+      "message": "Quel boost è già terminato."
+    },
+    "boost_rule_no_days": {
+      "message": "Scegli almeno un giorno."
+    },
+    "boost_rule_end_before_start": {
+      "message": "L'orario di fine deve essere dopo quello di inizio."
+    },
+    "boost_rules_max": {
+      "message": "Fino a {max} boost ricorrenti."
+    },
+    "boost_rule_gone": {
+      "message": "Quel boost ricorrente non esiste più."
+    },
+    "season_pack_unknown": {
+      "message": "Pacchetto stagionale sconosciuto: {season}"
+    },
+    "calendar_unknown_child": {
+      "message": "Bambino sconosciuto: {child_id}"
+    },
+    "undo_already_undone": {
+      "message": "Questa faccenda è già stata annullata. Aggiorna la scheda."
+    },
+    "import_invalid_payload": {
+      "message": "Dati di esportazione di TaskMate non validi"
+    },
+    "import_data_not_object": {
+      "message": "i dati da importare devono essere un oggetto"
+    },
+    "allowance_points_min": {
+      "message": "points deve essere >= 1"
+    },
+    "allowance_not_enabled": {
+      "message": "La paghetta non è attiva"
+    },
+    "allowance_not_enough_points": {
+      "message": "{name} ha solo {points} {points_name} da pagare."
+    },
+    "appeals_off": {
+      "message": "I ricorsi sono disattivati."
+    },
+    "appeals_already_appealed": {
+      "message": "È già stato fatto ricorso su questo."
+    },
+    "appeals_not_appealable": {
+      "message": "Su questo non si può fare ricorso."
+    },
+    "appeals_not_found": {
+      "message": "Quel ricorso non esiste più."
+    },
+    "appeals_already_decided": {
+      "message": "Quel ricorso è già stato deciso."
+    },
+    "appeals_child_gone": {
+      "message": "Il bambino non c'è più."
+    },
+    "appeals_reward_gone": {
+      "message": "Quel premio non esiste più."
+    },
+    "appeals_penalty_already_undone": {
+      "message": "Quella penalità è già stata ritirata."
+    },
+    "appeals_unknown_kind": {
+      "message": "Tipo di ricorso sconosciuto {kind}"
+    },
+    "birthday_invalid_format": {
+      "message": "Il compleanno deve essere AAAA-MM-GG o MM-GG, ricevuto “{value}”"
+    },
+    "birthday_in_future": {
+      "message": "Il compleanno non può essere nel futuro"
+    },
+    "chore_reminders_off": {
+      "message": "I promemoria sono disattivati"
+    },
+    "chore_reminders_not_assigned": {
+      "message": "{chore} non è una delle faccende di {child}"
+    },
+    "chore_reminder_time_format": {
+      "message": "Scegli un orario come 17:30"
+    },
+    "chore_reminder_time_range": {
+      "message": "Scegli un orario tra le {earliest} e le {latest}"
+    },
+    "guest_expires_invalid": {
+      "message": "expires_on deve essere una data ISO, es. 2026-08-31"
+    },
+    "inspection_not_found": {
+      "message": "Quell'ispezione non esiste più. Aggiorna e riprova."
+    },
+    "inspection_already_decided": {
+      "message": "Quell'ispezione è già stata decisa o è chiusa."
+    },
+    "inspections_off": {
+      "message": "Le ispezioni a sorpresa sono disattivate nelle Impostazioni."
+    },
+    "inspection_chore_gone": {
+      "message": "Quella faccenda non esiste più."
+    },
+    "inspection_not_approved": {
+      "message": "Si possono ispezionare solo faccende approvate."
+    },
+    "inspection_not_child_chore": {
+      "message": "Si può ispezionare solo una faccenda di un bambino."
+    },
+    "inspection_child_gone": {
+      "message": "Quel bambino non esiste più."
+    },
+    "inspection_too_old": {
+      "message": "Si possono ispezionare solo faccende approvate nelle ultime {hours} ore."
+    },
+    "inspection_already_inspected": {
+      "message": "Quella faccenda è già stata ispezionata."
+    },
+    "inspection_redo_today_only": {
+      "message": "Si può rimandare da rifare solo una faccenda finita oggi."
+    },
+    "notification_nav_url_invalid": {
+      "message": "nav_url deve essere un /percorso, un URL http(s) oppure noAction"
+    },
+    "notification_group_spaces": {
+      "message": "group non può contenere spazi (prova family-chores)"
+    },
+    "notification_group_control": {
+      "message": "group non può contenere caratteri di controllo"
+    },
+    "notification_group_too_long": {
+      "message": "group deve avere al massimo 64 caratteri"
+    },
+    "notification_unknown_type": {
+      "message": "Tipo di notifica sconosciuto {type_id}"
+    },
+    "notification_unknown_recipient": {
+      "message": "Destinatario di notifica sconosciuto {recipient_id}"
+    },
+    "screen_time_minutes_not_whole": {
+      "message": "I minuti devono essere un numero intero"
+    },
+    "screen_time_minutes_max": {
+      "message": "I minuti non possono superare {max}"
+    },
+    "screen_time_jar_off": {
+      "message": "Il barattolo del tempo schermo è disattivato"
+    },
+    "screen_time_jar_full": {
+      "message": "Il barattolo è pieno"
+    },
+    "screen_time_jar_nothing": {
+      "message": "Nessun minuto da mettere da parte"
+    },
+    "setup_unknown_age_group": {
+      "message": "Fascia d'età sconosciuta “{value}”"
+    },
+    "setup_child_needs_ref": {
+      "message": "Ogni nuovo bambino ha bisogno del proprio ref"
+    },
+    "setup_child_needs_name": {
+      "message": "Un bambino ha bisogno di un nome"
+    },
+    "setup_chore_unknown_child": {
+      "message": "Faccenda assegnata a un bambino sconosciuto “{who}”"
+    },
+    "setup_chore_needs_name": {
+      "message": "Una faccenda ha bisogno di un nome"
+    },
+    "setup_reward_needs_name": {
+      "message": "Un premio ha bisogno di un nome"
+    },
+    "sibling_checks_off": {
+      "message": "I controlli tra fratelli sono disattivati"
+    },
+    "sibling_check_unknown_verdict": {
+      "message": "Esito sconosciuto {verdict}"
+    },
+    "sibling_check_already_checked": {
+      "message": "Quella faccenda è già stata controllata. Aggiorna la scheda."
+    },
+    "sibling_check_own_chore": {
+      "message": "Non puoi controllare la tua faccenda"
+    },
+    "sibling_check_not_allowed": {
+      "message": "{name} non può controllare le faccende di questo bambino"
+    },
+    "sound_invalid_file_name": {
+      "message": "Nome di file audio non valido: {file}"
+    },
+    "sound_already_registered": {
+      "message": "Il suono {file} è già registrato"
+    },
+    "sound_unknown_custom": {
+      "message": "Suono personalizzato sconosciuto: {file}"
+    },
+    "tour_adult": {
+      "message": "I profili adulti non ricevono il tour"
+    },
+    "tour_bad_status": {
+      "message": "status deve essere 'done' o 'skipped'"
+    },
+    "tour_unknown_step": {
+      "message": "Passo del tour sconosciuto {step}"
+    },
+    "tour_already_speaking": {
+      "message": "Sta già parlando; riprova tra un momento"
+    },
+    "tts_no_media_player": {
+      "message": "Nessun lettore multimediale indicato e nessun predefinito impostato nelle Impostazioni"
+    },
+    "tts_no_entity": {
+      "message": "Nessuna entità di sintesi vocale trovata. Impostane una nelle Impostazioni o passa tts_entity."
+    },
+    "help_chore_not_assigned_today": {
+      "message": "{chore} non è una delle faccende di oggi di {child}."
+    },
+    "wellbeing_unknown_mood": {
+      "message": "Umore sconosciuto “{mood}”"
+    },
+    "set_times_not_list": {
+      "message": "Gli orari fissi devono essere un elenco."
+    },
+    "set_times_too_many": {
+      "message": "Una faccenda può avere al massimo {max} orari fissi."
+    },
+    "set_times_timed": {
+      "message": "Una faccenda a tempo non può avere orari fissi."
+    },
+    "set_times_open_ended": {
+      "message": "Una faccenda libera non può avere orari fissi."
+    },
+    "set_times_quantity": {
+      "message": "Una faccenda a quantità non può avere orari fissi."
+    },
+    "set_times_teamwork": {
+      "message": "Una faccenda di squadra non può avere orari fissi."
+    },
+    "set_times_need_start_end": {
+      "message": "Ogni orario fisso ha bisogno di un inizio e di una fine."
+    },
+    "set_times_bad_format": {
+      "message": "Gli orari fissi hanno bisogno di un inizio e di una fine come 07:30."
+    },
+    "set_times_end_before_start": {
+      "message": "Un orario fisso deve chiudersi dopo l'apertura, nello stesso giorno."
+    },
+    "set_times_overlap": {
+      "message": "Due orari fissi si sovrappongono. Spostane uno."
+    },
+    "template_not_found": {
+      "message": "Modello {template_id} non trovato"
+    },
+    "upload_admin_required": {
+      "message": "Richiesto un amministratore"
+    },
+    "upload_file_too_large": {
+      "message": "File troppo grande"
+    },
+    "upload_expected_multipart": {
+      "message": "Atteso un modulo multipart"
+    },
+    "upload_too_many_parts": {
+      "message": "Troppe parti nel modulo"
+    },
+    "upload_no_file": {
+      "message": "Nessun file fornito"
+    },
+    "upload_image_unsupported": {
+      "message": "Immagine non supportata (JPEG, PNG o WebP)"
+    },
+    "upload_image_storage_full": {
+      "message": "Spazio per le immagini pieno"
+    },
+    "upload_image_store_failed": {
+      "message": "Impossibile salvare l'immagine"
+    },
+    "upload_photo_rate_limited": {
+      "message": "Troppi caricamenti, riprova tra poco"
+    },
+    "upload_photo_busy": {
+      "message": "Troppi caricamenti contemporanei, riprova tra un momento"
+    },
+    "upload_photo_storage_full": {
+      "message": "Spazio per le foto pieno"
+    },
+    "upload_photo_timeout": {
+      "message": "Il caricamento ha richiesto troppo tempo"
+    },
+    "upload_photo_invalid": {
+      "message": "Immagine non valida"
+    },
+    "upload_photo_store_failed": {
+      "message": "Impossibile salvare la foto"
+    },
+    "upload_photo_pending_limit": {
+      "message": "Hai troppe foto in attesa di essere allegate a una faccenda. Prima inviale o rimuovile."
+    },
+    "upload_sound_unsupported": {
+      "message": "Suono non supportato (MP3, OGG, WAV o M4A)"
+    },
+    "upload_sound_storage_full": {
+      "message": "Spazio per i suoni pieno"
+    },
+    "upload_sound_store_failed": {
+      "message": "Impossibile salvare il suono"
+    }
+  },
+  "issues": {
+    "notify_service_missing": {
+      "title": "TaskMate non può inviare notifiche a {who}",
+      "description": "TaskMate è impostato per avvisare {who} tramite `{service}`, ma quell'azione non esiste più, di solito perché il telefono è stato rimosso o rinominato nell'integrazione Mobile App.\n\nApri il pannello di amministrazione di TaskMate → Notifiche e scegli l'azione attuale per {who}. Questa riparazione si chiude da sola quando l'azione esiste."
+    },
+    "child_entity_missing": {
+      "title": "Il profilo di {child} usa un'entità mancante",
+      "description": "Il profilo di {child} usa `{entity}`, che non esiste più. Disponibilità, promemoria basati sulla presenza o l'immagine del profilo che dipendono da essa non funzioneranno.\n\nApri il pannello di amministrazione di TaskMate → Bambini, modifica {child} e scegli un'entità esistente (o svuota il campo)."
+    },
+    "chore_entity_missing": {
+      "title": "“{chore}” usa un'entità mancante",
+      "description": "“{chore}” controlla `{entity}` per decidere quando apparire, ma quell'entità non esiste più, quindi il controllo viene saltato.\n\nApri il pannello di amministrazione di TaskMate → Faccende, modifica “{chore}” e scegli un'entità esistente (o svuota il campo)."
+    },
+    "chore_assigned_to_nobody": {
+      "title": "La faccenda “{chore}” non è assegnata a nessuno",
+      "description": "Tutti i bambini a cui era assegnata “{chore}” sono stati rimossi, quindi nessuno la vedrà mai.\n\nApri il pannello di amministrazione di TaskMate → Faccende e assegna “{chore}” a un bambino, oppure eliminala."
+    },
+    "chore_dependency_missing": {
+      "title": "La faccenda “{chore}” non potrà mai sbloccarsi",
+      "description": "“{chore}” aspetta che prima venga fatta un'altra faccenda, ma quella faccenda è stata eliminata, quindi “{chore}” resta bloccata per sempre.\n\nApri il pannello di amministrazione di TaskMate → Faccende, modifica “{chore}” e rimuovi la dipendenza mancante."
+    },
+    "reward_assigned_to_nobody": {
+      "title": "Nessun bambino può richiedere il premio “{reward}”",
+      "description": "Tutti i bambini a cui era destinato “{reward}” sono stati rimossi, quindi nessuno può richiederlo.\n\nApri il pannello di amministrazione di TaskMate → Premi e scegli per chi è “{reward}”, oppure eliminalo."
+    },
+    "reward_unlock_not_allowed": {
+      "title": "Il premio “{reward}” non sblocca nulla",
+      "description": "“{reward}” è impostato per accendere `{entity}`, ma quell'entità non è più nell'elenco sblocchi consentiti di TaskMate, quindi quando il premio viene approvato non succede nulla.\n\nApri il pannello di amministrazione di TaskMate → Impostazioni e aggiungi `{entity}` all'elenco sblocchi consentiti, oppure modifica “{reward}”."
+    }
+  }
+}

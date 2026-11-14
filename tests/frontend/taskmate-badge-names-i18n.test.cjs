@@ -108,7 +108,7 @@ test("numbers in built-in badge names and descriptions are a {count}, never bake
       checked += 1;
     }
   }
-  assert.equal(checked, 24 * 11, "24 numbered badge strings × 11 languages");
+  assert.equal(checked, 24 * 20, "24 numbered badge strings × 20 languages");
 });
 
 test("the points badges use the family's own name for points", async () => {
