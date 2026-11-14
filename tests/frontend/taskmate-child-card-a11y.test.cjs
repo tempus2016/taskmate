@@ -156,7 +156,7 @@ test("pre-reader tiles carry done, waiting and locked in their names", () => {
 
 test("without the awaiting-approval rule, nothing reads as waiting", () => {
   const card = makeCard({ chores: [chore()], completions: doneToday("zz"), design: "playroom" });
-  assert.equal(typeof card._isAwaitingApproval, "undefined");
+  card._isAwaitingApproval = undefined; // as on a card without feat/child-card-awaiting-approval
   const chip = render(card.render()).control(/tmd-undochip/);
   assert.equal(chip.attr("aria-label"), localize("child.undo_done_aria", { chore: "Feed the cat" }));
 });
