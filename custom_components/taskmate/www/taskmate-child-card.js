@@ -1730,7 +1730,20 @@ class TaskMateChildCard extends LitElement {
          (18px above the next one), so the strip reads as part of that row
          while staying outside the row's tap-to-complete area. */
       .tm-row-acts { display: flex; flex-wrap: wrap; gap: 12px 8px; margin-block: -2px 8px; padding-inline: 56px 14px; }
-      .tm-row-acts .photo-badge { min-block-size: 32px; min-inline-size: 44px; justify-content: center; padding-block: 0; padding-inline: 12px; font-size: 0.78rem; }
+      /* Secondary, not a second call to action: an outlined chip in the
+         card's quiet text colour, so the chore above stays the loudest thing
+         in the row. The text never drops under 12px, even where the theme's
+         root size is 14px and rem-based sizes shrink. */
+      .tm-row-acts .photo-badge {
+        min-block-size: 32px; min-inline-size: 44px; justify-content: center;
+        padding-block: 0; padding-inline: 12px; font-size: max(12px, 0.86rem); font-weight: 600;
+        background: transparent; color: var(--secondary-text-color, #5f6368);
+        border: 1px solid color-mix(in srgb, var(--secondary-text-color, #5f6368) 55%, transparent);
+        box-sizing: border-box;
+      }
+      /* "Help is on its way" is a status, not a button: no outline, and full
+         opacity so the quiet colour keeps its AA contrast. */
+      .tm-row-acts .tm-help-on { opacity: 1; border-color: transparent; }
       /* Designed rows: the bell and "I'm stuck" sit together and are drawn
          32px tall, so each grows only 6px up and down to reach 44px. The 12px
          row gap keeps a wrapped bell and chip from sharing a tap, and the 8px
