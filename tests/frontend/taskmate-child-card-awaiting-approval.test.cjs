@@ -77,8 +77,22 @@ function makeCard({ chores = [chore()], completions = [], config = {}, design, a
 
 for (const design of DESIGNS) {
   test(`${design}: a completion awaiting approval shows the waiting state`, () => {
-    const { markup } = render(makeCard({ design, completions: [done(false)] }).render());
-    assert.ok(markup.includes(WAITING), "the row says it is waiting for a grown-up");
+    const view = render(makeCard({ design, completions: [done(false)] }).render());
+    const { markup } = view;
+    if (design === "classic") {
+      assert.ok(markup.includes(WAITING), "the row says it is waiting for a grown-up");
+    } else {
+      // Designed rows say it once, on the "⏳ Waiting" undo chip; no second
+      // "Waiting for a grown-up" note under the name.
+      assert.ok(!markup.includes(WAITING), "no waiting note under the name");
+      assert.ok(!markup.includes("tmd-awaiting"), "no waiting note element");
+      const chip = view.control(/tmd-undochip/);
+      assert.ok(chip, "the undo chip renders");
+      assert.match(chip.attrs, /\bwaiting-chip\b/);
+      assert.ok(markup.includes(localize("child.waiting_chip")), "the chip reads Waiting");
+      assert.equal(chip.attr("aria-label"), localize("child.undo_waiting_aria", { chore: "ZZ chore" }),
+        "its name still says it is waiting for a grown-up");
+    }
     // An hourglass icon, or the ⏳ on the waiting chip when the row shows a picture.
     assert.match(markup, /mdi:timer-sand|⏳/, "with an hourglass");
     assert.match(markup, /class="[^"]*\bawaiting\b/, "and the awaiting row class");
@@ -139,11 +153,12 @@ test("a tap still in flight is judged by the chore's approval rule", () => {
   const opt = { zz_kid1: { timestamp: now, timestamps: [now], count: 1 } };
   const needs = makeCard({ design: "playroom" });
   needs._optimisticCompletions = opt;
-  assert.ok(render(needs.render()).markup.includes(WAITING), "requires approval by default");
+  // Designed rows show the waiting state on the "⏳ Waiting" undo chip.
+  assert.match(render(needs.render()).markup, /\bwaiting-chip\b/, "requires approval by default");
 
   const auto = makeCard({ design: "playroom", chores: [chore({ requires_approval: false })] });
   auto._optimisticCompletions = opt;
-  assert.ok(!render(auto.render()).markup.includes(WAITING), "auto-approved chore pays at once");
+  assert.doesNotMatch(render(auto.render()).markup, /\bwaiting-chip\b/, "auto-approved chore pays at once");
 });
 
 test("_needsApproval mirrors the backend auto-approve rule", () => {

@@ -158,7 +158,7 @@ header_color: "#9b59b6"       # leave unset to use the child's own colour
 **Behaviour:**
 - Tap a chore row to complete it (the whole row is a button — no small target)
 - Tap a completed chore to undo it
-- Chores requiring approval show as ticked but pending until approved
+- Chores requiring approval show as ticked but pending until approved: the classic style labels the row **Waiting for a grown-up**, and the other design styles show a **⏳ Waiting** chip, which is also the undo button
 - If `daily_limit > 1`, a counter `(0/3)` appears beside the points
 - When all chores are done, an animated "All Done!" state is shown
 - A confetti and celebration popup appears on completion — or the child's own [done animation](Card-Looks.md#done-animation-per-child) (stamp, fireworks or sticker)
