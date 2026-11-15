@@ -61,7 +61,7 @@ class TaskMateHeatmapCard extends LitElement {
       ha-card { overflow: hidden; }
       .card-header {
         display: flex; align-items: center; gap: 10px;
-        padding: 14px 18px; background: var(--taskmate-header-bg, #2e7d32); color: white;
+        padding: 14px 18px; background: var(--taskmate-header-bg, #2e7d32); color: var(--tmd-hd-text, white);
       }
       .header-icon { --mdc-icon-size: 26px; opacity: .9; }
       .header-title { font-size: 1.2rem; font-weight: 600; }
@@ -184,7 +184,7 @@ class TaskMateHeatmapCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#2e7d32")
       : "classic";
     if (design !== "classic") return this._renderDesigned();
 

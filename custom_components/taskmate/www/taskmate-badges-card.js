@@ -563,7 +563,7 @@ class TaskMateBadgesCard extends LitElement {
     const title = this.config.title || (childName ? this._t("badges.title_with_name", { name: childName }) : this._t("badges.default_title"));
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, DESIGN_HEADER)
       : "classic";
     if (design !== "classic") {
       return this._renderDesigned(design, {

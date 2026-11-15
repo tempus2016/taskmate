@@ -544,7 +544,7 @@ class TaskMateBountyCard extends LitElement {
       .bb-hd-sub { font-size: .8rem; opacity: .85; margin-top: 1px; }
       .bb-hd-pill {
         flex: none; white-space: nowrap;
-        background: rgba(255, 255, 255, .2);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), .2);
         padding: 4px 12px; border-radius: 16px;
         font-size: .9rem; font-weight: 500;
       }

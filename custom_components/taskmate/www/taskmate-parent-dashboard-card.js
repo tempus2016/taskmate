@@ -243,7 +243,7 @@ class TaskMateParentDashboardCard extends LitElement {
         display: flex; align-items: center; justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #c0392b);
-        color: white; gap: 12px;
+        color: var(--tmd-hd-text, white); gap: 12px;
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
@@ -741,7 +741,7 @@ class TaskMateParentDashboardCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#c0392b")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

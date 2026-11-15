@@ -115,7 +115,7 @@ export function createIncentiveCard(P) {
           justify-content: space-between;
           padding: 14px 18px;
           background: var(--taskmate-header-bg, var(--bonus-green));
-          color: white;
+          color: var(--tmd-hd-text, white);
         }
         .header-left { display: flex; align-items: center; gap: 12px; }
         .header-icon { --mdc-icon-size: 32px; opacity: 0.95; }
@@ -124,7 +124,7 @@ export function createIncentiveCard(P) {
            its own height, not stretched to the button's with the number at
            the top. */
         .bonus-count {
-          background: rgba(255,255,255,0.2);
+          background: rgba(var(--tmd-hd-ink, 255,255,255), 0.2);
           display: inline-flex; align-items: center; justify-content: center;
           box-sizing: border-box; min-width: 28px; height: 28px; padding: 0 10px;
           border-radius: 999px;
@@ -139,13 +139,13 @@ export function createIncentiveCard(P) {
           margin-inline-start: auto; flex: none;
           display: inline-flex; align-items: center; justify-content: center;
           box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 9px;
-          border-radius: 999px; background: rgba(255,255,255,.25); color: var(--tmd-hd-text, #fff);
+          border-radius: 999px; background: rgba(var(--tmd-hd-ink, 255,255,255), .25); color: var(--tmd-hd-text, #fff);
           font-size: 12px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
         }
         .icon-btn {
-          background: rgba(255,255,255,0.18);
+          background: rgba(var(--tmd-hd-ink, 255,255,255), 0.18);
           border: none;
-          color: white;
+          color: var(--tmd-hd-text, white);
           border-radius: 50%;
           width: 36px;
           height: 36px;
@@ -156,8 +156,8 @@ export function createIncentiveCard(P) {
           transition: background 0.2s;
           --mdc-icon-size: 20px;
         }
-        .icon-btn:hover { background: rgba(255,255,255,0.32); }
-        .icon-btn.active { background: rgba(255,255,255,0.35); }
+        .icon-btn:hover { background: rgba(var(--tmd-hd-ink, 255,255,255), 0.32); }
+        .icon-btn.active { background: rgba(var(--tmd-hd-ink, 255,255,255), 0.35); }
 
         /* ── Child tabs ── */
         .child-tabs {
@@ -789,7 +789,7 @@ export function createIncentiveCard(P) {
       if (!this.hass || !this.config) return html``;
 
       const design = window.__taskmate_design
-        ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity || "sensor.taskmate_overview")
+        ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity || "sensor.taskmate_overview", P.designHd)
         : "classic";
       if (design !== "classic") return this._renderDesigned(design);
 

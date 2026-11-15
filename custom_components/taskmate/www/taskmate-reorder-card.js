@@ -76,7 +76,7 @@ class TaskMateReorderCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        color: var(--tmd-hd-text, var(--text-primary-color, #fff));
         gap: 12px;
       }
 
@@ -92,13 +92,13 @@ class TaskMateReorderCard extends LitElement {
         --mdc-icon-size: 22px;
         opacity: 0.9;
         flex-shrink: 0;
-        color: var(--text-primary-color, #fff);
+        color: var(--tmd-hd-text, var(--text-primary-color, #fff));
       }
 
       .card-title {
         font-size: 1.05rem;
         font-weight: 600;
-        color: var(--text-primary-color, #fff);
+        color: var(--tmd-hd-text, var(--text-primary-color, #fff));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -107,18 +107,18 @@ class TaskMateReorderCard extends LitElement {
       .child-name {
         font-size: 0.8rem;
         font-weight: 600;
-        color: rgba(255,255,255,0.85);
+        color: rgba(var(--tmd-hd-ink, 255,255,255), 0.85);
         padding: 3px 10px;
-        background: rgba(255,255,255,0.15);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.15);
         border-radius: 12px;
         white-space: nowrap;
         flex-shrink: 0;
       }
 
       .save-button {
-        background: rgba(255,255,255,0.15);
-        color: var(--text-primary-color, #fff);
-        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.15);
+        color: var(--tmd-hd-text, var(--text-primary-color, #fff));
+        border: 1px solid rgba(var(--tmd-hd-ink, 255,255,255), 0.3);
         border-radius: 8px;
         padding: 7px 14px;
         font-size: 0.85rem;
@@ -133,7 +133,7 @@ class TaskMateReorderCard extends LitElement {
       }
 
       .save-button:hover:not(:disabled) {
-        background: rgba(255,255,255,0.25);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.25);
         transform: scale(1.02);
       }
 
@@ -151,8 +151,8 @@ class TaskMateReorderCard extends LitElement {
       }
 
       @keyframes pulse-save {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
-        50% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--tmd-hd-ink, 255,255,255), 0.3); }
+        50% { box-shadow: 0 0 0 6px rgba(var(--tmd-hd-ink, 255,255,255), 0); }
       }
 
       .save-button ha-icon {
@@ -456,8 +456,8 @@ class TaskMateReorderCard extends LitElement {
       ══════════════════════════════════════════════════════════════════ */
 
       .d-childchip { display: flex; align-items: center; gap: 5px; margin-inline-start: auto;
-                     font-weight: 800; font-size: 12px; color: #fff;
-                     background: rgba(255,255,255,.25); border-radius: 999px;
+                     font-weight: 800; font-size: 12px; color: var(--tmd-hd-text, #fff);
+                     background: rgba(var(--tmd-hd-ink, 255,255,255), .25); border-radius: 999px;
                      padding-block: 3px; padding-inline: 3px 10px; white-space: nowrap; }
       :host([data-tm-design="console"]) .d-childchip { border-radius: 6px; font-weight: 700; font-size: 11px;
                      background: var(--tmd-surface-2);
@@ -713,7 +713,7 @@ class TaskMateReorderCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#5b7fb9")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

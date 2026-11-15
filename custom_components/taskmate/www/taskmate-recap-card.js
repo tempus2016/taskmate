@@ -325,7 +325,7 @@ class TaskMateRecapCard extends LitElement {
   render() {
     if (!this.hass || !this.config) return html``;
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#9b59b6")
       : "classic";
     const hd = _safeColor(this.config.header_color, "#9b59b6");
     // Every design shares one body: only the header shell differs, so a
@@ -846,16 +846,16 @@ class TaskMateRecapCard extends LitElement {
       /* Classic header — full-colour banner */
       .card-header {
         display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        padding: 14px 18px; background: var(--hd, #9b59b6); color: #fff; min-width: 0;
+        padding: 14px 18px; background: var(--hd, #9b59b6); color: var(--tmd-hd-text, #fff); min-width: 0;
       }
       .header-content { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
       .header-icon { --mdc-icon-size: 28px; opacity: 0.95; flex: none; }
       .header-text { min-width: 0; }
       .header-title { font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .header-sub { font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .header-sub { font-size: 0.8rem; color: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.85); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .header-pill, .rc-older {
         display: inline-flex; align-items: center; gap: 5px; flex: none; cursor: pointer;
-        background: rgba(255, 255, 255, 0.2); color: #fff; border: 0; border-radius: 16px;
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.2); color: var(--tmd-hd-text, #fff); border: 0; border-radius: 16px;
         padding-block: 4px; padding-inline: 12px 10px; font: inherit; font-size: 0.88rem; font-weight: 600;
       }
       .header-pill ha-icon, .rc-older ha-icon { --mdc-icon-size: 16px; }

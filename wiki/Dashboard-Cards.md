@@ -2,7 +2,7 @@
 
 TaskMate includes 33 Lovelace cards. They are automatically registered as resources when the integration loads.
 
-All cards support a `header_color` config option — a hex colour for the card header background. Each card has its own vibrant default.
+All cards support a `header_color` config option — a hex colour for the card header background. Each card has its own vibrant default. The header text follows the colour you pick: white on darker colours, near-black on light ones (yellow, pastels, light green) so the title stays readable. The colour itself is never changed.
 
 ---
 

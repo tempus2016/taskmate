@@ -84,7 +84,7 @@ class TaskMatePointsCard extends LitElement {
         align-items: center;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        color: var(--tmd-hd-text, var(--text-primary-color, #fff));
       }
 
       .header-content {
@@ -749,7 +749,7 @@ class TaskMatePointsCard extends LitElement {
     const pointsName = attrs.points_name || this._t("common.stars");
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, DESIGN_HEADER)
       : "classic";
     if (design !== "classic") {
       return this._renderDesigned(design, children, pointsName, pointsIcon);

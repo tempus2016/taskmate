@@ -153,6 +153,11 @@ class TaskMateWishlistCard extends LitElement {
     } else {
       this.style.removeProperty("--wl-accent");
     }
+    // The banner is flat in every design (no Playroom fade toward white),
+    // so its ink is judged on the colour as painted.
+    if (window.__taskmate_design && window.__taskmate_design.headerInk) {
+      window.__taskmate_design.headerInk(this, _safeColor(configured, ""), "");
+    }
   }
 
   // ── data ────────────────────────────────────────────────────────────────
@@ -668,7 +673,7 @@ class TaskMateWishlistCard extends LitElement {
       .wl-hd-sub { font-size: .8rem; opacity: .85; margin-top: 1px; }
       .wl-hd-pill {
         display: inline-flex; align-items: center; gap: 5px; flex: none; cursor: pointer;
-        background: rgba(255, 255, 255, .2); color: inherit; border: 0;
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), .2); color: inherit; border: 0;
         padding: 5px 12px; border-radius: 16px; font-size: .9rem; font-weight: 500; white-space: nowrap;
       }
       .wl-hd-pill[disabled] { opacity: .5; cursor: default; }

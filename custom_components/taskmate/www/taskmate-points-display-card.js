@@ -129,7 +129,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 14px 18px;
-        color: white;
+        color: var(--tmd-hd-text, white);
         gap: 10px;
       }
       .header-left {
@@ -149,7 +149,7 @@ class TaskMatePointsDisplayCard extends LitElement {
         letter-spacing: 0.01em;
       }
       .mode-badge {
-        background: rgba(255,255,255,0.2);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.2);
         border-radius: 10px;
         padding: 3px 10px;
         font-size: 0.75rem;
@@ -929,7 +929,7 @@ class TaskMatePointsDisplayCard extends LitElement {
 
   render() {
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, DEFAULT_HEADER)
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 
