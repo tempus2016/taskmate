@@ -3304,6 +3304,8 @@
   "kiosk.win_title": "Byłeś pierwszy!",
   "kiosk.win_message": "Wyprzedziłeś wszystkich!",
   "kiosk.win_check": "Dorosły to sprawdzi, a potem punkty będą twoje.",
+  "kiosk.left_today": "Zostało dziś: {count}",
+  "kiosk.left_today_one": "Zostało dziś: {count}",
   "kiosk.do_on_phone": "To zrób na swoim telefonie",
   "kiosk.phone_group": "Te zrób na swoim telefonie",
   "kiosk.nothing_here": "Dziś nie ma tu nic do odhaczenia",

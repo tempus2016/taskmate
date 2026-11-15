@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "Ти встиг(-ла) першим(-ою)!",
   "kiosk.win_message": "Ти всіх випередив(-ла)!",
   "kiosk.win_check": "Дорослий перевірить, і тоді бали твої.",
+  "kiosk.left_today": "Залишилось сьогодні: {count}",
+  "kiosk.left_today_one": "Залишилось сьогодні: {count}",
   "kiosk.do_on_phone": "Це зроби на своєму телефоні",
   "kiosk.phone_group": "Це зроби на своєму телефоні",
   "kiosk.nothing_here": "Сьогодні тут нічого відмічати",

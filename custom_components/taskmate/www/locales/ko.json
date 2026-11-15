@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "네가 제일 먼저 했어요!",
   "kiosk.win_message": "누구보다 빨랐어요!",
   "kiosk.win_check": "어른이 확인하면 포인트를 받을 거예요.",
+  "kiosk.left_today": "오늘 {count}번 남음",
+  "kiosk.left_today_one": "오늘 {count}번 남음",
   "kiosk.do_on_phone": "이건 휴대폰에서 해요",
   "kiosk.phone_group": "이것들은 휴대폰에서 해요",
   "kiosk.nothing_here": "오늘 여기서 체크할 일이 없어요",

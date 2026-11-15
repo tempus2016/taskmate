@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "Jij was de eerste!",
   "kiosk.win_message": "Je was iedereen voor!",
   "kiosk.win_check": "Een volwassene kijkt het na, daarna zijn de punten van jou.",
+  "kiosk.left_today": "Vandaag nog {count}",
+  "kiosk.left_today_one": "Vandaag nog {count}",
   "kiosk.do_on_phone": "Doe deze op je telefoon",
   "kiosk.phone_group": "Doe deze op je telefoon",
   "kiosk.nothing_here": "Hier vandaag niets om af te vinken",

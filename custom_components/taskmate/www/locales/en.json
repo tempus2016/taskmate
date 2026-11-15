@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "You got it first!",
   "kiosk.win_message": "You beat everyone to it!",
   "kiosk.win_check": "A grown-up will check it, then the points are yours.",
+  "kiosk.left_today": "{count} left today",
+  "kiosk.left_today_one": "{count} left today",
   "kiosk.do_on_phone": "Do this one on your phone",
   "kiosk.phone_group": "Do these on your phone",
   "kiosk.nothing_here": "Nothing to tick off here today",

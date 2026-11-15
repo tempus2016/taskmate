@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "Você chegou primeiro!",
   "kiosk.win_message": "Você foi mais rápido que todo mundo!",
   "kiosk.win_check": "Um adulto vai conferir e depois os pontos são seus.",
+  "kiosk.left_today": "Restam {count} hoje",
+  "kiosk.left_today_one": "Resta {count} hoje",
   "kiosk.do_on_phone": "Faça esta no seu celular",
   "kiosk.phone_group": "Faça estas no seu celular",
   "kiosk.nothing_here": "Nada para marcar aqui hoje",

@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "İlk sen aldın!",
   "kiosk.win_message": "Herkesten hızlıydın!",
   "kiosk.win_check": "Bir büyük kontrol edecek, sonra puanlar senin.",
+  "kiosk.left_today": "Bugün {count} kaldı",
+  "kiosk.left_today_one": "Bugün {count} kaldı",
   "kiosk.do_on_phone": "Bunu telefonunda yap",
   "kiosk.phone_group": "Bunları telefonunda yap",
   "kiosk.nothing_here": "Bugün burada işaretlenecek bir şey yok",

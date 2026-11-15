@@ -293,6 +293,91 @@ test("a first-come chore a sibling got first says who, and isn't counted", async
   assert.deepEqual([done, total], [0, 1], "only the chore still Vaiha's to do");
 });
 
+// A first-come chore with a shared daily limit (#1159) says how many of
+// today's completions are still up for grabs; a single-winner race doesn't.
+function grabsView({ limit = 3, completions = [], due = ["dishes", "bins"], extra = {} } = {}) {
+  return childView({
+    chores: [chore("dishes"), chore("bins", { assignment_mode: "first_come", requires_approval: false, daily_limit: limit, ...extra })],
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due }] },
+    completions,
+  });
+}
+const doneBy = (child_id, n, extra = {}) => Array.from({ length: n }, (_, i) => ({
+  completion_id: `${child_id}-${i}`, chore_id: "bins", child_id, approved: true,
+  completed_at: new Date(Date.now() - (i + 1) * 60000).toISOString(), ...extra,
+}));
+const leftText = (n) => localize(n === 1 ? "kiosk.left_today_one" : "kiosk.left_today", { count: n });
+
+test("a shared first-come limit shows how many are left today", async () => {
+  const card = await grabsView({ limit: 3 });
+  const { markup } = view(card);
+  assert.match(markup, /km-row todo grab/);
+  assert.match(markup, /km-grab-left/);
+  assert.match(markup, new RegExp(leftText(3)));
+});
+
+test("slots left count every pool completion, whoever made it", async () => {
+  const card = await grabsView({ limit: 3, completions: [...doneBy("malia", 1), ...doneBy("vaiha", 1)] });
+  assert.match(view(card).markup, new RegExp(leftText(1)));
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 1);
+});
+
+test("a pool-wide Parent did it takes a slot; one for a single child doesn't", async () => {
+  const card = await grabsView({
+    limit: 4,
+    completions: [...doneBy("__parent__", 1), ...doneBy("__parent__", 1, { completion_id: "p-one", for_child_id: "malia" })],
+  });
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 3);
+});
+
+test("slots left skip bonus ticks and children outside the pool", async () => {
+  const card = await grabsView({
+    limit: 3,
+    extra: { assigned_to: ["vaiha", "malia"] },
+    completions: [...doneBy("malia", 1, { bonus_subtask_id: "b1" }), ...doneBy("isla", 1)],
+  });
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 3);
+});
+
+test("a tap held offline takes a slot straight away", async () => {
+  const card = await grabsView({ limit: 2 });
+  card._queue = [{ child_id: "vaiha", chore_id: "bins", name: "Bins", at: Date.now() }];
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 1);
+});
+
+test("a single-winner first-come chore shows no count", async () => {
+  for (const limit of [null, 1]) {
+    const card = await grabsView({ limit, extra: limit === null ? { daily_limit: undefined } : {} });
+    const { markup } = view(card);
+    assert.match(markup, /km-row todo grab/);
+    assert.doesNotMatch(markup, /km-grab-left/, `daily_limit ${limit}`);
+  }
+});
+
+test("a chore that isn't first come shows no count, whatever its limit", async () => {
+  const card = await grabsView({ limit: 3, extra: { assignment_mode: "everyone" } });
+  assert.doesNotMatch(view(card).markup, /km-grab-left/);
+});
+
+test("once the slots run out the row turns taken, with no count", async () => {
+  const card = await grabsView({ limit: 2, due: ["dishes"], completions: doneBy("malia", 2) });
+  const { markup } = view(card);
+  assert.match(markup, /km-row taken/);
+  assert.doesNotMatch(markup, /km-grab-left/);
+  assert.match(markup, new RegExp(localize("kiosk.taken_by", { name: "Malia" })));
+});
+
+test("the count follows the language's plural rules", async () => {
+  const card = await grabsView();
+  card._t = (key) => key;
+  card.hass.language = "en";
+  assert.equal(card._tn("kiosk.left_today", 1), "kiosk.left_today_one");
+  assert.equal(card._tn("kiosk.left_today", 2), "kiosk.left_today");
+  card.hass.language = "ru";
+  assert.equal(card._tn("kiosk.left_today", 21), "kiosk.left_today_one");
+  assert.equal(card._tn("kiosk.left_today", 5), "kiosk.left_today");
+});
+
 test("taken first-come chores hide with completed_mode: hide", async () => {
   const card = await childView({
     config: { completed_mode: "hide" },

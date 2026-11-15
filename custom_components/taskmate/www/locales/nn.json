@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "Du rakk det først!",
   "kiosk.win_message": "Du slo alle dei andre!",
   "kiosk.win_check": "Ein vaksen sjekkar det, og så er poenga dine.",
+  "kiosk.left_today": "{count} att i dag",
+  "kiosk.left_today_one": "{count} att i dag",
   "kiosk.do_on_phone": "Gjer denne på telefonen din",
   "kiosk.phone_group": "Gjer desse på telefonen din",
   "kiosk.nothing_here": "Ingenting å kryssa av her i dag",

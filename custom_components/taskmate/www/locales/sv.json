@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "Du hann först!",
   "kiosk.win_message": "Du slog alla andra!",
   "kiosk.win_check": "En vuxen kollar, sedan är poängen dina.",
+  "kiosk.left_today": "{count} kvar i dag",
+  "kiosk.left_today_one": "{count} kvar i dag",
   "kiosk.do_on_phone": "Gör den här på din mobil",
   "kiosk.phone_group": "Gör de här på din mobil",
   "kiosk.nothing_here": "Inget att bocka av här idag",

@@ -3365,6 +3365,8 @@
   "kiosk.win_title": "L'hai presa per primo!",
   "kiosk.win_message": "Sei stato più veloce di tutti!",
   "kiosk.win_check": "La controllerà un adulto, poi i punti saranno tuoi.",
+  "kiosk.left_today": "Ne restano {count} oggi",
+  "kiosk.left_today_one": "Ne resta {count} oggi",
   "kiosk.do_on_phone": "Questa falla dal telefono",
   "kiosk.phone_group": "Queste falle dal telefono",
   "kiosk.nothing_here": "Niente da spuntare qui oggi",

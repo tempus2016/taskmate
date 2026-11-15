@@ -3304,6 +3304,8 @@
   "kiosk.win_title": "Du nåede det først!",
   "kiosk.win_message": "Du slog alle de andre!",
   "kiosk.win_check": "En voksen tjekker det, og så er pointene dine.",
+  "kiosk.left_today": "{count} tilbage i dag",
+  "kiosk.left_today_one": "{count} tilbage i dag",
   "kiosk.do_on_phone": "Gør denne på din telefon",
   "kiosk.phone_group": "Gør disse på din telefon",
   "kiosk.nothing_here": "Intet at sætte flueben ved her i dag",
