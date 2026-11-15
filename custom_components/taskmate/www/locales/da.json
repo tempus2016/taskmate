@@ -3350,6 +3350,8 @@
   "kiosk.editor.show_picker_progress_helper": "“3 af 6 klaret” under hvert ansigt",
   "kiosk.editor.completed_mode": "Udførte opgaver",
   "kiosk.editor.completed_mode_helper": "Skjul dem for at holde listen kort. De tæller stadig med i dagens total, men kan ikke fortrydes fra kiosken",
+  "kiosk.editor.grabs_first": "Først til mølle-opgaver øverst",
+  "kiosk.editor.grabs_first_helper": "Flytter åbne først til mølle-opgaver øverst på barnets liste. Et barn med sin egen opgaverækkefølge beholder den",
   "kiosk.editor.completed_show": "Vis — med fortryd-knap",
   "kiosk.editor.completed_hide": "Skjul — når de er udført eller venter på en voksen",
   "kiosk.editor.missed_mode": "Glemte opgaver på et tidspunkt af dagen",

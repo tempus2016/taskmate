@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "« 3 sur 6 faites » sous chaque visage",
   "kiosk.editor.completed_mode": "Tâches terminées",
   "kiosk.editor.completed_mode_helper": "Les masquer raccourcit la liste. Elles comptent toujours dans le total du jour, mais ne peuvent pas être annulées depuis le kiosque",
+  "kiosk.editor.grabs_first": "Tâches au premier arrivé en tête",
+  "kiosk.editor.grabs_first_helper": "Place en haut de la liste de l'enfant les tâches « premier arrivé » encore ouvertes. Un enfant qui a son propre ordre de tâches le garde",
   "kiosk.editor.completed_show": "Afficher — avec leur bouton Annuler",
   "kiosk.editor.completed_hide": "Masquer — une fois faites ou en attente d'un adulte",
   "kiosk.editor.missed_mode": "Tâches à heure fixe manquées",

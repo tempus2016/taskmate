@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "«3 av 6 ferdig» under hvert ansikt",
   "kiosk.editor.completed_mode": "Fullførte oppgaver",
   "kiosk.editor.completed_mode_helper": "Skjul dem for å holde lista kort. De teller fortsatt med i dagens total, men kan ikke angres fra kiosken",
+  "kiosk.editor.grabs_first": "Førstemann til mølla-oppgaver øverst",
+  "kiosk.editor.grabs_first_helper": "Flytter åpne førstemann til mølla-oppgaver øverst på barnets liste. Et barn med egen oppgaverekkefølge beholder den",
   "kiosk.editor.completed_show": "Vis — med angre-knapp",
   "kiosk.editor.completed_hide": "Skjul — når de er gjort eller venter på en voksen",
   "kiosk.editor.missed_mode": "Glemte oppgaver for tid på dagen",

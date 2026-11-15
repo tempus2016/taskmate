@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "«Сделано: 3 из 6» под каждым лицом",
   "kiosk.editor.completed_mode": "Выполненные задания",
   "kiosk.editor.completed_mode_helper": "Если скрыть, список короче. Они всё равно считаются в итоге дня, но отменить их в киоске нельзя",
+  "kiosk.editor.grabs_first": "Задания «кто первый» сверху",
+  "kiosk.editor.grabs_first_helper": "Поднимает ещё свободные задания «кто первый» в начало списка ребёнка. Если у ребёнка свой порядок заданий, он сохраняется",
   "kiosk.editor.completed_show": "Показать — с кнопкой «Отменить»",
   "kiosk.editor.completed_hide": "Скрыть — после выполнения или в ожидании взрослого",
   "kiosk.editor.missed_mode": "Пропущенные задания по времени суток",

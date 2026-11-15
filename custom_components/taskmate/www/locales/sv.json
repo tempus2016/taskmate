@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "”3 av 6 klara” under varje ansikte",
   "kiosk.editor.completed_mode": "Klara sysslor",
   "kiosk.editor.completed_mode_helper": "Att dölja dem håller listan kort. De räknas ändå mot dagens total, men kan inte ångras från kiosken",
+  "kiosk.editor.grabs_first": "Först till kvarn-sysslor överst",
+  "kiosk.editor.grabs_first_helper": "Flyttar lediga först till kvarn-sysslor överst i barnets lista. Ett barn med egen ordning på sysslorna behåller den",
   "kiosk.editor.completed_show": "Visa — med Ångra-knappen",
   "kiosk.editor.completed_hide": "Dölj — när de är klara eller väntar på en vuxen",
   "kiosk.editor.missed_mode": "Missade sysslor för tid på dygnet",

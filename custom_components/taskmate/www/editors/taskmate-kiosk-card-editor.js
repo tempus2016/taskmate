@@ -80,6 +80,7 @@ class TaskMateKioskCardEditor extends LitElement {
           { value: "hide", label: this._t("kiosk.editor.completed_hide") },
         ] } },
       },
+      { name: "grabs_first", selector: { boolean: {} } },
       {
         name: "elapsed_time_mode",
         selector: { select: { mode: "dropdown", options: [
@@ -136,6 +137,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_rewards: this._t("kiosk.editor.show_rewards"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
     completed_mode: this._t("kiosk.editor.completed_mode"),
+    grabs_first: this._t("kiosk.editor.grabs_first"),
     elapsed_time_mode: this._t("kiosk.editor.missed_mode"),
     set_times_layout: this._t("common.set_times.layout_label"),
     play_sounds: this._t("kiosk.editor.play_sounds"),
@@ -160,6 +162,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_rewards: this._t("kiosk.editor.show_rewards_helper"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
     completed_mode: this._t("kiosk.editor.completed_mode_helper"),
+    grabs_first: this._t("kiosk.editor.grabs_first_helper"),
     elapsed_time_mode: this._t("kiosk.editor.missed_mode_helper"),
     set_times_layout: this._t("common.set_times.layout_helper"),
     play_sounds: this._t("kiosk.editor.play_sounds_helper"),
@@ -227,6 +230,7 @@ class TaskMateKioskCardEditor extends LitElement {
       show_rewards: this.config.show_rewards === true,
       show_picker_progress: this.config.show_picker_progress !== false,
       completed_mode: this.config.completed_mode || "show",
+      grabs_first: this.config.grabs_first === true,
       elapsed_time_mode: this.config.elapsed_time_mode || "show",
       set_times_layout: this.config.set_times_layout || "family",
       play_sounds: this.config.play_sounds !== false,

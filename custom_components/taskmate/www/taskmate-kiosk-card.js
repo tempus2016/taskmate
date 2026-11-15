@@ -45,6 +45,10 @@
  * part of the day isn't open yet (#771): like the child card's locked
  * preview it shows "Available at HH:MM" instead of a Done button.
  *
+ * `grabs_first: true` (default off) moves open first-come chores to the top
+ * of a child's list, keeping their relative order. A child with their own
+ * chore_order (v7.8.0) keeps it: the option never overrides a parent's order.
+ *
  * PINs are set by a parent in the admin panel and checked on the server
  * (taskmate/kiosk/verify_pin, rate-limited); the card never sees a PIN or its
  * hash, and only remembers which child is unlocked until it returns to the
@@ -542,7 +546,12 @@ class TaskMateKioskCard extends LitElement {
     const isDone = r => r.state === "done" || r.state === "wait";
     const missedMode = this._missedMode();
     const hideDone = this.config.completed_mode === "hide";
-    const all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
+    let all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
+    // grabs_first: open first-come chores lead the list, so a race is seen
+    // before a sibling wins it. A child's own chore_order always wins.
+    if (this.config.grabs_first === true && !(child.chore_order || []).length) {
+      all = [...all.filter(r => this._upForGrabs(r)), ...all.filter(r => !this._upForGrabs(r))];
+    }
     // A first-come chore a sibling got first was never this child's to do:
     // shown, but left out of the count so "all done" still comes.
     const counted = all.filter(r => !r.phone && r.state !== "taken" && !(missedMode === "dim" && r.missed));
@@ -572,6 +581,19 @@ class TaskMateKioskCard extends LitElement {
   }
 
   _missedMode() { return this.config.elapsed_time_mode || "show"; }
+
+  /** A set time that closed undone can't be ticked any more, whatever the
+   *  missed-chore mode says, so it never offers a Done button. */
+  _dimMissed(row) {
+    return row.missed && (this._missedMode() === "dim" || (!!row.setTime && row.state === "todo"));
+  }
+
+  /** First come: it sits on every sibling's list until one of them finishes
+   *  it, so it's marked as a race rather than as this child's own chore. */
+  _upForGrabs(row) {
+    return row.chore.assignment_mode === "first_come" && !this._dimMissed(row)
+      && (row.state === "todo" || row.state === "elsewhere" || row.state === "later");
+  }
 
   // ── Missed chores (#1079) ────────────────────────────────────────────────
   // The child card's rule (_isTimePeriodElapsed): a chore is missed once the
@@ -2038,14 +2060,9 @@ class TaskMateKioskCard extends LitElement {
     const { chore, state, completion, team } = row;
     const visual = window.__taskmate_chore_visual ? window.__taskmate_chore_visual(chore) : { kind: "none" };
     const undoable = (state === "done" || state === "wait") ? this._undoable(completion) : null;
-    // A set time that closed undone can't be ticked any more, whatever the
-    // missed-chore mode says, so it never offers a Done button.
-    const dimMissed = row.missed && (this._missedMode() === "dim" || (!!row.setTime && state === "todo"));
+    const dimMissed = this._dimMissed(row);
     const needsCheck = state === "todo" && !dimMissed && chore.requires_approval !== false;
-    // First come: it sits on every sibling's list until one of them finishes
-    // it, so mark it as a race rather than as this child's own chore.
-    const upForGrabs = chore.assignment_mode === "first_come" && !dimMissed
-      && (state === "todo" || state === "elsewhere" || state === "later");
+    const upForGrabs = this._upForGrabs(row);
     const grabsLeft = upForGrabs ? this._grabsLeft(chore, child.id) : null;
     let action;
     if (dimMissed) {

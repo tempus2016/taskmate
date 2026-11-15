@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "Her yüzün altında “6 görevden 3 bitti”",
   "kiosk.editor.completed_mode": "Tamamlanan görevler",
   "kiosk.editor.completed_mode_helper": "Gizlemek listeyi kısa tutar. Bugünkü toplama yine sayılır ama kiosktan geri alınamaz",
+  "kiosk.editor.grabs_first": "Kapan alır görevleri en üstte",
+  "kiosk.editor.grabs_first_helper": "Hâlâ açık olan kapan alır görevlerini çocuğun listesinin en üstüne taşır. Kendi görev sırası olan çocuk onu korur",
   "kiosk.editor.completed_show": "Göster — Geri al düğmeleriyle",
   "kiosk.editor.completed_hide": "Gizle — bitince veya bir büyük beklenirken",
   "kiosk.editor.missed_mode": "Kaçırılan zaman dilimi görevleri",

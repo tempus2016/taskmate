@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "在每个头像下显示“已完成 3/6”",
   "kiosk.editor.completed_mode": "已完成的家务",
   "kiosk.editor.completed_mode_helper": "隐藏可让列表更短。它们仍计入今天的总数，但不能在自助屏上撤销",
+  "kiosk.editor.grabs_first": "先到先得的家务置顶",
+  "kiosk.editor.grabs_first_helper": "把仍可领取的先到先得家务移到孩子列表顶部。已有自定义家务顺序的孩子保持原顺序",
   "kiosk.editor.completed_show": "显示 — 带撤销按钮",
   "kiosk.editor.completed_hide": "隐藏 — 完成或等待大人确认后",
   "kiosk.editor.missed_mode": "错过时段的家务",

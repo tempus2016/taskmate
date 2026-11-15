@@ -3411,6 +3411,8 @@
   "kiosk.editor.show_picker_progress_helper": "各顔の下に「6個中3個できた」",
   "kiosk.editor.completed_mode": "完了したお手伝い",
   "kiosk.editor.completed_mode_helper": "隠すと一覧が短くなります。今日の合計には数えられますが、キオスクからは元に戻せません",
+  "kiosk.editor.grabs_first": "早い者勝ちのお手伝いを先頭に",
+  "kiosk.editor.grabs_first_helper": "まだ空いている早い者勝ちのお手伝いを子どものリストの先頭に移します。自分の並び順がある子どもはその順のままです",
   "kiosk.editor.completed_show": "表示 — 元に戻すボタン付き",
   "kiosk.editor.completed_hide": "非表示 — 完了またはおとなの確認待ちになったら",
   "kiosk.editor.missed_mode": "時間帯を過ぎたお手伝い",
