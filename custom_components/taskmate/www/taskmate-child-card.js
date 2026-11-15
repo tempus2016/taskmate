@@ -2652,6 +2652,22 @@ class TaskMateChildCard extends LitElement {
       :is(.tmd-chore, .tmd-quest, .tmd-check):is(.done, .dimmed) :is(.ch-emoji, .q-emoji, .c-emoji) { opacity: 0.5; }
       :is(.tmd-chore, .tmd-quest, .tmd-check).done :is(.num-badge, .q-num, .c-num) { opacity: 0.5; }
       :is(.tmd-chore, .tmd-quest, .tmd-check).dimmed .btn { opacity: 0.5; }
+      /* A locked chore's Done button (#771 locks, dependencies, not due).
+         Fading the coloured button left a dark label on a darker smear in
+         the dark styles. It now reads as the same button, switched off: a
+         flat neutral fill, a dashed dim edge, the dim ink (4.5:1 or better on
+         every style), and no pointer. The row's lock tag and the button's
+         aria-label still say why. The :host prefix outranks the per-style
+         dark-mode label colours in the design kit. */
+      :host([data-tm-design]) :is(.tmd-chore, .tmd-quest, .tmd-check) .btn.tm-btn-locked:disabled {
+        opacity: 1;
+        background: var(--tmd-surface);
+        color: var(--tmd-dim);
+        box-shadow: none;
+        outline: 1px dashed var(--tmd-dim);
+        outline-offset: -1px;
+        cursor: not-allowed;
+      }
       :is(.tmd-chore, .tmd-check).dimmed :is(.num-badge, .c-num) { --ac: color-mix(in srgb, var(--tmd-dim) 60%, var(--tmd-surface)); }
       .tmd-quest.dimmed .q-num { color: var(--tmd-dim); }
       :is(.tmd-chore, .tmd-quest, .tmd-check):is(.done, .dimmed) :is(.ch-name, .q-name, .c-name) { color: var(--tmd-dim); }
@@ -4261,7 +4277,7 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.action_chore_aria", { action: r.team.mine ? this._t("child.team_leave") : this._t("child.team_join"), chore: r.chore.name })
       : this._t("child.done_chore_aria", { chore: r.chore.name });
     const why = r.locked ? this._lockReason(r.chore, this._choreLocks(r.chore, r.done)) : "";
-    return html`<button class="btn ${cls || ""}"
+    return html`<button class="btn ${cls || ""} ${r.locked && !r.done ? "tm-btn-locked" : ""}"
       ?disabled=${r.loading || r.locked}
       aria-label="${why ? `${name}. ${why}` : name}"
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
