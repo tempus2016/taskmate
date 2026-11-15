@@ -120,7 +120,7 @@ class TaskMateRewardsCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #e67e22);
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .header-content {
@@ -140,7 +140,7 @@ class TaskMateRewardsCard extends LitElement {
       }
 
       .reward-count {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.2);
         padding: 4px 12px;
         border-radius: 16px;
         font-size: 0.9rem;
@@ -1245,7 +1245,7 @@ class TaskMateRewardsCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#e67e22")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

@@ -508,15 +508,15 @@ class TaskMateChoreBoardCard extends LitElement {
         font-size: 1.2rem; font-weight: 600;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
-      .cb-seg { display: inline-flex; flex: none; background: rgba(255, 255, 255, .18); border-radius: 9px; padding: 2px; gap: 2px; }
+      .cb-seg { display: inline-flex; flex: none; background: rgba(var(--tmd-hd-ink, 255, 255, 255), .18); border-radius: 9px; padding: 2px; gap: 2px; }
       .cb-seg button {
         background: none; border: 0; cursor: pointer;
         color: inherit; opacity: .85;
         font: inherit; font-size: .8rem; font-weight: 500;
         padding: 5px 11px; border-radius: 7px; min-height: 30px;
       }
-      .cb-seg button.on { background: #fff; color: var(--cb-accent); opacity: 1; }
-      :host([data-tm-design="accessible"]) .cb-seg button.on { color: #111; outline: 2px solid #111; }
+      .cb-seg button.on { background: var(--tmd-hd-text, #fff); color: var(--cb-accent); opacity: 1; }
+      :host([data-tm-design="accessible"]) .cb-seg button.on { background: #fff; color: #111; outline: 2px solid #111; }
       .cb-body { padding: 10px 16px 14px; }
       /* Room for the toast, so it never sits over the last row. */
       .cb-body.cb-has-toast { padding-bottom: 66px; }

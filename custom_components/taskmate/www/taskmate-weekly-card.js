@@ -80,14 +80,14 @@ class TaskMateWeeklyCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #27ae60);
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
       .header-icon { --mdc-icon-size: 28px; opacity: 0.9; }
       .header-title { font-size: 1.2rem; font-weight: 600; }
       .week-label {
-        background: rgba(255,255,255,0.2);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.2);
         padding: 3px 10px;
         border-radius: 12px;
         font-size: 0.8rem;
@@ -385,7 +385,7 @@ class TaskMateWeeklyCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#27ae60")
       : "classic";
 
     const entity = this.hass.states[this.config.entity];

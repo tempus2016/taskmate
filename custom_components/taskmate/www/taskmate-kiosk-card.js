@@ -326,7 +326,18 @@ class TaskMateKioskCard extends LitElement {
     } else {
       this.style.removeProperty("--km-header");
     }
+    // The top banner is flat in every design (no Playroom fade), so its ink
+    // is judged on the colour as painted. The child band sets its own.
+    if (window.__taskmate_design && window.__taskmate_design.headerInk) {
+      window.__taskmate_design.headerInk(this, _safeColor(configured, ""), "");
+    }
     return design;
+  }
+
+  /** Ink declarations for the child band, painted the child's tone or a season. */
+  _bandInk(bg) {
+    const d = window.__taskmate_design;
+    return d && d.headerInkCSS ? ";" + d.headerInkCSS(bg, "", this) : "";
   }
 
   /** Today's seasonal theme, unless this card opts out (`seasonal: false`). */
@@ -1883,7 +1894,7 @@ class TaskMateKioskCard extends LitElement {
     const season = this._season();
     return html`
       <div class="km-child" style="--kc:${tone}">
-        <div class="km-head" style="${season ? `background:${season.grad}` : ""}">
+        <div class="km-head" style="${season ? `background:${season.grad}` : ""}${this._bandInk(season ? season.grad : tone)}">
           ${this._headAvatar(child, tone, season)}
           <div class="km-grow">
             <div class="km-head-name">${child.name}</div>
@@ -2347,7 +2358,7 @@ class TaskMateKioskCard extends LitElement {
       .km-clock { font-variant-numeric: tabular-nums; opacity: 0.9; white-space: nowrap; }
       .km-clock b { font-size: 1.15rem; margin-inline-end: 8px; }
       .km-icon-btn {
-        background: rgba(255, 255, 255, 0.18); border: 0; color: inherit;
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.18); border: 0; color: inherit;
         width: 40px; height: 40px; border-radius: 50%;
         display: grid; place-items: center; cursor: pointer;
       }
@@ -2370,8 +2381,9 @@ class TaskMateKioskCard extends LitElement {
       .km-face.sm ha-icon { --mdc-icon-size: 38px; }
       .km-face.head {
         width: 64px; height: 64px; font-size: 30px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 3px solid rgba(255, 255, 255, 0.4);
+        color: var(--tmd-hd-text, #fff);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.2);
+        border: 3px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.4);
         box-shadow: none;
       }
       .km-face.head ha-icon { --mdc-icon-size: 36px; }
@@ -2518,24 +2530,24 @@ class TaskMateKioskCard extends LitElement {
       .km-child { flex: 1; position: relative; display: flex; flex-direction: column; min-height: 0; }
       .km-head {
         display: flex; align-items: center; gap: 16px;
-        padding: 16px 22px; background: var(--kc); color: #fff;
+        padding: 16px 22px; background: var(--kc); color: var(--tmd-hd-text, #fff);
       }
       .km-grow { flex: 1; min-width: 0; }
       .km-head-name { font-size: 1.8rem; font-weight: 800; line-height: 1.1; font-family: var(--tmd-font-display, inherit); }
       .km-level { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
       /* The badge never wraps ("Lvl" over "29"); the track gives way instead. */
-      .km-level-badge { font-size: 0.8rem; font-weight: 800; background: rgba(255, 255, 255, 0.25); padding: 2px 10px; border-radius: 99px; white-space: nowrap; }
-      .km-level-track { flex: 0 1 120px; min-width: 24px; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
-      .km-level-track i { display: block; height: 100%; background: #fff; }
+      .km-level-badge { font-size: 0.8rem; font-weight: 800; background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25); padding: 2px 10px; border-radius: 99px; white-space: nowrap; }
+      .km-level-track { flex: 0 1 120px; min-width: 24px; height: 6px; border-radius: 99px; background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25); overflow: hidden; }
+      .km-level-track i { display: block; height: 100%; background: var(--tmd-hd-text, #fff); }
       .km-pts-pill {
         display: flex; align-items: center; gap: 6px;
-        background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.18); border: 1px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.3);
         padding: 8px 16px; border-radius: 30px; font-weight: 800; font-size: 1.4rem; white-space: nowrap;
       }
       .km-switch {
         display: flex; align-items: center; gap: 10px;
-        background: rgba(0, 0, 0, 0.18); color: #fff;
-        border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 40px;
+        background: rgba(var(--tmd-hd-scrim, 0, 0, 0), 0.18); color: var(--tmd-hd-text, #fff);
+        border: 2px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.4); border-radius: 40px;
         padding-block: 6px; padding-inline: 16px 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
       }
       /* Its number changes every second; strict containment keeps that from
@@ -2543,7 +2555,7 @@ class TaskMateKioskCard extends LitElement {
       .km-ring {
         width: 40px; height: 40px; border-radius: 50%; contain: strict;
         display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
-        background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.25) 0);
+        background: conic-gradient(var(--tmd-hd-text, #fff) calc(var(--p) * 360deg), rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25) 0);
       }
       .km-ring span {
         width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;

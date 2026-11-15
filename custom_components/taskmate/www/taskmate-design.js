@@ -172,12 +172,12 @@
   // classes. Headers stay FULL-COLOUR (var(--hd)) in every style per house rule.
   const KIT = `
 .tmd{overflow:hidden;font-family:var(--tmd-font-body);color:var(--tmd-text);background:var(--tmd-surface);border-radius:var(--tmd-radius);box-shadow:var(--tmd-shadow)}
-.tmd-hd{display:flex;align-items:center;gap:11px;padding:13px 15px;background:var(--hd,var(--tmd-accent));color:#fff}
+.tmd-hd{display:flex;align-items:center;gap:11px;padding:13px 15px;background:var(--hd,var(--tmd-accent));color:var(--tmd-hd-text,#fff)}
 :host([data-tm-design="playroom"]) .tmd-hd{background:var(--hd,var(--tmd-accent));background:linear-gradient(135deg,var(--hd,var(--tmd-accent)),color-mix(in srgb,var(--hd,var(--tmd-accent)) 72%,#fff))}
-.tmd-hd .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.22);font-size:17px;flex:none}
+.tmd-hd .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(var(--tmd-hd-ink,255,255,255),.22);font-size:17px;flex:none}
 .tmd-hd .tt{font-family:var(--tmd-font-display);font-weight:800;font-size:16px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tmd-hd .tt small{display:block;font-family:var(--tmd-font-body);font-weight:600;font-size:11px;opacity:.85;margin-top:1px}
-.tmd-hd .pill{margin-inline-start:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.25)}
+.tmd-hd .pill{margin-inline-start:auto;font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:rgba(var(--tmd-hd-ink,255,255,255),.25)}
 .tmd-hd .cnt{margin-inline-start:auto;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--tmd-bad);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center}
 .tmd-bd{padding:15px}
 .tmd-empty{text-align:center;padding:26px 12px;color:var(--tmd-dim);font-size:.9rem}
@@ -230,9 +230,9 @@
 :host([data-tm-design="graphite"]) .tmd-hd{padding:13px 15px 12px}
 :host([data-tm-design="graphite"]) .tmd-hd .tt{font-weight:600;font-size:17px;letter-spacing:-.42px}
 :host([data-tm-design="graphite"]) .tmd-hd .tt small{font-weight:400;font-size:13px;opacity:.78;letter-spacing:-.06px;margin-top:2px}
-:host([data-tm-design="graphite"]) .tmd-hd .ic{border-radius:50%;background:rgba(255,255,255,.2)}
+:host([data-tm-design="graphite"]) .tmd-hd .ic{border-radius:50%;background:rgba(var(--tmd-hd-ink,255,255,255),.2)}
 :host([data-tm-design="graphite"]) .tmd-hd .pill{background:transparent;padding:0;font-weight:500;font-size:15px;letter-spacing:-.2px;text-transform:none}
-:host([data-tm-design="graphite"]) .tmd-hd .cnt{background:rgba(255,255,255,.22);font-weight:500;font-variant-numeric:tabular-nums}
+:host([data-tm-design="graphite"]) .tmd-hd .cnt{background:rgba(var(--tmd-hd-ink,255,255,255),.22);color:var(--tmd-hd-text,#fff);font-weight:500;font-variant-numeric:tabular-nums}
 :host([data-tm-design="graphite"]) .tmd-hd .tmd-bal{font-weight:600;letter-spacing:-.2px}
 
 /* Actions are near-black on light and near-white on dark. Deriving them from
@@ -336,7 +336,7 @@
 :host([data-tm-design="graphite"]) .ap-cp-sub{color:var(--tmd-dim);font-weight:400}
 :host([data-tm-design="graphite"]) .ap-cp-photo{border-radius:8px;border:1px solid var(--tmd-border)}
 :host([data-tm-design="graphite"]) .ap-gold-soft{background:transparent;color:var(--tmd-dim)}
-:host([data-tm-design="graphite"]) .approve-all-btn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);font-weight:500}
+:host([data-tm-design="graphite"]) .approve-all-btn{background:transparent;color:var(--tmd-hd-text,#fff);border:1px solid rgba(var(--tmd-hd-ink,255,255,255),.45);font-weight:500}
 
 /* Leaderboard: rank, name, figure — right-aligned and tabular. */
 :host([data-tm-design="graphite"]) .lb-cp-row{background:transparent;border:0;border-radius:0}
@@ -555,12 +555,17 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
    * mode) data-tm-dark + dir. Cards call this once at the top of render() and
    * branch on the returned id. Returns "classic" when no design applies.
    */
-  function apply(el, hass, config, entity) {
+  function apply(el, hass, config, entity, headerDefault) {
     const design = resolve(hass, config, entity);
     if (el) {
       el.setAttribute("data-tm-design", design);
       el.toggleAttribute("data-tm-dark", design !== "classic" && isDark(hass, el));
       el.setAttribute("dir", direction(hass));
+      // The banner ink follows the colour the header is painted: the card's
+      // header_color, else the default it passes. A card whose band is
+      // something else (a child's own colour, a season) calls headerInk again.
+      const own = config && config.header_color;
+      headerInk(el, _hexRgb(own) ? own : headerDefault, design);
     }
     // The host keeps the real id (its CSS keys off it); the card gets the
     // layout id so aliased styles reuse an existing render path.
@@ -677,7 +682,104 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
     return "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("");
   }
 
-  window.__taskmate_design = { IDS, resolve, isDark, direction, ltrNums, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker, childColour };
+  /**
+   * Banner ink: white or near-black text on a full-colour header, picked from
+   * the colour actually painted there. The header colour itself is never
+   * changed; only the text and the translucent chips on it flip.
+   *
+   * The pick is APCA's (the WCAG 3 draft contrast model), not the WCAG 2
+   * ratio: WCAG 2 overrates dark text on mid tones, so it would turn the
+   * stock mid-blue, green and orange banners dark when white reads better on
+   * them. APCA keeps those white and flips only genuinely light colours
+   * (yellow, pastels, light green). `bg` is one hex colour or a CSS gradient
+   * holding several, judged on its lightest stop (where white fails first).
+   * Playroom fades its band toward white
+   * (color-mix(… 72%, #fff) in the kit), so its lighter end is judged too.
+   */
+  const HD_INK_DARK = "#1a1a1a";
+  function _hexRgb(c) {
+    const m = typeof c === "string" && c.trim().match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+    if (!m) return null;
+    let h = m[1];
+    if (h.length <= 4) h = h.split("").map((x) => x + x).join("");
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  }
+  // APCA 0.0.98G-4g screen luminance and lightness contrast (Lc).
+  function _apcaY(rgb) {
+    const f = (c) => Math.pow(c / 255, 2.4);
+    const y = 0.2126729 * f(rgb[0]) + 0.7151522 * f(rgb[1]) + 0.072175 * f(rgb[2]);
+    return y < 0.022 ? y + Math.pow(0.022 - y, 1.414) : y;
+  }
+  function apcaContrast(text, bg) {
+    const t = _apcaY(text), b = _apcaY(bg);
+    if (b > t) {
+      const c = (Math.pow(b, 0.56) - Math.pow(t, 0.57)) * 1.14;
+      return c < 0.1 ? 0 : (c - 0.027) * 100;
+    }
+    const c = (Math.pow(b, 0.65) - Math.pow(t, 0.62)) * 1.14;
+    return c > -0.1 ? 0 : (c + 0.027) * 100;
+  }
+  /** "dark" or "light" ink for a header painted `bg`; "" when bg holds no hex colour. */
+  function headerInkFor(bg, design) {
+    const stops = (typeof bg === "string" ? bg.match(/#[0-9a-f]{3,8}\b/gi) || [] : [])
+      .map(_hexRgb).filter(Boolean);
+    if (!stops.length) return "";
+    if (design === "playroom") {
+      stops.slice().forEach((c) => stops.push(c.map((v) => v * 0.72 + 255 * 0.28)));
+    }
+    const light = stops.reduce((a, c) => (_apcaY(c) > _apcaY(a) ? c : a));
+    const w = Math.abs(apcaContrast([255, 255, 255], light));
+    return apcaContrast(_hexRgb(HD_INK_DARK), light) > w ? "dark" : "light";
+  }
+  /**
+   * Set the banner ink on a card host: --tmd-hd-text (text and icons),
+   * --tmd-hd-ink (an "r,g,b" triple for translucent chips that share the
+   * text's polarity, used as rgba(var(--tmd-hd-ink,255,255,255),.22)) and
+   * --tmd-hd-scrim (the opposite triple, for the darkening scrims that sit
+   * behind white text: rgba(var(--tmd-hd-scrim,0,0,0),.2)). Set inline on the host, so it
+   * beats the :host token default and inherits into the whole shadow tree.
+   * Unknown colours (a theme variable) clear it back to white.
+   */
+  function headerInk(el, bg, design) {
+    if (!el || !el.style || !el.style.setProperty) return "";
+    const ink = headerInkFor(bg, design);
+    if (ink === "dark") {
+      el.style.setProperty("--tmd-hd-text", HD_INK_DARK);
+      el.style.setProperty("--tmd-hd-ink", "0,0,0");
+      el.style.setProperty("--tmd-hd-scrim", "255,255,255");
+    } else {
+      el.style.removeProperty("--tmd-hd-text");
+      el.style.removeProperty("--tmd-hd-ink");
+      el.style.removeProperty("--tmd-hd-scrim");
+    }
+    return ink;
+  }
+  /**
+   * The same ink as declarations for a band inside a card whose colour is
+   * not the card header's (the kiosk's child band): put the result in that
+   * element's style attribute. Always explicit, so a band never inherits the
+   * host's ink. `bg` may be a palette token, var(--tmd-c3, #hex): it is
+   * read off `el` (cached per design and colour scheme), else its fallback.
+   */
+  const _inkVarCache = new Map();
+  function headerInkCSS(bg, design, el) {
+    let c = bg;
+    const v = typeof bg === "string" && bg.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*(#[0-9a-f]{3,8}))?\s*\)$/i);
+    if (v) {
+      const key = [active(el), el && el.hasAttribute && el.hasAttribute("data-tm-dark"), v[1]].join("|");
+      if (!_inkVarCache.has(key)) {
+        let got;
+        try { got = el && typeof getComputedStyle === "function" ? getComputedStyle(el).getPropertyValue(v[1]).trim() : ""; } catch (e) { got = ""; }
+        _inkVarCache.set(key, _hexRgb(got) ? got : v[2] || "");
+      }
+      c = _inkVarCache.get(key);
+    }
+    return headerInkFor(c, design) === "dark"
+      ? `--tmd-hd-text:${HD_INK_DARK};--tmd-hd-ink:0,0,0;--tmd-hd-scrim:255,255,255;`
+      : "--tmd-hd-text:#fff;--tmd-hd-ink:255,255,255;--tmd-hd-scrim:0,0,0;";
+  }
+
+  window.__taskmate_design = { IDS, resolve, isDark, direction, ltrNums, apply, active, editorOptions, styles, cssText, tokensCSS: TOKENS, colourPicker, childColour, headerInk, headerInkCSS, headerInkFor, apcaContrast };
 
   // ── Seasonal themes ───────────────────────────────────────────────────────
   // The overview sensor names the season (only while a parent has it on and

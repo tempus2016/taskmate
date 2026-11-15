@@ -388,7 +388,7 @@ class TaskMateRaffleCard extends LitElement {
       .rf-hd-text { flex: 1; min-width: 0; }
       .rf-hd-title { font-family: var(--tmd-font-display, inherit); font-size: 1.3rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .rf-hd-sub { font-size: .8rem; opacity: .85; }
-      .rf-hd-pill { flex: none; background: rgba(255,255,255,.2); padding: 4px 12px; border-radius: 16px; font-size: .9rem; white-space: nowrap; }
+      .rf-hd-pill { flex: none; background: rgba(var(--tmd-hd-ink, 255,255,255), .2); padding: 4px 12px; border-radius: 16px; font-size: .9rem; white-space: nowrap; }
       .rf-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
       .rf-empty { text-align: center; padding: 26px 12px; color: var(--tmd-dim, var(--secondary-text-color)); }
       .rf-sec { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--tmd-dim, var(--secondary-text-color)); margin: 4px 2px -4px; }

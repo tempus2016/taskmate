@@ -1166,7 +1166,7 @@ class TaskMatePetCard extends LitElement {
       .pt-hd-text { flex: 1; min-width: 0; }
       .pt-hd-title { font-family: var(--tmd-font-display, inherit); font-size: 1.3rem; font-weight: 600; }
       .pt-hd-sub { font-size: .85rem; opacity: .9; }
-      .pt-level { font-weight: 800; font-size: .9rem; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.22); white-space: nowrap; }
+      .pt-level { font-weight: 800; font-size: .9rem; padding: 4px 10px; border-radius: 999px; background: rgba(var(--tmd-hd-ink, 255,255,255), .22); white-space: nowrap; }
       .pt-empty { padding: 26px; text-align: center; color: var(--tmd-dim, var(--secondary-text-color)); }
       .pt-body { padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
       .pt-stage { position: relative; width: 100%; max-width: 360px; aspect-ratio: 320 / 210; padding: 0; border: 0; cursor: pointer; border-radius: 22px; overflow: hidden;

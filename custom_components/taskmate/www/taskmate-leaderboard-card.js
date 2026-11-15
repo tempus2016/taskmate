@@ -60,7 +60,7 @@ class TaskMateLeaderboardCard extends LitElement {
         display: flex; align-items: center; justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #b7950b);
-        color: white; gap: 12px;
+        color: var(--tmd-hd-text, white); gap: 12px;
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -68,7 +68,7 @@ class TaskMateLeaderboardCard extends LitElement {
       .header-title { font-size: 1.1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
       .period-badge {
-        background: rgba(255,255,255,0.15);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.15);
         border-radius: 10px;
         padding: 3px 10px;
         font-size: 0.78rem;
@@ -337,7 +337,7 @@ class TaskMateLeaderboardCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#b7950b")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

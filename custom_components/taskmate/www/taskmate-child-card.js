@@ -491,7 +491,7 @@ class TaskMateChildCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #9b59b6);
-        color: white;
+        color: var(--tmd-hd-text, white);
         gap: 12px;
         min-width: 0;
       }
@@ -509,8 +509,8 @@ class TaskMateChildCard extends LitElement {
         height: 48px;
         min-width: 48px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.15);
-        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.15);
+        border: 2px solid rgba(var(--tmd-hd-ink, 255,255,255), 0.3);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -519,7 +519,7 @@ class TaskMateChildCard extends LitElement {
 
       .avatar-container ha-icon {
         --mdc-icon-size: 30px;
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .avatar-clickable { cursor: pointer; position: relative; }
@@ -535,7 +535,7 @@ class TaskMateChildCard extends LitElement {
          anchor. Base styles here win over the shared kit's .tmd-hd because the
          card includes them after the kit in static styles(). */
       .tmd-hd { position: relative; }
-      /* Header subtitle in full white (at 85% it read 3.5-3.9:1 on the band),
+      /* Header subtitle at full strength (at 85% white read 3.5-3.9:1 on the band),
          and no smaller than 12px. */
       :host([data-tm-design]) .tmd-hd .tt small { opacity: 1; }
       :host([data-tm-design]:not([data-tm-design="graphite"])) .tmd-hd .tt small { font-size: 12px; }
@@ -582,7 +582,7 @@ class TaskMateChildCard extends LitElement {
       .child-name {
         font-size: 1.15rem;
         font-weight: 700;
-        color: white;
+        color: var(--tmd-hd-text, white);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -593,14 +593,15 @@ class TaskMateChildCard extends LitElement {
         gap: 6px;
         margin-top: 4px;
       }
-      /* A dark scrim, not a light one, behind white header text: lightening
-         the header colour took "Lvl 29" down to 3:1. */
+      /* A scrim of the opposite polarity to the header text (dark behind
+         white, light behind dark ink): a scrim matching the text took
+         "Lvl 29" down to 3:1. */
       .level-badge {
         font-size: 12px;
         font-weight: 800;
         letter-spacing: .03em;
-        color: white;
-        background: rgba(0, 0, 0, 0.2);
+        color: var(--tmd-hd-text, white);
+        background: rgba(var(--tmd-hd-scrim, 0, 0, 0), 0.2);
         padding: 1px 8px;
         border-radius: 999px;
         white-space: nowrap;
@@ -610,13 +611,13 @@ class TaskMateChildCard extends LitElement {
         max-width: 90px;
         height: 5px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.25);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25);
         overflow: hidden;
       }
       .level-xp-fill {
         height: 100%;
         border-radius: 999px;
-        background: white;
+        background: var(--tmd-hd-text, white);
         transition: width 0.4s ease;
       }
 
@@ -625,8 +626,8 @@ class TaskMateChildCard extends LitElement {
         display: flex;
         align-items: center;
         gap: 6px;
-        background: rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(var(--tmd-hd-scrim, 0,0,0), 0.15);
+        border: 1px solid rgba(var(--tmd-hd-ink, 255,255,255), 0.25);
         padding: 6px 12px;
         border-radius: 20px;
         flex-shrink: 0;
@@ -655,13 +656,13 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         gap: 3px;
         white-space: nowrap;
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
-      .stars-value.my-stars { color: white; }
+      .stars-value.my-stars { color: var(--tmd-hd-text, white); }
 
       .stars-value.waiting-stars {
-        color: white;
+        color: var(--tmd-hd-text, white);
         font-size: 0.9rem;
       }
 
@@ -676,14 +677,14 @@ class TaskMateChildCard extends LitElement {
         text-transform: uppercase;
         letter-spacing: 0.5px;
         white-space: nowrap;
-        color: rgba(255,255,255,0.7);
+        color: rgba(var(--tmd-hd-ink, 255,255,255), 0.7);
         display: none;
       }
 
       .stars-divider {
         width: 1px;
         height: 18px;
-        background: rgba(255,255,255,0.35);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.35);
         margin: 0 4px;
         flex-shrink: 0;
       }
@@ -1804,7 +1805,7 @@ class TaskMateChildCard extends LitElement {
         outline-offset: -3px;
       }
       .card-header .avatar-clickable:focus-visible,
-      .tmd-hd .avatar-clickable:focus-visible { outline-color: #fff; border-radius: 50%; }
+      .tmd-hd .avatar-clickable:focus-visible { outline-color: var(--tmd-hd-text, #fff); border-radius: 50%; }
       :host([data-tm-design="graphite"]) :is(.tm-day-tab, .tm-help-btn, .tmd-undochip, .tmd-badges, .btn):focus-visible { outline-color: var(--tmd-text); }
       .tm-help-on { opacity: .85; }
       /* Touch targets: every control a child taps reaches 44x44 CSS px. Where
@@ -2886,13 +2887,13 @@ class TaskMateChildCard extends LitElement {
       .tmd-freeze {
         margin-inline-start: auto; display: inline-flex; align-items: center; gap: 3px;
         font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-        background: rgba(0,0,0,.18); color: #fff; white-space: nowrap;
+        background: rgba(var(--tmd-hd-scrim, 0,0,0), .18); color: var(--tmd-hd-text, #fff); white-space: nowrap;
       }
       .tmd-freeze + .tmd-pending { margin-inline-start: 6px; }
       .tmd-pending {
         margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-        background: rgba(0,0,0,.18); color: #fff;
+        background: rgba(var(--tmd-hd-scrim, 0,0,0), .18); color: var(--tmd-hd-text, #fff);
       }
       /* Designed: the child's balance on the header's end edge, with any
          points awaiting approval stacked under it so the title keeps its
@@ -3289,6 +3290,7 @@ class TaskMateChildCard extends LitElement {
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const look = this._look(child, attrs, "classic", "#9b59b6");
+    this._headerInk(look, "classic");
     const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
 
     return html`
@@ -3820,6 +3822,7 @@ class TaskMateChildCard extends LitElement {
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const look = this._look(child, attrs, this.getAttribute?.("data-tm-design") || design, hd);
+    this._headerInk(look, design);
 
     const dueDaysMode = this.config.due_days_mode || "hide";
     const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
@@ -8177,6 +8180,16 @@ class TaskMateChildCard extends LitElement {
    * it applies (progress bars, confetti). A season (on in Settings, not opted
    * out with `seasonal: false`) lays its gradient over the header.
    */
+  /**
+   * Banner ink for the band _look() paints: the season's gradient or the
+   * header colour. Called from BOTH render paths. Playroom's band here fades
+   * to a deeper shade, not toward white, so it is judged as painted.
+   */
+  _headerInk(look, design) {
+    const d = window.__taskmate_design;
+    if (d && d.headerInk) d.headerInk(this, look.season ? look.season.grad : look.hd, design === "playroom" ? "" : design);
+  }
+
   _look(child, attrs, design, fallback) {
     const d = window.__taskmate_design;
     const own = !this._explicitHeader && child && child.color && d && d.childColour

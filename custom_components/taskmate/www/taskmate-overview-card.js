@@ -100,7 +100,7 @@ class TaskMateOverviewCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #8e44ad);
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -439,7 +439,7 @@ class TaskMateOverviewCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#8e44ad")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design, entity);
 

@@ -499,7 +499,7 @@ class TaskMateAuctionCard extends LitElement {
       .ac-hd-gavel {
         width: 48px; height: 48px; flex: none; border-radius: 14px;
         display: grid; place-items: center;
-        background: rgba(255, 255, 255, .18);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), .18);
       }
       .ac-hd-gavel ha-icon { --mdc-icon-size: 28px; }
       .ac-hd-text { flex: 1; min-width: 0; }
@@ -511,7 +511,7 @@ class TaskMateAuctionCard extends LitElement {
       .ac-hd-sub { font-size: .8rem; opacity: .85; margin-top: 1px; }
       .ac-hd-pill {
         flex: none; white-space: nowrap;
-        background: rgba(255, 255, 255, .2);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), .2);
         padding: 4px 12px; border-radius: 16px;
         font-size: .9rem; font-weight: 500;
       }
