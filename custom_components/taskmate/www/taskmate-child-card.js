@@ -1987,12 +1987,28 @@ class TaskMateChildCard extends LitElement {
       .tm-goal-chip.on { border-color: #2e9e5b; background: #ecf8ef; color: #1d5b2c; }
       .tm-mood { margin: 12px 0 4px; padding: 12px; border-radius: 16px; background: var(--secondary-background-color, #f3f3f3); text-align: center; }
       .tm-mood .q { font-weight: 700; margin-bottom: 8px; }
-      .tm-mood .faces { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+      /* Five faces always share one row: a fixed 5-column grid whose columns
+         shrink from 54px to the 44px target floor (never a 4+1 wrap). */
+      .tm-mood .faces { display: grid; grid-template-columns: repeat(5, minmax(44px, 54px)); justify-content: center;
+        column-gap: clamp(4px, 2.5%, 10px); }
       .tm-mood .face { font-size: 2rem; line-height: 1; border: 0; background: var(--card-background-color, #fff); border-radius: 50%;
-        width: 54px; height: 54px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+        inline-size: 100%; block-size: auto; aspect-ratio: 1; min-block-size: 44px; padding: 0; cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,.12); }
       .tm-mood .face:active { transform: scale(.92); }
+      .tm-mood .face:focus-visible { outline: 2px solid var(--primary-color, currentColor); outline-offset: 2px; }
       .tm-mood.said { font-weight: 700; padding: 10px; }
       .tm-mood.classic { margin: 12px 16px 16px; }
+      /* Narrow cards: smaller faces so the glyph fits the shrunken circle. */
+      .tm-mood { container-type: inline-size; }
+      @container (max-width: 260px) { .tm-mood .face { font-size: 1.6rem; } }
+      /* Designed styles paint the check-in from their own tokens (light and
+         dark): an inset surface-2 panel with token borders, radius and fonts. */
+      .tm-mood.tmd { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); border-radius: var(--tmd-radius-sm);
+        color: var(--tmd-text); font-family: var(--tmd-font-body); box-shadow: none; }
+      .tm-mood.tmd .q { font-family: var(--tmd-font-display, inherit); }
+      .tm-mood.tmd .face { background: var(--tmd-surface); border: 1px solid var(--tmd-border); box-shadow: none; color: inherit; }
+      .tm-mood.tmd .face:focus-visible { outline-color: var(--tmd-accent); }
+      :host([data-tm-design="accessible"]) .tm-mood.tmd, :host([data-tm-design="accessible"]) .tm-mood.tmd .face { border-width: 2px; }
       /* All-done moment: banner, then the mood check-in, then the fold. Classic
          keeps its own palette; the designed styles draw from their tokens. */
       .tm-alldone { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px;
@@ -3145,6 +3161,7 @@ class TaskMateChildCard extends LitElement {
         }
         .chore-checkbox, .chore-checkbox ha-icon { transition-property: background, border-color, color, box-shadow; }
         .level-xp-fill, .cap-fill, .next-badge-bar i, .tmd-next-badge .bar i, .tm-boost-bar { transition: none; }
+        .tm-mood .face:active { transform: none; }
       }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
