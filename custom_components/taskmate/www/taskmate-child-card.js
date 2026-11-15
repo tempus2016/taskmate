@@ -946,6 +946,16 @@ class TaskMateChildCard extends LitElement {
         white-space: nowrap;
       }
 
+      /* A standard row's name wraps to a second line before it clips, as the
+         designed rows' names do, so "Empty the dishwasher and put…" still
+         says which job it is. overflow-wrap breaks a long compound or a
+         pasted link that has no space to wrap at. */
+      .chore-card .chore-details > .chore-name {
+        display: -webkit-box; -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2; line-clamp: 2;
+        white-space: normal; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.25;
+      }
+
       .chore-description {
         font-size: max(12px, 0.82rem);
         color: var(--secondary-text-color);
@@ -1249,6 +1259,16 @@ class TaskMateChildCard extends LitElement {
       .recurrence-label ha-icon {
         --mdc-icon-size: 12px;
       }
+
+      /* A reason that wraps ("Do Tidy bedroom first" on a phone) keeps its
+         icon beside the first line rather than centred on the block, breaks
+         an unbreakable name instead of overflowing, and \`pretty\` keeps a
+         lone word off the last line where it can. */
+      .dependency-label, .recurrence-label, .first-come-label {
+        align-items: flex-start; line-height: 16px; max-width: 100%; box-sizing: border-box;
+        overflow-wrap: anywhere; text-wrap: pretty; -webkit-hyphens: auto; hyphens: auto;
+      }
+      :is(.dependency-label, .recurrence-label, .first-come-label) > ha-icon { flex: none; margin-block-start: 2px; }
 
       /* Chore card in completed state - faded green styling */
       .chore-card.completed {
@@ -2385,11 +2405,12 @@ class TaskMateChildCard extends LitElement {
          filter only, so every design's own colours still show through. */
       .timed-chore-card.tm-timed-locked { opacity: 0.55; filter: grayscale(0.5); }
       .tm-timed-lock-reason {
-        display: flex; align-items: center; gap: 4px; margin-top: 3px;
-        font-size: 0.78rem; font-weight: 600;
+        display: flex; align-items: flex-start; gap: 4px; margin-top: 3px;
+        font-size: 0.78rem; font-weight: 600; line-height: 18px;
+        overflow-wrap: anywhere; text-wrap: pretty; -webkit-hyphens: auto; hyphens: auto;
         color: var(--tmd-dim, var(--secondary-text-color));
       }
-      .tm-timed-lock-reason ha-icon { --mdc-icon-size: 14px; }
+      .tm-timed-lock-reason ha-icon { --mdc-icon-size: 14px; flex: none; margin-block-start: 2px; }
       .btn-icon { font-size: 1.2rem; }
       .daily-cap-bar {
         display: flex;
@@ -2858,6 +2879,12 @@ class TaskMateChildCard extends LitElement {
         background: var(--tmd-surface-2); color: var(--tmd-dim);
         border: 1px solid var(--tmd-border);
       }
+      /* Lock reasons (_designWhyTag): the icon sits on the first line and the
+         words wrap under each other, never under the icon; \`pretty\` keeps a
+         lone last word off its own line where it can. */
+      .tmd-why { align-items: flex-start; text-wrap: pretty; }
+      .tmd-why-ic { flex: none; }
+      .tmd-why-tx { min-width: 0; -webkit-hyphens: auto; hyphens: auto; }
       .tmd-tag.mandatory { background: color-mix(in srgb, var(--tmd-bad) 16%, transparent); color: var(--tm-ink-bad); border-color: transparent; }
       .tmd-tag.auction { background: color-mix(in srgb, #7e57c2 18%, transparent); color: color-mix(in srgb, #7e57c2 70%, var(--tmd-text)); border-color: transparent; }
       .tmd-tag.photo { background: color-mix(in srgb, var(--tmd-accent) 14%, transparent); color: var(--tm-ink-accent); border-color: transparent; }
@@ -3104,7 +3131,7 @@ class TaskMateChildCard extends LitElement {
       .compact .chore-number-badge { width: 24px; height: 24px; min-width: 24px; font-size: 0.8rem; transform: none; box-shadow: none; }
       .compact .chore-number-badge ha-icon { --mdc-icon-size: 15px; }
       .compact .chore-details { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
-      .compact .chore-name { flex: 1 1 auto; min-width: 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .compact .chore-name, .compact .chore-card .chore-details > .chore-name { display: block; flex: 1 1 auto; min-width: 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .compact .chore-points { font-size: max(12px, 0.8rem); }
       .compact .chore-description { display: none; }
       .compact .chore-checkbox { width: 22px; height: 22px; min-width: 22px; border-width: 2px; border-radius: 6px; box-shadow: none; }
@@ -4178,9 +4205,9 @@ class TaskMateChildCard extends LitElement {
           ${r.auction ? html`<span class="tmd-tag auction">🔨 ${this._t("child.won_at_auction")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
           ${r.openEnded ? html`<span class="tmd-tag photo">✍️ ${this._t("child.open_ended_tag")}</span>` : ""}
-          ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
-          ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
-          ${firstComeLabel ? html`<span class="tmd-tag">✅ ${firstComeLabel}</span>` : ""}
+          ${depNames.length ? this._designWhyTag("🔒", this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })) : ""}
+          ${recLabel ? this._designWhyTag("🕒", recLabel) : ""}
+          ${firstComeLabel ? this._designWhyTag("✅", firstComeLabel) : ""}
           ${sharedLabel ? html`<span class="tmd-tag tm-shared-limit">👥 ${sharedLabel}</span>` : ""}
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
@@ -4190,6 +4217,15 @@ class TaskMateChildCard extends LitElement {
       ${r.done ? "" : this._renderRejectNote(r.chore, r.child, "tmd-reject")}
       ${this._renderInspectionTag(r.chore, r.child)}
       ${r.done ? "" : this._renderInspectionNote(r.chore, r.child, "tm-insp-note designed")}`;
+  }
+
+  /**
+   * A lock reason on a designed row ("🔒 Do Tidy bedroom first"): the icon
+   * and the words are separate boxes, so a reason that wraps keeps its icon
+   * on the first line and the words wrap under each other, not under it.
+   */
+  _designWhyTag(icon, text) {
+    return html`<span class="tmd-tag tmd-why"><span class="tmd-why-ic">${icon}</span><span class="tmd-why-tx">${text}</span></span>`;
   }
 
   /**
