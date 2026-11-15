@@ -491,7 +491,7 @@ class TaskMateChildCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #9b59b6);
-        color: white;
+        color: var(--tmd-hd-text, white);
         gap: 12px;
         min-width: 0;
       }
@@ -509,8 +509,8 @@ class TaskMateChildCard extends LitElement {
         height: 48px;
         min-width: 48px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.15);
-        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.15);
+        border: 2px solid rgba(var(--tmd-hd-ink, 255,255,255), 0.3);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -519,7 +519,7 @@ class TaskMateChildCard extends LitElement {
 
       .avatar-container ha-icon {
         --mdc-icon-size: 30px;
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .avatar-clickable { cursor: pointer; position: relative; }
@@ -535,7 +535,7 @@ class TaskMateChildCard extends LitElement {
          anchor. Base styles here win over the shared kit's .tmd-hd because the
          card includes them after the kit in static styles(). */
       .tmd-hd { position: relative; }
-      /* Header subtitle in full white (at 85% it read 3.5-3.9:1 on the band),
+      /* Header subtitle at full strength (at 85% white read 3.5-3.9:1 on the band),
          and no smaller than 12px. */
       :host([data-tm-design]) .tmd-hd .tt small { opacity: 1; }
       :host([data-tm-design]:not([data-tm-design="graphite"])) .tmd-hd .tt small { font-size: 12px; }
@@ -582,7 +582,7 @@ class TaskMateChildCard extends LitElement {
       .child-name {
         font-size: 1.15rem;
         font-weight: 700;
-        color: white;
+        color: var(--tmd-hd-text, white);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -593,14 +593,15 @@ class TaskMateChildCard extends LitElement {
         gap: 6px;
         margin-top: 4px;
       }
-      /* A dark scrim, not a light one, behind white header text: lightening
-         the header colour took "Lvl 29" down to 3:1. */
+      /* A scrim of the opposite polarity to the header text (dark behind
+         white, light behind dark ink): a scrim matching the text took
+         "Lvl 29" down to 3:1. */
       .level-badge {
         font-size: 12px;
         font-weight: 800;
         letter-spacing: .03em;
-        color: white;
-        background: rgba(0, 0, 0, 0.2);
+        color: var(--tmd-hd-text, white);
+        background: rgba(var(--tmd-hd-scrim, 0, 0, 0), 0.2);
         padding: 1px 8px;
         border-radius: 999px;
         white-space: nowrap;
@@ -610,13 +611,13 @@ class TaskMateChildCard extends LitElement {
         max-width: 90px;
         height: 5px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.25);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25);
         overflow: hidden;
       }
       .level-xp-fill {
         height: 100%;
         border-radius: 999px;
-        background: white;
+        background: var(--tmd-hd-text, white);
         transition: width 0.4s ease;
       }
 
@@ -625,8 +626,8 @@ class TaskMateChildCard extends LitElement {
         display: flex;
         align-items: center;
         gap: 6px;
-        background: rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(var(--tmd-hd-scrim, 0,0,0), 0.15);
+        border: 1px solid rgba(var(--tmd-hd-ink, 255,255,255), 0.25);
         padding: 6px 12px;
         border-radius: 20px;
         flex-shrink: 0;
@@ -655,13 +656,13 @@ class TaskMateChildCard extends LitElement {
         align-items: center;
         gap: 3px;
         white-space: nowrap;
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
-      .stars-value.my-stars { color: white; }
+      .stars-value.my-stars { color: var(--tmd-hd-text, white); }
 
       .stars-value.waiting-stars {
-        color: white;
+        color: var(--tmd-hd-text, white);
         font-size: 0.9rem;
       }
 
@@ -676,14 +677,14 @@ class TaskMateChildCard extends LitElement {
         text-transform: uppercase;
         letter-spacing: 0.5px;
         white-space: nowrap;
-        color: rgba(255,255,255,0.7);
+        color: rgba(var(--tmd-hd-ink, 255,255,255), 0.7);
         display: none;
       }
 
       .stars-divider {
         width: 1px;
         height: 18px;
-        background: rgba(255,255,255,0.35);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.35);
         margin: 0 4px;
         flex-shrink: 0;
       }
@@ -944,6 +945,16 @@ class TaskMateChildCard extends LitElement {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      /* A standard row's name wraps to a second line before it clips, as the
+         designed rows' names do, so "Empty the dishwasher and put…" still
+         says which job it is. overflow-wrap breaks a long compound or a
+         pasted link that has no space to wrap at. */
+      .chore-card .chore-details > .chore-name {
+        display: -webkit-box; -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2; line-clamp: 2;
+        white-space: normal; text-overflow: clip; overflow-wrap: anywhere; line-height: 1.25;
       }
 
       .chore-description {
@@ -1249,6 +1260,16 @@ class TaskMateChildCard extends LitElement {
       .recurrence-label ha-icon {
         --mdc-icon-size: 12px;
       }
+
+      /* A reason that wraps ("Do Tidy bedroom first" on a phone) keeps its
+         icon beside the first line rather than centred on the block, breaks
+         an unbreakable name instead of overflowing, and \`pretty\` keeps a
+         lone word off the last line where it can. */
+      .dependency-label, .recurrence-label, .first-come-label {
+        align-items: flex-start; line-height: 16px; max-width: 100%; box-sizing: border-box;
+        overflow-wrap: anywhere; text-wrap: pretty; -webkit-hyphens: auto; hyphens: auto;
+      }
+      :is(.dependency-label, .recurrence-label, .first-come-label) > ha-icon { flex: none; margin-block-start: 2px; }
 
       /* Chore card in completed state - faded green styling */
       .chore-card.completed {
@@ -1804,7 +1825,7 @@ class TaskMateChildCard extends LitElement {
         outline-offset: -3px;
       }
       .card-header .avatar-clickable:focus-visible,
-      .tmd-hd .avatar-clickable:focus-visible { outline-color: #fff; border-radius: 50%; }
+      .tmd-hd .avatar-clickable:focus-visible { outline-color: var(--tmd-hd-text, #fff); border-radius: 50%; }
       :host([data-tm-design="graphite"]) :is(.tm-day-tab, .tm-help-btn, .tmd-undochip, .tmd-badges, .btn):focus-visible { outline-color: var(--tmd-text); }
       .tm-help-on { opacity: .85; }
       /* Touch targets: every control a child taps reaches 44x44 CSS px. Where
@@ -1987,12 +2008,28 @@ class TaskMateChildCard extends LitElement {
       .tm-goal-chip.on { border-color: #2e9e5b; background: #ecf8ef; color: #1d5b2c; }
       .tm-mood { margin: 12px 0 4px; padding: 12px; border-radius: 16px; background: var(--secondary-background-color, #f3f3f3); text-align: center; }
       .tm-mood .q { font-weight: 700; margin-bottom: 8px; }
-      .tm-mood .faces { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+      /* Five faces always share one row: a fixed 5-column grid whose columns
+         shrink from 54px to the 44px target floor (never a 4+1 wrap). */
+      .tm-mood .faces { display: grid; grid-template-columns: repeat(5, minmax(44px, 54px)); justify-content: center;
+        column-gap: clamp(4px, 2.5%, 10px); }
       .tm-mood .face { font-size: 2rem; line-height: 1; border: 0; background: var(--card-background-color, #fff); border-radius: 50%;
-        width: 54px; height: 54px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+        inline-size: 100%; block-size: auto; aspect-ratio: 1; min-block-size: 44px; padding: 0; cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,.12); }
       .tm-mood .face:active { transform: scale(.92); }
+      .tm-mood .face:focus-visible { outline: 2px solid var(--primary-color, currentColor); outline-offset: 2px; }
       .tm-mood.said { font-weight: 700; padding: 10px; }
       .tm-mood.classic { margin: 12px 16px 16px; }
+      /* Narrow cards: smaller faces so the glyph fits the shrunken circle. */
+      .tm-mood { container-type: inline-size; }
+      @container (max-width: 260px) { .tm-mood .face { font-size: 1.6rem; } }
+      /* Designed styles paint the check-in from their own tokens (light and
+         dark): an inset surface-2 panel with token borders, radius and fonts. */
+      .tm-mood.tmd { background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); border-radius: var(--tmd-radius-sm);
+        color: var(--tmd-text); font-family: var(--tmd-font-body); box-shadow: none; }
+      .tm-mood.tmd .q { font-family: var(--tmd-font-display, inherit); }
+      .tm-mood.tmd .face { background: var(--tmd-surface); border: 1px solid var(--tmd-border); box-shadow: none; color: inherit; }
+      .tm-mood.tmd .face:focus-visible { outline-color: var(--tmd-accent); }
+      :host([data-tm-design="accessible"]) .tm-mood.tmd, :host([data-tm-design="accessible"]) .tm-mood.tmd .face { border-width: 2px; }
       /* All-done moment: banner, then the mood check-in, then the fold. Classic
          keeps its own palette; the designed styles draw from their tokens. */
       .tm-alldone { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px;
@@ -2369,11 +2406,12 @@ class TaskMateChildCard extends LitElement {
          filter only, so every design's own colours still show through. */
       .timed-chore-card.tm-timed-locked { opacity: 0.55; filter: grayscale(0.5); }
       .tm-timed-lock-reason {
-        display: flex; align-items: center; gap: 4px; margin-top: 3px;
-        font-size: 0.78rem; font-weight: 600;
+        display: flex; align-items: flex-start; gap: 4px; margin-top: 3px;
+        font-size: 0.78rem; font-weight: 600; line-height: 18px;
+        overflow-wrap: anywhere; text-wrap: pretty; -webkit-hyphens: auto; hyphens: auto;
         color: var(--tmd-dim, var(--secondary-text-color));
       }
-      .tm-timed-lock-reason ha-icon { --mdc-icon-size: 14px; }
+      .tm-timed-lock-reason ha-icon { --mdc-icon-size: 14px; flex: none; margin-block-start: 2px; }
       .btn-icon { font-size: 1.2rem; }
       .daily-cap-bar {
         display: flex;
@@ -2615,6 +2653,22 @@ class TaskMateChildCard extends LitElement {
       :is(.tmd-chore, .tmd-quest, .tmd-check):is(.done, .dimmed) :is(.ch-emoji, .q-emoji, .c-emoji) { opacity: 0.5; }
       :is(.tmd-chore, .tmd-quest, .tmd-check).done :is(.num-badge, .q-num, .c-num) { opacity: 0.5; }
       :is(.tmd-chore, .tmd-quest, .tmd-check).dimmed .btn { opacity: 0.5; }
+      /* A locked chore's Done button (#771 locks, dependencies, not due).
+         Fading the coloured button left a dark label on a darker smear in
+         the dark styles. It now reads as the same button, switched off: a
+         flat neutral fill, a dashed dim edge, the dim ink (4.5:1 or better on
+         every style), and no pointer. The row's lock tag and the button's
+         aria-label still say why. The :host prefix outranks the per-style
+         dark-mode label colours in the design kit. */
+      :host([data-tm-design]) :is(.tmd-chore, .tmd-quest, .tmd-check) .btn.tm-btn-locked:disabled {
+        opacity: 1;
+        background: var(--tmd-surface);
+        color: var(--tmd-dim);
+        box-shadow: none;
+        outline: 1px dashed var(--tmd-dim);
+        outline-offset: -1px;
+        cursor: not-allowed;
+      }
       :is(.tmd-chore, .tmd-check).dimmed :is(.num-badge, .c-num) { --ac: color-mix(in srgb, var(--tmd-dim) 60%, var(--tmd-surface)); }
       .tmd-quest.dimmed .q-num { color: var(--tmd-dim); }
       :is(.tmd-chore, .tmd-quest, .tmd-check):is(.done, .dimmed) :is(.ch-name, .q-name, .c-name) { color: var(--tmd-dim); }
@@ -2740,17 +2794,6 @@ class TaskMateChildCard extends LitElement {
       .tmd-check.awaiting .c-num ha-icon { --mdc-icon-size: 16px; color: #3a2600; }
       :host([data-tm-design="graphite"]:not([data-tm-dark])) .tmd-check.awaiting .c-num ha-icon { color: #fff; }
       .tmd-quest.awaiting .q-num ha-icon { --mdc-icon-size: 16px; }
-      .tmd-awaiting {
-        display: inline-flex; align-items: center; gap: 4px;
-        margin-top: 3px; padding: 2px 8px; border-radius: var(--tmd-radius-sm);
-        font-size: 12px; font-weight: 700; color: var(--tmd-text);
-        background: color-mix(in srgb, var(--tmd-warn) 20%, transparent);
-      }
-      /* Graphite strips chips to plain text; the waiting note follows suit
-         so it never outweighs the chore name. */
-      :host([data-tm-design="graphite"]) .tmd-awaiting {
-        background: transparent; padding: 0; font-weight: 500; font-size: 13px;
-      }
 
       /* Designed: timed task card. The designed lists reuse the classic timed
          card (_designTimed -> _renderTimedChoreCard), so without these it kept
@@ -2853,6 +2896,12 @@ class TaskMateChildCard extends LitElement {
         background: var(--tmd-surface-2); color: var(--tmd-dim);
         border: 1px solid var(--tmd-border);
       }
+      /* Lock reasons (_designWhyTag): the icon sits on the first line and the
+         words wrap under each other, never under the icon; \`pretty\` keeps a
+         lone last word off its own line where it can. */
+      .tmd-why { align-items: flex-start; text-wrap: pretty; }
+      .tmd-why-ic { flex: none; }
+      .tmd-why-tx { min-width: 0; -webkit-hyphens: auto; hyphens: auto; }
       .tmd-tag.mandatory { background: color-mix(in srgb, var(--tmd-bad) 16%, transparent); color: var(--tm-ink-bad); border-color: transparent; }
       .tmd-tag.auction { background: color-mix(in srgb, #7e57c2 18%, transparent); color: color-mix(in srgb, #7e57c2 70%, var(--tmd-text)); border-color: transparent; }
       .tmd-tag.photo { background: color-mix(in srgb, var(--tmd-accent) 14%, transparent); color: var(--tm-ink-accent); border-color: transparent; }
@@ -2886,13 +2935,13 @@ class TaskMateChildCard extends LitElement {
       .tmd-freeze {
         margin-inline-start: auto; display: inline-flex; align-items: center; gap: 3px;
         font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-        background: rgba(0,0,0,.18); color: #fff; white-space: nowrap;
+        background: rgba(var(--tmd-hd-scrim, 0,0,0), .18); color: var(--tmd-hd-text, #fff); white-space: nowrap;
       }
       .tmd-freeze + .tmd-pending { margin-inline-start: 6px; }
       .tmd-pending {
         margin-inline-start: auto; display: inline-flex; align-items: center; gap: 4px;
         font-size: 12px; font-weight: 800; padding: 4px 9px; border-radius: 999px;
-        background: rgba(0,0,0,.18); color: #fff;
+        background: rgba(var(--tmd-hd-scrim, 0,0,0), .18); color: var(--tmd-hd-text, #fff);
       }
       /* Designed: the child's balance on the header's end edge, with any
          points awaiting approval stacked under it so the title keeps its
@@ -3099,7 +3148,7 @@ class TaskMateChildCard extends LitElement {
       .compact .chore-number-badge { width: 24px; height: 24px; min-width: 24px; font-size: 0.8rem; transform: none; box-shadow: none; }
       .compact .chore-number-badge ha-icon { --mdc-icon-size: 15px; }
       .compact .chore-details { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
-      .compact .chore-name { flex: 1 1 auto; min-width: 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .compact .chore-name, .compact .chore-card .chore-details > .chore-name { display: block; flex: 1 1 auto; min-width: 0; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .compact .chore-points { font-size: max(12px, 0.8rem); }
       .compact .chore-description { display: none; }
       .compact .chore-checkbox { width: 22px; height: 22px; min-width: 22px; border-width: 2px; border-radius: 6px; box-shadow: none; }
@@ -3145,6 +3194,7 @@ class TaskMateChildCard extends LitElement {
         }
         .chore-checkbox, .chore-checkbox ha-icon { transition-property: background, border-color, color, box-shadow; }
         .level-xp-fill, .cap-fill, .next-badge-bar i, .tmd-next-badge .bar i, .tm-boost-bar { transition: none; }
+        .tm-mood .face:active { transform: none; }
       }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
@@ -3289,6 +3339,7 @@ class TaskMateChildCard extends LitElement {
     const allCompletions = attrs.todays_completions || attrs.completions || [];
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const look = this._look(child, attrs, "classic", "#9b59b6");
+    this._headerInk(look, "classic");
     const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
 
     return html`
@@ -3820,6 +3871,7 @@ class TaskMateChildCard extends LitElement {
     const todaysCompletions = this._filterCompletionsForToday(allCompletions);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const look = this._look(child, attrs, this.getAttribute?.("data-tm-design") || design, hd);
+    this._headerInk(look, design);
 
     const dueDaysMode = this.config.due_days_mode || "hide";
     const elapsedTimeMode = this.config.elapsed_time_mode || "dim";
@@ -4156,8 +4208,10 @@ class TaskMateChildCard extends LitElement {
     const weeklyLabel = r.chore._weeklyTarget > 0
       ? this._t("child.weekly_target_progress", { done: r.chore._weeklyProgress, target: __tmNum(this.hass, r.chore._weeklyTarget) })
       : "";
+    // A row waiting for a grown-up says so once, on its "⏳ Waiting" undo
+    // chip (whose name reads "{chore}, waiting for a grown-up. Undo"), so
+    // there is no second note here squeezing the name.
     return html`
-      ${r.awaiting ? html`<div class="tmd-awaiting">${this._t("child.awaiting_approval")}</div>` : ""}
       ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
@@ -4170,9 +4224,9 @@ class TaskMateChildCard extends LitElement {
           ${r.auction ? html`<span class="tmd-tag auction">🔨 ${this._t("child.won_at_auction")}</span>` : ""}
           ${r.photo ? html`<span class="tmd-tag photo">📷 ${this._t("child.photo_needed")}</span>` : ""}
           ${r.openEnded ? html`<span class="tmd-tag photo">✍️ ${this._t("child.open_ended_tag")}</span>` : ""}
-          ${depNames.length ? html`<span class="tmd-tag">🔒 ${this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })}</span>` : ""}
-          ${recLabel ? html`<span class="tmd-tag">🕒 ${recLabel}</span>` : ""}
-          ${firstComeLabel ? html`<span class="tmd-tag">✅ ${firstComeLabel}</span>` : ""}
+          ${depNames.length ? this._designWhyTag("🔒", this._t("child.blocked_by_dependency", { chores: depNames.join(", ") })) : ""}
+          ${recLabel ? this._designWhyTag("🕒", recLabel) : ""}
+          ${firstComeLabel ? this._designWhyTag("✅", firstComeLabel) : ""}
           ${sharedLabel ? html`<span class="tmd-tag tm-shared-limit">👥 ${sharedLabel}</span>` : ""}
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
@@ -4182,6 +4236,15 @@ class TaskMateChildCard extends LitElement {
       ${r.done ? "" : this._renderRejectNote(r.chore, r.child, "tmd-reject")}
       ${this._renderInspectionTag(r.chore, r.child)}
       ${r.done ? "" : this._renderInspectionNote(r.chore, r.child, "tm-insp-note designed")}`;
+  }
+
+  /**
+   * A lock reason on a designed row ("🔒 Do Tidy bedroom first"): the icon
+   * and the words are separate boxes, so a reason that wraps keeps its icon
+   * on the first line and the words wrap under each other, not under it.
+   */
+  _designWhyTag(icon, text) {
+    return html`<span class="tmd-tag tmd-why"><span class="tmd-why-ic">${icon}</span><span class="tmd-why-tx">${text}</span></span>`;
   }
 
   /**
@@ -4217,7 +4280,7 @@ class TaskMateChildCard extends LitElement {
       ? this._t("child.action_chore_aria", { action: r.team.mine ? this._t("child.team_leave") : this._t("child.team_join"), chore: r.chore.name })
       : this._t("child.done_chore_aria", { chore: r.chore.name });
     const why = r.locked ? this._lockReason(r.chore, this._choreLocks(r.chore, r.done)) : "";
-    return html`<button class="btn ${cls || ""}"
+    return html`<button class="btn ${cls || ""} ${r.locked && !r.done ? "tm-btn-locked" : ""}"
       ?disabled=${r.loading || r.locked}
       aria-label="${why ? `${name}. ${why}` : name}"
       @click=${(e) => { e.stopPropagation(); r.onAct(); }}>${label}</button>`;
@@ -8177,6 +8240,16 @@ class TaskMateChildCard extends LitElement {
    * it applies (progress bars, confetti). A season (on in Settings, not opted
    * out with `seasonal: false`) lays its gradient over the header.
    */
+  /**
+   * Banner ink for the band _look() paints: the season's gradient or the
+   * header colour. Called from BOTH render paths. Playroom's band here fades
+   * to a deeper shade, not toward white, so it is judged as painted.
+   */
+  _headerInk(look, design) {
+    const d = window.__taskmate_design;
+    if (d && d.headerInk) d.headerInk(this, look.season ? look.season.grad : look.hd, design === "playroom" ? "" : design);
+  }
+
   _look(child, attrs, design, fallback) {
     const d = window.__taskmate_design;
     const own = !this._explicitHeader && child && child.color && d && d.childColour

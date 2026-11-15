@@ -151,7 +151,7 @@ class TaskMateApprovalsCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #27ae60);
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .header-left {
@@ -164,7 +164,7 @@ class TaskMateApprovalsCard extends LitElement {
 
       .header-icon {
         --mdc-icon-size: 22px;
-        color: white;
+        color: var(--tmd-hd-text, white);
         opacity: 0.9;
         flex-shrink: 0;
       }
@@ -172,7 +172,7 @@ class TaskMateApprovalsCard extends LitElement {
       .card-title {
         font-size: 1.05rem;
         font-weight: 600;
-        color: white;
+        color: var(--tmd-hd-text, white);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -199,9 +199,9 @@ class TaskMateApprovalsCard extends LitElement {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.45);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.2);
+        color: var(--tmd-hd-text, white);
+        border: 1px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.45);
         border-radius: 14px;
         padding: 5px 12px;
         /* Tall enough to tap comfortably on a phone. */
@@ -211,13 +211,13 @@ class TaskMateApprovalsCard extends LitElement {
         cursor: pointer;
         white-space: nowrap;
       }
-      .approve-all-btn:hover { background: rgba(255, 255, 255, 0.3); }
+      .approve-all-btn:hover { background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.3); }
       .approve-all-btn:disabled { opacity: 0.6; cursor: default; }
       /* Reuses the spin keyframes already defined for the loading spinner. */
       .btn-spinner {
         width: 12px; height: 12px;
-        border: 2px solid rgba(255, 255, 255, 0.45);
-        border-top-color: #fff;
+        border: 2px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.45);
+        border-top-color: var(--tmd-hd-text, #fff);
         border-radius: 50%;
         animation: spin 0.7s linear infinite;
         flex-shrink: 0;
@@ -761,7 +761,7 @@ class TaskMateApprovalsCard extends LitElement {
     }
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#27ae60")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

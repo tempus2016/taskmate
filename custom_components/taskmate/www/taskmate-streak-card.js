@@ -73,7 +73,7 @@ class TaskMateStreakCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #e74c3c);
-        color: white;
+        color: var(--tmd-hd-text, white);
       }
 
       .header-content { display: flex; align-items: center; gap: 10px; }
@@ -315,7 +315,7 @@ class TaskMateStreakCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#e74c3c")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

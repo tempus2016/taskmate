@@ -293,6 +293,91 @@ test("a first-come chore a sibling got first says who, and isn't counted", async
   assert.deepEqual([done, total], [0, 1], "only the chore still Vaiha's to do");
 });
 
+// A first-come chore with a shared daily limit (#1159) says how many of
+// today's completions are still up for grabs; a single-winner race doesn't.
+function grabsView({ limit = 3, completions = [], due = ["dishes", "bins"], extra = {} } = {}) {
+  return childView({
+    chores: [chore("dishes"), chore("bins", { assignment_mode: "first_come", requires_approval: false, daily_limit: limit, ...extra })],
+    status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due }] },
+    completions,
+  });
+}
+const doneBy = (child_id, n, extra = {}) => Array.from({ length: n }, (_, i) => ({
+  completion_id: `${child_id}-${i}`, chore_id: "bins", child_id, approved: true,
+  completed_at: new Date(Date.now() - (i + 1) * 60000).toISOString(), ...extra,
+}));
+const leftText = (n) => localize(n === 1 ? "kiosk.left_today_one" : "kiosk.left_today", { count: n });
+
+test("a shared first-come limit shows how many are left today", async () => {
+  const card = await grabsView({ limit: 3 });
+  const { markup } = view(card);
+  assert.match(markup, /km-row todo grab/);
+  assert.match(markup, /km-grab-left/);
+  assert.match(markup, new RegExp(leftText(3)));
+});
+
+test("slots left count every pool completion, whoever made it", async () => {
+  const card = await grabsView({ limit: 3, completions: [...doneBy("malia", 1), ...doneBy("vaiha", 1)] });
+  assert.match(view(card).markup, new RegExp(leftText(1)));
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 1);
+});
+
+test("a pool-wide Parent did it takes a slot; one for a single child doesn't", async () => {
+  const card = await grabsView({
+    limit: 4,
+    completions: [...doneBy("__parent__", 1), ...doneBy("__parent__", 1, { completion_id: "p-one", for_child_id: "malia" })],
+  });
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 3);
+});
+
+test("slots left skip bonus ticks and children outside the pool", async () => {
+  const card = await grabsView({
+    limit: 3,
+    extra: { assigned_to: ["vaiha", "malia"] },
+    completions: [...doneBy("malia", 1, { bonus_subtask_id: "b1" }), ...doneBy("isla", 1)],
+  });
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 3);
+});
+
+test("a tap held offline takes a slot straight away", async () => {
+  const card = await grabsView({ limit: 2 });
+  card._queue = [{ child_id: "vaiha", chore_id: "bins", name: "Bins", at: Date.now() }];
+  assert.equal(card._grabsLeft(card._attrs().chores[1], "vaiha"), 1);
+});
+
+test("a single-winner first-come chore shows no count", async () => {
+  for (const limit of [null, 1]) {
+    const card = await grabsView({ limit, extra: limit === null ? { daily_limit: undefined } : {} });
+    const { markup } = view(card);
+    assert.match(markup, /km-row todo grab/);
+    assert.doesNotMatch(markup, /km-grab-left/, `daily_limit ${limit}`);
+  }
+});
+
+test("a chore that isn't first come shows no count, whatever its limit", async () => {
+  const card = await grabsView({ limit: 3, extra: { assignment_mode: "everyone" } });
+  assert.doesNotMatch(view(card).markup, /km-grab-left/);
+});
+
+test("once the slots run out the row turns taken, with no count", async () => {
+  const card = await grabsView({ limit: 2, due: ["dishes"], completions: doneBy("malia", 2) });
+  const { markup } = view(card);
+  assert.match(markup, /km-row taken/);
+  assert.doesNotMatch(markup, /km-grab-left/);
+  assert.match(markup, new RegExp(localize("kiosk.taken_by", { name: "Malia" })));
+});
+
+test("the count follows the language's plural rules", async () => {
+  const card = await grabsView();
+  card._t = (key) => key;
+  card.hass.language = "en";
+  assert.equal(card._tn("kiosk.left_today", 1), "kiosk.left_today_one");
+  assert.equal(card._tn("kiosk.left_today", 2), "kiosk.left_today");
+  card.hass.language = "ru";
+  assert.equal(card._tn("kiosk.left_today", 21), "kiosk.left_today_one");
+  assert.equal(card._tn("kiosk.left_today", 5), "kiosk.left_today");
+});
+
 test("taken first-come chores hide with completed_mode: hide", async () => {
   const card = await childView({
     config: { completed_mode: "hide" },
@@ -301,6 +386,50 @@ test("taken first-come chores hide with completed_mode: hide", async () => {
     completions: [{ completion_id: "c1", chore_id: "bins", child_id: "malia", approved: true, completed_at: new Date().toISOString() }],
   });
   assert.doesNotMatch(view(card).markup, /km-row taken/);
+});
+
+// grabs_first: open first-come chores move to the top, unless the child has
+// their own chore_order.
+const GRAB_CHORES = [
+  chore("dishes"),
+  chore("bins", { assignment_mode: "first_come", requires_approval: false }),
+  chore("bed"),
+  chore("lawn", { assignment_mode: "first_come" }),
+  chore("car", { assignment_mode: "first_come" }),
+];
+const GRAB_STATUS = { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes", "bins", "bed", "lawn"] }] };
+const GRAB_TAKEN = [{ completion_id: "c1", chore_id: "car", child_id: "malia", approved: true, completed_at: new Date().toISOString() }];
+const listed = (card) => plain(card._progress(card._entry("vaiha").child).rows.map((r) => r.chore.id));
+async function grabView(config, chore_order) {
+  const card = await childView({ config, chores: plain(GRAB_CHORES), status: GRAB_STATUS, completions: GRAB_TAKEN });
+  if (chore_order) card.hass.states[ENTITY].attributes.children.find((c) => c.id === "vaiha").chore_order = chore_order;
+  return card;
+}
+
+test("grabs_first is off by default: the list keeps its order", async () => {
+  assert.deepEqual(listed(await grabView({})), ["dishes", "bins", "bed", "lawn", "car"]);
+});
+
+test("grabs_first moves open first-come chores to the top, in their own order", async () => {
+  const card = await grabView({ grabs_first: true });
+  // Car went to Malia: taken, no longer up for grabs, so it stays put.
+  assert.deepEqual(listed(card), ["bins", "lawn", "dishes", "bed", "car"]);
+  assert.match(view(card).markup, /km-row todo grab[\s\S]*km-row todo grab[\s\S]*Dishes/);
+});
+
+test("grabs_first never overrides a child's own chore_order", async () => {
+  const order = ["bed", "dishes", "car", "lawn", "bins"];
+  assert.deepEqual(listed(await grabView({ grabs_first: true }, order)), order);
+});
+
+test("the editor offers grabs_first, off by default", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.config = { entity: ENTITY };
+  const field = editor._schema().find((f) => f.name === "grabs_first");
+  assert.ok(field && field.selector.boolean, "a toggle");
+  assert.equal(editor._computeLabel(field), localize("kiosk.editor.grabs_first"));
+  assert.equal(editor._computeHelper(field), localize("kiosk.editor.grabs_first_helper"));
 });
 
 test("undo follows the #918 window and goes through undo_chore", async () => {
@@ -435,6 +564,108 @@ test("a failed completion doesn't celebrate", () => withSounds(async (played) =>
   assert.deepEqual(plain(played), []);
   assert.equal(card._popup, null);
 }));
+
+// ── first-come win ("You got it first!") ────────────────────────────────────
+
+const grabStatus = { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["bins", "dishes"] }] };
+const winTitle = () => new RegExp(localize("kiosk.win_title").replace("!", "\\!"));
+
+test("winning a first-come chore shows the win popup with the points", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  assert.equal(card._popup.won, true);
+  assert.equal(card._popup.check, false);
+  const { markup } = view(card);
+  assert.match(markup, /km-pop-won/);
+  assert.match(markup, winTitle());
+  assert.match(markup, new RegExp(localize("kiosk.win_message")));
+  assert.match(markup, /\+10/);
+  assert.doesNotMatch(markup, new RegExp(localize("child.celebration_title")));
+  assert.ok(card._confetti.length, "the usual confetti still drops");
+}));
+
+test("a won first-come chore that needs approval says the points come after the check", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come" }), chore("dishes")],
+    status: grabStatus,
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  const { markup } = view(card);
+  assert.match(markup, winTitle());
+  assert.match(markup, new RegExp(localize("kiosk.win_check")));
+  assert.doesNotMatch(markup, /\+10/, "no points promised before a grown-up checks");
+}));
+
+test("a first-come slot someone already took today gets the normal popup", () => withSounds(async () => {
+  for (const who of ["malia", "__parent__", "vaiha"]) {
+    const card = await childView({
+      chores: [chore("bins", { assignment_mode: "first_come", daily_limit: 3, requires_approval: false }), chore("dishes")],
+      status: grabStatus,
+      completions: [{ completion_id: "c0", chore_id: "bins", child_id: who, approved: true, completed_at: new Date().toISOString() }],
+    });
+    await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+    assert.equal(card._popup.won, false, who);
+    assert.match(view(card).markup, new RegExp(localize("child.celebration_title")), who);
+  }
+}));
+
+test("a bonus subtask on a first-come chore doesn't spoil the win", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+    completions: [{ completion_id: "b1", chore_id: "bins", child_id: "malia", bonus_subtask_id: "x", approved: true }],
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  assert.equal(card._popup.won, true);
+}));
+
+test("normal chores, offline taps and failed taps never claim a win", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+  });
+  const vaiha = card._entry("vaiha").child;
+  const [bins, dishes] = card.hass.states[ENTITY].attributes.chores;
+  await card._complete(vaiha, dishes);
+  assert.equal(card._popup.won, false);
+  // Offline: the tap is queued and may yet lose the race, so no win.
+  card.hass.connection = { connected: false };
+  await card._complete(vaiha, bins);
+  assert.equal(card._popup.won, false);
+  card._queue = [];
+  card._saveQueue();
+  card.hass.connection = { connected: true };
+  card._popup = null;
+  card.hass.callService = async () => { throw new Error("Chore 'Bins' was already completed by another child."); };
+  await card._complete(vaiha, bins);
+  assert.equal(card._popup, null);
+}));
+
+test("the win popup's medal animates once and stops under reduced motion", () => {
+  const styles = render(KioskCard.styles).markup;
+  const rule = styles.slice(styles.indexOf(".km-pop-medal {"), styles.indexOf("}", styles.indexOf(".km-pop-medal {")));
+  assert.match(rule, /animation: km-star 0\.6s ease 1;/);
+  assert.doesNotMatch(rule, /infinite/);
+  const reduced = styles.slice(styles.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.match(reduced.slice(0, reduced.indexOf("}\n", reduced.indexOf("animation: none"))), /\.km-pop-medal/);
+});
+
+for (const design of DESIGNS) {
+  test(`${design}: the first-come win popup renders`, () => withSounds(async () => {
+    const card = await childView({
+      config: { card_design: design },
+      chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+      status: grabStatus,
+    });
+    await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+    const { markup } = view(card);
+    assert.match(markup, /km-pop-won/);
+    assert.match(markup, winTitle());
+  }));
+}
 
 test("the all-done overlay replaces the chore popup; the picker clears both", () => withSounds(async () => {
   const card = await childView({ status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: ["dishes"] }] } });

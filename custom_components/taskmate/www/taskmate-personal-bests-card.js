@@ -76,12 +76,12 @@ class TaskMatePersonalBestsCard extends LitElement {
 
       .card-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 14px 18px; background: var(--taskmate-header-bg, #d35400); color: white;
+        padding: 14px 18px; background: var(--taskmate-header-bg, #d35400); color: var(--tmd-hd-text, white);
       }
       .header-content { display: flex; align-items: center; gap: 10px; }
       .header-icon { --mdc-icon-size: 28px; opacity: 0.9; }
       .header-title { font-size: 1.2rem; font-weight: 600; }
-      .header-count { font-size: .85rem; font-weight: 700; background: rgba(255,255,255,.25); border-radius: 999px; padding: 3px 10px; }
+      .header-count { font-size: .85rem; font-weight: 700; background: rgba(var(--tmd-hd-ink, 255,255,255), .25); border-radius: 999px; padding: 3px 10px; }
 
       .card-content { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -208,7 +208,7 @@ class TaskMatePersonalBestsCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#d35400")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

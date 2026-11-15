@@ -71,7 +71,7 @@ class TaskMateRewardProgressCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, var(--primary-color));
-        color: var(--text-primary-color, #fff);
+        color: var(--tmd-hd-text, var(--text-primary-color, #fff));
         gap: 12px;
       }
 
@@ -506,7 +506,7 @@ class TaskMateRewardProgressCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#00897b")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

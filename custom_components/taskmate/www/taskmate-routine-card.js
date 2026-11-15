@@ -200,6 +200,11 @@ class TaskMateRoutineCard extends LitElement {
     } else {
       this.style.removeProperty("--routine-accent");
     }
+    // The banner is flat in every design (no Playroom fade toward white),
+    // so its ink is judged on the colour as painted.
+    if (window.__taskmate_design && window.__taskmate_design.headerInk) {
+      window.__taskmate_design.headerInk(this, _safeColor(configured, ""), "");
+    }
     return design;
   }
 

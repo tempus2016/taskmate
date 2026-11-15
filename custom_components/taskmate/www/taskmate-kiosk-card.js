@@ -45,6 +45,10 @@
  * part of the day isn't open yet (#771): like the child card's locked
  * preview it shows "Available at HH:MM" instead of a Done button.
  *
+ * `grabs_first: true` (default off) moves open first-come chores to the top
+ * of a child's list, keeping their relative order. A child with their own
+ * chore_order (v7.8.0) keeps it: the option never overrides a parent's order.
+ *
  * PINs are set by a parent in the admin panel and checked on the server
  * (taskmate/kiosk/verify_pin, rate-limited); the card never sees a PIN or its
  * hash, and only remembers which child is unlocked until it returns to the
@@ -305,6 +309,16 @@ class TaskMateKioskCard extends LitElement {
     return fn ? fn(this.hass, key, params) : key;
   }
 
+  // Count strings have a `<key>_one` twin. Which form a number takes follows
+  // the language (French and Brazilian Portuguese say "1" and "0" alike), not a
+  // bare `=== 1`. Intl's "pt" is Brazilian; HA's "pt" is European.
+  _tn(key, count, params) {
+    const lang = this.hass?.language === "pt" ? "pt-PT" : this.hass?.language || "en";
+    let one;
+    try { one = new Intl.PluralRules(lang).select(Number(count)) === "one"; } catch { one = Number(count) === 1; }
+    return this._t(one ? `${key}_one` : key, params);
+  }
+
   _attrs() {
     return (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
       || this.hass?.states?.[this.config.entity]?.attributes || {};
@@ -326,7 +340,18 @@ class TaskMateKioskCard extends LitElement {
     } else {
       this.style.removeProperty("--km-header");
     }
+    // The top banner is flat in every design (no Playroom fade), so its ink
+    // is judged on the colour as painted. The child band sets its own.
+    if (window.__taskmate_design && window.__taskmate_design.headerInk) {
+      window.__taskmate_design.headerInk(this, _safeColor(configured, ""), "");
+    }
     return design;
+  }
+
+  /** Ink declarations for the child band, painted the child's tone or a season. */
+  _bandInk(bg) {
+    const d = window.__taskmate_design;
+    return d && d.headerInkCSS ? ";" + d.headerInkCSS(bg, "", this) : "";
   }
 
   /** Today's seasonal theme, unless this card opts out (`seasonal: false`). */
@@ -532,7 +557,12 @@ class TaskMateKioskCard extends LitElement {
     const isDone = r => r.state === "done" || r.state === "wait";
     const missedMode = this._missedMode();
     const hideDone = this.config.completed_mode === "hide";
-    const all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
+    let all = this._rows(child).filter(r => !(missedMode === "hide" && r.missed));
+    // grabs_first: open first-come chores lead the list, so a race is seen
+    // before a sibling wins it. A child's own chore_order always wins.
+    if (this.config.grabs_first === true && !(child.chore_order || []).length) {
+      all = [...all.filter(r => this._upForGrabs(r)), ...all.filter(r => !this._upForGrabs(r))];
+    }
     // A first-come chore a sibling got first was never this child's to do:
     // shown, but left out of the count so "all done" still comes.
     const counted = all.filter(r => !r.phone && r.state !== "taken" && !(missedMode === "dim" && r.missed));
@@ -562,6 +592,19 @@ class TaskMateKioskCard extends LitElement {
   }
 
   _missedMode() { return this.config.elapsed_time_mode || "show"; }
+
+  /** A set time that closed undone can't be ticked any more, whatever the
+   *  missed-chore mode says, so it never offers a Done button. */
+  _dimMissed(row) {
+    return row.missed && (this._missedMode() === "dim" || (!!row.setTime && row.state === "todo"));
+  }
+
+  /** First come: it sits on every sibling's list until one of them finishes
+   *  it, so it's marked as a race rather than as this child's own chore. */
+  _upForGrabs(row) {
+    return row.chore.assignment_mode === "first_come" && !this._dimMissed(row)
+      && (row.state === "todo" || row.state === "elsewhere" || row.state === "later");
+  }
 
   // ── Missed chores (#1079) ────────────────────────────────────────────────
   // The child card's rule (_isTimePeriodElapsed): a chore is missed once the
@@ -1046,6 +1089,9 @@ class TaskMateKioskCard extends LitElement {
     }
     this._busy = String(chore.id);
     this._armCelebrate = true;
+    // Decided before the call: once it lands, this child's own completion
+    // is in today's list too.
+    const won = this._firstWin(chore);
     try {
       // The per-chore button first, like the child card, so HA automations on
       // it fire; the service when the entity isn't registered yet. Both run
@@ -1062,7 +1108,7 @@ class TaskMateKioskCard extends LitElement {
           ...(chore._setTime ? { time_id: chore._setTime.id } : {}),
         });
       }
-      this._cheer(chore, child);
+      this._cheer(chore, child, won);
     } catch (err) {
       if (this._isConnectionError(err)) {
         this._enqueue(child, chore);
@@ -1112,6 +1158,33 @@ class TaskMateKioskCard extends LitElement {
 
   _queued(childId, choreId) {
     return this._queue.some(q => q.child_id === String(childId) && (q.key || q.chore_id) === String(choreId));
+  }
+
+  /**
+   * First come with a shared daily limit above 1 (#1159): how many of today's
+   * completions are still up for grabs, or null when there's nothing to say
+   * (a single-winner race, or none left). Counted the way the server fills
+   * the quota: every pool child's completion today and a pool-wide "Parent
+   * did it", but not one a grown-up did for a single child (#1096). A tap
+   * held on this tablet while offline already takes a slot.
+   */
+  _grabsLeft(chore, childId) {
+    const limit = Number(chore.daily_limit) || 1;
+    if (chore.assignment_mode !== "first_come" || limit <= 1 || chore._setTime) return null;
+    const assigned = Array.isArray(chore.assigned_to) ? chore.assigned_to.map(String) : [];
+    const pool = assigned.length ? new Set(assigned) : null;
+    let used = 0;
+    for (const c of this._attrs().todays_completions || []) {
+      if (String(c.chore_id) !== String(chore.id) || c.bonus_subtask_id) continue;
+      if (c.child_id === "__parent__") {
+        if (!c.for_child_id) used += 1;
+      } else if (!pool || pool.has(String(c.child_id))) {
+        used += 1;
+      }
+    }
+    if (this._queued(childId, chore.id)) used += 1;
+    const remaining = limit - used;
+    return remaining > 0 ? remaining : null;
   }
 
   async _flushQueue() {
@@ -1529,16 +1602,32 @@ class TaskMateKioskCard extends LitElement {
 
   /** The child card's reward for a tap: the chore's sound, the child's own
    *  celebration (confetti unless they picked another), a popup. */
-  _cheer(chore, child) {
+  _cheer(chore, child, won = false) {
     if (this.config.play_sounds !== false) {
       this._playSound(chore.completion_sound || this.config.default_sound || "coin");
     }
     if (this.config.show_confetti !== false) this._spawnConfetti(child);
     if (this.config.show_completion_popup !== false) {
-      this._popup = { points: this._pointsFor(chore) };
+      // A won race gets its own popup. With approval on, the child has the
+      // slot but not the points yet, so it says so instead of "+10".
+      this._popup = {
+        points: this._pointsFor(chore),
+        won: !!won,
+        check: !!won && chore.requires_approval !== false,
+      };
       clearTimeout(this._popupTimer);
       this._popupTimer = setTimeout(() => { this._popup = null; }, POPUP_MS);
     }
+  }
+
+  /** A first-come chore nobody has done yet today (for a set time: that
+   *  time), so a tap that goes through is the first one: the child won. */
+  _firstWin(chore) {
+    if (chore.assignment_mode !== "first_come") return false;
+    const base = String(chore._baseId || chore.id);
+    const time = chore._setTime ? chore._setTime.id : null;
+    return !(this._attrs().todays_completions || []).some(c => String(c.chore_id) === base
+      && !c.bonus_subtask_id && (!time || !c.time_id || c.time_id === time));
   }
 
   /** Shared engine in taskmate-sounds.js; custom sounds (#856) resolve
@@ -1883,7 +1972,7 @@ class TaskMateKioskCard extends LitElement {
     const season = this._season();
     return html`
       <div class="km-child" style="--kc:${tone}">
-        <div class="km-head" style="${season ? `background:${season.grad}` : ""}">
+        <div class="km-head" style="${season ? `background:${season.grad}` : ""}${this._bandInk(season ? season.grad : tone)}">
           ${this._headAvatar(child, tone, season)}
           <div class="km-grow">
             <div class="km-head-name">${child.name}</div>
@@ -1955,12 +2044,19 @@ class TaskMateKioskCard extends LitElement {
           </div>` : ""}
         ${this._popup && !this._celebrating ? html`
           <div class="km-idle km-pop" role="status" @click=${() => { this._popup = null; }}>
+            ${this._popup.won ? html`
+            <div class="km-pop-card km-pop-won">
+              <div class="km-pop-medal" aria-hidden="true"><ha-icon icon="mdi:medal"></ha-icon></div>
+              <h2>${this._t("kiosk.win_title")}</h2>
+              <p>${this._t(this._popup.check ? "kiosk.win_check" : "kiosk.win_message")}</p>
+              ${showPoints && !this._popup.check ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
+            </div>` : html`
             <div class="km-pop-card">
               <div class="km-pop-stars">🌟🌟🌟</div>
               <h2>${this._t("child.celebration_title")}</h2>
               <p>${this._t("child.celebration_message")}</p>
               ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
-            </div>
+            </div>`}
           </div>` : ""}
         ${this._celebrating ? html`
           <div class="km-idle km-party">
@@ -1975,14 +2071,10 @@ class TaskMateKioskCard extends LitElement {
     const { chore, state, completion, team } = row;
     const visual = window.__taskmate_chore_visual ? window.__taskmate_chore_visual(chore) : { kind: "none" };
     const undoable = (state === "done" || state === "wait") ? this._undoable(completion) : null;
-    // A set time that closed undone can't be ticked any more, whatever the
-    // missed-chore mode says, so it never offers a Done button.
-    const dimMissed = row.missed && (this._missedMode() === "dim" || (!!row.setTime && state === "todo"));
+    const dimMissed = this._dimMissed(row);
     const needsCheck = state === "todo" && !dimMissed && chore.requires_approval !== false;
-    // First come: it sits on every sibling's list until one of them finishes
-    // it, so mark it as a race rather than as this child's own chore.
-    const upForGrabs = chore.assignment_mode === "first_come" && !dimMissed
-      && (state === "todo" || state === "elsewhere" || state === "later");
+    const upForGrabs = this._upForGrabs(row);
+    const grabsLeft = upForGrabs ? this._grabsLeft(chore, child.id) : null;
     let action;
     if (dimMissed) {
       action = html`<div class="km-done is-elsewhere"><ha-icon icon="mdi:clock-alert-outline"></ha-icon><span>${this._t("kiosk.missed")}</span></div>`;
@@ -2025,7 +2117,8 @@ class TaskMateKioskCard extends LitElement {
           <div class="km-row-meta">
             <span class="km-row-pts"><ha-icon icon="${icon}"></ha-icon> ${__tmNum(this.hass, this._pointsFor(chore, child.id))}</span>
             ${this._boostMult(chore, child.id) ? html`<span class="km-boost-x">×${this._fmtMult(this._boostMult(chore, child.id))}</span>` : ""}
-            ${upForGrabs ? html`<span class="km-tag km-grab-tag"><ha-icon icon="mdi:hand-back-right"></ha-icon>${this._t("kiosk.up_for_grabs")}</span>` : ""}
+            ${upForGrabs ? html`<span class="km-tag km-grab-tag"><ha-icon icon="mdi:hand-back-right"></ha-icon>${this._t("kiosk.up_for_grabs")}${grabsLeft !== null
+              ? html`<span class="km-grab-left">${_ltrNums(this._tn("kiosk.left_today", grabsLeft, { count: __tmNum(this.hass, grabsLeft) }))}</span>` : ""}</span>` : ""}
             ${needsCheck ? html`<span class="km-tag"><ha-icon icon="mdi:account-check-outline"></ha-icon>${this._t("kiosk.needs_check")}</span>` : ""}
             ${undoable ? html`<button class="km-undo" ?disabled=${!!this._busy}
                                       aria-label="${this._t("child.undo_named", { name: chore.name })}"
@@ -2347,7 +2440,7 @@ class TaskMateKioskCard extends LitElement {
       .km-clock { font-variant-numeric: tabular-nums; opacity: 0.9; white-space: nowrap; }
       .km-clock b { font-size: 1.15rem; margin-inline-end: 8px; }
       .km-icon-btn {
-        background: rgba(255, 255, 255, 0.18); border: 0; color: inherit;
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.18); border: 0; color: inherit;
         width: 40px; height: 40px; border-radius: 50%;
         display: grid; place-items: center; cursor: pointer;
       }
@@ -2370,8 +2463,9 @@ class TaskMateKioskCard extends LitElement {
       .km-face.sm ha-icon { --mdc-icon-size: 38px; }
       .km-face.head {
         width: 64px; height: 64px; font-size: 30px;
-        background: rgba(255, 255, 255, 0.2);
-        border: 3px solid rgba(255, 255, 255, 0.4);
+        color: var(--tmd-hd-text, #fff);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.2);
+        border: 3px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.4);
         box-shadow: none;
       }
       .km-face.head ha-icon { --mdc-icon-size: 36px; }
@@ -2518,24 +2612,24 @@ class TaskMateKioskCard extends LitElement {
       .km-child { flex: 1; position: relative; display: flex; flex-direction: column; min-height: 0; }
       .km-head {
         display: flex; align-items: center; gap: 16px;
-        padding: 16px 22px; background: var(--kc); color: #fff;
+        padding: 16px 22px; background: var(--kc); color: var(--tmd-hd-text, #fff);
       }
       .km-grow { flex: 1; min-width: 0; }
       .km-head-name { font-size: 1.8rem; font-weight: 800; line-height: 1.1; font-family: var(--tmd-font-display, inherit); }
       .km-level { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
       /* The badge never wraps ("Lvl" over "29"); the track gives way instead. */
-      .km-level-badge { font-size: 0.8rem; font-weight: 800; background: rgba(255, 255, 255, 0.25); padding: 2px 10px; border-radius: 99px; white-space: nowrap; }
-      .km-level-track { flex: 0 1 120px; min-width: 24px; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
-      .km-level-track i { display: block; height: 100%; background: #fff; }
+      .km-level-badge { font-size: 0.8rem; font-weight: 800; background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25); padding: 2px 10px; border-radius: 99px; white-space: nowrap; }
+      .km-level-track { flex: 0 1 120px; min-width: 24px; height: 6px; border-radius: 99px; background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25); overflow: hidden; }
+      .km-level-track i { display: block; height: 100%; background: var(--tmd-hd-text, #fff); }
       .km-pts-pill {
         display: flex; align-items: center; gap: 6px;
-        background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.18); border: 1px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.3);
         padding: 8px 16px; border-radius: 30px; font-weight: 800; font-size: 1.4rem; white-space: nowrap;
       }
       .km-switch {
         display: flex; align-items: center; gap: 10px;
-        background: rgba(0, 0, 0, 0.18); color: #fff;
-        border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 40px;
+        background: rgba(var(--tmd-hd-scrim, 0, 0, 0), 0.18); color: var(--tmd-hd-text, #fff);
+        border: 2px solid rgba(var(--tmd-hd-ink, 255, 255, 255), 0.4); border-radius: 40px;
         padding-block: 6px; padding-inline: 16px 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
       }
       /* Its number changes every second; strict containment keeps that from
@@ -2543,7 +2637,7 @@ class TaskMateKioskCard extends LitElement {
       .km-ring {
         width: 40px; height: 40px; border-radius: 50%; contain: strict;
         display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; font-variant-numeric: tabular-nums;
-        background: conic-gradient(#fff calc(var(--p) * 360deg), rgba(255, 255, 255, 0.25) 0);
+        background: conic-gradient(var(--tmd-hd-text, #fff) calc(var(--p) * 360deg), rgba(var(--tmd-hd-ink, 255, 255, 255), 0.25) 0);
       }
       .km-ring span {
         width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
@@ -2606,6 +2700,13 @@ class TaskMateKioskCard extends LitElement {
         color: var(--tmd-text, var(--primary-text-color));
         border: 1.5px dashed var(--tmd-warn, #e67e22);
         padding: 1px 8px;
+      }
+      /* "2 left today" on a race with a shared daily limit: the same tag,
+         set off by a divider so it reads as a second fact. */
+      .km-grab-left {
+        font-variant-numeric: tabular-nums;
+        padding-inline-start: 6px; margin-inline-start: 2px;
+        border-inline-start: 1.5px solid color-mix(in srgb, var(--tmd-warn, #e67e22) 70%, transparent);
       }
       .km-row-icon {
         width: 50px; height: 50px; min-width: 50px; border-radius: 50%;
@@ -2845,13 +2946,29 @@ class TaskMateKioskCard extends LitElement {
         font-size: 1.8rem; font-weight: 800; color: var(--tmd-gold, #e67e22);
       }
       .km-pop-pts ha-icon { --mdc-icon-size: 28px; }
+      /* Won a first-come race: the same dashed border and still glow as the
+         "up for grabs" row it came from, and a medal that pops in once. */
+      .km-pop-card.km-pop-won {
+        border: 2px dashed var(--tmd-warn, #e67e22);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 0 0 4px color-mix(in srgb, var(--tmd-warn, #e67e22) 22%, transparent);
+        max-inline-size: min(520px, 100%);
+      }
+      .km-pop-won h2 { color: var(--tmd-text, var(--primary-text-color)); text-wrap: balance; }
+      .km-pop-medal {
+        inline-size: 84px; block-size: 84px; margin: 0 auto 14px; border-radius: 50%;
+        display: grid; place-items: center;
+        background: color-mix(in srgb, var(--tmd-warn, #e67e22) 22%, transparent);
+        border: 2px solid var(--tmd-warn, #e67e22);
+        animation: km-star 0.6s ease 1;
+      }
+      .km-pop-medal ha-icon { --mdc-icon-size: 52px; color: var(--tmd-text, var(--primary-text-color)); }
       .km-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
       @keyframes km-fade { from { opacity: 0; } to { opacity: 1; } }
       @keyframes km-pop-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
       @keyframes km-star { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.2) rotate(10deg); } }
       @media (prefers-reduced-motion: reduce) {
         .km-confetti { display: none; }
-        .km-pop, .km-pop-card, .km-pop-stars { animation: none; }
+        .km-pop, .km-pop-card, .km-pop-stars, .km-pop-medal { animation: none; }
       }
 
       .km-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; color: var(--tmd-dim, var(--secondary-text-color)); }

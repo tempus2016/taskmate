@@ -283,7 +283,7 @@ class TaskMateActivityCard extends LitElement {
         gap: 12px;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #2471a3);
-        color: #ffffff;
+        color: var(--tmd-hd-text, #ffffff);
       }
       .header-content { display: flex; align-items: center; gap: 10px; min-width: 0; }
       .header-icon-chip {
@@ -292,22 +292,22 @@ class TaskMateActivityCard extends LitElement {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.18);
-        color: #ffffff;
+        background: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.18);
+        color: var(--tmd-hd-text, #ffffff);
         flex-shrink: 0;
       }
       .header-icon-chip ha-icon { --mdc-icon-size: 18px; }
       .header-title {
         font-size: 1.05rem;
         font-weight: 700;
-        color: #ffffff;
+        color: var(--tmd-hd-text, #ffffff);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .header-meta {
         font-size: 0.78rem;
-        color: rgba(255, 255, 255, 0.85);
+        color: rgba(var(--tmd-hd-ink, 255, 255, 255), 0.85);
         margin-inline-start: 2px;
         white-space: nowrap;
       }
@@ -773,7 +773,7 @@ class TaskMateActivityCard extends LitElement {
     if (!this.hass || !this.config) return html``;
 
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#16a085")
       : "classic";
     if (design !== "classic") return this._renderDesigned(design);
 

@@ -139,7 +139,43 @@ for (const design of DESIGNS) {
     assert.ok(markup.includes(localize("child.all_done_earned", { points: "5", points_name: "Stars" })));
     assert.ok(markup.includes(localize("child.all_done_pending", { points: "3", points_name: "Stars" })));
   });
+
+  test(`${design}: the five mood faces are named buttons styled by the card's design`, () => {
+    const card = makeCard({ chores: [chore("a")], completions: [done("a")], design });
+    const { markup, controls } = render(card.render());
+    const mode = design === "classic" ? "classic" : "tmd";
+    assert.match(markup, new RegExp(`class="tm-mood ${mode}"`));
+    const faces = controls.filter((c) => /class="face"/.test(c.attrs));
+    assert.equal(faces.length, 5);
+    const names = faces.map((f) => f.attr("aria-label"));
+    assert.deepEqual(names, ["great", "good", "ok", "sad", "upset"].map((m) => localize(`child.mood_${m}`)));
+    for (const f of faces) assert.match(f.attrs, /type="button"/);
+  });
 }
+
+// The faces sit in a fixed five-column grid (54px down to the 44px target
+// floor) so they never wrap 4+1, and a designed style paints the strip from
+// its own tokens rather than HA's grey secondary background.
+test("mood strip CSS: one row of five, 44px floor, designed styles use tokens", () => {
+  const src = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "../../custom_components/taskmate/www/taskmate-child-card.js"), "utf8");
+  const rule = (sel) => {
+    const m = src.match(new RegExp(`\\n\\s*${sel.replace(/[.()]/g, "\\$&")} \\{([^}]*)\\}`));
+    assert.ok(m, `rule for ${sel}`);
+    return m[1];
+  };
+  const faces = rule(".tm-mood .faces");
+  assert.match(faces, /display: grid/);
+  assert.match(faces, /grid-template-columns: repeat\(5, minmax\(44px, 54px\)\)/);
+  assert.doesNotMatch(faces, /flex-wrap/);
+  assert.match(rule(".tm-mood .face"), /min-block-size: 44px/);
+  const tmd = rule(".tm-mood.tmd");
+  assert.match(tmd, /background: var\(--tmd-surface-2\)/);
+  assert.match(tmd, /border: 1px solid var\(--tmd-border\)/);
+  assert.match(tmd, /border-radius: var\(--tmd-radius-sm\)/);
+  assert.match(tmd, /font-family: var\(--tmd-font-body\)/);
+  assert.doesNotMatch(tmd, /secondary-background-color/);
+});
 
 test("a chore from a later part of the day keeps the banner away", () => {
   const card = makeCard({

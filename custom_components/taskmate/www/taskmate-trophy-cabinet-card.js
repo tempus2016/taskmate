@@ -479,7 +479,7 @@ class TaskMateTrophyCabinetCard extends LitElement {
 
   _applyDesign() {
     if (window.__taskmate_design) {
-      window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity);
+      window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, DEFAULT_ACCENT);
     }
     const hd = _safeColor(this.config.header_color, DEFAULT_ACCENT);
     if (this.style && this.style.setProperty) this.style.setProperty("--tc-hd", hd);
@@ -661,16 +661,16 @@ class TaskMateTrophyCabinetCard extends LitElement {
       :host([data-tm-design]:not([data-tm-design="classic"])) ha-card.tc { box-shadow: var(--tmd-shadow, none); }
       :host([data-tm-design="graphite"]) ha-card.tc { border: 1px solid var(--tmd-border); box-shadow: none; }
 
-      .tc-hd { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--tc-hd); color: #fff; }
+      .tc-hd { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--tc-hd); color: var(--tmd-hd-text, #fff); }
       :host([data-tm-design="playroom"]) .tc-hd { background: linear-gradient(135deg, var(--tc-hd), color-mix(in srgb, var(--tc-hd) 72%, #fff)); }
-      .tc-hd-ic { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.22); display: grid; place-items: center; font-size: 18px; flex: none; }
+      .tc-hd-ic { width: 36px; height: 36px; border-radius: 50%; background: rgba(var(--tmd-hd-ink, 255,255,255), .22); display: grid; place-items: center; font-size: 18px; flex: none; }
       :host([data-tm-design="playroom"]) .tc-hd-ic, :host([data-tm-design="console"]) .tc-hd-ic { border-radius: 9px; }
       .tc-hd-tt { flex: 1; min-width: 0; }
       .tc-hd-title { font-family: var(--tmd-font-display, inherit); font-size: 1.1rem; font-weight: 700; line-height: 1.15;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       :host([data-tm-design="graphite"]) .tc-hd-title { font-weight: 600; letter-spacing: -.4px; }
       .tc-hd-sub { font-size: .78rem; opacity: .9; margin-top: 1px; }
-      .tc-hd-pill { background: rgba(255,255,255,.22); border-radius: 999px; padding: 4px 10px; font-size: .8rem; font-weight: 600; white-space: nowrap; flex: none; }
+      .tc-hd-pill { background: rgba(var(--tmd-hd-ink, 255,255,255), .22); border-radius: 999px; padding: 4px 10px; font-size: .8rem; font-weight: 600; white-space: nowrap; flex: none; }
       :host([data-tm-design="graphite"]) .tc-hd-pill { background: transparent; padding: 0; font-weight: 500; }
 
       .tc-spot { display: flex; gap: 14px; align-items: center; padding: 12px 16px;

@@ -20,6 +20,8 @@ The check-in appears at the bottom of the [child card](Dashboard-Cards.md#child-
 | 😢 | Sad | `sad` |
 | 😠 | Cross | `upset` |
 
+The five faces always sit on one row, even on a narrow phone, and each one is a full-size tap target with a spoken name (Great, Good, OK, Sad, Cross). The strip follows the card's design style, light or dark.
+
 After tapping, the strip reads **Today felt 🙂**. There's one mood per child per day: logging again replaces it.
 
 To hide the check-in on a card:

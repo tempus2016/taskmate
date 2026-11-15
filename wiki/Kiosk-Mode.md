@@ -63,6 +63,7 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `show_bounties` | boolean | `false` | *(v6.3.0)* A **Bounty Board** section in the child's view, where they can claim and finish bounties. See [Bounties](#bounties) |
 | `show_rewards` | boolean | `false` | A **Spend your points** section in the child's view, where they can claim rewards. Every claim still goes to a grown-up for approval. See [Rewards](#rewards) |
 | `completed_mode` | string | `show` | *(v7.0.0)* `show` keeps done and waiting chores in the list with their Undo button; `hide` drops them. See [Less clutter](#less-clutter) |
+| `grabs_first` | boolean | `false` | Move up-for-grabs [first-come chores](Chore-Scheduling.md#first-come-first-served) to the top of a child's list. A child with their own chore order keeps it. See [Up for grabs first](#up-for-grabs-first) |
 | `elapsed_time_mode` | string | `show` | *(v7.0.0)* What happens to a time-of-day chore once its part of the day has passed: `show`, `dim` or `hide`. See [Less clutter](#less-clutter) |
 | `ambient_mode` | string | `off` | *(v7.0.0)* What the picker turns into when nobody's using it: `off`, `progress` (the family's day) or `photos` (a slideshow of chore photos). See [Ambient mode](#ambient-mode) |
 | `ambient_after` | number | `120` | *(v7.0.0)* Seconds untouched before ambient mode starts (30–1800) |
@@ -94,9 +95,10 @@ Tapping **Done** on the kiosk gets the same reward as on the [child card](Dashbo
 - **Sound.** The chore's own [completion sound](Completion-Sounds.md), built-in or uploaded. Chores without one play `default_sound` (a coin, unless you change it).
 - **Confetti** over the card.
 - **A popup**: "AWESOME! You did it!" with the points earned. It closes by itself after 2.5 seconds, or on a tap. If that chore was the child's last one, the "all done" celebration takes over instead.
+- **A win, for a first-come chore.** When a child is the first to finish an **Up for grabs** [first-come chore](Chore-Scheduling.md#first-come-first-served) today, the popup says **You got it first!** instead, with a medal and the same dashed border as the row. If the chore needs a grown-up's check, it says **A grown-up will check it, then the points are yours** rather than showing the points. A child who takes a later slot of a shared daily limit, or whose tap was saved while the tablet was offline, gets the usual popup.
 - **Undo** plays the undo sound, but only once the undo has actually gone through.
 
-Nothing celebrates if the tick doesn't go through. On a device set to reduce motion, there is no confetti and the popup appears without animating.
+Nothing celebrates if the tick doesn't go through. On a device set to reduce motion, there is no confetti and the popup (and the win medal) appears without animating.
 
 Each of the three can be switched off in the card's visual editor (**Sounds**, **Confetti**, **Celebration popup**) or in YAML. See [Configuration](#configuration).
 
@@ -248,11 +250,25 @@ These don't count against "all done", so a child with one of them still gets the
 
 Chores that need approval show **A grown-up will check** and change to **Waiting for a grown-up** once ticked. A [teamwork chore](Teamwork-Chores.md) shows **Waiting for your team** after the child joins. If the [child undo window](Child-Undo-Window.md) is switched on, a child can take back a mistaken tap from the kiosk too.
 
-A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border, a tinted row and a soft glow, to tell it apart from the child's own chores.
+A [first-come chore](Chore-Scheduling.md#first-come-first-served) sits on every child's list until one of them finishes it, so it's marked **Up for grabs — first one wins**, with a dashed border, a tinted row and a soft glow, to tell it apart from the child's own chores. The child who gets there first sees **You got it first!** (see [Celebrations](#celebrations)).
+
+When the chore has a [shared daily limit](Chore-Scheduling.md#first-come-first-served) above 1, the tag also says how many are still up for grabs today, for example **2 left today**. Every child in the pool uses up the same slots, and so does a **Parent did it** for the whole pool. The count drops as the slots go. Once the last one is taken, the count goes: the row shows done if the child took part, or who got it, as below. A chore with a limit of 1 shows no count.
 
 Once someone finishes it, the other children still see it, dimmed, with **Malia got it first** (or **A grown-up did it**), so they know where it went. It doesn't count towards their progress, so they can still finish the day, and **Completed chores: hide** hides it along with their done chores.
 
 ![A first-come chore on the kiosk: dashed row and tag, and one that also needs a grown-up's check](images/kiosk-up-for-grabs.png)
+
+### Up for grabs first
+
+Switch on **Up-for-grabs chores first** in the card's visual editor (or `grabs_first: true` in YAML) and the open first-come chores move to the top of each child's list, so the race is the first thing they see. They keep their order among themselves, and the rest of the list keeps its order below them. A first-come chore a sibling already got stays where it was. It's off by default.
+
+A child whose chores you've put in order yourself (with the [Reorder card](Children.md#chore-order) or `taskmate.set_chore_order`) keeps that order: the option only moves chores for children without one.
+
+```yaml
+type: custom:taskmate-kiosk-card
+entity: sensor.taskmate_overview
+grabs_first: true
+```
 
 ---
 

@@ -87,7 +87,7 @@ class TaskMateGraphCard extends LitElement {
         justify-content: space-between;
         padding: 14px 18px;
         background: var(--taskmate-header-bg, #d35400);
-        color: white;
+        color: var(--tmd-hd-text, white);
         gap: 12px;
         /* When the title and the Daily/Total/Growth toggle don't both fit
            (a ~360px card, a long translation or a child's name after the
@@ -103,7 +103,7 @@ class TaskMateGraphCard extends LitElement {
 
       .mode-toggle {
         display: flex;
-        background: rgba(255,255,255,0.12);
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.12);
         border-radius: 20px;
         padding: 3px;
         gap: 2px;
@@ -113,7 +113,7 @@ class TaskMateGraphCard extends LitElement {
       .mode-btn {
         background: none;
         border: none;
-        color: rgba(255,255,255,0.6);
+        color: rgba(var(--tmd-hd-ink, 255,255,255), 0.6);
         padding: 4px 10px;
         border-radius: 16px;
         font-size: 0.75rem;
@@ -124,12 +124,12 @@ class TaskMateGraphCard extends LitElement {
       }
 
       .mode-btn.active {
-        background: rgba(255,255,255,0.2);
-        color: white;
+        background: rgba(var(--tmd-hd-ink, 255,255,255), 0.2);
+        color: var(--tmd-hd-text, white);
       }
 
       .mode-btn:hover:not(.active) {
-        color: rgba(255,255,255,0.85);
+        color: rgba(var(--tmd-hd-ink, 255,255,255), 0.85);
       }
 
       .card-content {
@@ -281,7 +281,7 @@ class TaskMateGraphCard extends LitElement {
 
   render() {
     const design = window.__taskmate_design
-      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config?.entity)
+      ? window.__taskmate_design.apply(this, this.hass, this.config, this.config?.entity, "#d35400")
       : "classic";
     if (design !== "classic") {
       try {
