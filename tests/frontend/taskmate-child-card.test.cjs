@@ -216,6 +216,15 @@ test("weekly target: below the quota the row is still live", () => {
   assert.equal(button.controls[0].disabled, false);
 });
 
+// A locked DONE button carries the class that gives it the switched-off look
+// (neutral fill, dim label, dashed edge) instead of a faded coloured smear.
+test("locked DONE button is marked for the disabled style; a live one is not", () => {
+  const locked = renderRow(makeWeeklyCard({ chore: cello(), weeklyProgress: { cello: 3 } })).button;
+  assert.match(locked.markup, /class="btn\s+tm-btn-locked"/);
+  const live = renderRow(makeWeeklyCard({ chore: cello(), weeklyProgress: { cello: 2 } })).button;
+  assert.doesNotMatch(live.markup, /tm-btn-locked/);
+});
+
 // ── today's own tick stays undoable ──────────────────────────────────────
 // Filling the quota with today's completion must not lock the child out of
 // undoing it, exactly as the recurrence window doesn't.
