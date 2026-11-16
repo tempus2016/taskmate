@@ -2842,9 +2842,9 @@ class TaskMateKioskCard extends LitElement {
       .km-done.km-reward-save { flex-direction: column; align-items: stretch; justify-content: center; gap: 6px; }
       .km-done.km-reward-save .km-bar { height: 8px; }
       .km-done.km-reward-save .km-bar > i { background: var(--tmd-gold, #e67e22); }
-      /* The overlay spans the whole child view, which can run far past the
-         screen outside full screen: the card sticks to where the child is. */
-      .km-bdlg { z-index: 3; justify-content: flex-start; }
+      /* The overlay covers the screen (see .km-idle); a tall dialog scrolls
+         inside it instead of running off the bottom. */
+      .km-bdlg { z-index: 10; justify-content: flex-start; overflow-y: auto; }
       .km-bdlg-card {
         position: sticky; top: 15vh; margin-top: 12vh;
         max-width: 520px; display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -2917,8 +2917,10 @@ class TaskMateKioskCard extends LitElement {
       .km-next-badge .km-small { margin-top: 6px; }
 
       /* Idle countdown + celebration overlays */
+      /* Pinned to the screen, not the card: a kiosk list taller than the
+         screen would otherwise centre the popup off-screen below the fold. */
       .km-idle {
-        position: absolute; inset: 0; z-index: 3;
+        position: fixed; inset: 0; z-index: 10;
         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
         /* Frosted in the card's own background, so text stays readable in
            light and dark themes alike. */

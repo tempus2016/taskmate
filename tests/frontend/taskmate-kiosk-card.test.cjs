@@ -1377,3 +1377,14 @@ test("the kiosk stays one column until the chore list can be ~460px wide", () =>
   const tablet = styles.slice(styles.indexOf("@container km (max-width: 760px)"));
   assert.match(tablet.slice(0, tablet.indexOf("\n      }\n")), /\.km-clock \{ display: none; \}/);
 });
+
+// A kiosk list taller than the screen used to centre the popup on the whole
+// card, so a child scrolled down to a chore saw only the frosted backdrop.
+test("kiosk overlays (popup, party, idle, dialogs) are pinned to the screen", () => {
+  const styles = render(KioskCard.styles).markup;
+  const at = styles.indexOf(".km-idle {");
+  const rule = styles.slice(at, styles.indexOf("}", at));
+  assert.match(rule, /position: fixed;/);
+  assert.match(rule, /inset: 0;/);
+  assert.doesNotMatch(rule, /position: absolute/);
+});
