@@ -3594,7 +3594,7 @@ class TaskMateChildCard extends LitElement {
                     ${list.map((chore) =>
                       this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
-                ` : this._renderChoiceSetGroups(child, classicRest, (list) => list.map((chore) => classicRow(chore, allDone.list.indexOf(chore))))}
+                `) : this._renderChoiceSetGroups(child, classicRest, (list) => list.map((chore) => classicRow(chore, allDone.list.indexOf(chore))))}
               `}
         </div>
 
