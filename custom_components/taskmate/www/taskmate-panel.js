@@ -20476,6 +20476,13 @@ class TaskMatePanel extends HTMLElement {
         .tm-step-row .tm-icon-btn { flex: 0 0 40px; width: 40px; height: 40px; }
         .tm-step-row .tm-icon-btn ha-icon { --mdc-icon-size: 20px; }
       }
+      /* Narrow phones: two lines per step so the name gets the full width —
+         number + name on the first, the buttons right-aligned on the second. */
+      @media (max-width: 420px) {
+        .tm-step-row { flex-wrap: wrap; row-gap: 2px; }
+        .tm-step-row .tm-step-name { flex: 1 1 calc(100% - 1.4em - 4px); }
+        .tm-step-row .tm-step-num + .tm-step-name + .tm-icon-btn { margin-inline-start: auto; }
+      }
       .tm-st-rm { color: var(--tm-danger, #c4282e); }
       .tm-st-add { border: 1px dashed var(--tm-border-strong); background: transparent; border-radius: var(--tm-radius-sm); padding: 8px; font: inherit; font-size: 13px; color: var(--tm-accent-text); cursor: pointer; }
       .tm-st-add[disabled] { color: var(--tm-text-muted); cursor: default; }
