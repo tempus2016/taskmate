@@ -19791,6 +19791,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-step-row .tm-icon-btn { flex: 0 0 28px; }
       .tm-step-row .tm-icon-btn[disabled] { opacity: 0.35; cursor: default; }
       .tm-step-rm:hover { color: var(--tm-danger, #c4282e); }
+      /* Phones and touch screens: 40px tap targets, still on one row. */
+      @media (max-width: 600px), (pointer: coarse) {
+        .tm-step-row .tm-icon-btn { flex: 0 0 40px; width: 40px; height: 40px; }
+        .tm-step-row .tm-icon-btn ha-icon { --mdc-icon-size: 20px; }
+      }
       .tm-st-rm { color: var(--tm-danger, #c4282e); }
       .tm-st-add { border: 1px dashed var(--tm-border-strong); background: transparent; border-radius: var(--tm-radius-sm); padding: 8px; font: inherit; font-size: 13px; color: var(--tm-accent-text); cursor: pointer; }
       .tm-st-add[disabled] { color: var(--tm-text-muted); cursor: default; }
