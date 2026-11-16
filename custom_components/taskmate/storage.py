@@ -1517,6 +1517,61 @@ class TaskMateStorage:
             if store[chore_id].get("date") != keep_date:
                 store.pop(chore_id, None)
 
+    # ── Multipart chore steps (#1253) ───────────────────────────────────
+    # {chore_id: {child_id: {"date": "YYYY-MM-DD", "round": n, "done": [step_id]}}}.
+    # Runtime state for today, kept out of the chore record so an editor
+    # save can never wipe it. ``round`` is how many times the child had
+    # completed the chore today when the ticks were made, so a chore done
+    # more than once a day starts each go with a clean checklist. Only the
+    # current day's entry counts; anything older is dead on read.
+    def get_step_progress(self, chore_id: str, child_id: str, day: str) -> dict:
+        entry = (self._data.get("chore_steps", {}).get(chore_id) or {}).get(child_id)
+        if not isinstance(entry, dict) or entry.get("date") != day:
+            return {}
+        done = [s for s in entry.get("done", []) if isinstance(s, str) and s]
+        try:
+            round_no = int(entry.get("round", 0) or 0)
+        except (TypeError, ValueError):
+            round_no = 0
+        return {"date": day, "round": round_no, "done": done}
+
+    def set_step_progress(self, chore_id: str, child_id: str, day: str, round_no: int, done: list[str]) -> None:
+        store = self._data.setdefault("chore_steps", {})
+        kids = store.setdefault(chore_id, {})
+        if done:
+            kids[child_id] = {"date": day, "round": int(round_no), "done": list(done)}
+        else:
+            kids.pop(child_id, None)
+        if not kids:
+            store.pop(chore_id, None)
+
+    def remove_step_progress_for_chore(self, chore_id: str) -> None:
+        self._data.get("chore_steps", {}).pop(chore_id, None)
+
+    def remove_step_progress_for_child(self, child_id: str) -> None:
+        store = self._data.get("chore_steps", {})
+        for chore_id in list(store):
+            kids = store[chore_id]
+            if isinstance(kids, dict):
+                kids.pop(child_id, None)
+            if not kids:
+                store.pop(chore_id, None)
+
+    def prune_step_progress(self, keep_date: str) -> None:
+        """Drop step ticks from any day but keep_date: the day rolled over."""
+        store = self._data.get("chore_steps", {})
+        for chore_id in list(store):
+            kids = store[chore_id]
+            if not isinstance(kids, dict):
+                store.pop(chore_id, None)
+                continue
+            for child_id in list(kids):
+                entry = kids[child_id]
+                if not isinstance(entry, dict) or entry.get("date") != keep_date:
+                    kids.pop(child_id, None)
+            if not kids:
+                store.pop(chore_id, None)
+
     # ── Wishlist (#932) ──────────────────────────────────────────────────
     # Wishes are their own records, not rewards: a child creates them and a
     # parent approves them. A wish's own saved points and pledges live on the

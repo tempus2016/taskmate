@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Taakstap instellen",
+      "description": "Vink één stap van een taak in meerdere delen voor vandaag aan of uit. Stappen leveren zelf niets op: de taak wordt met complete_chore voltooid zodra alle stappen zijn afgevinkt.",
+      "fields": {
+        "chore_id": {
+          "name": "Taak-ID",
+          "description": "De ID van de taak in meerdere delen"
+        },
+        "child_id": {
+          "name": "Kind-ID",
+          "description": "De ID van het kind dat de stap afvinkt"
+        },
+        "step_id": {
+          "name": "Stap-ID",
+          "description": "De ID van de stap"
+        },
+        "done": {
+          "name": "Klaar",
+          "description": "Waar vinkt de stap af, onwaar haalt het vinkje weg"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Volgende taak afronden",
       "description": "Rond de eerstvolgende open taak van het kind af, in de volgorde van de kinderkaart. Taken met een foto, notitie, timer of team worden overgeslagen. Bedoeld voor horlogeknoppen en snelkoppelingen; de gewone regels voor goedkeuren gelden.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Taak ‘{name}’ is geen teamtaak"
+    },
+    "chore_steps_not_list": {
+      "message": "Stappen moeten een lijst zijn."
+    },
+    "chore_steps_too_many": {
+      "message": "Een taak kan hoogstens {max} stappen hebben."
+    },
+    "chore_steps_timed": {
+      "message": "Een getimede taak kan geen stappen hebben."
+    },
+    "chore_steps_set_times": {
+      "message": "Een taak met vaste tijden kan geen stappen hebben."
+    },
+    "chore_steps_need_name": {
+      "message": "Elke stap heeft een naam nodig."
+    },
+    "chore_steps_none": {
+      "message": "Taak “{name}” heeft geen stappen."
+    },
+    "chore_step_not_found": {
+      "message": "Stap {step_id} niet gevonden in taak “{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Maak eerst alle stappen van “{name}” af."
     },
     "swap_only_rotation": {
       "message": "Alleen beurtelingse taken kunnen geruild worden"

@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Angi oppgavetrinn",
+      "description": "Kryss av eller fjern avkrysningen for ett trinn i en oppgave i flere deler for i dag. Trinn gir ingen poeng alene: oppgaven fullføres med complete_chore når alle trinnene er krysset av.",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgave-ID",
+          "description": "ID-en til oppgaven i flere deler"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID-en til barnet som krysser av trinnet"
+        },
+        "step_id": {
+          "name": "Trinn-ID",
+          "description": "ID-en til trinnet"
+        },
+        "done": {
+          "name": "Gjort",
+          "description": "Sann krysser av trinnet, usann fjerner avkrysningen"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Fullfør neste oppgave",
       "description": "Fullfører barnets neste utestående oppgave, i rekkefølgen barnekortet viser dem. Oppgaver som krever bilde, notat, tidtaker eller lag hoppes over. Laget for klokkeknapper og snarveier; vanlige godkjenningsregler gjelder.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Oppgaven «{name}» er ikke en lagoppgave"
+    },
+    "chore_steps_not_list": {
+      "message": "Trinn må være en liste."
+    },
+    "chore_steps_too_many": {
+      "message": "En oppgave kan ha høyst {max} trinn."
+    },
+    "chore_steps_timed": {
+      "message": "En tidsoppgave kan ikke ha trinn."
+    },
+    "chore_steps_set_times": {
+      "message": "En oppgave med faste tider kan ikke ha trinn."
+    },
+    "chore_steps_need_name": {
+      "message": "Hvert trinn må ha et navn."
+    },
+    "chore_steps_none": {
+      "message": "Oppgaven «{name}» har ingen trinn."
+    },
+    "chore_step_not_found": {
+      "message": "Fant ikke trinn {step_id} i oppgaven «{name}»."
+    },
+    "chore_steps_incomplete": {
+      "message": "Gjør først ferdig alle trinnene i «{name}»."
     },
     "swap_only_rotation": {
       "message": "Bare oppgaver på omgang kan byttes"

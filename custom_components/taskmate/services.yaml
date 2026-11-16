@@ -1511,6 +1511,37 @@ leave_team_chore:
       selector:
         text:
 
+set_chore_step:
+  name: Set Chore Step
+  description: >-
+    Tick or untick one step of a multipart chore for today. Steps earn nothing on their own: the chore is completed with complete_chore once every step is ticked.
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the multipart chore
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child ticking the step
+      required: true
+      selector:
+        text:
+    step_id:
+      name: Step ID
+      description: The ID of the step
+      required: true
+      selector:
+        text:
+    done:
+      name: Done
+      description: True ticks the step, false unticks it
+      required: false
+      default: true
+      selector:
+        boolean:
+
 complete_next_chore:
   name: Complete Next Chore
   description: >-

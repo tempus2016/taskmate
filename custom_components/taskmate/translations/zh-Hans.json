@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "设置家务步骤",
+      "description": "为今天勾选或取消勾选多步骤家务中的一个步骤。单个步骤不计分：所有步骤都勾选后，用 complete_chore 完成这项家务。",
+      "fields": {
+        "chore_id": {
+          "name": "家务 ID",
+          "description": "多步骤家务的 ID"
+        },
+        "child_id": {
+          "name": "孩子 ID",
+          "description": "勾选该步骤的孩子的 ID"
+        },
+        "step_id": {
+          "name": "步骤 ID",
+          "description": "步骤的 ID"
+        },
+        "done": {
+          "name": "完成",
+          "description": "true 勾选该步骤，false 取消勾选"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "完成下一项家务",
       "description": "按孩子卡片上的顺序完成孩子的下一项未完成家务。需要照片、说明、计时器或团队的家务会被跳过。专为手表按钮和快捷方式设计；照常适用审批规则。",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "家务“{name}”不是团队家务"
+    },
+    "chore_steps_not_list": {
+      "message": "步骤必须是一个列表。"
+    },
+    "chore_steps_too_many": {
+      "message": "一项家务最多只能有 {max} 个步骤。"
+    },
+    "chore_steps_timed": {
+      "message": "计时任务不能设置步骤。"
+    },
+    "chore_steps_set_times": {
+      "message": "有固定时间的家务不能设置步骤。"
+    },
+    "chore_steps_need_name": {
+      "message": "每个步骤都需要名称。"
+    },
+    "chore_steps_none": {
+      "message": "家务“{name}”没有步骤。"
+    },
+    "chore_step_not_found": {
+      "message": "在家务“{name}”中找不到步骤 {step_id}。"
+    },
+    "chore_steps_incomplete": {
+      "message": "请先完成“{name}”的所有步骤。"
     },
     "swap_only_rotation": {
       "message": "只有轮流家务可以交换"

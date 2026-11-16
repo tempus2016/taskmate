@@ -216,6 +216,85 @@ class BonusSubTask:
 
 
 @dataclass
+class ChoreStep:
+    """One required step of a multipart chore (#1253).
+
+    A chore with ``steps`` is a checklist: the child ticks each step off and
+    the chore itself is only completed (and paid) once every step is done.
+    Unlike a BonusSubTask a step earns nothing on its own.
+    """
+
+    name: str = ""
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ChoreStep:
+        return cls(
+            name=str(data.get("name", "") or "").strip()[:CHORE_STEP_NAME_MAX_LENGTH],
+            id=str(data.get("id") or "") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "name": self.name}
+
+
+# Steps per multipart chore (#1253).
+MAX_CHORE_STEPS = 20
+CHORE_STEP_NAME_MAX_LENGTH = 100
+
+
+def clean_chore_steps(raw: Any) -> list[ChoreStep]:
+    """Stored steps coerced to a valid ordered list; anything broken is dropped.
+
+    Loading never raises, so a step with no name or a repeated id is skipped
+    and the list is cut at ``MAX_CHORE_STEPS``. Saving a chore goes through
+    ``validate_chore_steps``, which refuses the same problems with a message.
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[ChoreStep] = []
+    seen: set[str] = set()
+    for item in raw:
+        if isinstance(item, ChoreStep):
+            step = ChoreStep(name=item.name, id=item.id)
+        elif isinstance(item, dict):
+            step = ChoreStep.from_dict(item)
+        else:
+            continue
+        if not step.name or step.id in seen:
+            continue
+        seen.add(step.id)
+        out.append(step)
+    return out[:MAX_CHORE_STEPS]
+
+
+def validate_chore_steps(raw: Any, *, task_type: str = "standard", has_times: bool = False) -> list[ChoreStep]:
+    """Parse the steps a parent sent, raising TaskMateError on any problem.
+
+    At most ``MAX_CHORE_STEPS``, each with a name. A timed task or a chore
+    with set times can't also be a multipart chore: neither is completed
+    with a single tap that the last step could stand in for.
+    """
+    if raw in (None, ""):
+        return []
+    if not isinstance(raw, list):
+        raise TaskMateError("chore_steps_not_list")
+    if not raw:
+        return []
+    if len(raw) > MAX_CHORE_STEPS:
+        raise TaskMateError("chore_steps_too_many", max=MAX_CHORE_STEPS)
+    if task_type == "timed":
+        raise TaskMateError("chore_steps_timed")
+    if has_times:
+        raise TaskMateError("chore_steps_set_times")
+    for item in raw:
+        name = item.get("name") if isinstance(item, dict) else getattr(item, "name", None)
+        if not str(name or "").strip():
+            raise TaskMateError("chore_steps_need_name")
+    return clean_chore_steps(raw)
+
+
+@dataclass
 class ChoreTime:
     """One set time of day a chore comes up ("Wash hands · Lunch").
 
@@ -683,6 +762,10 @@ class Chore:
     # time has been done.
     times: list[ChoreTime] = field(default_factory=list)
     times_bonus: int = 0
+    # Multipart chores (#1253): required steps, in order. Empty = an ordinary
+    # chore. Which steps a child has ticked today is runtime state, kept in
+    # storage["chore_steps"], not on the chore.
+    steps: list[ChoreStep] = field(default_factory=list)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -775,6 +858,7 @@ class Chore:
             template_id=clean_template_id(data.get("template_id")),
             times=clean_chore_times(data.get("times")),
             times_bonus=_clamp_int(data.get("times_bonus"), 0, MAX_CHORE_TIME_POINTS),
+            steps=clean_chore_steps(data.get("steps")),
             id=data.get("id") or generate_id(),
         )
 
@@ -854,6 +938,7 @@ class Chore:
             "template_id": self.template_id,
             "times": [t.to_dict() for t in self.times],
             "times_bonus": self.times_bonus,
+            "steps": [step.to_dict() for step in self.steps],
             "id": self.id,
         }
 

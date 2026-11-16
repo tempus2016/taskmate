@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Imposta passaggio del compito",
+      "description": "Spunta o togli la spunta a un passaggio di un compito in più parti per oggi. I passaggi da soli non danno punti: il compito si completa con complete_chore quando tutti i passaggi sono spuntati.",
+      "fields": {
+        "chore_id": {
+          "name": "ID faccenda",
+          "description": "L'ID del compito in più parti"
+        },
+        "child_id": {
+          "name": "ID bambino",
+          "description": "L'ID del bambino che spunta il passaggio"
+        },
+        "step_id": {
+          "name": "ID passaggio",
+          "description": "L'ID del passaggio"
+        },
+        "done": {
+          "name": "Fatto",
+          "description": "Vero spunta il passaggio, falso toglie la spunta"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Completa la prossima faccenda",
       "description": "Completa la prossima faccenda da fare del bambino, nell'ordine mostrato dalla scheda bambino. Le faccende che richiedono una foto, una nota, un timer o una squadra vengono saltate. Pensata per pulsanti dello smartwatch e scorciatoie; valgono le normali regole di approvazione.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "La faccenda “{name}” non è una faccenda di squadra"
+    },
+    "chore_steps_not_list": {
+      "message": "I passaggi devono essere un elenco."
+    },
+    "chore_steps_too_many": {
+      "message": "Un compito può avere al massimo {max} passaggi."
+    },
+    "chore_steps_timed": {
+      "message": "Un compito a tempo non può avere passaggi."
+    },
+    "chore_steps_set_times": {
+      "message": "Un compito con orari fissi non può avere passaggi."
+    },
+    "chore_steps_need_name": {
+      "message": "Ogni passaggio deve avere un nome."
+    },
+    "chore_steps_none": {
+      "message": "Il compito «{name}» non ha passaggi."
+    },
+    "chore_step_not_found": {
+      "message": "Passaggio {step_id} non trovato nel compito «{name}»."
+    },
+    "chore_steps_incomplete": {
+      "message": "Completa prima tutti i passaggi di «{name}»."
     },
     "swap_only_rotation": {
       "message": "Si possono scambiare solo le faccende a rotazione"

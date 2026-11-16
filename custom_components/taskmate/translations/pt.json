@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Definir passo da tarefa",
+      "description": "Marca ou desmarca um passo de uma tarefa com várias partes para hoje. Os passos não dão pontos sozinhos: a tarefa é concluída com complete_chore quando todos os passos estiverem marcados.",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa com várias partes"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que marca o passo"
+        },
+        "step_id": {
+          "name": "ID do passo",
+          "description": "O ID do passo"
+        },
+        "done": {
+          "name": "Feito",
+          "description": "Verdadeiro marca o passo, falso desmarca-o"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Concluir a próxima tarefa",
       "description": "Conclui a próxima tarefa pendente da criança, pela ordem mostrada no cartão da criança. As tarefas que exigem uma fotografia, uma nota, um temporizador ou uma equipa são ignoradas. Pensado para botões e atalhos do relógio; aplicam-se as regras de aprovação habituais.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "A tarefa “{name}” não é uma tarefa de equipa"
+    },
+    "chore_steps_not_list": {
+      "message": "Os passos têm de ser uma lista."
+    },
+    "chore_steps_too_many": {
+      "message": "Uma tarefa pode ter no máximo {max} passos."
+    },
+    "chore_steps_timed": {
+      "message": "Uma tarefa cronometrada não pode ter passos."
+    },
+    "chore_steps_set_times": {
+      "message": "Uma tarefa com horas fixas não pode ter passos."
+    },
+    "chore_steps_need_name": {
+      "message": "Cada passo precisa de um nome."
+    },
+    "chore_steps_none": {
+      "message": "A tarefa “{name}” não tem passos."
+    },
+    "chore_step_not_found": {
+      "message": "Passo {step_id} não encontrado na tarefa “{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Termina primeiro todos os passos de “{name}”."
     },
     "swap_only_rotation": {
       "message": "Só as tarefas em rotação podem ser trocadas"

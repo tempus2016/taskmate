@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Set oppgåvesteg",
+      "description": "Kryss av eller fjern avkryssinga for eitt steg i ei oppgåve i fleire delar for i dag. Steg gjev ingen poeng åleine: oppgåva blir fullført med complete_chore når alle stega er kryssa av.",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgåve-ID",
+          "description": "ID-en til oppgåva i fleire delar"
+        },
+        "child_id": {
+          "name": "Born-ID",
+          "description": "ID-en til barnet som kryssar av steget"
+        },
+        "step_id": {
+          "name": "Steg-ID",
+          "description": "ID-en til steget"
+        },
+        "done": {
+          "name": "Gjort",
+          "description": "Sann kryssar av steget, usann fjernar avkryssinga"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Fullfør neste oppgåve",
       "description": "Fullfører den neste uteståande oppgåva til barnet, i rekkjefølgja barnekortet viser dei. Oppgåver som krev bilete, notat, tidtakar eller lag vert hoppa over. Laga for klokkeknappar og snarvegar; vanlege godkjenningsreglar gjeld.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Oppgåva «{name}» er ikkje ei lagoppgåve"
+    },
+    "chore_steps_not_list": {
+      "message": "Steg må vere ei liste."
+    },
+    "chore_steps_too_many": {
+      "message": "Ei oppgåve kan ha høgst {max} steg."
+    },
+    "chore_steps_timed": {
+      "message": "Ei tidsoppgåve kan ikkje ha steg."
+    },
+    "chore_steps_set_times": {
+      "message": "Ei oppgåve med faste tider kan ikkje ha steg."
+    },
+    "chore_steps_need_name": {
+      "message": "Kvart steg må ha eit namn."
+    },
+    "chore_steps_none": {
+      "message": "Oppgåva «{name}» har ingen steg."
+    },
+    "chore_step_not_found": {
+      "message": "Fann ikkje steg {step_id} i oppgåva «{name}»."
+    },
+    "chore_steps_incomplete": {
+      "message": "Gjer først ferdig alle stega i «{name}»."
     },
     "swap_only_rotation": {
       "message": "Berre oppgåver på omgang kan bytast"

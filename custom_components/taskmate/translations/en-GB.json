@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Set Chore Step",
+      "description": "Tick or untick one step of a multipart chore for today. Steps earn nothing on their own: the chore is completed with complete_chore once every step is ticked.",
+      "fields": {
+        "chore_id": {
+          "name": "Chore ID",
+          "description": "The ID of the multipart chore"
+        },
+        "child_id": {
+          "name": "Child ID",
+          "description": "The ID of the child ticking the step"
+        },
+        "step_id": {
+          "name": "Step ID",
+          "description": "The ID of the step"
+        },
+        "done": {
+          "name": "Done",
+          "description": "True ticks the step, false unticks it"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Complete Next Chore",
       "description": "Complete the child's next outstanding chore, in the order the child card shows them. Chores that need a photo, a note, a timer or a team are skipped. Made for watch buttons and shortcuts; normal approval rules apply.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Chore “{name}” is not a teamwork chore"
+    },
+    "chore_steps_not_list": {
+      "message": "Steps must be a list."
+    },
+    "chore_steps_too_many": {
+      "message": "A chore can have at most {max} steps."
+    },
+    "chore_steps_timed": {
+      "message": "A timed task can't have steps."
+    },
+    "chore_steps_set_times": {
+      "message": "A chore with set times can't have steps."
+    },
+    "chore_steps_need_name": {
+      "message": "Every step needs a name."
+    },
+    "chore_steps_none": {
+      "message": "Chore “{name}” has no steps."
+    },
+    "chore_step_not_found": {
+      "message": "Step {step_id} not found on chore “{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Finish every step of “{name}” first."
     },
     "swap_only_rotation": {
       "message": "Only rotation chores can be swapped"

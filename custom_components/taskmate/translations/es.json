@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Marcar paso de tarea",
+      "description": "Marca o desmarca un paso de una tarea en varias partes para hoy. Los pasos no dan puntos por sí solos: la tarea se completa con complete_chore cuando todos los pasos están marcados.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la tarea",
+          "description": "El ID de la tarea en varias partes"
+        },
+        "child_id": {
+          "name": "ID del niño",
+          "description": "El ID del niño que marca el paso"
+        },
+        "step_id": {
+          "name": "ID del paso",
+          "description": "El ID del paso"
+        },
+        "done": {
+          "name": "Hecho",
+          "description": "Verdadero marca el paso, falso lo desmarca"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Completar la siguiente tarea",
       "description": "Completa la siguiente tarea pendiente del niño, en el orden de la tarjeta infantil. Se saltan las tareas que necesitan foto, nota, temporizador o equipo. Pensado para botones de reloj y atajos; se aplican las reglas de aprobación normales.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "La tarea “{name}” no es una tarea de equipo"
+    },
+    "chore_steps_not_list": {
+      "message": "Los pasos deben ser una lista."
+    },
+    "chore_steps_too_many": {
+      "message": "Una tarea puede tener como máximo {max} pasos."
+    },
+    "chore_steps_timed": {
+      "message": "Una tarea cronometrada no puede tener pasos."
+    },
+    "chore_steps_set_times": {
+      "message": "Una tarea con horas fijas no puede tener pasos."
+    },
+    "chore_steps_need_name": {
+      "message": "Cada paso necesita un nombre."
+    },
+    "chore_steps_none": {
+      "message": "La tarea «{name}» no tiene pasos."
+    },
+    "chore_step_not_found": {
+      "message": "No se encontró el paso {step_id} en la tarea «{name}»."
+    },
+    "chore_steps_incomplete": {
+      "message": "Termina primero todos los pasos de «{name}»."
     },
     "swap_only_rotation": {
       "message": "Solo se pueden intercambiar tareas con rotación"

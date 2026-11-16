@@ -494,6 +494,20 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
                     time_done[kid] = {tid: ("done" if comp.approved else "pending") for tid, comp in done.items()}
             if time_done:
                 record["time_done"] = time_done
+        # Multipart chores (#1253): only chores with steps carry them, plus
+        # the steps each child has ticked on the current go,
+        # {child_id: [step_id, ...]}, omitted while nobody has ticked any.
+        steps = getattr(c, "steps", None)
+        if isinstance(steps, list) and steps:
+            record["steps"] = [{"id": s.id, "name": s.name} for s in steps]
+            kids = assigned_to or list((common.get("child_lookup") or {}).keys())
+            step_done: dict = {}
+            for kid in kids:
+                ticked = coordinator.chore_steps_done(c, kid)
+                if ticked:
+                    step_done[kid] = ticked
+            if step_done:
+                record["step_done"] = step_done
         due_days = getattr(c, "due_days", []) or []
         if due_days:
             record["due_days"] = due_days
