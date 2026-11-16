@@ -3441,6 +3441,7 @@ class TaskMateChildCard extends LitElement {
     this._headerInk(look, "classic");
     const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
     const [classicPrac, classicRest] = this._splitPractising(allDone.list, child);
+    const classicOrder = this._displayOrder(child, classicPrac, classicRest);
     const classicRow = (chore, index) => html`
                   ${chore.task_type === 'timed'
                     ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
@@ -3594,7 +3595,7 @@ class TaskMateChildCard extends LitElement {
                     ${list.map((chore) =>
                       this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
-                `) : this._renderChoiceSetGroups(child, classicRest, (list) => list.map((chore) => classicRow(chore, allDone.list.indexOf(chore))))}
+                `) : this._renderChoiceSetGroups(child, classicRest, (list) => list.map((chore) => classicRow(chore, classicOrder.indexOf(chore))))}
               `}
         </div>
 
@@ -4116,7 +4117,10 @@ class TaskMateChildCard extends LitElement {
     // silently ignored under every designed style — including accessible,
     // which is the one a child who needs picture tiles is most likely on.
     // The tiles keep the designed shell (header, tokens) around them.
-    const [pracRows, restRows] = this._splitPractising(listRows, child, r => r.chore);
+    const [pracRaw, restRaw] = this._splitPractising(listRows, child, r => r.chore);
+    const shown = new Map(this._displayOrder(child, pracRaw, restRaw, r => r.chore).map((r, i) => [r, { ...r, index: i }]));
+    const pracRows = pracRaw.map(r => shown.get(r));
+    const restRows = restRaw.map(r => shown.get(r));
     const renderList = (list) =>
       design === "playroom" ? this._designPlayroom(child, list, remaining, tone) :
       design === "console"  ? this._designConsole(child, list, remaining, tone) :
@@ -5725,6 +5729,14 @@ class TaskMateChildCard extends LitElement {
 
   /** Every set group then the other chores, each list drawn by `renderItems`.
    *  The "Other chores" line shows only when a set came first. */
+  /** Rows in the order they are drawn: practising first (#1262), then each
+   *  choice set's chores (#1259), then the rest. Numbers follow this order so
+   *  no two visible rows share one. */
+  _displayOrder(child, prac, rest, choreOf = (x) => x) {
+    const { groups, rest: loose } = this._choiceSetSplit(child, rest, choreOf);
+    return [...prac, ...groups.flatMap((g) => g.items), ...loose];
+  }
+
   _renderChoiceSetGroups(child, items, renderItems, choreOf = (x) => x) {
     const { groups, rest } = this._choiceSetSplit(child, items, choreOf);
     if (!groups.length) return renderItems(items);

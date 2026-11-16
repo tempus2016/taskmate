@@ -128,3 +128,26 @@ for (const design of ["classic", "playroom", "console", "cleanpro", "accessible"
     assert.ok(markup.indexOf("Brush teeth") < markup.indexOf("Put toys away"));
   });
 }
+
+// A practising chore (#1262) and a choice set (#1259) each draw their own
+// section; the row numbers follow the drawn order, so they count up down the
+// card and no two rows share one.
+for (const design of ["classic", "playroom", "console", "cleanpro", "accessible", "graphite"]) {
+  test(`${design}: row numbers count up across Practising and a choice set`, () => {
+    const card = makeCard({
+      child: {
+        chore_stage: { c: "practising" },
+        choice_sets: [{ set_id: "s1", name: "Your part", min: 1, done: 0, fulfilled: false, chore_ids: ["a", "b"] }],
+      },
+      // The family order puts the practising chore last, as on a real card.
+      config: { card_design: design },
+      chores: [chore("a", "Put toys away"), chore("b", "Feed the cat"), chore("d", "Shoes away"), chore("c", "Brush teeth")],
+    });
+    card.hass.states[ENTITY].attributes.children[0].chore_order = ["d", "a", "b", "c"];
+    const markup = render(card.render()).markup;
+    const nums = [...markup.matchAll(/class="(?:chore-number-badge|num-badge|num q-num|num|c-num)(?:\s[^"]*)?"[^>]*>(?:\s|<!--[^>]*-->)*(\d+)(?:\s|<!--[^>]*-->)*</g)].map(m => Number(m[1]));
+    // Playroom draws each list's first row as a numberless "up next" card.
+    assert.ok(nums.length >= (design === "playroom" ? 1 : 4), `numbered rows found (got ${nums.join(",")})`);
+    assert.deepEqual(nums, [...new Set(nums)].sort((x, y) => x - y), `numbers count up in the drawn order, none repeated (got ${nums.join(",")})`);
+  });
+}
