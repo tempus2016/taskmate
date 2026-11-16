@@ -8705,8 +8705,11 @@ class TaskMateChildCard extends LitElement {
       design: (this.getAttribute && this.getAttribute("data-tm-design")) || design,
       dark: !!(d && d.isDark && d.isDark(this.hass, this)),
       // Step aside while the card celebrates, so the popup isn't drawn over
-      // a second dark layer; the tour comes back on the same step.
-      paused: !!(this._celebrating || this._inspCelebration || (this._confetti && this._confetti.length)),
+      // a second dark layer; the tour comes back on the same step. The same
+      // while a multipart chore's checklist sheet (#1253) is open, so the
+      // bubble never sits on top of the steps the child is ticking.
+      paused: !!(this._celebrating || this._inspCelebration || (this._confetti && this._confetti.length)
+        || this._stepsSheet),
       onSpeak: (k) => T.speak(this.hass, childId, k),
       onFinish: (status, step) => this._finishTour(childId, status, step),
     }}></taskmate-tour>`;

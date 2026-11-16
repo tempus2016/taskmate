@@ -290,6 +290,20 @@ for (const design of ["classic", "playroom", "cleanpro"]) {
     card._celebrating = "bed";
     assert.equal(findTour(card.render()).paused, true);
   });
+
+  test(`child card (${design}): the tour steps aside while a checklist sheet is open (#1253)`, () => {
+    const { card } = childCard({ design });
+    card._confetti = [];
+    assert.equal(findTour(card.render()).paused, false);
+    card._stepsSheet = {
+      chore: { id: "bed", name: "Make bed", steps: [{ id: "s1", name: "Pillows" }] },
+      child: { id: "malia", name: "Malia" },
+      error: "",
+    };
+    assert.equal(findTour(card.render()).paused, true, "the bubble never covers the steps");
+    card._stepsSheet = null;
+    assert.equal(findTour(card.render()).paused, false, "and it comes back afterwards");
+  });
 }
 
 // ── the "tick" step points at a chore that can be ticked now ─────────────

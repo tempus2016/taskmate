@@ -3506,15 +3506,19 @@ class TaskMatePanel extends HTMLElement {
       <summary>${this._t("panel.chore_steps_label")}${steps.length ? ` (${this._fmtNum(steps.length)})` : ""}</summary>
       <div>
         <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_steps_hint")}</span>
-        ${steps.map((s, idx) => `
-          <div class="tm-field-row tm-step-row" style="align-items:center;gap:6px;margin-bottom:6px">
-            <span class="tm-step-num" aria-hidden="true" style="flex:0 0 auto;min-width:1.6em;text-align:center;font-weight:600">${this._fmtNum(idx + 1)}</span>
-            <div class="tm-field" style="flex:1;margin:0"><input class="tm-input" maxlength="100" aria-label="${this._t("panel.chore_step_name_aria", {n: this._fmtNum(idx + 1)})}" placeholder="${this._t("panel.chore_step_name_placeholder")}" value="${this._esc(s.name)}" data-field="steps[${idx}].name"></div>
-            <button type="button" class="tm-btn tm-btn-icon" data-act="move-chore-step" data-idx="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} title="${this._t("panel.chore_step_move_up")}" aria-label="${this._t("panel.chore_step_move_up")}" style="padding:6px 10px">↑</button>
-            <button type="button" class="tm-btn tm-btn-icon" data-act="move-chore-step" data-idx="${idx}" data-dir="1" ${idx === steps.length - 1 ? "disabled" : ""} title="${this._t("panel.chore_step_move_down")}" aria-label="${this._t("panel.chore_step_move_down")}" style="padding:6px 10px">↓</button>
-            <button type="button" class="tm-btn tm-btn-icon" data-act="remove-chore-step" data-idx="${idx}" title="${this._t("panel.tooltip_remove")}" aria-label="${this._t("panel.tooltip_remove")}" style="padding:6px 10px">✕</button>
-          </div>
-        `).join("")}
+        ${steps.map((s, idx) => {
+          const up = this._esc(this._t("panel.chore_step_move_up"));
+          const down = this._esc(this._t("panel.chore_step_move_down"));
+          const rm = this._esc(this._t("panel.tooltip_remove"));
+          return `
+          <div class="tm-step-row">
+            <span class="tm-step-num" aria-hidden="true">${this._fmtNum(idx + 1)}</span>
+            <input class="tm-input tm-step-name" maxlength="100" aria-label="${this._esc(this._t("panel.chore_step_name_aria", {n: this._fmtNum(idx + 1)}))}" placeholder="${this._esc(this._t("panel.chore_step_name_placeholder"))}" value="${this._esc(s.name)}" data-field="steps[${idx}].name">
+            <button type="button" class="tm-icon-btn" data-act="move-chore-step" data-idx="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} title="${up}" aria-label="${up}"><ha-icon icon="mdi:arrow-up"></ha-icon></button>
+            <button type="button" class="tm-icon-btn" data-act="move-chore-step" data-idx="${idx}" data-dir="1" ${idx === steps.length - 1 ? "disabled" : ""} title="${down}" aria-label="${down}"><ha-icon icon="mdi:arrow-down"></ha-icon></button>
+            <button type="button" class="tm-icon-btn tm-step-rm" data-act="remove-chore-step" data-idx="${idx}" title="${rm}" aria-label="${rm}"><ha-icon icon="mdi:close"></ha-icon></button>
+          </div>`;
+        }).join("")}
         ${steps.length < CHORE_STEPS_MAX ? `<button type="button" class="tm-btn" data-act="add-chore-step" style="margin-top:4px">${this._t("panel.btn_add_chore_step")}</button>` : ""}
       </div>
     </details>`;
@@ -20437,6 +20441,14 @@ class TaskMatePanel extends HTMLElement {
       .tm-st-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(118px, 1fr) minmax(118px, 1fr) 60px 32px; gap: 6px; align-items: center; }
       .tm-st-head { font-size: 11px; font-weight: 600; color: var(--tm-text-muted); margin-top: 6px; }
       .tm-st-row .tm-input { min-width: 0; }
+      /* Multipart chore steps (#1253): one row per step at any width —
+         number, name, then three 28px icon buttons; never wraps. */
+      .tm-step-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; min-width: 0; }
+      .tm-step-num { flex: 0 0 auto; min-width: 1.4em; text-align: center; font-weight: 600; color: var(--tm-text-muted); }
+      .tm-step-row .tm-step-name { flex: 1 1 auto; min-width: 0; width: auto; max-width: none; }
+      .tm-step-row .tm-icon-btn { flex: 0 0 28px; }
+      .tm-step-row .tm-icon-btn[disabled] { opacity: 0.35; cursor: default; }
+      .tm-step-rm:hover { color: var(--tm-danger, #c4282e); }
       .tm-st-rm { color: var(--tm-danger, #c4282e); }
       .tm-st-add { border: 1px dashed var(--tm-border-strong); background: transparent; border-radius: var(--tm-radius-sm); padding: 8px; font: inherit; font-size: 13px; color: var(--tm-accent-text); cursor: pointer; }
       .tm-st-add[disabled] { color: var(--tm-text-muted); cursor: default; }
