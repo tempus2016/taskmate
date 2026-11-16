@@ -1377,3 +1377,45 @@ test("the kiosk stays one column until the chore list can be ~460px wide", () =>
   const tablet = styles.slice(styles.indexOf("@container km (max-width: 760px)"));
   assert.match(tablet.slice(0, tablet.indexOf("\n      }\n")), /\.km-clock \{ display: none; \}/);
 });
+
+// A kiosk list taller than the screen used to centre the popup on the whole
+// card, so a child scrolled down to a chore saw only the frosted backdrop.
+test("kiosk overlays (popup, party, idle, dialogs) are pinned to the screen", () => {
+  const styles = render(KioskCard.styles).markup;
+  const at = styles.indexOf(".km-idle {");
+  const rule = styles.slice(at, styles.indexOf("}", at));
+  assert.match(rule, /position: fixed;/);
+  assert.match(rule, /inset: 0;/);
+  assert.doesNotMatch(rule, /position: absolute/);
+  // A container is the frame position: fixed measures from, so the
+  // container query lives on .km-cq and never on the card itself.
+  const card = styles.slice(styles.indexOf("ha-card.km {"), styles.indexOf("}", styles.indexOf("ha-card.km {")));
+  assert.doesNotMatch(card, /container-type/);
+  const cq = styles.slice(styles.indexOf(".km-cq {"), styles.indexOf("}", styles.indexOf(".km-cq {")));
+  assert.match(cq, /container-type: inline-size;/);
+});
+
+// The div that closes the element opened at `from`, by counting div tags.
+function closingDiv(markup, from) {
+  const tag = /<\/?div\b/g;
+  tag.lastIndex = from;
+  let depth = 0;
+  for (let m; (m = tag.exec(markup));) {
+    depth += m[0] === "<div" ? 1 : -1;
+    if (depth === 0) return m.index;
+  }
+  return -1;
+}
+
+test("the win popup is drawn outside the container-query wrapper", () => withSounds(async () => {
+  const card = await childView({
+    chores: [chore("bins", { assignment_mode: "first_come", requires_approval: false }), chore("dishes")],
+    status: grabStatus,
+  });
+  await card._complete(card._entry("vaiha").child, card.hass.states[ENTITY].attributes.chores[0]);
+  const { markup } = view(card);
+  const end = closingDiv(markup, markup.indexOf('<div class="km-cq"'));
+  assert.ok(end > 0, "the wrapper closes");
+  assert.ok(markup.indexOf("km-pop-won") > end, "the popup comes after the wrapper, not inside it");
+  assert.ok(markup.indexOf('class="km-main"') < end, "the chore list stays inside it");
+}));
