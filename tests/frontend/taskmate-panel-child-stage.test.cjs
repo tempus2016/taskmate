@@ -163,12 +163,17 @@ test("stage confirm: shared chores are named, nothing-to-change is said, and car
   assert.ok(html.includes("Shared with other children, so left alone: Feed the cat"));
   assert.ok(html.includes('data-act="stage-pop-cancel"') && html.includes('data-act="stage-only"'));
   assert.ok(html.includes("Change stage<"));
+  // Nothing to apply: a statement, not a question.
+  assert.ok(html.includes("Move Isla to <b>Joining in</b>.</p>"));
+  assert.ok(!html.includes("Apply its suggestions too?"));
 
   const cards = panel({ scope: "cards" });
   cards._callWS = async () => ({ ok: true, res: { chores: [], skipped_shared: [], chore_items: [] } });
   await cards._pickChildStage("3_5");
   const c = cards._renderStagePop();
   assert.ok(c.includes("Pre-Reader Mode on (child card)"));
+  assert.ok(c.includes("Move Isla to <b>Joining in</b>.</p>"), "cards scope: the card list stays under a plain statement");
+  assert.ok(!c.includes("Apply its suggestions too?"));
   assert.ok(!c.includes("No deadlines or deductions"));
 });
 

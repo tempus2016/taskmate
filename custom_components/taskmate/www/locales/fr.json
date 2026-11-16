@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} peut essayer davantage",
   "panel.stage_pop_title": "Changer l'étape de {name}",
   "panel.stage_pop_body": "Passer {name} à {stage}. Appliquer aussi ses suggestions ?",
+  "panel.stage_pop_body_only": "Passer {name} à {stage}.",
   "panel.stage_pop_card": "La carte enfant suit l'étape partout où ses propres options ne sont pas définies :",
   "panel.stage_pop_chores": "Modifications des tâches, une seule fois :",
   "panel.stage_pop_chore_none": "Rien à changer sur les tâches de {name}.",

@@ -4601,6 +4601,7 @@
   "panel.stage_pop_up_title": "{name} kann jetzt mehr ausprobieren",
   "panel.stage_pop_title": "Stufe von {name} ändern",
   "panel.stage_pop_body": "{name} auf {stage} setzen. Die Vorschläge auch anwenden?",
+  "panel.stage_pop_body_only": "{name} auf {stage} setzen.",
   "panel.stage_pop_card": "Die Kinderkarte folgt der Stufe überall dort, wo ihre eigenen Optionen nicht gesetzt sind:",
   "panel.stage_pop_chores": "Änderungen an Aufgaben, einmalig:",
   "panel.stage_pop_chore_none": "An den eigenen Aufgaben von {name} gibt es nichts zu ändern.",

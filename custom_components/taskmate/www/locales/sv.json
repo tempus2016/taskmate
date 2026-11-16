@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} kan prova mer nu",
   "panel.stage_pop_title": "Ändra steg för {name}",
   "panel.stage_pop_body": "Flytta {name} till {stage}. Tillämpa även förslagen?",
+  "panel.stage_pop_body_only": "Flytta {name} till {stage}.",
   "panel.stage_pop_card": "Barnkortet följer steget där dess egna inställningar inte är satta:",
   "panel.stage_pop_chores": "Ändringar av sysslor, en gång:",
   "panel.stage_pop_chore_none": "Inget att ändra på {name}s egna sysslor.",

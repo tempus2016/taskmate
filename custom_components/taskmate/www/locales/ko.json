@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name}이(가) 이제 더 해 볼 수 있어요",
   "panel.stage_pop_title": "{name}의 단계 변경",
   "panel.stage_pop_body": "{name}을(를) {stage}(으)로 옮깁니다. 추천도 적용할까요?",
+  "panel.stage_pop_body_only": "{name}을(를) {stage}(으)로 옮깁니다.",
   "panel.stage_pop_card": "아이 카드는 자체 옵션이 설정되지 않은 곳에서 단계를 따릅니다:",
   "panel.stage_pop_chores": "집안일 변경 (한 번만):",
   "panel.stage_pop_chore_none": "{name}의 집안일에는 바꿀 것이 없습니다.",

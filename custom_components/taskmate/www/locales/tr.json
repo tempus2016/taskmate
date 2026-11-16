@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} artık daha fazlasını deneyebilir",
   "panel.stage_pop_title": "{name} için aşamayı değiştir",
   "panel.stage_pop_body": "{name}, {stage} aşamasına geçsin. Öneriler de uygulansın mı?",
+  "panel.stage_pop_body_only": "{name}, {stage} aşamasına geçer.",
   "panel.stage_pop_card": "Çocuk kartı, kendi seçenekleri ayarlanmamış her yerde aşamayı izler:",
   "panel.stage_pop_chores": "Görev değişiklikleri, bir kez:",
   "panel.stage_pop_chore_none": "{name} görevlerinde değiştirilecek bir şey yok.",

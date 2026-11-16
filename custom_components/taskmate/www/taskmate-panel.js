@@ -16771,7 +16771,8 @@ class TaskMatePanel extends HTMLElement {
         ].filter(Boolean),
       } : null,
     ].filter(Boolean);
-    const intro = pop.to ? this._t("panel.stage_pop_body", { name: this._esc(pop.name), stage: `<b>${this._esc(this._stageName(pop.to))}</b>` }) : "";
+    // Only ask about applying when there is something to apply.
+    const intro = pop.to ? this._t(changes.length ? "panel.stage_pop_body" : "panel.stage_pop_body_only", { name: this._esc(pop.name), stage: `<b>${this._esc(this._stageName(pop.to))}</b>` }) : "";
     return changes.length
       ? this._presetSummaryDialog({ ...common, intro, groups, showCancel: false,
         secondaryAct: "stage-only", secondaryLabel: this._t("panel.stage_btn_only"),

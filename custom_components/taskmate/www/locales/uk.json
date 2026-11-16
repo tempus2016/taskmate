@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} тепер може пробувати більше",
   "panel.stage_pop_title": "Змінити етап: {name}",
   "panel.stage_pop_body": "Перевести {name} на етап «{stage}». Застосувати й пропозиції?",
+  "panel.stage_pop_body_only": "Перевести {name} на етап «{stage}».",
   "panel.stage_pop_card": "Картка дитини слідує етапу всюди, де її власні налаштування не задано:",
   "panel.stage_pop_chores": "Зміни завдань, один раз:",
   "panel.stage_pop_chore_none": "У завданнях {name} нічого змінювати.",
