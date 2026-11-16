@@ -31,6 +31,7 @@ from .coord_boosts import BoostsMixin
 from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
+from .coord_choice_sets import ChoiceSetsMixin
 from .coord_chore_insights import ChoreInsightsMixin
 from .coord_chore_reminders import ChoreRemindersMixin
 from .coord_chores import ChoresMixin
@@ -113,6 +114,7 @@ class TaskMateCoordinator(
     RewardsMixin,
     PointsMixin,
     QuestsMixin,
+    ChoiceSetsMixin,
     AvatarsMixin,
     ChallengesMixin,
     TimedMixin,

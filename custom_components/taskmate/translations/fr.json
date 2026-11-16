@@ -2046,6 +2046,96 @@
           "description": "L'identifiant de l'enfant qui lance la roulette"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Ajouter un lot au choix",
+      "description": "Crée un lot « fais au moins N de ces tâches ». L’enfant choisit lesquelles ; un jour manqué laisse un élément à examiner, jamais de retrait automatique.",
+      "fields": {
+        "name": {
+          "name": "Nom",
+          "description": "Ce que les enfants voient au-dessus du lot"
+        },
+        "chore_ids": {
+          "name": "ID des tâches",
+          "description": "Les tâches du lot. Chacune ne peut être que dans un seul lot ; pas de tâches obligatoires, en rotation ou premier arrivé."
+        },
+        "min_required": {
+          "name": "En choisir au moins",
+          "description": "Combien de tâches différentes du lot l’enfant doit faire chaque jour. 0 en fait une liste facultative jamais manquée."
+        },
+        "description": {
+          "name": "Description",
+          "description": "Note facultative pour les parents"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Une icône mdi, p. ex. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Attribué à",
+          "description": "ID des enfants. Laissez vide pour tous les enfants (adultes exclus)."
+        },
+        "penalty_points": {
+          "name": "Pénalité si manqué",
+          "description": "Points qu’un parent peut retirer après avoir examiné un jour manqué. Jamais retirés automatiquement."
+        },
+        "active": {
+          "name": "Actif",
+          "description": "Un lot inactif affiche ses tâches comme des tâches ordinaires et n’est jamais manqué."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Modifier un lot au choix",
+      "description": "Modifie un lot au choix. Seuls les champs fournis changent.",
+      "fields": {
+        "set_id": {
+          "name": "ID du lot",
+          "description": "L’ID du lot au choix"
+        },
+        "name": {
+          "name": "Nom",
+          "description": "Ce que les enfants voient au-dessus du lot"
+        },
+        "chore_ids": {
+          "name": "ID des tâches",
+          "description": "Les tâches du lot. Chacune ne peut être que dans un seul lot ; pas de tâches obligatoires, en rotation ou premier arrivé."
+        },
+        "min_required": {
+          "name": "En choisir au moins",
+          "description": "Combien de tâches différentes du lot l’enfant doit faire chaque jour. 0 en fait une liste facultative jamais manquée."
+        },
+        "description": {
+          "name": "Description",
+          "description": "Note facultative pour les parents"
+        },
+        "icon": {
+          "name": "Icône",
+          "description": "Une icône mdi, p. ex. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Attribué à",
+          "description": "ID des enfants. Laissez vide pour tous les enfants (adultes exclus)."
+        },
+        "penalty_points": {
+          "name": "Pénalité si manqué",
+          "description": "Points qu’un parent peut retirer après avoir examiné un jour manqué. Jamais retirés automatiquement."
+        },
+        "active": {
+          "name": "Actif",
+          "description": "Un lot inactif affiche ses tâches comme des tâches ordinaires et n’est jamais manqué."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Supprimer un lot au choix",
+      "description": "Supprime un lot au choix. Ses tâches redeviennent ordinaires et ses éléments à examiner disparaissent aussi.",
+      "fields": {
+        "set_id": {
+          "name": "ID du lot",
+          "description": "L’ID du lot au choix"
+        }
+      }
     }
   },
   "entity": {
@@ -2156,6 +2246,8 @@
               "penalty_applied": "Pénalité appliquée",
               "surprise_bonus": "Bonus surprise",
               "mandatory_missed": "Tâche obligatoire manquée",
+              "choice_set_fulfilled": "Lot au choix réussi",
+              "choice_set_missed": "Lot au choix manqué",
               "team_chore_completed": "Tâche d’équipe terminée",
               "points_gifted": "Points offerts",
               "help_requested": "Aide demandée",
@@ -3562,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Impossible d’enregistrer le son"
+    },
+    "choice_set_name_required": {
+      "message": "Un lot au choix doit avoir un nom"
+    },
+    "choice_set_needs_chore": {
+      "message": "Un lot au choix doit contenir au moins une tâche"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Un lot au choix peut contenir au plus {max} tâches"
+    },
+    "choice_set_min_too_high": {
+      "message": "« En choisir au moins » ne peut pas dépasser {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} est obligatoire, elle ne peut donc pas être dans un lot au choix"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} est en premier arrivé, elle ne peut donc pas être dans un lot au choix"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} tourne entre les enfants, elle ne peut donc pas être dans un lot au choix"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} est déjà dans le lot au choix {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} est dans le lot au choix {set}. Retire-la d'abord du lot."
+    },
+    "choice_set_not_found": {
+      "message": "Lot au choix {set_id} introuvable"
     }
   },
   "issues": {

@@ -2046,6 +2046,96 @@
           "description": "L'ID del bambino che gira"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Aggiungi gruppo a scelta",
+      "description": "Crea un gruppo «fai almeno N di queste faccende». Il bambino sceglie quali; un giorno mancato lascia un elemento da verificare, mai una detrazione automatica.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "Ciò che i bambini vedono sopra il gruppo"
+        },
+        "chore_ids": {
+          "name": "ID delle faccende",
+          "description": "Le faccende del gruppo. Ognuna può stare in un solo gruppo; niente faccende obbligatorie, a rotazione o chi-prima-arriva."
+        },
+        "min_required": {
+          "name": "Sceglierne almeno",
+          "description": "Quante faccende diverse del gruppo il bambino deve fare ogni giorno. 0 lo rende un elenco facoltativo mai mancato."
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Nota facoltativa per i genitori"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Un’icona mdi, ad es. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Assegnato a",
+          "description": "ID dei bambini. Lascia vuoto per tutti i bambini (adulti esclusi)."
+        },
+        "penalty_points": {
+          "name": "Penalità se mancato",
+          "description": "Punti che un genitore può togliere dopo aver verificato un giorno mancato. Mai tolti automaticamente."
+        },
+        "active": {
+          "name": "Attivo",
+          "description": "Un gruppo inattivo mostra le sue faccende come faccende normali e non risulta mai mancato."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Aggiorna gruppo a scelta",
+      "description": "Modifica un gruppo a scelta. Cambiano solo i campi indicati.",
+      "fields": {
+        "set_id": {
+          "name": "ID del gruppo",
+          "description": "L’ID del gruppo a scelta"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "Ciò che i bambini vedono sopra il gruppo"
+        },
+        "chore_ids": {
+          "name": "ID delle faccende",
+          "description": "Le faccende del gruppo. Ognuna può stare in un solo gruppo; niente faccende obbligatorie, a rotazione o chi-prima-arriva."
+        },
+        "min_required": {
+          "name": "Sceglierne almeno",
+          "description": "Quante faccende diverse del gruppo il bambino deve fare ogni giorno. 0 lo rende un elenco facoltativo mai mancato."
+        },
+        "description": {
+          "name": "Descrizione",
+          "description": "Nota facoltativa per i genitori"
+        },
+        "icon": {
+          "name": "Icona",
+          "description": "Un’icona mdi, ad es. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Assegnato a",
+          "description": "ID dei bambini. Lascia vuoto per tutti i bambini (adulti esclusi)."
+        },
+        "penalty_points": {
+          "name": "Penalità se mancato",
+          "description": "Punti che un genitore può togliere dopo aver verificato un giorno mancato. Mai tolti automaticamente."
+        },
+        "active": {
+          "name": "Attivo",
+          "description": "Un gruppo inattivo mostra le sue faccende come faccende normali e non risulta mai mancato."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Rimuovi gruppo a scelta",
+      "description": "Elimina un gruppo a scelta. Le sue faccende tornano normali e spariscono anche gli elementi da verificare.",
+      "fields": {
+        "set_id": {
+          "name": "ID del gruppo",
+          "description": "L’ID del gruppo a scelta"
+        }
+      }
     }
   },
   "entity": {
@@ -2156,6 +2246,8 @@
               "penalty_applied": "Penalità applicata",
               "surprise_bonus": "Bonus a sorpresa",
               "mandatory_missed": "Faccenda obbligatoria saltata",
+              "choice_set_fulfilled": "Gruppo a scelta completato",
+              "choice_set_missed": "Gruppo a scelta mancato",
               "team_chore_completed": "Faccenda di squadra completata",
               "points_gifted": "Punti regalati",
               "help_requested": "Aiuto richiesto",
@@ -3562,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Impossibile salvare il suono"
+    },
+    "choice_set_name_required": {
+      "message": "Un gruppo a scelta deve avere un nome"
+    },
+    "choice_set_needs_chore": {
+      "message": "Un gruppo a scelta deve contenere almeno una faccenda"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Un gruppo a scelta può contenere al massimo {max} faccende"
+    },
+    "choice_set_min_too_high": {
+      "message": "«Sceglierne almeno» può essere al massimo {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} è obbligatoria, quindi non può stare in un gruppo a scelta"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} è chi-prima-arriva, quindi non può stare in un gruppo a scelta"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} ruota tra i bambini, quindi non può stare in un gruppo a scelta"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} è già nel gruppo a scelta {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} è nel gruppo a scelta {set}. Toglila prima dal gruppo."
+    },
+    "choice_set_not_found": {
+      "message": "Gruppo a scelta {set_id} non trovato"
     }
   },
   "issues": {

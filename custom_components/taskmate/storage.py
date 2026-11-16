@@ -20,6 +20,7 @@ from .models import (
     Bounty,
     Challenge,
     Child,
+    ChoiceSet,
     Chore,
     ChoreCompletion,
     CustomNotification,
@@ -538,6 +539,10 @@ class TaskMateStorage:
         order = self._data.get("chore_display_order", [])
         if chore_id in order:
             order.remove(chore_id)
+        # Choice sets (#1259) forget it too.
+        for cs in self._data.get("choice_sets", []) or []:
+            if isinstance(cs, dict) and chore_id in (cs.get("chore_ids") or []):
+                cs["chore_ids"] = [c for c in cs["chore_ids"] if c != chore_id]
 
     def set_chore_display_order(self, order: list[str]) -> None:
         """Set the global chore display order."""
@@ -1705,6 +1710,32 @@ class TaskMateStorage:
         for child_map in self.get_quest_progress().values():
             child_map.pop(child_id, None)
 
+    # ── Choice sets (#1259) ──────────────────────────────────────────────
+    def get_choice_sets(self) -> list[ChoiceSet]:
+        return [ChoiceSet.from_dict(c) for c in self._data.get("choice_sets", []) if isinstance(c, dict)]
+
+    def get_choice_set(self, set_id: str) -> ChoiceSet | None:
+        for c in self._data.get("choice_sets", []):
+            if isinstance(c, dict) and c.get("id") == set_id:
+                return ChoiceSet.from_dict(c)
+        return None
+
+    def add_choice_set(self, choice_set: ChoiceSet) -> None:
+        self._data.setdefault("choice_sets", []).append(choice_set.to_dict())
+
+    def update_choice_set(self, choice_set: ChoiceSet) -> None:
+        items = self._data.get("choice_sets", [])
+        for i, c in enumerate(items):
+            if isinstance(c, dict) and c.get("id") == choice_set.id:
+                items[i] = choice_set.to_dict()
+                return
+        self.add_choice_set(choice_set)
+
+    def remove_choice_set(self, set_id: str) -> None:
+        self._data["choice_sets"] = [
+            c for c in self._data.get("choice_sets", []) if not (isinstance(c, dict) and c.get("id") == set_id)
+        ]
+
     # ── Challenges (daily / weekly) ──────────────────────────────────────
     def get_challenges(self) -> list[Challenge]:
         return [Challenge.from_dict(c) for c in self._data.get("challenges", [])]
@@ -1908,6 +1939,7 @@ class TaskMateStorage:
             "timed_sessions",
             "quests",
             "challenges",
+            "choice_sets",
             "wishes",
             "bounties",
             "auctions",
@@ -2160,6 +2192,7 @@ class TaskMateStorage:
             "parent_recipients": _models.ParentRecipient,
             "timed_sessions": _models.TimedSession,
             "quests": _models.Quest,
+            "choice_sets": _models.ChoiceSet,
             "challenges": _models.Challenge,
             "bounties": _models.Bounty,
             "auctions": _models.Auction,

@@ -2046,6 +2046,96 @@
           "description": "ID'et på det barn, der drejer"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Tilføj valgsæt",
+      "description": "Opret et sæt \"lav mindst N af disse pligter\". Barnet vælger hvilke; en mislykket dag giver ét punkt til gennemgang, aldrig et automatisk fradrag.",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Det, børnene ser over sættet"
+        },
+        "chore_ids": {
+          "name": "Pligt-ID'er",
+          "description": "Pligterne i sættet. Hver må kun være i ét sæt; ingen obligatoriske pligter, rotationspligter eller først-til-mølle-pligter."
+        },
+        "min_required": {
+          "name": "Vælg mindst",
+          "description": "Hvor mange forskellige pligter fra sættet barnet skal lave hver dag. 0 gør det til en frivillig liste, der aldrig misses."
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfri note til forældre"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Et mdi-ikon, f.eks. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Barne-ID'er. Lad stå tomt for alle børn (voksne er ikke med)."
+        },
+        "penalty_points": {
+          "name": "Straf ved manglende",
+          "description": "Point, en forælder kan trække efter at have gennemgået en mislykket dag. Trækkes aldrig automatisk."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "Et inaktivt sæt viser sine pligter som almindelige pligter og kan aldrig misses."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Opdater valgsæt",
+      "description": "Ændr et valgsæt. Kun de felter, du angiver, ændres.",
+      "fields": {
+        "set_id": {
+          "name": "Sæt-ID",
+          "description": "ID'et på valgsættet"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Det, børnene ser over sættet"
+        },
+        "chore_ids": {
+          "name": "Pligt-ID'er",
+          "description": "Pligterne i sættet. Hver må kun være i ét sæt; ingen obligatoriske pligter, rotationspligter eller først-til-mølle-pligter."
+        },
+        "min_required": {
+          "name": "Vælg mindst",
+          "description": "Hvor mange forskellige pligter fra sættet barnet skal lave hver dag. 0 gør det til en frivillig liste, der aldrig misses."
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfri note til forældre"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Et mdi-ikon, f.eks. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Barne-ID'er. Lad stå tomt for alle børn (voksne er ikke med)."
+        },
+        "penalty_points": {
+          "name": "Straf ved manglende",
+          "description": "Point, en forælder kan trække efter at have gennemgået en mislykket dag. Trækkes aldrig automatisk."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "Et inaktivt sæt viser sine pligter som almindelige pligter og kan aldrig misses."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Fjern valgsæt",
+      "description": "Slet et valgsæt. Pligterne bliver almindelige pligter igen, og åbne punkter til gennemgang forsvinder også.",
+      "fields": {
+        "set_id": {
+          "name": "Sæt-ID",
+          "description": "ID'et på valgsættet"
+        }
+      }
     }
   },
   "entity": {
@@ -2156,6 +2246,8 @@
               "penalty_applied": "Straf givet",
               "surprise_bonus": "Overraskelsesbonus",
               "mandatory_missed": "Obligatorisk opgave overset",
+              "choice_set_fulfilled": "Valgsæt klaret",
+              "choice_set_missed": "Valgsæt ikke klaret",
               "team_chore_completed": "Holdopgave udført",
               "points_gifted": "Point givet væk",
               "help_requested": "Bad om hjælp",
@@ -3562,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Kunne ikke gemme lyden"
+    },
+    "choice_set_name_required": {
+      "message": "Et valgsæt skal have et navn"
+    },
+    "choice_set_needs_chore": {
+      "message": "Et valgsæt skal have mindst én pligt"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Et valgsæt kan højst have {max} pligter"
+    },
+    "choice_set_min_too_high": {
+      "message": "\"Vælg mindst\" kan højst være {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} er obligatorisk og kan derfor ikke være i et valgsæt"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} er først-til-mølle og kan derfor ikke være i et valgsæt"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} går på skift mellem børnene og kan derfor ikke være i et valgsæt"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} er allerede i valgsættet {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} er i valgsættet {set}. Fjern den fra sættet først."
+    },
+    "choice_set_not_found": {
+      "message": "Valgsæt {set_id} blev ikke fundet"
     }
   },
   "issues": {

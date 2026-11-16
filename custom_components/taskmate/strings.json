@@ -2046,6 +2046,96 @@
           "description": "The ID of the child spinning"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Add Choice Set",
+      "description": "Create a \"do at least N of these chores\" set. The child picks which; a missed day leaves one review item, never an automatic deduction.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "What the children see above the set"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "The chores in the set. Each may be in one set only; no mandatory, rotation or first-come chores."
+        },
+        "min_required": {
+          "name": "Pick at least",
+          "description": "How many different chores from the set the child must do each day. 0 makes it an optional list that is never missed."
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional note for parents"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "An mdi icon, e.g. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "Child IDs. Leave empty for every child (grown-ups are left out)."
+        },
+        "penalty_points": {
+          "name": "Penalty if missed",
+          "description": "Points a parent may take after reviewing a missed day. Never deducted automatically."
+        },
+        "active": {
+          "name": "Active",
+          "description": "An inactive set shows its chores as ordinary chores and is never missed."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Update Choice Set",
+      "description": "Change a choice set. Only the fields you pass change.",
+      "fields": {
+        "set_id": {
+          "name": "Set ID",
+          "description": "The ID of the choice set"
+        },
+        "name": {
+          "name": "Name",
+          "description": "What the children see above the set"
+        },
+        "chore_ids": {
+          "name": "Chore IDs",
+          "description": "The chores in the set. Each may be in one set only; no mandatory, rotation or first-come chores."
+        },
+        "min_required": {
+          "name": "Pick at least",
+          "description": "How many different chores from the set the child must do each day. 0 makes it an optional list that is never missed."
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional note for parents"
+        },
+        "icon": {
+          "name": "Icon",
+          "description": "An mdi icon, e.g. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Assigned to",
+          "description": "Child IDs. Leave empty for every child (grown-ups are left out)."
+        },
+        "penalty_points": {
+          "name": "Penalty if missed",
+          "description": "Points a parent may take after reviewing a missed day. Never deducted automatically."
+        },
+        "active": {
+          "name": "Active",
+          "description": "An inactive set shows its chores as ordinary chores and is never missed."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Remove Choice Set",
+      "description": "Delete a choice set. Its chores become ordinary chores again and its open review items go too.",
+      "fields": {
+        "set_id": {
+          "name": "Set ID",
+          "description": "The ID of the choice set"
+        }
+      }
     }
   },
   "entity": {
@@ -2156,6 +2246,8 @@
               "penalty_applied": "Penalty applied",
               "surprise_bonus": "Surprise bonus",
               "mandatory_missed": "Mandatory chore missed",
+              "choice_set_fulfilled": "Choice set done",
+              "choice_set_missed": "Choice set missed",
               "team_chore_completed": "Team chore completed",
               "points_gifted": "Points gifted",
               "help_requested": "Help requested",
@@ -3562,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Could not store sound"
+    },
+    "choice_set_name_required": {
+      "message": "A choice set needs a name"
+    },
+    "choice_set_needs_chore": {
+      "message": "A choice set needs at least one chore"
+    },
+    "choice_set_too_many_chores": {
+      "message": "A choice set can hold at most {max} chores"
+    },
+    "choice_set_min_too_high": {
+      "message": "\"Pick at least\" can be at most {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} is mandatory, so it can't be in a choice set"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} is first-come, so it can't be in a choice set"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} rotates between children, so it can't be in a choice set"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} is already in the choice set {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} is in the choice set {set}. Remove it from the set first."
+    },
+    "choice_set_not_found": {
+      "message": "Choice set {set_id} not found"
     }
   },
   "issues": {

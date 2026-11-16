@@ -236,6 +236,8 @@ class ReportsMixin:
         misses_by_chore: dict[str, int] = {}
         chased_by_chore: dict[str, int] = {}
         for miss in self.storage.get_mandatory_misses():
+            if getattr(miss, "set_id", ""):
+                continue  # a choice set (#1259) is no one chore's miss
             misses_by_chore[miss.chore_id] = misses_by_chore.get(miss.chore_id, 0) + 1
             if int(getattr(miss, "escalation_stage", 0) or 0) >= 2:
                 chased_by_chore[miss.chore_id] = chased_by_chore.get(miss.chore_id, 0) + 1

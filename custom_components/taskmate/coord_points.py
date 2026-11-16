@@ -1140,7 +1140,8 @@ class PointsMixin:
 
         A day with nothing due is satisfied. ``extra_done`` lets the streak path
         count an in-flight completion that hasn't been persisted yet;
-        ``approved_only`` is the perfect-week rule.
+        ``approved_only`` is the perfect-week rule. A choice set (#1259) is one
+        due item: its member chores are never due on their own.
         """
         due = self._due_chore_ids_for_child(child_id, day, include_rotation=include_rotation)
         if not due:
@@ -1148,7 +1149,8 @@ class PointsMixin:
         done = self._completed_chore_ids_for_child(child_id, day, approved_only=approved_only)
         if extra_done:
             done = done | {extra_done}
-        return due <= done
+        due, sets_met = self.choice_sets_due_items_met(child_id, day, due, done)
+        return sets_met and due <= done
 
     async def _award_points(
         self,

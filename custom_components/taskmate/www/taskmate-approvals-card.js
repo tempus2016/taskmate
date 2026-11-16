@@ -804,7 +804,7 @@ class TaskMateApprovalsCard extends LitElement {
     const filteredClaims = this._filterClaimsByChild(rewardClaims);
 
     // Missed mandatory chores awaiting parent review (#532)
-    const misses = this._filterMissesByChild(attrs.mandatory_misses || []);
+    const misses = this._filterMissesByChild(attrs.mandatory_misses || [], attrs);
     // Reward fulfilment (#1098): redeemed rewards still to hand over. Not an
     // approval, so it never counts in the header badge.
     const owed = this._owedRewards(entity, attrs);
@@ -904,7 +904,7 @@ class TaskMateApprovalsCard extends LitElement {
     const rewardClaims = tmClaimList(entity.attributes.reward_claims || attrs.pending_reward_claims);
     const filteredClaims = this._filterClaimsByChild(rewardClaims);
 
-    const misses = this._filterMissesByChild(attrs.mandatory_misses || []);
+    const misses = this._filterMissesByChild(attrs.mandatory_misses || [], attrs);
 
     const items = [];
 
@@ -1428,7 +1428,9 @@ class TaskMateApprovalsCard extends LitElement {
   }
 
   // ---- mandatory-miss review (#532) ------------------------------------
-  _filterMissesByChild(misses) {
+  _filterMissesByChild(misses, attrs = {}) {
+    // Reviewed in the admin panel only (#1259): the card leaves them out.
+    if (attrs && attrs.miss_review_location === 'panel') return [];
     if (!this.config.child_id) return misses;
     return misses.filter((m) => m.child_id === this.config.child_id);
   }
@@ -1465,6 +1467,7 @@ class TaskMateApprovalsCard extends LitElement {
               ${childName}
             </span>
           </div>
+          ${miss.set_id && miss.set_min != null ? html`<span class="penalty-note none">${this._t('approvals.choice_set_missed', { done: __tmNum(this.hass, miss.set_done || 0), min: __tmNum(this.hass, miss.set_min) })}</span>` : ''}
           ${penalty > 0
             ? html`<span class="penalty-note">${this._t('approvals.penalty_points', { points: __tmNum(this.hass, penalty), pointsName: this._pointsName() })}</span>`
             : html`<span class="penalty-note none">${this._t('approvals.no_penalty')}</span>`}

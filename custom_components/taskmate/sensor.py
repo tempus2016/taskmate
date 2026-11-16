@@ -293,6 +293,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 "quests": coordinator.quest_progress_for_child(c.id),
                 "avatar_options": coordinator.avatar_options_for_child(c),
                 "challenges": coordinator.challenge_progress_for_child(c.id),
+                # Choice sets (#1259): today's "pick at least N", only when any.
+                **({"choice_sets": sets} if (sets := coordinator.choice_set_progress_for_child(c.id)) else {}),
                 **({"weekly_chore_progress": weekly_progress} if weekly_progress else {}),
                 # Reject reasons (#976): why a chore / claim was just sent back,
                 # only while there's one to show.
@@ -2388,6 +2390,10 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             "reward_claims": reward_details,
             "mandatory_misses": mandatory_misses,
         }
+        # Missed chores and sets reviewed in the admin panel (#1259): tells the
+        # approvals card to leave them out. Absent while it is the card.
+        if (where := self.coordinator.miss_review_location()) != "card":
+            attrs["miss_review_location"] = where
         # Reward fulfilment (#1098): redeemed rewards still to hand over, only
         # while the tracker is on and something is owed.
         if owed := self.coordinator.owed_rewards():

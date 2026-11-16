@@ -608,6 +608,12 @@ class ChoresMixin:
         )
         if team_error:
             raise team_error if isinstance(team_error, Exception) else ValueError(team_error)
+        # A choice-set member must stay a plain "everyone" chore (#1259):
+        # mandatory would make one job count twice at the end of the day, and
+        # rotation / first-come would count a chore the child may not have.
+        for cs in self.storage.get_choice_sets():
+            if chore.id in cs.chore_ids and self._choice_set_member_problem(chore):
+                raise TaskMateError("choice_set_member_locked", name=chore.name, set=cs.name)
         # Set times (several times a day): checked here so every way of
         # editing a chore (panel, services, import) gets the same rules.
         stored = self.storage.get_chore(chore.id)
@@ -1327,6 +1333,9 @@ class ChoresMixin:
                 **({"backdated": True} if backdated else {}),
             },
         )
+
+        # Choice sets (#1259): say so when this chore completed a set.
+        self.fire_choice_set_fulfilled(child, chore.id, dt_util.as_local(now).date())
 
         # Update last_completed store (window starts at completion time, midnight-rounded).
         # A job logged for an earlier day must not pull the window back behind a

@@ -1185,6 +1185,61 @@ class Quest:
 
 
 @dataclass
+class ChoiceSet:
+    """ "Do at least N of these M chores" — the child picks which (#1259).
+
+    Member chores stay ordinary chores; the set is what the child owes.
+    Progress is never stored: it is counted from the day's completions.
+    ``min_required`` 0 makes the set a labelled list of optional chores that
+    can never be missed. ``penalty_points`` is only ever applied by a parent
+    from the review item an unmet set leaves at the end of the day.
+    """
+
+    name: str
+    description: str = ""
+    icon: str = "mdi:hand-heart-outline"
+    chore_ids: list[str] = field(default_factory=list)
+    min_required: int = 1
+    assigned_to: list[str] = field(default_factory=list)  # child IDs; empty = every child
+    penalty_points: int = 0
+    active: bool = True
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ChoiceSet:
+        def _int(value, default: int) -> int:
+            try:
+                return max(0, int(value))
+            except (TypeError, ValueError):
+                return default
+
+        return cls(
+            name=str(data.get("name", "") or ""),
+            description=str(data.get("description", "") or ""),
+            icon=str(data.get("icon", "") or "mdi:hand-heart-outline"),
+            chore_ids=list(dict.fromkeys(str(c) for c in (data.get("chore_ids") or []))),
+            min_required=_int(data.get("min_required", 1), 1),
+            assigned_to=[str(c) for c in (data.get("assigned_to") or [])],
+            penalty_points=_int(data.get("penalty_points", 0), 0),
+            active=bool(data.get("active", True)),
+            id=data.get("id") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "chore_ids": self.chore_ids,
+            "min_required": self.min_required,
+            "assigned_to": self.assigned_to,
+            "penalty_points": self.penalty_points,
+            "active": self.active,
+            "id": self.id,
+        }
+
+
+@dataclass
 class Challenge:
     """A time-boxed, metric-based challenge that refreshes each period.
 
@@ -1625,6 +1680,9 @@ class MandatoryMiss:
     # Set when the miss is for one of the chore's set times: there is one
     # miss per (chore, child, day, time) then, and period_id is "set_time".
     time_id: str = ""
+    # Set when the miss is for a choice set (#1259): one per (set, child,
+    # day), chore_id is empty and period_id is "anytime".
+    set_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MandatoryMiss":
@@ -1640,6 +1698,7 @@ class MandatoryMiss:
             created_at=data.get("created_at", "") or dt_util_now_iso(),
             id=data.get("id") or generate_id(),
             time_id=str(data.get("time_id", "") or ""),
+            set_id=str(data.get("set_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1657,6 +1716,8 @@ class MandatoryMiss:
         }
         if self.time_id:
             data["time_id"] = self.time_id
+        if self.set_id:
+            data["set_id"] = self.set_id
         return data
 
 
