@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Poeng og nivå",
   "kiosk.editor.show_streak": "Rekke",
   "kiosk.editor.show_reward_progress": "Fremgang mot neste belønning",
+  "kiosk.editor.show_description": "Vis oppgavebeskrivelse",
+  "kiosk.editor.show_description_helper": "Vis beskrivelsen under navnet på oppgaven når den har en",
   "kiosk.editor.show_bounties": "Dusørtavle",
   "kiosk.editor.show_bounties_helper": "La hvert barn ta og fullføre dusører her, med bilde fra nettbrettet når det trengs",
   "kiosk.editor.show_rewards": "Henting av belønninger",

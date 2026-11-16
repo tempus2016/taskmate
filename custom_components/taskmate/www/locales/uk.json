@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Бали й рівень",
   "kiosk.editor.show_streak": "Серія",
   "kiosk.editor.show_reward_progress": "Прогрес до наступної винагороди",
+  "kiosk.editor.show_description": "Показувати опис завдання",
+  "kiosk.editor.show_description_helper": "Показує опис під назвою завдання, якщо він є",
   "kiosk.editor.show_bounties": "Дошка призових завдань",
   "kiosk.editor.show_bounties_helper": "Дозволити кожній дитині брати й завершувати тут призові завдання, з фото з планшета, якщо воно потрібне",
   "kiosk.editor.show_rewards": "Отримання винагород",

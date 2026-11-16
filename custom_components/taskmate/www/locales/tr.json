@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Puan ve seviye",
   "kiosk.editor.show_streak": "Seri",
   "kiosk.editor.show_reward_progress": "Sonraki ödül ilerlemesi",
+  "kiosk.editor.show_description": "Görev açıklamasını göster",
+  "kiosk.editor.show_description_helper": "Açıklaması olan görevlerde açıklamayı adının altında göster",
   "kiosk.editor.show_bounties": "Ödül Avı Panosu",
   "kiosk.editor.show_bounties_helper": "Her çocuğun ödül avlarını burada üstlenip bitirmesine izin ver, istendiğinde tabletten fotoğrafla",
   "kiosk.editor.show_rewards": "Ödül alma",

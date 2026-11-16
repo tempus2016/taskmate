@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Punti e livello",
   "kiosk.editor.show_streak": "Serie",
   "kiosk.editor.show_reward_progress": "Progressi verso il prossimo premio",
+  "kiosk.editor.show_description": "Mostra la descrizione della faccenda",
+  "kiosk.editor.show_description_helper": "Mostra la descrizione sotto il nome della faccenda, quando ne ha una",
   "kiosk.editor.show_bounties": "Bacheca delle taglie",
   "kiosk.editor.show_bounties_helper": "Permetti a ogni bambino di prendere e finire le taglie qui, con una foto dal tablet quando richiesta",
   "kiosk.editor.show_rewards": "Richiesta di premi",
