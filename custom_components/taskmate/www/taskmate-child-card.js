@@ -114,6 +114,16 @@ if (!LitElement) throw new Error("TaskMate Child Card: Home Assistant's Lit base
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+// Per-child stage (#1262): what the card does by default at each stage. Only
+// used for options the card's own YAML leaves unset, so explicit YAML always
+// wins. Mirrors STAGE_CARD_ITEMS in coord_stages.py.
+const STAGE_CARD_DEFAULTS = {
+  "3_5": { pre_reader: true },
+  "6_8": { pre_reader: false, show_description: true },
+  "9_12": { pre_reader: false },
+  "13_plus": { pre_reader: false, show_roulette: false, show_confetti: false },
+};
+
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 // Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
 // identity until the design layer has loaded (it is also what stamps dir).
@@ -719,6 +729,15 @@ class TaskMateChildCard extends LitElement {
       .section-title ha-icon { --mdc-icon-size: 28px; }
 
       .section-title-text { flex: 1; }
+
+      /* Practising chores (#1262): their own section first. */
+      .tm-practising-head { color: var(--tmd-c3, #1abc9c); }
+      .tm-practising-tag {
+        font-size: 11px; font-weight: 700; line-height: 1.3; padding: 2px 8px; border-radius: 999px;
+        background: color-mix(in srgb, currentColor 14%, transparent);
+        color: color-mix(in srgb, currentColor 70%, var(--primary-text-color, #212121));
+        font-family: inherit;
+      }
 
       /* Individual chore card - optimized for tablet touch, ENTIRE ROW IS CLICKABLE */
       .chore-card {
@@ -3212,7 +3231,11 @@ class TaskMateChildCard extends LitElement {
     // An explicit header_color beats the child's own colour; the default
     // merged in below must not count as one.
     this._explicitHeader = typeof config.header_color === "string" && config.header_color !== "";
-    this.config = {
+    // The YAML as written, so the child's stage (#1262) can fill only the
+    // options it leaves unset.
+    this._userConfig = config;
+    this._stageApplied = null;
+    this._configDefaults = {
       time_category: "anytime",
       include_anytime_chores: true,  // false hides the Anytime bucket from every filter
       debug: false,
@@ -3227,8 +3250,32 @@ class TaskMateChildCard extends LitElement {
       show_next_badge: true,         // Show progress toward the closest unearned badge
       show_badge_nudge: true,        // Encouraging line when one away from that badge
             header_color: '#9b59b6',
-    ...config,
     };
+    this.config = { ...this._configDefaults, ...config };
+  }
+
+  /** The card config with the child's stage defaults (#1262) under the YAML. */
+  static stageConfig(defaults, userConfig, stage) {
+    return { ...defaults, ...(STAGE_CARD_DEFAULTS[stage] || {}), ...userConfig };
+  }
+
+  // Runs before every render, so both render paths see it: re-merge the
+  // config when the child's stage changes.
+  willUpdate(changed) {
+    if (super.willUpdate) super.willUpdate(changed);
+    this._syncStageConfig();
+  }
+
+  _syncStageConfig() {
+    if (!this.hass || !this._userConfig) return;
+    const entity = this._userConfig.entity;
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, entity))
+      || this.hass.states?.[entity]?.attributes || {};
+    const child = (attrs.children || []).find(c => c.id === this._userConfig.child_id);
+    const stage = (child && child.age_group) || "";
+    if (stage === this._stageApplied) return;
+    this._stageApplied = stage;
+    this.config = TaskMateChildCard.stageConfig(this._configDefaults, this._userConfig, stage);
   }
 
   getCardSize() {
@@ -3256,6 +3303,7 @@ class TaskMateChildCard extends LitElement {
     if (!this.hass || !this.config) {
       return html``;
     }
+    this._syncStageConfig();
 
     const design = window.__taskmate_design
       ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
@@ -3341,6 +3389,15 @@ class TaskMateChildCard extends LitElement {
     const look = this._look(child, attrs, "classic", "#9b59b6");
     this._headerInk(look, "classic");
     const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
+    const [classicPrac, classicRest] = this._splitPractising(allDone.list, child);
+    const classicRow = (chore, index) => html`
+                  ${chore.task_type === 'timed'
+                    ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
+                    : html`
+                      ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
+                      ${chore._setTime ? '' : this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
+                    `}
+                `;
 
     return html`
       <ha-card class="${this._compact() ? "compact" : ""}" style="${look.tint ? `--tm-child:${look.tint}` : ""}">
@@ -3464,6 +3521,7 @@ class TaskMateChildCard extends LitElement {
             ? this._renderEmptyState(this._emptyIsAllDone(child, todaysCompletions))
             : html`
                 ${allDone.banner ? this._renderAllDone(child, childChores, todaysCompletions, "classic") : ""}
+                ${classicPrac.length ? html`${this._renderPractisingHead("classic")}${classicPrac.map((chore, i) => classicRow(chore, i))}` : ""}
                 ${allDone.collapsed ? "" : html`<div class="section-title ${this.config.pre_reader === true && this._getTimeCategoryIcon(this._effectiveTimeCategory()) === 'mdi:clock-outline' ? 'pre-hidden' : ''}">
                   <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
                   ${this.config.pre_reader === true ? '' : html`
@@ -3485,14 +3543,7 @@ class TaskMateChildCard extends LitElement {
                     ${childChores.map((chore) =>
                       this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
-                ` : allDone.list.map((chore, index) => html`
-                  ${chore.task_type === 'timed'
-                    ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
-                    : html`
-                      ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
-                      ${chore._setTime ? '' : this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
-                    `}
-                `)}
+                ` : classicRest.map((chore, i) => classicRow(chore, i + classicPrac.length))}
               `}
         </div>
 
@@ -4013,6 +4064,7 @@ class TaskMateChildCard extends LitElement {
     // silently ignored under every designed style — including accessible,
     // which is the one a child who needs picture tiles is most likely on.
     // The tiles keep the designed shell (header, tokens) around them.
+    const [pracRows, restRows] = this._splitPractising(listRows, child, r => r.chore);
     const renderList = (list) =>
       design === "playroom" ? this._designPlayroom(child, list, remaining, tone) :
       design === "console"  ? this._designConsole(child, list, remaining, tone) :
@@ -4026,7 +4078,7 @@ class TaskMateChildCard extends LitElement {
             this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
         </div>`
       : allDone.collapsed && listRows.length === 0 ? ""
-      : html`${renderList(listRows)}${foldFinished ? html`
+      : html`${pracRows.length ? html`${this._renderPractisingHead("tmd")}${renderList(pracRows)}` : ""}${restRows.length || !pracRows.length ? renderList(restRows) : ""}${foldFinished ? html`
         <button type="button" class="tmd-finished-toggle" aria-expanded="${this._showFinished ? "true" : "false"}"
           @click=${() => { this._showFinished = !this._showFinished; }}>
           <ha-icon icon="${this._showFinished ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>
@@ -4464,12 +4516,46 @@ class TaskMateChildCard extends LitElement {
   }
 
   _filterAndSortChores(chores, child) {
-    const base = this._filterAndSortChoresBase(chores, child);
+    // "Later" chores (#1262) are kept off this child's card altogether.
+    const marks = (child && child.chore_stage) || {};
+    const base = this._filterAndSortChoresBase(chores, child).filter(c => marks[c.id] !== "later");
     // Kept so a pill can rebuild the row for any of the chore's times.
     this._setTimeBase = {};
     for (const c of base) if (Array.isArray(c.times) && c.times.length) this._setTimeBase[c.id] = c;
     const expanded = this._expandSetTimeChores(base, child);
-    return this.config.sort_available_first === false ? expanded : this._availableFirst(expanded, child);
+    const sorted = this.config.sort_available_first === false ? expanded : this._availableFirst(expanded, child);
+    return this._practisingFirst(sorted, child);
+  }
+
+  // ── Practising chores (#1262) ───────────────────────────────────────────
+  // A chore the child is still practising goes first, in its own section, in
+  // every design (both render paths read _splitPractising). Pre-reader mode
+  // keeps the order and drops the words.
+  _isPractising(chore, child) {
+    const marks = (child && child.chore_stage) || {};
+    return marks[chore._baseId || chore.id] === "practising";
+  }
+
+  _practisingFirst(chores, child) {
+    if (!child || !child.chore_stage) return chores;
+    const first = chores.filter(c => this._isPractising(c, child));
+    if (!first.length) return chores;
+    return [...first, ...chores.filter(c => !this._isPractising(c, child))];
+  }
+
+  /** [practising, the rest] — the practising half is empty in pre-reader mode. */
+  _splitPractising(list, child, chorOf = (x) => x) {
+    if (this.config.pre_reader === true) return [[], list];
+    const prac = list.filter(x => this._isPractising(chorOf(x), child));
+    return prac.length ? [prac, list.filter(x => !prac.includes(x))] : [[], list];
+  }
+
+  _renderPractisingHead(kind) {
+    return html`<div class="${kind === "tmd" ? "tmd-section" : "section-title"} tm-practising-head">
+      <ha-icon icon="mdi:sprout"></ha-icon>
+      <span class="${kind === "tmd" ? "" : "section-title-text"}">${this._t("child.practising_title")}</span>
+      <span class="tm-practising-tag">${this._t("child.practising_tag")}</span>
+    </div>`;
   }
 
   // ── Available first (#1231) ─────────────────────────────────────────────
@@ -8365,6 +8451,9 @@ class TaskMateChildCard extends LitElement {
   /* `style` is the child's own tick-off animation (celebration_style); every
      other celebration passes none and gets the season's effect or confetti. */
   _spawnConfetti(style) {
+    // show_confetti: false (or the "Taking ownership" stage, #1262) keeps
+    // tick-offs calm: no burst at all.
+    if (this.config && this.config.show_confetti === false) return;
     const fx = window.__taskmate_fx;
     const attrs = this._attrsNow ? this._attrsNow() : {};
     const child = (attrs.children || []).find(c => c.id === this.config?.child_id);

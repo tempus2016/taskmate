@@ -9,7 +9,15 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any
 
-from .const import AGE_GROUPS, AUCTION_STATUSES, BOUNTY_STATUSES, CELEBRATION_STYLES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .const import (
+    AGE_GROUPS,
+    AUCTION_STATUSES,
+    BOUNTY_STATUSES,
+    CELEBRATION_STYLES,
+    CHORE_STAGES,
+    MAX_CHORE_TAGS,
+    TAG_ID_MAX_LENGTH,
+)
 from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
@@ -367,6 +375,16 @@ def normalize_age_group(value: Any) -> str:
     return value if isinstance(value, str) and value in AGE_GROUPS else ""
 
 
+def normalize_chore_stage(value: Any) -> dict[str, str]:
+    """A stored chore-stage map (#1262): {chore_id: "practising" | "later"}.
+
+    "can" is the default and is never stored; anything else is dropped.
+    """
+    if not isinstance(value, dict):
+        return {}
+    return {k: v for k, v in value.items() if isinstance(k, str) and k and v in CHORE_STAGES}
+
+
 def normalize_celebration_style(value: Any) -> str:
     """A stored celebration style: one of CELEBRATION_STYLES, else confetti."""
     return value if isinstance(value, str) and value in CELEBRATION_STYLES else "confetti"
@@ -432,6 +450,9 @@ class Child:
     color: str = ""
     # What the child card plays on a tick-off: one of CELEBRATION_STYLES.
     celebration_style: str = "confetti"
+    # Where the child is with each chore (#1262): {chore_id: "practising" |
+    # "later"}. Chores not listed are "can do"; only those are stored.
+    chore_stage: dict[str, str] = field(default_factory=dict)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -461,6 +482,7 @@ class Child:
             is_adult=bool(data.get("is_adult", False)),
             color=str(data.get("color", "") or ""),
             celebration_style=normalize_celebration_style(data.get("celebration_style")),
+            chore_stage=normalize_chore_stage(data.get("chore_stage")),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -503,6 +525,7 @@ class Child:
             "is_adult": self.is_adult,
             "color": self.color,
             "celebration_style": self.celebration_style,
+            "chore_stage": dict(self.chore_stage),
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,

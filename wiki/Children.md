@@ -165,6 +165,7 @@ Pending reward claims reserve points but do not deduct them until the parent app
 - [Birthday Mode](Birthday-Mode.md) — bonus points, a badge and an optional day off on a child's birthday
 - [Guest Child Profiles](Guest-Child-Profiles.md) — temporary profiles for visitors that expire on their own
 - [Adult Profiles](Adult-Profiles.md) — profiles for parents who log their own chores
+- [Child Stages](Child-Stages.md) — a child's stage, and Can do / Practising / Later per chore
 - [Logging Past Jobs](Logging-Past-Jobs.md) — record a job done on an earlier day that nobody ticked
 - [Kiosk Mode](Kiosk-Mode.md) — a shared wall tablet, with an optional PIN per child
 - [Settings](Settings.md) — XP-per-level and other per-family settings

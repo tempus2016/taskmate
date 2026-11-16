@@ -248,6 +248,14 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                     if (style := getattr(c, "celebration_style", "confetti")) != "confetti"
                     else {}
                 ),
+                # Per-child stage (#1262): the card's defaults follow it when its
+                # YAML is unset; the chore marks only when any are set.
+                **({"age_group": stage} if isinstance(stage := getattr(c, "age_group", ""), str) and stage else {}),
+                **(
+                    {"chore_stage": dict(marks)}
+                    if isinstance(marks := getattr(c, "chore_stage", None), dict) and marks
+                    else {}
+                ),
                 # Chore roulette (#677): today's pick + spins left, so the card can
                 # show the result and disable the button once the allowance is used.
                 **(

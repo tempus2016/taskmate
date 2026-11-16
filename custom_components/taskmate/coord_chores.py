@@ -742,6 +742,8 @@ class ChoresMixin:
             if chore_id in child.chore_order:
                 child.chore_order.remove(chore_id)
                 self.storage.update_child(child)
+        # Its Can do / Practising / Later marks (#1262) go with it.
+        self.chore_stage_cleanup(chore_id)
         await self.storage.async_save()
         if refresh:
             await self.async_refresh()
