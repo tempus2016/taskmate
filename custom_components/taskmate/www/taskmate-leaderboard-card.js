@@ -433,7 +433,17 @@ class TaskMateLeaderboardCard extends LitElement {
         <div class="tmd-bd"><div class="tmd-empty">${note}</div></div>
       </ha-card>`;
     }
-    return html`<ha-card class="lb-off"><div class="empty-state"><ha-icon icon="mdi:handshake-outline"></ha-icon>${note}</div></ha-card>`;
+    return html`
+      <ha-card class="lb-off">
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#b7950b')}; }</style>
+        <div class="card-header">
+          <div class="header-content">
+            <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>
+            <span class="header-title">${this.config.title || this._t('leaderboard.default_title')}</span>
+          </div>
+        </div>
+        <div class="empty-state"><ha-icon icon="mdi:handshake-outline"></ha-icon>${note}</div>
+      </ha-card>`;
   }
 
   // "Ranked by …" is a whole sentence per sort, so no language has its label
