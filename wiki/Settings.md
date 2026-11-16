@@ -4,6 +4,8 @@ All TaskMate settings are configured via the **TaskMate** panel → **Settings**
 
 ![The Settings tab](images/panel-settings.png)
 
+The first section, **Family style**, switches several options in one go: Game (the default), Team (shared goals, no ranking, no automatic deductions) or Custom. See [Cooperative Setup](Cooperative-Setup.md).
+
 ---
 
 ## Settings Reference

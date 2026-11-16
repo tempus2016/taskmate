@@ -791,6 +791,9 @@ export function createIncentiveCard(P) {
       const design = window.__taskmate_design
         ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity || "sensor.taskmate_overview", P.designHd)
         : "classic";
+      // Family style (#1260): a feature the family switched off (penalties)
+      // shows a short note instead of its list. The services still work.
+      if (P.feature && !this._featureOn()) return this._renderTurnedOff(design);
       if (design !== "classic") return this._renderDesigned(design);
 
       const bonuses = this._getBonuses();
@@ -852,6 +855,38 @@ export function createIncentiveCard(P) {
 
         ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
       `;
+    }
+
+    _featureOn() {
+      return window.__taskmate_feature_on ? window.__taskmate_feature_on(this.hass, P.feature) : true;
+    }
+
+    _renderTurnedOff(design) {
+      const admin = !!(this.hass.user && this.hass.user.is_admin);
+      const title = this.config.title || this._tp('default_title');
+      const note = html`
+        <div class="empty-title">${this._t(`common.feature_off_${P.feature}`)}</div>
+        <div class="empty-sub">${this._t("common.feature_off_sub")}</div>
+        ${admin ? html`<div class="empty-sub">${this._t("common.feature_off_admin")}</div>` : ""}`;
+      if (design !== "classic") {
+        const hd = _safeColor(this.config.header_color, P.designHd);
+        const icon = P.designIcons[design] || P.designIcons.playroom;
+        return html`<ha-card class="tmd inc-off" style="--hd:${hd}">
+          <div class="tmd-hd"><span class="ic">${icon}</span><span class="tt">${title}</span></div>
+          <div class="tmd-bd"><div class="tmd-empty empty-state">${note}</div></div>
+        </ha-card>`;
+      }
+      return html`
+        <ha-card class="inc-off">
+          <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, P.accent)}; }</style>
+          <div class="card-header">
+            <div class="header-left">
+              <ha-icon class="header-icon" icon="${P.headerIcon}"></ha-icon>
+              <span class="header-title">${title}</span>
+            </div>
+          </div>
+          <div class="card-content"><div class="empty-state"><ha-icon icon="mdi:handshake-outline"></ha-icon>${note}</div></div>
+        </ha-card>`;
     }
 
     /* ══════════════════════════════════════════════════════════════════════

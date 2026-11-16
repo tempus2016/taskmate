@@ -240,36 +240,36 @@ test("a birthday in the future is refused", async () => {
 
 test("the chores step needs a child first, and a typed name is added on Next", async () => {
   const p = await opened({});
-  p._wizardGo(2);
-  assert.equal(p._wz.step, 1);
-  p._wz.form.name = "Isla";
-  p._wizardGo(2);
+  p._wizardGo(3);
   assert.equal(p._wz.step, 2);
+  p._wz.form.name = "Isla";
+  p._wizardGo(3);
+  assert.equal(p._wz.step, 3);
   deq(p._wz.kids.map(k => k.name), ["Isla"]);
 });
 
 test("the draft is kept in this browser and picked up again", async () => {
   const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
-  p._wizardGo(2);
+  p._wizardGo(3);
   const saved = JSON.parse(localStorage.getItem("taskmate-setup-draft"));
-  assert.equal(saved.step, 2);
+  assert.equal(saved.step, 3);
   assert.equal(saved.busy, undefined);
   const q = panel();
   localStorage.setItem("taskmate-setup-draft", JSON.stringify(saved));
   await q._wizardOpen();
-  assert.equal(q._wz.step, 2);
+  assert.equal(q._wz.step, 3);
   deq(q._wz.kids.map(k => k.name), ["Isla"]);
 });
 
 test("every step renders, and the last one has no footer", async () => {
   const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
-  for (let step = 0; step <= 5; step++) {
+  for (let step = 0; step <= 6; step++) {
     p._wz.step = step;
     const html = p._wizardBody();
     assert.match(html, /tm-wz-foot/);
     assert.match(html, new RegExp(`wizard\\.step_of\\|n=${step + 1}`));
   }
-  p._wz.step = 6;
+  p._wz.step = 7;
   p._wz.result = { children_added: 1, chores_added: 5, rewards_added: 1, dashboards: [
     { url_path: "taskmate-kids", title: "Kids", status: "created" },
     { url_path: "taskmate-wall", title: "Wall", status: "exists" },
@@ -287,7 +287,7 @@ test("every step renders, and the last one has no footer", async () => {
 
 test("user text is escaped", async () => {
   const p = await opened({}, [{ name: "<img src=x onerror=alert(1)>", mode: "age", age: 4 }]);
-  for (const step of [1, 2, 4, 5]) {
+  for (const step of [2, 3, 5, 6]) {
     p._wz.step = step;
     assert.doesNotMatch(p._wizardBody(), /<img src=x/);
   }
@@ -340,7 +340,7 @@ test("an old draft's Family chores switch becomes the Kids dashboard, and Review
   const p = panel();
   localStorage.setItem("taskmate-setup-draft", JSON.stringify({ ...p._wizardFresh(), dash: true, dashOpts: undefined, step: 4, kids: [] }));
   await p._wizardOpen();
-  assert.equal(p._wz.step, 5);
+  assert.equal(p._wz.step, 6);
   deq(p._wz.dash, { kids: true, parents: false, wall: false });
   assert.equal(p._wz.dashOpts.layout, "tabs");
 
@@ -353,7 +353,7 @@ test("an old draft's Family chores switch becomes the Kids dashboard, and Review
 
 test("the Dashboards step toggles presets and their options", async () => {
   const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
-  p._wz.step = 4;
+  p._wz.step = 5;
   let html = p._wizardBody();
   assert.match(html, /data-act="wz-dash" data-v="kids" aria-pressed="true"/);
   assert.match(html, /data-act="wz-dash" data-v="wall" aria-pressed="false"/);
@@ -380,7 +380,7 @@ test("create sends one apply call, then only changes what the parent changed", a
   await p._wizardCreate();
   deq(sent.map(m => m.type), ["taskmate/setup_wizard/apply", "taskmate/notifications/set_master_enabled"]);
   assert.equal(sent[1].type_id, "pending_reward_claim");
-  assert.equal(p._wz.step, 6);
+  assert.equal(p._wz.step, 7);
   assert.equal(localStorage.getItem("taskmate-setup-draft"), null);
 
   sent.length = 0;
@@ -396,10 +396,10 @@ test("create sends one apply call, then only changes what the parent changed", a
 
 test("a failed create keeps the wizard on Review with the draft", async () => {
   const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
-  p._wizardGo(5);
+  p._wizardGo(6);
   p._callWS = async () => ({ ok: false, err: "boom" });
   await p._wizardCreate();
-  assert.equal(p._wz.step, 5);
+  assert.equal(p._wz.step, 6);
   assert.equal(p._wz.busy, false);
   assert.ok(localStorage.getItem("taskmate-setup-draft"));
   assert.equal(p._toasts.at(-1)[0], "err");
@@ -459,7 +459,7 @@ async function nothingNew() {
 
 test("with nothing new to add, Review says so and the create button is disabled", async () => {
   const p = await nothingNew();
-  p._wz.step = 5;
+  p._wz.step = 6;
   const html = p._wizardBody();
   assert.match(html, /wizard\.review_nothing/);
   assert.doesNotMatch(html, /wizard\.review_existing/);
@@ -468,13 +468,13 @@ test("with nothing new to add, Review says so and the create button is disabled"
   p._callWS = async (msg) => { sent.push(msg); return { ok: true, res: {} }; };
   await p._wizardCreate();
   deq(sent, []);
-  assert.equal(p._wz.step, 5);
+  assert.equal(p._wz.step, 6);
 });
 
 test("dashboards alone are something to add, without a backend apply", async () => {
   const p = await nothingNew();
   p._wz.dash.wall = true;
-  p._wz.step = 5;
+  p._wz.step = 6;
   const html = p._wizardBody();
   assert.match(html, /wizard\.review_dashboards_only/);
   assert.doesNotMatch(html, /data-act="wz-create" disabled/);
@@ -484,20 +484,20 @@ test("dashboards alone are something to add, without a backend apply", async () 
   p._callWS = async (msg) => { sent.push(msg); return { ok: true, res: msg.type === "lovelace/dashboards/list" ? [] : {} }; };
   await p._wizardCreate();
   deq(sent.map(m => m.type), ["lovelace/dashboards/list", "lovelace/dashboards/create", "lovelace/config/save"]);
-  assert.equal(p._wz.step, 6);
+  assert.equal(p._wz.step, 7);
   deq(p._wz.result.dashboards.map(d => [d.url_path, d.status]), [["taskmate-wall", "created"]]);
   assert.match(p._wizardBody(), /wizard\.done_copy_dashboards/);
 });
 
 test("the create button stays live when there is something to add", async () => {
   const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
-  p._wz.step = 5;
+  p._wz.step = 6;
   assert.doesNotMatch(p._wizardBody(), /data-act="wz-create" disabled/);
 });
 
 test("a finish that added nothing doesn't claim new chores or show 0/0/0", async () => {
   const p = await opened({ children: [{ id: "k1", name: "Vaiha", birthday: age(6) }] });
-  p._wz.step = 6;
+  p._wz.step = 7;
   p._wz.result = { children_added: 0, chores_added: 0, rewards_added: 0, dashboards: [] };
   const done = p._wizardBody();
   assert.match(done, /wizard\.done_copy_nothing/);
@@ -526,10 +526,60 @@ test("a birthday that isn't a real date is refused with its own message", async 
 test("the server's birthday error codes show translated messages, not Python's", async () => {
   for (const [code, key] of [["invalid_birthday", "wizard.toast_invalid_birthday"], ["future_birthday", "wizard.toast_bad_birthday"]]) {
     const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
-    p._wizardGo(5);
+    p._wizardGo(6);
     p._callWS = async () => ({ ok: false, code, err: "month must be in 1..12" });
     await p._wizardCreate();
-    assert.equal(p._wz.step, 5);
+    assert.equal(p._wz.step, 6);
     deq(p._toasts.at(-1), ["err", key]);
   }
+});
+
+// Family style (#1260): the optional Style page after Welcome.
+
+test("the Style page offers Game and Team, preselects the current style, and applies only a change", async () => {
+  const p = await opened({ settings: {} }, [{ name: "Isla", mode: "age", age: 4 }]);
+  p._wz.step = 1;
+  let html = p._wizardBody();
+  assert.match(html, /wizard\.style_question/);
+  assert.match(html, /wizard\.style_hint/);
+  assert.match(html, /data-act="wz-style" data-v="game" aria-pressed="true"/);
+  assert.match(html, /data-act="wz-style" data-v="team" aria-pressed="false"/);
+  assert.doesNotMatch(html, /data-v="custom"/);
+  assert.match(html, /wizard\.next_style/);
+  // Game is already the family's style: nothing to send.
+  assert.equal(p._wizardPlan().family_style, undefined);
+  p._wizardAct({ dataset: { act: "wz-style", v: "team" } }, {});
+  assert.equal(p._wz.style, "team");
+  assert.match(p._wizardBody(), /data-act="wz-style" data-v="team" aria-pressed="true"/);
+  assert.equal(p._wizardPlan().family_style, "team");
+  p._wizardAct({ dataset: { act: "wz-style", v: "nope" } }, {});
+  assert.equal(p._wz.style, "");
+});
+
+test("create sends the picked style with the apply call", async () => {
+  const sent = [];
+  const p = await opened({}, [{ name: "Isla", mode: "age", age: 4 }]);
+  p._fetchState = async () => {};
+  p._wz.dash = { kids: false, parents: false, wall: false }; p._wz.notify = false;
+  p._wizardAct({ dataset: { act: "wz-style", v: "team" } }, {});
+  p._callWS = async (msg) => { sent.push(msg); return { ok: true, res: { children: { new1: "id1" } } }; };
+  await p._wizardCreate();
+  assert.equal(sent[0].type, "taskmate/setup_wizard/apply");
+  assert.equal(sent[0].family_style, "team");
+});
+
+test("a draft saved before the Style page keeps its place", async () => {
+  const p = panel();
+  const { style: _style, ...old } = p._wizardFresh();
+  localStorage.setItem("taskmate-setup-draft", JSON.stringify({ ...old, step: 3, kids: [] }));
+  await p._wizardOpen();
+  assert.equal(p._wz.step, 4);
+  assert.equal(p._wz.style, "");
+
+  // A draft from before #1053 and the Style page: its Review (4) is Review now.
+  const q = panel();
+  const { style: _s, ...older } = q._wizardFresh();
+  localStorage.setItem("taskmate-setup-draft", JSON.stringify({ ...older, dash: true, dashOpts: undefined, step: 4, kids: [] }));
+  await q._wizardOpen();
+  assert.equal(q._wz.step, 6);
 });

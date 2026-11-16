@@ -243,9 +243,16 @@ const TASK_GROUP_POLICIES = [
 // Setup wizard (#980). Age groups mirror AGE_GROUP_INFO in setup_catalogue.py
 // (youngest age, oldest age) — tests/test_setup_wizard.py keeps them in step.
 const WZ_AGE_GROUPS = [["3_5", 3, 5], ["6_8", 6, 8], ["9_12", 9, 12], ["13_plus", 13, 999]];
-const WZ_STEPS = ["welcome", "children", "chores", "rewards", "dashboards", "review", "done"];
+const WZ_STEPS = ["welcome", "style", "children", "chores", "rewards", "dashboards", "review", "done"];
+const WZ_CHILDREN = WZ_STEPS.indexOf("children");
 const WZ_REVIEW = WZ_STEPS.indexOf("review");
 const WZ_DONE = WZ_STEPS.indexOf("done");
+// Family style (#1260): the three presets, their icons, and the switches a
+// style covers (the order the confirm dialog lists them in).
+const FAMILY_STYLES = ["game", "team", "custom"];
+const FAMILY_STYLE_ICONS = { game: "mdi:trophy-outline", team: "mdi:account-group-outline", custom: "mdi:tune-variant" };
+const FAMILY_STYLE_SWITCHES = ["leaderboard_enabled", "penalties_enabled", "points_decay_enabled", "raffles_enabled",
+  "roulette_enabled", "inspections_enabled", "family_goal_enabled"];
 const WZ_KID_ICONS = ["mdi:star", "mdi:heart", "mdi:paw", "mdi:white-balance-sunny", "mdi:weather-night", "mdi:trophy",
   "mdi:leaf", "mdi:creation", "mdi:fire", "mdi:medal", "mdi:book-open-variant", "mdi:car-sports"];
 // Settings → Seasons & events: the rows in order, and the look of each
@@ -1023,6 +1030,9 @@ class TaskMatePanel extends HTMLElement {
     if (act === "view-as-child") { this._setViewAs("child_id", t.dataset.id); return; }
     if (act === "settings-jump") { this._settingsJump(t.dataset.sec); return; }
     if (act === "settings-discard") { this._discardSettings(); return; }
+    if (act === "style-pick") { this._stylePick(t.dataset.v); return; }
+    if (act === "style-apply") { this._styleApply(); return; }
+    if (act === "style-hide") { this._styleHideSet(t.dataset.v); return; }
     if (act === "leave-settings-stay") { this._closeDialog(true); return; }
     if (act === "leave-settings-go") { this._leaveSettings(); return; }
     if (act === "trash-restore") { this._restoreDeleted(t.dataset.kind, t.dataset.id); return; }
@@ -4678,6 +4688,8 @@ class TaskMatePanel extends HTMLElement {
       auctions:  (this._state.auctions || []).filter(a => a.status === "open").length,
       raffles:   (this._state.raffles || []).filter(r => r.status === "open").length,
     } : {};
+    // Family style (#1260): tabs of switched-off features, when hidden.
+    const hidden = this._styleHiddenTabs();
     // Each group is a section of the nav rail; its items are the tabs along
     // the top of that section. Group keys use `key`, not `id`: only nav items
     // carry an id.
@@ -4726,7 +4738,7 @@ class TaskMatePanel extends HTMLElement {
       ]},
     ].map(g => ({
       ...g,
-      items: g.items.map(it => ({ ...it, count: counts[it.id] }))
+      items: g.items.filter(it => !hidden.has(it.id)).map(it => ({ ...it, count: counts[it.id] }))
     }));
   }
 
@@ -6073,7 +6085,7 @@ class TaskMatePanel extends HTMLElement {
               <button type="button" class="tm-btn" data-act="add-bounty"><ha-icon icon="mdi:flag-outline"></ha-icon>${this._t("panel.new_bounty")}</button>
               <button type="button" class="tm-btn tm-boost-btn" data-act="boost-open"><span aria-hidden="true">⚡</span>${this._t("panel.boost_start")}</button>
               <button type="button" class="tm-btn" data-act="tab" data-tab="bonuses"><ha-icon icon="mdi:flash-outline"></ha-icon>${this._t("panel.today_quick_bonus")}</button>
-              <button type="button" class="tm-btn" data-act="tab" data-tab="penalties"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("panel.today_quick_penalty")}</button>
+              ${this._styleHiddenTabs().has("penalties") ? "" : `<button type="button" class="tm-btn" data-act="tab" data-tab="penalties"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("panel.today_quick_penalty")}</button>`}
             </div>
           </div>
 
@@ -7384,12 +7396,19 @@ class TaskMatePanel extends HTMLElement {
       // Library picks (📚) arrived after the first drafts.
       if (!d.lib || typeof d.lib !== "object") d.lib = {};
       if (!d.libRewards || typeof d.libRewards !== "object") d.libRewards = {};
+      // Drafts from before the Style page (#1260) count their steps from
+      // Children at 1; every page after Welcome moved up by one.
+      const noStyle = !("style" in d);
       // Drafts from before #1053 had a single "Family chores" switch and
       // Review as step 4; Review is now after the Dashboards step.
       if (!d.dashOpts) {
         d.dash = { kids: d.dash !== false, parents: false, wall: false };
         d.dashOpts = this._wizardDashOpts();
-        if (Number(d.step) === 4) d.step = WZ_REVIEW;
+        if (Number(d.step) === 4) d.step = noStyle ? WZ_REVIEW - 1 : WZ_REVIEW;
+      }
+      if (noStyle) {
+        if (Number(d.step) >= 1) d.step = Number(d.step) + 1;
+        d.style = "";
       }
       d.step = Math.min(Math.max(0, Number(d.step) || 0), WZ_REVIEW);
       return d;
@@ -7412,7 +7431,7 @@ class TaskMatePanel extends HTMLElement {
     const pname = settings.points_name || this._t("wizard.pname_stars");
     const picon = settings.points_icon || "mdi:star";
     const wz = {
-      v: 1, step: 0, seq: 1,
+      v: 1, step: 0, seq: 1, style: "",
       pname, picon, pnameOrig: pname, piconOrig: picon, pnameCustom: false,
       kids: [], form: null,
       chores: {}, packs: [], rewards: {}, custom: [], rwName: "", rwCost: 20, lib: {}, libRewards: {},
@@ -7647,7 +7666,9 @@ class TaskMatePanel extends HTMLElement {
       if (item && !this._libHave("rewards", item)) rewards.push(this._libRewardDef(id, o));
     }
     for (const r of wz.custom) if (r.on) rewards.push({ name: r.name, cost: r.cost, icon: "mdi:gift-outline" });
-    return { children, child_updates, chores, rewards };
+    // Family style (#1260): sent only when the Style page picked a different one.
+    const style = wz.style && wz.style !== this._familyStyle() ? wz.style : "";
+    return { children, child_updates, chores, rewards, ...(style ? { family_style: style } : {}) };
   }
 
   // "YYYY-MM-DD" naming a day that exists (no 13th month, no 30 February).
@@ -7660,7 +7681,7 @@ class TaskMatePanel extends HTMLElement {
 
   // True when the plan would add or fill in anything at all.
   _wizardPlanHasWork(plan) {
-    return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length);
+    return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length || plan.family_style);
   }
 
   // Dashboards on their own are worth a run of the wizard too (#1053).
@@ -7697,8 +7718,8 @@ class TaskMatePanel extends HTMLElement {
     const wz = this._wz;
     if (wz.busy || step === WZ_DONE) return;
     // Leaving Children with a name typed adds that child, as the footer says.
-    if (wz.step === 1 && step > 1 && (wz.form.name || "").trim() && !this._wizardAddKid()) return;
-    if (step >= 2 && !wz.kids.length) { this._showToast("err", this._t("wizard.toast_need_child")); wz.step = 1; this._render(); return; }
+    if (wz.step === WZ_CHILDREN && step > WZ_CHILDREN && (wz.form.name || "").trim() && !this._wizardAddKid()) return;
+    if (step > WZ_CHILDREN && !wz.kids.length) { this._showToast("err", this._t("wizard.toast_need_child")); wz.step = WZ_CHILDREN; this._render(); return; }
     wz.step = Math.max(0, Math.min(WZ_REVIEW, step));
     this._wizardSaveDraft();
     this._render();
@@ -7724,6 +7745,8 @@ class TaskMatePanel extends HTMLElement {
       case "wz-dashboard": this._dashOpen(v); return;
       case "wz-go": this._wizardGo(Number(v)); return;
       case "wz-next": this._wizardGo(wz.step + 1); return;
+      // Style page (#1260): the preset the run will apply.
+      case "wz-style": wz.style = FAMILY_STYLES.includes(v) ? v : ""; break;
       case "wz-back": this._wizardGo(wz.step - 1); return;
       case "wz-create": this._wizardCreate(); return;
       case "wz-pname":
@@ -8000,13 +8023,18 @@ class TaskMatePanel extends HTMLElement {
       <button type="button" class="tm-wz-step ${i === step ? "tm-wz-on" : i < step ? "tm-wz-done" : ""}" data-act="wz-go" data-v="${i}" ${last || i === WZ_DONE ? "disabled" : ""} ${i === step ? 'aria-current="step"' : ""}>
         <span class="tm-wz-n">${i < step ? `<ha-icon icon="mdi:check"></ha-icon>` : i + 1}</span><span class="tm-wz-l">${this._t(`wizard.step_${id}`)}</span>
       </button>`).join("");
-    const nextKey = ["wizard.next_welcome", "wizard.next_children", "wizard.next_chores", "wizard.next_rewards", "wizard.next_dashboards"][step];
-    const body = [
-      () => this._wizardStepWelcome(), () => this._wizardStepChildren(), () => this._wizardStepChores(),
-      () => this._wizardStepRewards(), () => this._wizardStepDashboards(), () => this._wizardStepReview(),
-      () => this._wizardStepDone(),
-    ][step]();
-    const typed = step === 1 && (wz.form.name || "").trim();
+    const id = WZ_STEPS[step];
+    const nextKey = {
+      welcome: "wizard.next_welcome", style: "wizard.next_style", children: "wizard.next_children",
+      chores: "wizard.next_chores", rewards: "wizard.next_rewards", dashboards: "wizard.next_dashboards",
+    }[id];
+    const body = {
+      welcome: () => this._wizardStepWelcome(), style: () => this._wizardStepStyle(),
+      children: () => this._wizardStepChildren(), chores: () => this._wizardStepChores(),
+      rewards: () => this._wizardStepRewards(), dashboards: () => this._wizardStepDashboards(),
+      review: () => this._wizardStepReview(), done: () => this._wizardStepDone(),
+    }[id]();
+    const typed = step === WZ_CHILDREN && (wz.form.name || "").trim();
     return `
       <div class="tm-wz">
         <div class="tm-wz-box">
@@ -8026,7 +8054,7 @@ class TaskMatePanel extends HTMLElement {
                 : `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-close">${this._t("wizard.skip")}</button>`}
               <span class="tm-wz-sp"></span>
               ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
-              ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
+              ${step === WZ_CHILDREN ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
               ${step === WZ_REVIEW
                 ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy || !this._wizardHasWork(this._wizardPlan()) ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
                 : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
@@ -8071,6 +8099,18 @@ class TaskMatePanel extends HTMLElement {
       </div>
       ${wz.pnameCustom ? `<input type="text" class="tm-input tm-wz-pname" data-wz-in="pname" maxlength="120" value="${this._esc(wz.pname)}" aria-label="${this._esc(this._t("wizard.pname_question"))}">` : ""}
       <p class="tm-wz-hint">${this._t("wizard.pname_hint")}</p>`;
+  }
+
+  // Style page (#1260): Game or Team, optional. Custom is left to Settings.
+  _wizardStepStyle() {
+    const pick = this._wz.style || this._familyStyle();
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.style_question")}</h2>
+      <p class="tm-wz-p">${this._t("wizard.style_hint")}</p>
+      <div class="tm-style-opts tm-style-opts-wz" role="group" aria-label="${this._esc(this._t("wizard.style_question"))}">
+        ${["game", "team"].map(k => this._styleOptHtml(k, pick === k, "wz-style")).join("")}
+      </div>
+      <p class="tm-wz-hint">${this._t("wizard.style_custom_later")}</p>`;
   }
 
   _wizardKidMeta(k) {
@@ -8436,6 +8476,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.appr_title")}<small>${this._t("wizard.appr_hint")}</small></div>
             <div class="tm-seg tm-wz-seg" role="tablist">${appr.map(([v, key]) => `<button type="button" role="tab" class="${wz.approval === v ? "tm-seg-on" : ""}" aria-selected="${wz.approval === v}" data-act="wz-appr" data-v="${v}">${this._t(key)}</button>`).join("")}</div></div>
           <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.review_dashboards")}<small>${this._esc(DASH_KINDS.filter(k => wz.dash[k]).map(k => this._t(`panel.dash_kind_${k}`)).join(", ") || this._t("wizard.review_no_dashboards"))}</small></div></div>
+          <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.review_style")}<small>${this._esc(this._t(`panel.style_${wz.style || this._familyStyle()}_title`))}</small></div></div>
           ${sw("wz-notify", wz.notify, this._t("wizard.notify_toggle"), this._t("wizard.notify_hint"))}
         </div>
         <div class="tm-wz-panel"><h4>${this._t("wizard.rewards_n", { count: plan.rewards.length })}</h4>
@@ -8498,6 +8539,152 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // Settings → Setup wizard (#980), at the top of Settings.
+  // -- Family style (#1260) ------------------------------------------------
+  // Game / Team / Custom: one choice that sets several switches. Picking a
+  // style first shows exactly what will change (taskmate/family_style/preview),
+  // then applies it in one call (taskmate/apply_family_style). Nothing is
+  // deleted, and every switch stays editable; changing one by hand makes the
+  // style Custom (the backend does that).
+
+  _familyStyle() {
+    const v = ((this._state && this._state.settings) || {}).family_style;
+    return FAMILY_STYLES.includes(v) ? v : "game";
+  }
+
+  _styleHideScope() {
+    return ((this._state && this._state.settings) || {}).style_hide_scope === "both" ? "both" : "cards";
+  }
+
+  // A covered switch is on unless it was stored as off.
+  _styleSwitchOn(s, key) {
+    const v = s[key];
+    return !(v === false || v === "false");
+  }
+
+  // Tabs a switched-off feature takes out of the admin menu, when the
+  // family chose "Cards and admin panel". Their data stays.
+  _styleHiddenTabs() {
+    const s = (this._state && this._state.settings) || {};
+    if (this._styleHideScope() !== "both") return new Set();
+    return new Set([
+      !this._styleSwitchOn(s, "penalties_enabled") && "penalties",
+      !this._styleSwitchOn(s, "raffles_enabled") && "raffles",
+    ].filter(Boolean));
+  }
+
+  _styleOptHtml(k, on, act) {
+    return `
+      <button type="button" class="tm-style-opt ${on ? "tm-style-opt-on" : ""}" data-act="${act}" data-v="${k}" aria-pressed="${on}">
+        <span class="tm-style-opt-h"><ha-icon icon="${FAMILY_STYLE_ICONS[k]}"></ha-icon><span>${this._t(`panel.style_${k}_title`)}</span>${k === "game" ? `<span class="tm-style-tag">${this._t("panel.style_default_tag")}</span>` : ""}</span>
+        <span class="tm-style-opt-d">${this._t(`panel.style_${k}_desc`)}</span>
+        <span class="tm-style-opt-fit">${this._t(`panel.style_${k}_fit`)}</span>
+      </button>`;
+  }
+
+  _familyStyleSection(s) {
+    const cur = this._familyStyle();
+    const scope = this._styleHideScope();
+    const sw = (key, name) => `
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t(`panel.style_switch_${name}`)}<small>${this._t(`panel.style_switch_${name}_hint`)}</small></div>
+              <ha-switch data-setting="${key}" ${this._styleSwitchOn(s, key) ? "checked" : ""}></ha-switch>
+            </div>`;
+    return `
+        <div class="tm-section tm-style-settings">
+          <div class="tm-section-head"><div><h3><ha-icon icon="mdi:account-group-outline"></ha-icon> ${this._t("panel.style_title")}</h3><p class="tm-meta">${this._t("panel.style_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-style-opts" role="group" aria-label="${this._esc(this._t("panel.style_title"))}">
+              ${FAMILY_STYLES.map(k => this._styleOptHtml(k, cur === k, "style-pick")).join("")}
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.style_hide_label")}<small>${this._t("panel.style_hide_hint")}</small></div>
+              <div class="tm-style-hide">
+                <input type="hidden" data-setting="style_hide_scope" value="${scope}">
+                <span class="tm-seg" role="radiogroup" aria-label="${this._esc(this._t("panel.style_hide_label"))}">
+                  ${["cards", "both"].map(v => `<button type="button" role="radio" class="${scope === v ? "tm-seg-on" : ""}" aria-checked="${scope === v}" data-act="style-hide" data-v="${v}">${this._t(`panel.style_hide_${v}`)}</button>`).join("")}
+                </span>
+                <small class="tm-style-hide-note">${this._t(`panel.style_hide_${scope}_note`)}</small>
+              </div>
+            </div>
+            ${sw("leaderboard_enabled", "leaderboard")}
+            ${sw("penalties_enabled", "penalties")}
+            ${sw("raffles_enabled", "raffles")}
+          </div>
+        </div>`;
+  }
+
+  // The segmented control only edits the hidden field; Save sends it.
+  _styleHideSet(v) {
+    const scope = v === "both" ? "both" : "cards";
+    const root = this.querySelector(".tm-style-hide");
+    if (!root) return;
+    root.querySelector('input[data-setting="style_hide_scope"]').value = scope;
+    root.querySelectorAll('[data-act="style-hide"]').forEach(b => {
+      const on = b.dataset.v === scope;
+      b.classList.toggle("tm-seg-on", on);
+      b.setAttribute("aria-checked", String(on));
+    });
+    const note = root.querySelector(".tm-style-hide-note");
+    if (note) note.textContent = this._t(`panel.style_hide_${scope}_note`);
+    this._paintUnsavedBar();
+  }
+
+  async _stylePick(style) {
+    if (!FAMILY_STYLES.includes(style) || style === this._familyStyle()) return;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/family_style/preview", style });
+    if (!ok) { this._showToast("err", this._t("panel.style_apply_failed", { error: err })); return; }
+    this._openDialog({ kind: "family-style", data: { style, changes: (res && res.changes) || [] } });
+  }
+
+  async _styleApply() {
+    const style = this._dialog && this._dialog.data && this._dialog.data.style;
+    if (!style) return;
+    this._closeDialog(true);
+    const { ok, err } = await this._callWS({ type: "taskmate/apply_family_style", style });
+    if (!ok) { this._showToast("err", this._t("panel.style_apply_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.style_applied"));
+  }
+
+  // A "what will change" summary: an intro, then groups of rows with a
+  // before → after state. Shared by presets that switch several options at
+  // once (family style, #1260). groups: [{title, tone: off|on|same, rows: [{label, state}]}].
+  _presetSummaryDialog({ title, intro = "", groups = [], confirmAct, confirmLabel }) {
+    const body = `
+      ${intro ? `<p class="tm-preset-intro">${intro}</p>` : ""}
+      ${groups.filter(g => g.rows && g.rows.length).map(g => `
+        <div class="tm-preset-grp">${this._esc(g.title)}</div>
+        <table class="tm-preset-diff"><tbody>
+          ${g.rows.map(r => `<tr><td>${this._esc(r.label)}</td><td class="tm-preset-st tm-preset-${g.tone}">${this._esc(r.state)}</td></tr>`).join("")}
+        </tbody></table>`).join("")}`;
+    return this._dialogShell(title, body,
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="${confirmAct}">${this._esc(confirmLabel)}</button>`);
+  }
+
+  _renderFamilyStyleDialog() {
+    const { style, changes } = this._dialog.data;
+    const label = key => this._t(`panel.style_opt_${key.replace(/_enabled$/, "")}`);
+    const changed = new Set(changes.map(c => c.key));
+    const off = changes.filter(c => c.old && !c.new).map(c => ({ label: label(c.key), state: this._t("panel.style_on_off") }));
+    const on = changes.filter(c => !c.old && c.new).map(c => ({ label: label(c.key), state: this._t("panel.style_off_on") }));
+    if (style === "team") on.push({ label: this._t("panel.style_opt_help_button"), state: this._t("panel.style_default_on") });
+    const same = FAMILY_STYLE_SWITCHES.filter(k => !changed.has(k)).map(k => ({ label: label(k), state: "—" }));
+    same.push({ label: this._t("panel.style_unchanged_rest"), state: "—" });
+    const intro = style === "team" ? this._t(`panel.style_dialog_team_intro_${this._styleHideScope()}`)
+      : style === "game" ? this._t("panel.style_dialog_game_intro")
+      : this._t("panel.style_dialog_custom_intro");
+    const groups = style === "custom" || (style === "game" && !changes.length) ? [] : [
+      { title: this._t("panel.style_group_off"), tone: "off", rows: off },
+      { title: this._t("panel.style_group_on"), tone: "on", rows: on },
+      { title: this._t("panel.style_group_same"), tone: "same", rows: same },
+    ];
+    return this._presetSummaryDialog({
+      title: this._t("panel.style_dialog_title", { style: this._t(`panel.style_${style}_title`) }),
+      intro, groups, confirmAct: "style-apply", confirmLabel: this._t("panel.style_apply"),
+    });
+  }
+
   _wizardSettingsSection() {
     return `
       <div class="tm-section tm-wz-settings">
@@ -14697,6 +14884,7 @@ class TaskMatePanel extends HTMLElement {
         <h2 class="tm-toolbar-title">${this._t("panel.settings_title")}</h2>
       </div>
       <div class="tm-settings">
+        ${this._familyStyleSection(s)}
         ${this._wizardSettingsSection()}
         ${this._dashSettingsSection()}
         <div class="tm-section">
@@ -15930,6 +16118,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "kid-drawer")    return this._renderKidDrawer();
     if (this._dialog.kind === "view-as")       return this._renderViewAsDialog();
     if (this._dialog.kind === "leave-settings") return this._renderLeaveSettingsDialog();
+    if (this._dialog.kind === "family-style") return this._renderFamilyStyleDialog();
     if (this._dialog.kind === "create-template" || this._dialog.kind === "edit-template") return this._renderCreateEditTemplateDialog();
     if (this._dialog.kind === "badge")       return this._renderBadgeDialog();
     if (this._dialog.kind === "award-badge") return this._renderAwardDialog();
@@ -20668,6 +20857,33 @@ class TaskMatePanel extends HTMLElement {
         padding: 4px 10px; border-radius: 6px;
       }
       .tm-seg .tm-seg-on { background: var(--tm-surface-0); color: var(--tm-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+
+      /* Family style (#1260): the three preset cards and the summary dialog. */
+      .tm-style-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; margin-bottom: 8px; }
+      .tm-style-opts-wz { grid-template-columns: 1fr; }
+      .tm-style-opt {
+        display: flex; flex-direction: column; gap: 6px; text-align: start; font-family: inherit; cursor: pointer;
+        padding: 12px 14px; border-radius: 12px; border: 1px solid var(--tm-border, var(--divider-color));
+        background: var(--tm-surface-0); color: var(--tm-text); min-width: 0;
+      }
+      .tm-style-opt:hover { border-color: var(--tm-accent-border); }
+      .tm-style-opt-on { border: 2px solid var(--tm-accent); background: var(--tm-accent-soft); padding: 11px 13px; }
+      .tm-style-opt-h { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; flex-wrap: wrap; }
+      .tm-style-opt-h ha-icon { --mdc-icon-size: 18px; color: var(--tm-accent-text); }
+      .tm-style-opt-d { font-size: 13px; color: var(--tm-text-muted); overflow-wrap: anywhere; }
+      .tm-style-opt-fit { font-size: 12px; color: var(--tm-text-faint); overflow-wrap: anywhere; }
+      .tm-style-tag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--tm-surface-2); color: var(--tm-text-muted); }
+      .tm-style-hide { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 100%; }
+      .tm-style-hide .tm-seg { margin-inline-start: 0; flex-wrap: wrap; }
+      .tm-style-hide-note { font-size: 12px; color: var(--tm-text-faint); text-align: end; }
+      .tm-preset-intro { margin: 0 0 6px; color: var(--tm-text-muted); }
+      .tm-preset-grp { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tm-text-faint); margin: 14px 0 4px; }
+      .tm-preset-diff { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .tm-preset-diff td { padding: 6px 0; border-bottom: 1px solid var(--tm-border-soft); vertical-align: top; }
+      .tm-preset-st { text-align: end; white-space: nowrap; padding-inline-start: 12px !important; font-weight: 600; }
+      .tm-preset-off { color: var(--tm-danger); }
+      .tm-preset-on { color: var(--tm-positive); }
+      .tm-preset-same { color: var(--tm-text-faint); font-weight: 400; }
 
       /* Chore board */
       .tm-board-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }

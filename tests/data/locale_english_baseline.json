@@ -383,7 +383,8 @@
     "streak.achievement.points50_name",
     "trophy.shelf_badges",
     "wizard.avatar",
-    "wizard.pname_points"
+    "wizard.pname_points",
+    "wizard.step_style"
   ],
   "it.json": [
     "activity.console_stream",

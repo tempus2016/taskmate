@@ -185,6 +185,32 @@
   window.__taskmate_badges_state = badgesState;
 
   /**
+   * Family style (#1260). The overview sensor lists the card features a
+   * family has switched off (`features_off`: "leaderboard", "penalties",
+   * "raffles") and carries `family_style: "team"` while Team is on. Both are
+   * only published when set, so a family that never touched them reads
+   * everything as on — exactly as before.
+   */
+  function overviewAttrs(hass) {
+    if (!hass || !hass.states) return {};
+    const ov = hass.states[OVERVIEW_ENTITY];
+    if (ov && ov.attributes) return ov.attributes;
+    return entityMap(hass) || {};
+  }
+
+  function featureOn(hass, feature) {
+    const off = overviewAttrs(hass).features_off;
+    return !(Array.isArray(off) && off.includes(feature));
+  }
+
+  function familyStyle(hass) {
+    return overviewAttrs(hass).family_style === "team" ? "team" : "";
+  }
+
+  window.__taskmate_feature_on = featureOn;
+  window.__taskmate_family_style = familyStyle;
+
+  /**
    * Non-admin parent role (#661). True for Home Assistant admins and for users
    * the admin has designated as TaskMate parents (published as the
    * parent_user_ids attribute on sensor.taskmate_overview). Parents get the
