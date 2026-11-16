@@ -39,7 +39,7 @@ When there are no children yet, Today offers **Start setup** (the [Setup Wizard]
 |---------|-------|
 | **Today** | Today |
 | **Family** | Children, Groups |
-| **Earn** | Chores, [Planner](Week-Planner.md), Bounties, Auctions, Quests, Challenges, Templates |
+| **Earn** | Chores, [Planner](Week-Planner.md), Bounties, Auctions, Quests, Challenges, [Choice sets](Choice-Sets.md), Templates |
 | **Spend** | Rewards, Wishlists, [Raffles](Raffles.md) |
 | **Points** | Bonuses, Penalties, Badges |
 | **Review** | Activity, Insights, Audit |

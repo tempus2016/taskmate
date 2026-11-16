@@ -2119,6 +2119,15 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         get_coordinator=lambda: _get_coordinator(hass),
     )
 
+    # Choice sets (#1259): structural config, admin actions like task groups.
+    from .choice_set_services import async_register_choice_set_services
+
+    async_register_choice_set_services(
+        hass,
+        admin_action=_admin,
+        get_coordinator=lambda: _get_coordinator(hass),
+    )
+
     # Help requests, moods, sick days, weekly goals and raffles.
     from .family_services import async_register_family_services
 
@@ -2194,10 +2203,12 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         "revoke_badge",
         "rebuild_badges",
     ]
+    from .choice_set_services import CHOICE_SET_SERVICES
     from .family_services import FAMILY_SERVICES
     from .inspection_services import INSPECTION_SERVICES
     from .wishlist_services import WISHLIST_SERVICES
 
+    services.extend(CHOICE_SET_SERVICES)
     services.extend(WISHLIST_SERVICES)
     services.extend(INSPECTION_SERVICES)
     services.extend(FAMILY_SERVICES)

@@ -2024,6 +2024,96 @@
           "description": "ID dziecka, które kręci ruletką"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Dodaj zestaw do wyboru",
+      "description": "Tworzy zestaw „zrób co najmniej N z tych obowiązków”. Dziecko wybiera które; niewykonany dzień zostawia jedną pozycję do przejrzenia, nigdy automatyczne odjęcie.",
+      "fields": {
+        "name": {
+          "name": "Nazwa",
+          "description": "To, co dzieci widzą nad zestawem"
+        },
+        "chore_ids": {
+          "name": "ID obowiązków",
+          "description": "Obowiązki w zestawie. Każdy może być tylko w jednym zestawie; bez obowiązkowych, rotacyjnych i „kto pierwszy”."
+        },
+        "min_required": {
+          "name": "Wybierz co najmniej",
+          "description": "Ile różnych obowiązków z zestawu dziecko musi wykonać każdego dnia. 0 zamienia go w dobrowolną listę bez pominięć."
+        },
+        "description": {
+          "name": "Opis",
+          "description": "Opcjonalna notatka dla rodziców"
+        },
+        "icon": {
+          "name": "Ikona",
+          "description": "Ikona mdi, np. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Przypisane do",
+          "description": "ID dzieci. Zostaw puste dla wszystkich dzieci (bez dorosłych)."
+        },
+        "penalty_points": {
+          "name": "Kara za niewykonanie",
+          "description": "Punkty, które rodzic może odjąć po przejrzeniu niewykonanego dnia. Nigdy nie są odejmowane automatycznie."
+        },
+        "active": {
+          "name": "Aktywny",
+          "description": "Nieaktywny zestaw pokazuje obowiązki jako zwykłe i nigdy nie jest pominięty."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Zaktualizuj zestaw do wyboru",
+      "description": "Zmienia zestaw do wyboru. Zmieniają się tylko podane pola.",
+      "fields": {
+        "set_id": {
+          "name": "ID zestawu",
+          "description": "ID zestawu do wyboru"
+        },
+        "name": {
+          "name": "Nazwa",
+          "description": "To, co dzieci widzą nad zestawem"
+        },
+        "chore_ids": {
+          "name": "ID obowiązków",
+          "description": "Obowiązki w zestawie. Każdy może być tylko w jednym zestawie; bez obowiązkowych, rotacyjnych i „kto pierwszy”."
+        },
+        "min_required": {
+          "name": "Wybierz co najmniej",
+          "description": "Ile różnych obowiązków z zestawu dziecko musi wykonać każdego dnia. 0 zamienia go w dobrowolną listę bez pominięć."
+        },
+        "description": {
+          "name": "Opis",
+          "description": "Opcjonalna notatka dla rodziców"
+        },
+        "icon": {
+          "name": "Ikona",
+          "description": "Ikona mdi, np. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Przypisane do",
+          "description": "ID dzieci. Zostaw puste dla wszystkich dzieci (bez dorosłych)."
+        },
+        "penalty_points": {
+          "name": "Kara za niewykonanie",
+          "description": "Punkty, które rodzic może odjąć po przejrzeniu niewykonanego dnia. Nigdy nie są odejmowane automatycznie."
+        },
+        "active": {
+          "name": "Aktywny",
+          "description": "Nieaktywny zestaw pokazuje obowiązki jako zwykłe i nigdy nie jest pominięty."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Usuń zestaw do wyboru",
+      "description": "Usuwa zestaw do wyboru. Jego obowiązki znów są zwykłe, a otwarte pozycje do przejrzenia też znikają.",
+      "fields": {
+        "set_id": {
+          "name": "ID zestawu",
+          "description": "ID zestawu do wyboru"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2224,8 @@
               "penalty_applied": "Nałożono karę",
               "surprise_bonus": "Premia niespodzianka",
               "mandatory_missed": "Pominięto obowiązkowe zadanie",
+              "choice_set_fulfilled": "Zestaw do wyboru wykonany",
+              "choice_set_missed": "Zestaw do wyboru niewykonany",
               "team_chore_completed": "Zadanie zespołowe wykonane",
               "points_gifted": "Podarowano punkty",
               "help_requested": "Poproszono o pomoc",
@@ -3516,6 +3608,33 @@
     },
     "upload_sound_store_failed": {
       "message": "Nie udało się zapisać dźwięku"
+    },
+    "choice_set_name_required": {
+      "message": "Zestaw do wyboru musi mieć nazwę"
+    },
+    "choice_set_needs_chore": {
+      "message": "Zestaw do wyboru musi mieć co najmniej jeden obowiązek"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Zestaw do wyboru może mieć najwyżej {max} obowiązków"
+    },
+    "choice_set_min_too_high": {
+      "message": "„Wybierz co najmniej” może wynosić najwyżej {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} jest obowiązkowe, więc nie może być w zestawie do wyboru"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} jest typu „kto pierwszy”, więc nie może być w zestawie do wyboru"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} rotuje między dziećmi, więc nie może być w zestawie do wyboru"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} jest już w zestawie do wyboru {set}"
+    },
+    "choice_set_not_found": {
+      "message": "Nie znaleziono zestawu do wyboru {set_id}"
     }
   },
   "issues": {

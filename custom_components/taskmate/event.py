@@ -53,6 +53,8 @@ CHILD_EVENTS: dict[str, str] = {
     "penalty_applied": "taskmate_penalty_applied",
     "surprise_bonus": "taskmate_surprise_bonus",
     "mandatory_missed": "taskmate_mandatory_missed",
+    "choice_set_fulfilled": "taskmate_choice_set_fulfilled",
+    "choice_set_missed": "taskmate_choice_set_missed",
     "team_chore_completed": "taskmate_team_chore_completed",
     "points_gifted": "taskmate_points_gifted",
     "help_requested": notification_event_name(NOTIF_TYPE_HELP_REQUESTED),

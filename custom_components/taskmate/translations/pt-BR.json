@@ -2024,6 +2024,96 @@
           "description": "O ID da criança que gira"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Adicionar conjunto de escolha",
+      "description": "Cria um conjunto \"faça pelo menos N destas tarefas\". A criança escolhe quais; um dia não cumprido deixa um item para revisar, nunca um desconto automático.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "O que as crianças veem acima do conjunto"
+        },
+        "chore_ids": {
+          "name": "IDs das tarefas",
+          "description": "As tarefas do conjunto. Cada uma só pode estar em um conjunto; sem tarefas obrigatórias, de rodízio ou de quem chegar primeiro."
+        },
+        "min_required": {
+          "name": "Escolher pelo menos",
+          "description": "Quantas tarefas diferentes do conjunto a criança precisa fazer por dia. 0 torna uma lista opcional que nunca fica como não cumprida."
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nota opcional para os responsáveis"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Um ícone mdi, ex.: mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Atribuído a",
+          "description": "IDs das crianças. Deixe vazio para todas as crianças (sem os adultos)."
+        },
+        "penalty_points": {
+          "name": "Penalidade se não cumprir",
+          "description": "Pontos que um responsável pode descontar após revisar um dia não cumprido. Nunca descontados automaticamente."
+        },
+        "active": {
+          "name": "Ativo",
+          "description": "Um conjunto inativo mostra as tarefas como tarefas normais e nunca fica como não cumprido."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Atualizar conjunto de escolha",
+      "description": "Altera um conjunto de escolha. Só mudam os campos informados.",
+      "fields": {
+        "set_id": {
+          "name": "ID do conjunto",
+          "description": "O ID do conjunto de escolha"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "O que as crianças veem acima do conjunto"
+        },
+        "chore_ids": {
+          "name": "IDs das tarefas",
+          "description": "As tarefas do conjunto. Cada uma só pode estar em um conjunto; sem tarefas obrigatórias, de rodízio ou de quem chegar primeiro."
+        },
+        "min_required": {
+          "name": "Escolher pelo menos",
+          "description": "Quantas tarefas diferentes do conjunto a criança precisa fazer por dia. 0 torna uma lista opcional que nunca fica como não cumprida."
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nota opcional para os responsáveis"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Um ícone mdi, ex.: mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Atribuído a",
+          "description": "IDs das crianças. Deixe vazio para todas as crianças (sem os adultos)."
+        },
+        "penalty_points": {
+          "name": "Penalidade se não cumprir",
+          "description": "Pontos que um responsável pode descontar após revisar um dia não cumprido. Nunca descontados automaticamente."
+        },
+        "active": {
+          "name": "Ativo",
+          "description": "Um conjunto inativo mostra as tarefas como tarefas normais e nunca fica como não cumprido."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Remover conjunto de escolha",
+      "description": "Exclui um conjunto de escolha. As tarefas voltam a ser normais e os itens pendentes de revisão também somem.",
+      "fields": {
+        "set_id": {
+          "name": "ID do conjunto",
+          "description": "O ID do conjunto de escolha"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2224,8 @@
               "penalty_applied": "Penalidade aplicada",
               "surprise_bonus": "Bônus surpresa",
               "mandatory_missed": "Tarefa obrigatória perdida",
+              "choice_set_fulfilled": "Conjunto de escolha cumprido",
+              "choice_set_missed": "Conjunto de escolha não cumprido",
               "team_chore_completed": "Tarefa em equipe concluída",
               "points_gifted": "Pontos doados",
               "help_requested": "Pediu ajuda",
@@ -3516,6 +3608,33 @@
     },
     "upload_sound_store_failed": {
       "message": "Não foi possível salvar o som"
+    },
+    "choice_set_name_required": {
+      "message": "Um conjunto de escolha precisa de um nome"
+    },
+    "choice_set_needs_chore": {
+      "message": "Um conjunto de escolha precisa de pelo menos uma tarefa"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Um conjunto de escolha pode ter no máximo {max} tarefas"
+    },
+    "choice_set_min_too_high": {
+      "message": "\"Escolher pelo menos\" pode ser no máximo {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} é obrigatória, então não pode estar em um conjunto de escolha"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} é de quem chegar primeiro, então não pode estar em um conjunto de escolha"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} é de rodízio entre as crianças, então não pode estar em um conjunto de escolha"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} já está no conjunto de escolha {set}"
+    },
+    "choice_set_not_found": {
+      "message": "Conjunto de escolha {set_id} não encontrado"
     }
   },
   "issues": {

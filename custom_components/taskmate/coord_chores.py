@@ -1312,6 +1312,9 @@ class ChoresMixin:
             },
         )
 
+        # Choice sets (#1259): say so when this chore completed a set.
+        self.fire_choice_set_fulfilled(child, chore.id, dt_util.as_local(now).date())
+
         # Update last_completed store (window starts at completion time, midnight-rounded).
         # A job logged for an earlier day must not pull the window back behind a
         # completion the child made since, so it only records when it is the latest.

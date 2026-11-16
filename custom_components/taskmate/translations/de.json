@@ -2024,6 +2024,96 @@
           "description": "Die ID des Kindes, das dreht"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Auswahlgruppe hinzufügen",
+      "description": "Legt eine Gruppe „mindestens N dieser Aufgaben“ an. Das Kind wählt aus; ein verpasster Tag hinterlässt einen Prüfpunkt, nie einen automatischen Abzug.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Was die Kinder über der Gruppe sehen"
+        },
+        "chore_ids": {
+          "name": "Aufgaben-IDs",
+          "description": "Die Aufgaben der Gruppe. Jede darf nur in einer Gruppe sein; keine Pflicht-, Rotations- oder Wer-zuerst-kommt-Aufgaben."
+        },
+        "min_required": {
+          "name": "Mindestens",
+          "description": "Wie viele verschiedene Aufgaben der Gruppe das Kind täglich erledigen muss. 0 macht daraus eine freiwillige Liste ohne Verpassen."
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Notiz für Eltern"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Ein mdi-Symbol, z. B. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Kinder-IDs. Leer lassen für alle Kinder (Erwachsene ausgenommen)."
+        },
+        "penalty_points": {
+          "name": "Strafe bei Verpassen",
+          "description": "Punkte, die ein Elternteil nach Prüfung eines verpassten Tages abziehen kann. Nie automatisch abgezogen."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "Eine inaktive Gruppe zeigt ihre Aufgaben als normale Aufgaben und wird nie verpasst."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Auswahlgruppe aktualisieren",
+      "description": "Ändert eine Auswahlgruppe. Nur die übergebenen Felder ändern sich.",
+      "fields": {
+        "set_id": {
+          "name": "Gruppen-ID",
+          "description": "Die ID der Auswahlgruppe"
+        },
+        "name": {
+          "name": "Name",
+          "description": "Was die Kinder über der Gruppe sehen"
+        },
+        "chore_ids": {
+          "name": "Aufgaben-IDs",
+          "description": "Die Aufgaben der Gruppe. Jede darf nur in einer Gruppe sein; keine Pflicht-, Rotations- oder Wer-zuerst-kommt-Aufgaben."
+        },
+        "min_required": {
+          "name": "Mindestens",
+          "description": "Wie viele verschiedene Aufgaben der Gruppe das Kind täglich erledigen muss. 0 macht daraus eine freiwillige Liste ohne Verpassen."
+        },
+        "description": {
+          "name": "Beschreibung",
+          "description": "Optionale Notiz für Eltern"
+        },
+        "icon": {
+          "name": "Symbol",
+          "description": "Ein mdi-Symbol, z. B. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Zugewiesen an",
+          "description": "Kinder-IDs. Leer lassen für alle Kinder (Erwachsene ausgenommen)."
+        },
+        "penalty_points": {
+          "name": "Strafe bei Verpassen",
+          "description": "Punkte, die ein Elternteil nach Prüfung eines verpassten Tages abziehen kann. Nie automatisch abgezogen."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "Eine inaktive Gruppe zeigt ihre Aufgaben als normale Aufgaben und wird nie verpasst."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Auswahlgruppe entfernen",
+      "description": "Löscht eine Auswahlgruppe. Ihre Aufgaben werden wieder normale Aufgaben, offene Prüfpunkte verschwinden mit.",
+      "fields": {
+        "set_id": {
+          "name": "Gruppen-ID",
+          "description": "Die ID der Auswahlgruppe"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2224,8 @@
               "penalty_applied": "Strafe verhängt",
               "surprise_bonus": "Überraschungsbonus",
               "mandatory_missed": "Pflichtaufgabe verpasst",
+              "choice_set_fulfilled": "Auswahlgruppe geschafft",
+              "choice_set_missed": "Auswahlgruppe verpasst",
               "team_chore_completed": "Teamaufgabe erledigt",
               "points_gifted": "Punkte verschenkt",
               "help_requested": "Hilfe angefordert",
@@ -3516,6 +3608,33 @@
     },
     "upload_sound_store_failed": {
       "message": "Ton konnte nicht gespeichert werden"
+    },
+    "choice_set_name_required": {
+      "message": "Eine Auswahlgruppe braucht einen Namen"
+    },
+    "choice_set_needs_chore": {
+      "message": "Eine Auswahlgruppe braucht mindestens eine Aufgabe"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Eine Auswahlgruppe kann höchstens {max} Aufgaben enthalten"
+    },
+    "choice_set_min_too_high": {
+      "message": "\"Mindestens\" darf höchstens {max} sein"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} ist eine Pflichtaufgabe und kann daher in keiner Auswahlgruppe sein"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} ist eine Wer-zuerst-kommt-Aufgabe und kann daher in keiner Auswahlgruppe sein"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} wechselt zwischen den Kindern und kann daher in keiner Auswahlgruppe sein"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} ist schon in der Auswahlgruppe {set}"
+    },
+    "choice_set_not_found": {
+      "message": "Auswahlgruppe {set_id} nicht gefunden"
     }
   },
   "issues": {

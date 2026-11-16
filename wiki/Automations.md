@@ -131,6 +131,8 @@ TaskMate fires Home Assistant bus events for most state changes. Trigger your ow
 | Event | Data fields |
 |-------|-------------|
 | `taskmate_mandatory_missed` | `miss_id`, `chore_id`, `child_id`, `period_id`, `penalty_points`, `timestamp` |
+| `taskmate_choice_set_fulfilled` | `set_id`, `set_name`, `child_id`, `child_name`, `chore_id`, `done`, `min`, `timestamp` ([Choice Sets](Choice-Sets.md)) |
+| `taskmate_choice_set_missed` | `miss_id`, `set_id`, `set_name`, `child_id`, `child_name`, `done`, `min`, `penalty_points`, `date`, `timestamp` ([Choice Sets](Choice-Sets.md)) |
 | `taskmate_mandatory_penalty_applied` | `miss_id`, `chore_id`, `child_id`, `points`, `timestamp` |
 | `taskmate_mandatory_postponed` | `miss_id`, `chore_id`, `child_id`, `next_period`, `timestamp` |
 | `taskmate_mandatory_dismissed` | `miss_id`, `chore_id`, `child_id`, `timestamp` |

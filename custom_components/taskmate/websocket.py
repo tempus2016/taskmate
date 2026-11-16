@@ -102,6 +102,7 @@ from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
 from .coord_bin_days import BIN_DAY_MAX_CALENDARS, BIN_DAY_MAX_POINTS, BIN_DAY_MODES
 from .coord_birthdays import normalize_birthday
 from .coord_boosts import BOOST_STACKING_MODES
+from .coord_choice_sets import MISS_REVIEW_LOCATIONS
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
 from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
 from .coord_points_expiry import POINTS_EXPIRY_MAX_DAYS, POINTS_EXPIRY_MAX_WARN
@@ -518,6 +519,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "bonuses": list(data.get("bonuses", [])),
         "task_groups": list(data.get("task_groups", [])),
         "quests": list(data.get("quests", [])),
+        # Choice sets (#1259): "do at least N of these".
+        "choice_sets": list(data.get("choice_sets", [])),
         "quest_progress": dict(data.get("quest_progress", {}) or {}),
         "avatar_catalog": coordinator.avatar_catalog(),
         "challenges": list(data.get("challenges", [])),
@@ -551,6 +554,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "points_icon": data.get("points_icon", "mdi:star"),
             "card_design": "classic",
             "set_times_layout": "rows",
+            # Where missed sets and mandatory chores are reviewed (#1259).
+            "miss_review_location": "card",
             # Family-wide chore order on the cards (#1231).
             CHORE_SORT_SETTING: "manual",
             # Child undo window (#918): off unless a parent opts in.
@@ -2271,6 +2276,7 @@ _SUBKEY_SETTINGS = {
     "streak_reset_mode",
     "card_design",
     "set_times_layout",
+    "miss_review_location",
     # Seasons & events: each season's theme (the card look) and its event
     # pack (the content), all off by default; the first school day for Back
     # to school; and who each pack is for.
@@ -2632,6 +2638,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("points_icon"): str,
     vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("set_times_layout"): vol.In(["rows", "pills"]),
+    vol.Optional("miss_review_location"): vol.In(MISS_REVIEW_LOCATIONS),
     vol.Optional(CHORE_SORT_SETTING): vol.In(CHORE_SORT_MODES),
     **{vol.Optional(key): bool for key in SEASON_THEME_KEYS.values()},
     **{vol.Optional(key): bool for key in SEASON_PACK_KEYS.values()},
@@ -3868,6 +3875,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
     from .websocket_boosts import BOOST_COMMANDS
+    from .websocket_choice_sets import CHOICE_SET_COMMANDS
     from .websocket_chore_extras import CHORE_EXTRA_COMMANDS
     from .websocket_household import HOUSEHOLD_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
@@ -3892,6 +3900,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *PANEL_TOOL_COMMANDS,
         *REWARD_EXTRA_COMMANDS,
         *CHORE_EXTRA_COMMANDS,
+        *CHOICE_SET_COMMANDS,
         *PET_SHOP_COMMANDS,
         *PLANNER_COMMANDS,
         *TOUR_COMMANDS,

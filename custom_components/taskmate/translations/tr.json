@@ -2024,6 +2024,96 @@
           "description": "Çeviren çocuğun kimliği"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Seçmeli set ekle",
+      "description": "\"Bu görevlerden en az N tanesini yap\" seti oluşturur. Hangilerini çocuk seçer; kaçırılan gün bir inceleme öğesi bırakır, asla otomatik düşüm olmaz.",
+      "fields": {
+        "name": {
+          "name": "Ad",
+          "description": "Çocukların setin üstünde gördüğü ad"
+        },
+        "chore_ids": {
+          "name": "Görev kimlikleri",
+          "description": "Setteki görevler. Her biri yalnızca bir sette olabilir; zorunlu, sıralı veya ilk gelen alır görevleri olamaz."
+        },
+        "min_required": {
+          "name": "En az seçilecek",
+          "description": "Çocuğun her gün setten yapması gereken farklı görev sayısı. 0, asla kaçırılmayan isteğe bağlı bir liste yapar."
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Ebeveynler için isteğe bağlı not"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Bir mdi simgesi, örn. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Çocuk kimlikleri. Tüm çocuklar için boş bırakın (yetişkinler hariç)."
+        },
+        "penalty_points": {
+          "name": "Kaçırılırsa ceza",
+          "description": "Bir ebeveynin kaçırılan günü inceledikten sonra düşebileceği puan. Asla otomatik düşülmez."
+        },
+        "active": {
+          "name": "Etkin",
+          "description": "Etkin olmayan bir set görevlerini sıradan görevler olarak gösterir ve asla kaçırılmış sayılmaz."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Seçmeli seti güncelle",
+      "description": "Seçmeli seti değiştirir. Yalnızca verdiğiniz alanlar değişir.",
+      "fields": {
+        "set_id": {
+          "name": "Set kimliği",
+          "description": "Seçmeli setin kimliği"
+        },
+        "name": {
+          "name": "Ad",
+          "description": "Çocukların setin üstünde gördüğü ad"
+        },
+        "chore_ids": {
+          "name": "Görev kimlikleri",
+          "description": "Setteki görevler. Her biri yalnızca bir sette olabilir; zorunlu, sıralı veya ilk gelen alır görevleri olamaz."
+        },
+        "min_required": {
+          "name": "En az seçilecek",
+          "description": "Çocuğun her gün setten yapması gereken farklı görev sayısı. 0, asla kaçırılmayan isteğe bağlı bir liste yapar."
+        },
+        "description": {
+          "name": "Açıklama",
+          "description": "Ebeveynler için isteğe bağlı not"
+        },
+        "icon": {
+          "name": "Simge",
+          "description": "Bir mdi simgesi, örn. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Atanan",
+          "description": "Çocuk kimlikleri. Tüm çocuklar için boş bırakın (yetişkinler hariç)."
+        },
+        "penalty_points": {
+          "name": "Kaçırılırsa ceza",
+          "description": "Bir ebeveynin kaçırılan günü inceledikten sonra düşebileceği puan. Asla otomatik düşülmez."
+        },
+        "active": {
+          "name": "Etkin",
+          "description": "Etkin olmayan bir set görevlerini sıradan görevler olarak gösterir ve asla kaçırılmış sayılmaz."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Seçmeli seti kaldır",
+      "description": "Seçmeli seti siler. Görevleri yeniden sıradan görev olur, açık inceleme öğeleri de kaldırılır.",
+      "fields": {
+        "set_id": {
+          "name": "Set kimliği",
+          "description": "Seçmeli setin kimliği"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2224,8 @@
               "penalty_applied": "Ceza uygulandı",
               "surprise_bonus": "Sürpriz bonus",
               "mandatory_missed": "Zorunlu görev kaçırıldı",
+              "choice_set_fulfilled": "Seçmeli set tamamlandı",
+              "choice_set_missed": "Seçmeli set kaçırıldı",
               "team_chore_completed": "Takım görevi tamamlandı",
               "points_gifted": "Puan hediye edildi",
               "help_requested": "Yardım istendi",
@@ -3516,6 +3608,33 @@
     },
     "upload_sound_store_failed": {
       "message": "Ses saklanamadı"
+    },
+    "choice_set_name_required": {
+      "message": "Seçmeli setin bir adı olmalı"
+    },
+    "choice_set_needs_chore": {
+      "message": "Seçmeli sette en az bir görev olmalı"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Seçmeli sette en fazla {max} görev olabilir"
+    },
+    "choice_set_min_too_high": {
+      "message": "\"En az seçilecek\" en fazla {max} olabilir"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} zorunlu olduğu için seçmeli sette olamaz"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} ilk gelen alır görevi olduğu için seçmeli sette olamaz"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} çocuklar arasında sırayla yapıldığı için seçmeli sette olamaz"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} zaten {set} seçmeli setinde"
+    },
+    "choice_set_not_found": {
+      "message": "{set_id} seçmeli seti bulunamadı"
     }
   },
   "issues": {

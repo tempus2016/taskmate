@@ -28,6 +28,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Chores at Set Times](Set-Times.md) | A chore that comes up several times a day, each time ticked off on its own |
 | [Chore & Reward Library](Chore-Library.md) | About 200 ready-made chores and 45 rewards by age, added in one go |
 | [Mandatory Chores](Mandatory-Chores.md) | Must-do chores with parent-reviewed late penalties |
+| [Choice Sets](Choice-Sets.md) | "Do at least N of these chores": the child picks which |
 | [Difficulty Tiers](Difficulty-Tiers.md) | Easy / medium / hard tiers with a points multiplier |
 | [Timed Tasks](Timed-Tasks.md) | Duration-based chores with start/pause/stop timers |
 | [Weekly Targets](Weekly-Targets.md) | "Three times this week, any day" quotas on a chore, with an optional bonus for hitting them |

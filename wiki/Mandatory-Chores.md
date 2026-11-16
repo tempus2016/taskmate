@@ -39,6 +39,8 @@ The review item appears on the [Approvals Card](Approvals-Card.md) under a secti
 
 ![Mandatory review section on the Approvals card](images/approvals-mandatory.png)
 
+**Settings → Parents → Review missed chores in** can move the review to the admin panel's **Today** page instead, or show it in both places. Resolving a miss in one place clears it in the other. The same setting covers missed [choice sets](Choice-Sets.md).
+
 Each miss offers three parent actions, each backed by a [service](Services.md):
 
 | Action | Service | Effect |

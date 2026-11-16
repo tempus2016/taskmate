@@ -1516,6 +1516,35 @@ class TaskMateChildCard extends LitElement {
       }
       .tm-pre-dots i.on { background: currentColor; opacity: 1; }
       .child-name-container .tm-pre-dots { color: inherit; }
+      /* Choice sets (#1259): "pick at least N of these". The set's chores
+         sit only inside its group. Met = solid green; never the red
+         mandatory look, since no single chore is owed. */
+      .tm-cs { margin: 10px 0 14px; }
+      .tm-cs-head {
+        display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+        border-radius: var(--tmd-radius, 14px);
+        background: color-mix(in srgb, var(--tm-child, var(--fun-purple)) 12%, var(--card-background-color, #fff));
+        border: 2px dashed color-mix(in srgb, var(--tm-child, var(--fun-purple)) 55%, transparent);
+        color: var(--primary-text-color);
+      }
+      .tm-cs.met .tm-cs-head {
+        border-style: solid; border-color: var(--tmd-good, var(--fun-green));
+        background: color-mix(in srgb, var(--tmd-good, var(--fun-green)) 12%, var(--card-background-color, #fff));
+      }
+      .tm-cs-head ha-icon { --mdc-icon-size: 26px; flex: none; color: var(--tm-child, var(--fun-purple)); }
+      .tm-cs.met .tm-cs-head ha-icon { color: var(--tmd-good, var(--fun-green)); }
+      .tm-cs-text { flex: 1; min-width: 0; }
+      .tm-cs-name { font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
+      .tm-cs-sub { font-size: 0.86rem; color: var(--secondary-text-color); }
+      .tm-cs-count { text-align: end; flex: none; }
+      .tm-cs-count .tm-pre-dots { justify-content: flex-end; margin-top: 0; color: var(--tm-child, var(--fun-purple)); }
+      .tm-cs.met .tm-cs-count .tm-pre-dots { color: var(--tmd-good, var(--fun-green)); }
+      .tm-cs-group {
+        display: flex; flex-direction: column; gap: 0; margin-top: 8px;
+        padding-inline-start: 10px; margin-inline-start: 6px;
+        border-inline-start: 3px solid color-mix(in srgb, var(--tm-child, var(--fun-purple)) 40%, transparent);
+      }
+      .tm-cs-other { font-size: 1.05rem; font-weight: 600; color: var(--secondary-text-color); margin: 6px 0 8px; }
       /* Pre-reader: badges as pictures only. The earned badges are rewards a
          child recognises by sight and the next badge is a filling bar, so
          both keep working without the words (aria-label/title keep them). */
@@ -3480,19 +3509,22 @@ class TaskMateChildCard extends LitElement {
                   })() : ''}
                 </div>
                 ${this._renderRoulette(child, childChores, pointsIcon)}`}
-                ${this.config.pre_reader === true ? html`
+                ${this.config.pre_reader === true ? this._renderChoiceSetGroups(child, childChores, (list) => html`
                   <div class="pre-reader-grid">
-                    ${childChores.map((chore) =>
+                    ${list.map((chore) =>
                       this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
-                ` : allDone.list.map((chore, index) => html`
+                `) : this._renderChoiceSetGroups(child, allDone.list, (list) => list.map((chore) => {
+                  const index = allDone.list.indexOf(chore);
+                  return html`
                   ${chore.task_type === 'timed'
                     ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
                     : html`
                       ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
                       ${chore._setTime ? '' : this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
                     `}
-                `)}
+                `;
+                }))}
               `}
         </div>
 
@@ -4020,13 +4052,13 @@ class TaskMateChildCard extends LitElement {
     const body = this.config.pre_reader === true && childChores.length === 0
       ? this._designEmpty(child)
       : this.config.pre_reader === true
-      ? html`
+      ? this._renderChoiceSetGroups(child, childChores, (list) => html`
         <div class="pre-reader-grid">
-          ${childChores.map((chore) =>
+          ${list.map((chore) =>
             this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
-        </div>`
+        </div>`)
       : allDone.collapsed && listRows.length === 0 ? ""
-      : html`${renderList(listRows)}${foldFinished ? html`
+      : html`${this._renderChoiceSetGroups(child, listRows, renderList, (r) => r.chore)}${foldFinished ? html`
         <button type="button" class="tmd-finished-toggle" aria-expanded="${this._showFinished ? "true" : "false"}"
           @click=${() => { this._showFinished = !this._showFinished; }}>
           <ha-icon icon="${this._showFinished ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>
@@ -5533,6 +5565,64 @@ class TaskMateChildCard extends LitElement {
     return html`<span class="tm-pre-dots ${cls}" role="img"
       aria-label="${_ltrNums(this._t("child.pre_reader_progress", { done: __tmNum(this.hass, n), total: __tmNum(this.hass, done.length) }))}">${
       done.map((d) => html`<i class="${d ? "on" : ""}"></i>`)}</span>`;
+  }
+
+  /** Choice sets (#1259): split a list into each set's members and the rest.
+   *  `choreOf` reads the chore from an item (a chore, or a designed row).
+   *  Member chores appear only inside their set, never twice. Sets with no
+   *  member in this list are left out. */
+  _choiceSetSplit(child, items, choreOf = (x) => x) {
+    const sets = (child && Array.isArray(child.choice_sets)) ? child.choice_sets : [];
+    if (!sets.length) return { groups: [], rest: items };
+    const owner = new Map();
+    sets.forEach((s) => (s.chore_ids || []).forEach((id) => { if (!owner.has(id)) owner.set(id, s.set_id); }));
+    const bySet = new Map();
+    const rest = [];
+    items.forEach((it) => {
+      const sid = owner.get((choreOf(it) || {}).id);
+      if (!sid) { rest.push(it); return; }
+      if (!bySet.has(sid)) bySet.set(sid, []);
+      bySet.get(sid).push(it);
+    });
+    const groups = sets.filter((s) => bySet.has(s.set_id)).map((s) => ({ set: s, items: bySet.get(s.set_id) }));
+    return { groups, rest };
+  }
+
+  /** One set's head: name, "Pick at least N", dots and "x of N".
+   *  Pre-reader mode keeps the dots only (the words go to the aria-label). */
+  _renderChoiceSetHead(set) {
+    const min = Math.max(0, Number(set.min) || 0);
+    const done = Math.max(0, Number(set.done) || 0);
+    const met = min > 0 && set.fulfilled === true;
+    const pre = this.config.pre_reader === true;
+    const sub = min === 0
+      ? this._t("child.choice_set_optional")
+      : met ? this._t("child.choice_set_done")
+      : this._t("child.choice_set_pick", { count: __tmNum(this.hass, min) });
+    const progress = _ltrNums(this._t("child.choice_set_progress", { done: __tmNum(this.hass, Math.min(done, min)), min: __tmNum(this.hass, min) }));
+    const dots = min > 0 ? html`<span class="tm-pre-dots" role="img" aria-label="${progress}">${
+      Array.from({ length: min }, (_, i) => html`<i class="${i < done ? "on" : ""}"></i>`)}</span>` : "";
+    return html`<div class="tm-cs-head" aria-label="${pre ? `${set.name}: ${sub}` : ""}">
+      <ha-icon icon="${met ? "mdi:check-circle" : (set.icon || "mdi:hand-heart-outline")}"></ha-icon>
+      <div class="tm-cs-text">
+        ${pre ? "" : html`<div class="tm-cs-name">${set.name}</div><div class="tm-cs-sub">${sub}</div>`}
+      </div>
+      ${min > 0 ? html`<div class="tm-cs-count">${dots}${pre ? "" : html`<div class="tm-cs-sub">${progress}</div>`}</div>` : ""}
+    </div>`;
+  }
+
+  /** Every set group then the other chores, each list drawn by `renderItems`.
+   *  The "Other chores" line shows only when a set came first. */
+  _renderChoiceSetGroups(child, items, renderItems, choreOf = (x) => x) {
+    const { groups, rest } = this._choiceSetSplit(child, items, choreOf);
+    if (!groups.length) return renderItems(items);
+    const pre = this.config.pre_reader === true;
+    return html`
+      ${groups.map((g) => html`<div class="tm-cs ${g.set.min > 0 && g.set.fulfilled === true ? "met" : ""}" data-set="${g.set.set_id}">
+        ${this._renderChoiceSetHead(g.set)}
+        <div class="tm-cs-group">${renderItems(g.items)}</div>
+      </div>`)}
+      ${rest.length ? html`${pre ? "" : html`<div class="tm-cs-other">${this._t("child.choice_set_other_chores")}</div>`}${renderItems(rest)}` : ""}`;
   }
 
   /** The coloured badge at the head of a chore row.
