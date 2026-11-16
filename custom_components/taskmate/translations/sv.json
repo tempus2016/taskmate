@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Ange sysslesteg",
+      "description": "Bockar av eller tar bort bocken för ett steg i en syssla i flera delar för i dag. Stegen ger inga poäng i sig: sysslan slutförs med complete_chore när alla steg är avbockade.",
+      "fields": {
+        "chore_id": {
+          "name": "Syssla-ID",
+          "description": "ID för sysslan i flera delar"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID för barnet som bockar av steget"
+        },
+        "step_id": {
+          "name": "Steg-ID",
+          "description": "ID för steget"
+        },
+        "done": {
+          "name": "Klar",
+          "description": "Sant bockar av steget, falskt tar bort bocken"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Gör nästa syssla klar",
       "description": "Gör barnets nästa kvarvarande syssla klar, i den ordning barnkortet visar dem. Sysslor som behöver ett foto, en anteckning, en timer eller ett lag hoppas över. Gjord för klockknappar och genvägar; vanliga regler för godkännande gäller.",
@@ -2024,6 +2046,96 @@
           "description": "ID för barnet som snurrar"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Lägg till valfri grupp",
+      "description": "Skapar en grupp \"gör minst N av de här sysslorna\". Barnet väljer vilka; en missad dag lämnar en punkt att granska, aldrig ett automatiskt avdrag.",
+      "fields": {
+        "name": {
+          "name": "Namn",
+          "description": "Det barnen ser ovanför gruppen"
+        },
+        "chore_ids": {
+          "name": "Syssle-ID:n",
+          "description": "Sysslorna i gruppen. Varje syssla får bara finnas i en grupp; inga obligatoriska sysslor, turordningssysslor eller först-till-kvarn-sysslor."
+        },
+        "min_required": {
+          "name": "Välj minst",
+          "description": "Hur många olika sysslor ur gruppen barnet måste göra varje dag. 0 gör det till en frivillig lista som aldrig missas."
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfri anteckning för föräldrar"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "En mdi-ikon, t.ex. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Tilldelad",
+          "description": "Barn-ID:n. Lämna tomt för alla barn (vuxna räknas inte)."
+        },
+        "penalty_points": {
+          "name": "Avdrag om missad",
+          "description": "Poäng en förälder kan dra av efter att ha granskat en missad dag. Dras aldrig automatiskt."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "En inaktiv grupp visar sina sysslor som vanliga sysslor och missas aldrig."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Uppdatera valfri grupp",
+      "description": "Ändra en valfri grupp. Bara fälten du anger ändras.",
+      "fields": {
+        "set_id": {
+          "name": "Grupp-ID",
+          "description": "ID för den valfria gruppen"
+        },
+        "name": {
+          "name": "Namn",
+          "description": "Det barnen ser ovanför gruppen"
+        },
+        "chore_ids": {
+          "name": "Syssle-ID:n",
+          "description": "Sysslorna i gruppen. Varje syssla får bara finnas i en grupp; inga obligatoriska sysslor, turordningssysslor eller först-till-kvarn-sysslor."
+        },
+        "min_required": {
+          "name": "Välj minst",
+          "description": "Hur många olika sysslor ur gruppen barnet måste göra varje dag. 0 gör det till en frivillig lista som aldrig missas."
+        },
+        "description": {
+          "name": "Beskrivning",
+          "description": "Valfri anteckning för föräldrar"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "En mdi-ikon, t.ex. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Tilldelad",
+          "description": "Barn-ID:n. Lämna tomt för alla barn (vuxna räknas inte)."
+        },
+        "penalty_points": {
+          "name": "Avdrag om missad",
+          "description": "Poäng en förälder kan dra av efter att ha granskat en missad dag. Dras aldrig automatiskt."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "En inaktiv grupp visar sina sysslor som vanliga sysslor och missas aldrig."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Ta bort valfri grupp",
+      "description": "Tar bort en valfri grupp. Sysslorna blir vanliga sysslor igen och öppna punkter att granska försvinner också.",
+      "fields": {
+        "set_id": {
+          "name": "Grupp-ID",
+          "description": "ID för den valfria gruppen"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2246,8 @@
               "penalty_applied": "Avdrag givet",
               "surprise_bonus": "Överraskningsbonus",
               "mandatory_missed": "Obligatorisk syssla missad",
+              "choice_set_fulfilled": "Valfri grupp klar",
+              "choice_set_missed": "Valfri grupp missad",
               "team_chore_completed": "Lagsyssla klar",
               "points_gifted": "Poäng bortgivna",
               "help_requested": "Hjälp begärd",
@@ -2274,6 +2388,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Sysslan ”{name}” är ingen lagsyssla"
+    },
+    "chore_steps_not_list": {
+      "message": "Steg måste vara en lista."
+    },
+    "chore_steps_too_many": {
+      "message": "En syssla kan ha högst {max} steg."
+    },
+    "chore_steps_timed": {
+      "message": "En tidtagen uppgift kan inte ha steg."
+    },
+    "chore_steps_set_times": {
+      "message": "En syssla med fasta tider kan inte ha steg."
+    },
+    "chore_steps_need_name": {
+      "message": "Varje steg behöver ett namn."
+    },
+    "chore_steps_none": {
+      "message": "Sysslan ”{name}” har inga steg."
+    },
+    "chore_step_not_found": {
+      "message": "Steg {step_id} hittades inte i sysslan ”{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Gör först klart alla steg i ”{name}”."
     },
     "swap_only_rotation": {
       "message": "Bara sysslor i turordning kan bytas"
@@ -3516,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Kunde inte spara ljudet"
+    },
+    "choice_set_name_required": {
+      "message": "En valfri grupp behöver ett namn"
+    },
+    "choice_set_needs_chore": {
+      "message": "En valfri grupp behöver minst en syssla"
+    },
+    "choice_set_too_many_chores": {
+      "message": "En valfri grupp kan ha högst {max} sysslor"
+    },
+    "choice_set_min_too_high": {
+      "message": "\"Välj minst\" kan vara högst {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} är obligatorisk och kan därför inte finnas i en valfri grupp"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} är först-till-kvarn och kan därför inte finnas i en valfri grupp"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} går i turordning mellan barnen och kan därför inte finnas i en valfri grupp"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} finns redan i den valfria gruppen {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} finns i den valfria gruppen {set}. Ta bort den från gruppen först."
+    },
+    "choice_set_not_found": {
+      "message": "Hittade inte den valfria gruppen {set_id}"
     }
   },
   "issues": {

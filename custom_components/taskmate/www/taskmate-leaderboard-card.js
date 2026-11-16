@@ -238,6 +238,8 @@ class TaskMateLeaderboardCard extends LitElement {
       }
       .error-state { color: var(--error-color, #f44336); }
       .error-state ha-icon, .empty-state ha-icon { --mdc-icon-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+      .lb-off-title { font-weight: 600; color: var(--tmd-text, var(--primary-text-color)); }
+      .lb-off-sub { font-size: 0.85rem; margin-top: 4px; }
 
       @media (max-width: 480px) {
         .card-content { padding: 10px; gap: 8px; }
@@ -339,6 +341,9 @@ class TaskMateLeaderboardCard extends LitElement {
     const design = window.__taskmate_design
       ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity, "#b7950b")
       : "classic";
+    // Family style (#1260): a family that switched the leaderboard off sees
+    // a friendly note instead of a ranking, in every design.
+    if (!this._leaderboardOn()) return this._renderTurnedOff(design);
     if (design !== "classic") return this._renderDesigned(design);
 
     const entity = this.hass.states[this.config.entity];
@@ -409,6 +414,36 @@ class TaskMateLeaderboardCard extends LitElement {
         </div>
       </ha-card>
     `;
+  }
+
+  _leaderboardOn() {
+    return window.__taskmate_feature_on ? window.__taskmate_feature_on(this.hass, "leaderboard") : true;
+  }
+
+  _renderTurnedOff(design) {
+    const admin = !!(this.hass.user && this.hass.user.is_admin);
+    const note = html`
+      <div class="lb-off-title">${this._t("common.feature_off_leaderboard")}</div>
+      <div class="lb-off-sub">${this._t("common.feature_off_sub")}</div>
+      ${admin ? html`<div class="lb-off-sub">${this._t("common.feature_off_admin")}</div>` : ""}`;
+    if (design !== "classic") {
+      const hd = _safeColor(this.config.header_color, '#b7950b');
+      return html`<ha-card class="tmd lb-off" style="--hd:${hd}">
+        ${this._designHeader(hd, '')}
+        <div class="tmd-bd"><div class="tmd-empty">${note}</div></div>
+      </ha-card>`;
+    }
+    return html`
+      <ha-card class="lb-off">
+        <style>:host { --taskmate-header-bg: ${_safeColor(this.config.header_color, '#b7950b')}; }</style>
+        <div class="card-header">
+          <div class="header-content">
+            <ha-icon class="header-icon" icon="mdi:trophy"></ha-icon>
+            <span class="header-title">${this.config.title || this._t('leaderboard.default_title')}</span>
+          </div>
+        </div>
+        <div class="empty-state"><ha-icon icon="mdi:handshake-outline"></ha-icon>${note}</div>
+      </ha-card>`;
   }
 
   // "Ranked by …" is a whole sentence per sort, so no language has its label

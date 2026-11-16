@@ -20,6 +20,7 @@ from .models import (
     Bounty,
     Challenge,
     Child,
+    ChoiceSet,
     Chore,
     ChoreCompletion,
     CustomNotification,
@@ -186,6 +187,10 @@ class TaskMateStorage:
         # one-shot flag: it is a cheap list filter, and it also sweeps up records
         # left by a downgrade to a version without the cascades.
         self._drop_dead_swap_requests()
+
+        # Choice sets (#1259) saved before created_on existed: stamp today,
+        # once, so the end-of-day check never backfills days before it.
+        self._stamp_choice_set_dates()
 
         # Notifications overhaul (v3.9.0)
         if "parent_recipients" not in self._data:
@@ -538,6 +543,10 @@ class TaskMateStorage:
         order = self._data.get("chore_display_order", [])
         if chore_id in order:
             order.remove(chore_id)
+        # Choice sets (#1259) forget it too.
+        for cs in self._data.get("choice_sets", []) or []:
+            if isinstance(cs, dict) and chore_id in (cs.get("chore_ids") or []):
+                cs["chore_ids"] = [c for c in cs["chore_ids"] if c != chore_id]
 
     def set_chore_display_order(self, order: list[str]) -> None:
         """Set the global chore display order."""
@@ -1517,6 +1526,61 @@ class TaskMateStorage:
             if store[chore_id].get("date") != keep_date:
                 store.pop(chore_id, None)
 
+    # ── Multipart chore steps (#1253) ───────────────────────────────────
+    # {chore_id: {child_id: {"date": "YYYY-MM-DD", "round": n, "done": [step_id]}}}.
+    # Runtime state for today, kept out of the chore record so an editor
+    # save can never wipe it. ``round`` is how many times the child had
+    # completed the chore today when the ticks were made, so a chore done
+    # more than once a day starts each go with a clean checklist. Only the
+    # current day's entry counts; anything older is dead on read.
+    def get_step_progress(self, chore_id: str, child_id: str, day: str) -> dict:
+        entry = (self._data.get("chore_steps", {}).get(chore_id) or {}).get(child_id)
+        if not isinstance(entry, dict) or entry.get("date") != day:
+            return {}
+        done = [s for s in entry.get("done", []) if isinstance(s, str) and s]
+        try:
+            round_no = int(entry.get("round", 0) or 0)
+        except (TypeError, ValueError):
+            round_no = 0
+        return {"date": day, "round": round_no, "done": done}
+
+    def set_step_progress(self, chore_id: str, child_id: str, day: str, round_no: int, done: list[str]) -> None:
+        store = self._data.setdefault("chore_steps", {})
+        kids = store.setdefault(chore_id, {})
+        if done:
+            kids[child_id] = {"date": day, "round": int(round_no), "done": list(done)}
+        else:
+            kids.pop(child_id, None)
+        if not kids:
+            store.pop(chore_id, None)
+
+    def remove_step_progress_for_chore(self, chore_id: str) -> None:
+        self._data.get("chore_steps", {}).pop(chore_id, None)
+
+    def remove_step_progress_for_child(self, child_id: str) -> None:
+        store = self._data.get("chore_steps", {})
+        for chore_id in list(store):
+            kids = store[chore_id]
+            if isinstance(kids, dict):
+                kids.pop(child_id, None)
+            if not kids:
+                store.pop(chore_id, None)
+
+    def prune_step_progress(self, keep_date: str) -> None:
+        """Drop step ticks from any day but keep_date: the day rolled over."""
+        store = self._data.get("chore_steps", {})
+        for chore_id in list(store):
+            kids = store[chore_id]
+            if not isinstance(kids, dict):
+                store.pop(chore_id, None)
+                continue
+            for child_id in list(kids):
+                entry = kids[child_id]
+                if not isinstance(entry, dict) or entry.get("date") != keep_date:
+                    kids.pop(child_id, None)
+            if not kids:
+                store.pop(chore_id, None)
+
     # ── Wishlist (#932) ──────────────────────────────────────────────────
     # Wishes are their own records, not rewards: a child creates them and a
     # parent approves them. A wish's own saved points and pledges live on the
@@ -1649,6 +1713,42 @@ class TaskMateStorage:
     def remove_quest_progress_for_child(self, child_id: str) -> None:
         for child_map in self.get_quest_progress().values():
             child_map.pop(child_id, None)
+
+    # ── Choice sets (#1259) ──────────────────────────────────────────────
+    def get_choice_sets(self) -> list[ChoiceSet]:
+        return [ChoiceSet.from_dict(c) for c in self._data.get("choice_sets", []) if isinstance(c, dict)]
+
+    def get_choice_set(self, set_id: str) -> ChoiceSet | None:
+        for c in self._data.get("choice_sets", []):
+            if isinstance(c, dict) and c.get("id") == set_id:
+                return ChoiceSet.from_dict(c)
+        return None
+
+    def add_choice_set(self, choice_set: ChoiceSet) -> None:
+        self._data.setdefault("choice_sets", []).append(choice_set.to_dict())
+
+    def update_choice_set(self, choice_set: ChoiceSet) -> None:
+        items = self._data.get("choice_sets", [])
+        for i, c in enumerate(items):
+            if isinstance(c, dict) and c.get("id") == choice_set.id:
+                items[i] = choice_set.to_dict()
+                return
+        self.add_choice_set(choice_set)
+
+    def _stamp_choice_set_dates(self) -> None:
+        """Give every choice set a ``created_on`` (today) if it has none."""
+        from .models import local_today_iso
+
+        today = None
+        for cs in self._data.get("choice_sets", []) or []:
+            if isinstance(cs, dict) and not cs.get("created_on"):
+                today = today or local_today_iso()
+                cs["created_on"] = today
+
+    def remove_choice_set(self, set_id: str) -> None:
+        self._data["choice_sets"] = [
+            c for c in self._data.get("choice_sets", []) if not (isinstance(c, dict) and c.get("id") == set_id)
+        ]
 
     # ── Challenges (daily / weekly) ──────────────────────────────────────
     def get_challenges(self) -> list[Challenge]:
@@ -1853,6 +1953,7 @@ class TaskMateStorage:
             "timed_sessions",
             "quests",
             "challenges",
+            "choice_sets",
             "wishes",
             "bounties",
             "auctions",
@@ -1870,6 +1971,7 @@ class TaskMateStorage:
             self._data["weekly_target_bonuses"] = {}
         self._restore_authorisation_state(kept)
         self._sanitize_imported_records()
+        self._stamp_choice_set_dates()
 
     def _sanitize_imported_records(self) -> None:
         """Re-validate untrusted inner records after a full-replace import (SEC-5).
@@ -2105,6 +2207,7 @@ class TaskMateStorage:
             "parent_recipients": _models.ParentRecipient,
             "timed_sessions": _models.TimedSession,
             "quests": _models.Quest,
+            "choice_sets": _models.ChoiceSet,
             "challenges": _models.Challenge,
             "bounties": _models.Bounty,
             "auctions": _models.Auction,

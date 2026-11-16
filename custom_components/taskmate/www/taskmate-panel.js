@@ -52,7 +52,7 @@ const RECAP_FREQUENCIES = ["weekly", "monthly", "every_3_months", "every_6_month
 const BADGE_OPERATORS = ["≥", "=", "≤", ">", "<", "≠"];
 const BADGE_OP_VALUES = { "≥": ">=", "=": "==", "≤": "<=", ">": ">", "<": "<", "≠": "!=" };
 // Dialogs that edit one thing open as a side panel, not a centred dialog.
-const EDITOR_KINDS = new Set(["child", "chore", "reward", "penalty", "bonus", "raffle", "group", "quest", "challenge", "bounty", "auction", "badge"]);
+const EDITOR_KINDS = new Set(["child", "chore", "reward", "penalty", "bonus", "raffle", "group", "quest", "challenge", "choice_set", "bounty", "auction", "badge"]);
 
 // The Manual: wiki/ bundled into the integration by scripts/build_manual.py.
 const MANUAL_URL = "/taskmate/manual/manual.json";
@@ -68,6 +68,7 @@ const MANUAL_HELP = {
   auctions:      ["Chore-Auctions"],
   quests:        ["Quests"],
   challenges:    ["Challenges"],
+  choice_sets:   ["Choice-Sets"],
   templates:     ["Template-Packs"],
   rewards:       ["Managing-Rewards"],
   wishlists:     ["Wishlist"],
@@ -215,6 +216,8 @@ const ROTATION_PERIODS = [
   { v: "month", lk: "panel.chore_rotation_period_month" },
 ];
 const ROTATION_EVERY_MAX = 12;
+// Multipart chores (#1253): models.MAX_CHORE_STEPS.
+const CHORE_STEPS_MAX = 20;
 
 // The week planner's weekdays (Monday first, like the backend) and the edge
 // colour of a chore that belongs to more than one child.
@@ -243,9 +246,27 @@ const TASK_GROUP_POLICIES = [
 // Setup wizard (#980). Age groups mirror AGE_GROUP_INFO in setup_catalogue.py
 // (youngest age, oldest age) — tests/test_setup_wizard.py keeps them in step.
 const WZ_AGE_GROUPS = [["3_5", 3, 5], ["6_8", 6, 8], ["9_12", 9, 12], ["13_plus", 13, 999]];
-const WZ_STEPS = ["welcome", "children", "chores", "rewards", "dashboards", "review", "done"];
+// Per-child stage (#1262): the age group, labelled "Stage". What each stage
+// suggests: card behaviour (the child card follows it when its YAML leaves the
+// option unset), chore changes (applied once, only with stage_scope "all") and
+// ideas that are never applied. Mirrors coord_stages.py.
+const STAGE_SUGGESTIONS = {
+  "3_5": { card: ["pre_reader_on"], chores: ["no_deadlines"], tips: ["few_chores"] },
+  "6_8": { card: ["pre_reader_off", "descriptions_on"], chores: [], tips: ["rotation"] },
+  "9_12": { card: ["pre_reader_off"], chores: [], tips: ["open_ended", "weekly_targets"] },
+  "13_plus": { card: ["pre_reader_off", "fewer_game_bits"], chores: [], tips: ["savings_goals"] },
+};
+const CHORE_STAGE_VALUES = ["can", "practising", "later"];
+const WZ_STEPS = ["welcome", "style", "children", "chores", "rewards", "dashboards", "review", "done"];
+const WZ_CHILDREN = WZ_STEPS.indexOf("children");
 const WZ_REVIEW = WZ_STEPS.indexOf("review");
 const WZ_DONE = WZ_STEPS.indexOf("done");
+// Family style (#1260): the three presets, their icons, and the switches a
+// style covers (the order the confirm dialog lists them in).
+const FAMILY_STYLES = ["game", "team", "custom"];
+const FAMILY_STYLE_ICONS = { game: "mdi:trophy-outline", team: "mdi:account-group-outline", custom: "mdi:tune-variant" };
+const FAMILY_STYLE_SWITCHES = ["leaderboard_enabled", "penalties_enabled", "points_decay_enabled", "raffles_enabled",
+  "roulette_enabled", "inspections_enabled", "family_goal_enabled"];
 const WZ_KID_ICONS = ["mdi:star", "mdi:heart", "mdi:paw", "mdi:white-balance-sunny", "mdi:weather-night", "mdi:trophy",
   "mdi:leaf", "mdi:creation", "mdi:fire", "mdi:medal", "mdi:book-open-variant", "mdi:car-sports"];
 // Settings → Seasons & events: the rows in order, and the look of each
@@ -950,6 +971,7 @@ class TaskMatePanel extends HTMLElement {
 
   _closeDialog(force = false) {
     if (!force && !this._mayLeaveDialog()) return;
+    this._stagePop = null;
     this._dialog = null;
     this._dialogInitialHash = null;
     this._render();
@@ -1023,6 +1045,9 @@ class TaskMatePanel extends HTMLElement {
     if (act === "view-as-child") { this._setViewAs("child_id", t.dataset.id); return; }
     if (act === "settings-jump") { this._settingsJump(t.dataset.sec); return; }
     if (act === "settings-discard") { this._discardSettings(); return; }
+    if (act === "style-pick") { this._stylePick(t.dataset.v); return; }
+    if (act === "style-apply") { this._styleApply(); return; }
+    if (act === "style-hide") { this._styleHideSet(t.dataset.v); return; }
     if (act === "leave-settings-stay") { this._closeDialog(true); return; }
     if (act === "leave-settings-go") { this._leaveSettings(); return; }
     if (act === "trash-restore") { this._restoreDeleted(t.dataset.kind, t.dataset.id); return; }
@@ -1271,6 +1296,9 @@ class TaskMatePanel extends HTMLElement {
     }
     if (act === "add-bonus-subtask") { this._addBonusSubtask(); return; }
     if (act === "remove-bonus-subtask") { this._removeBonusSubtask(Number(t.dataset.idx)); return; }
+    if (act === "add-chore-step")    { this._addChoreStep(); return; }
+    if (act === "remove-chore-step") { this._removeChoreStep(Number(t.dataset.idx)); return; }
+    if (act === "move-chore-step")   { this._moveChoreStep(Number(t.dataset.idx), Number(t.dataset.dir)); return; }
 
     // Rewards
     if (act === "add-reward")    { this._openRewardDialog(null); return; }
@@ -1296,6 +1324,19 @@ class TaskMatePanel extends HTMLElement {
     if (act === "save-challenge")   { this._doSaveChallenge(); return; }
     if (act === "toggle-challenge-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
 
+    // Choice sets (#1259)
+    if (act === "add-choice-set")    { this._openChoiceSetDialog(null); return; }
+    if (act === "edit-choice-set")   { this._openChoiceSetDialog(t.dataset.id); return; }
+    if (act === "delete-choice-set") { this._confirmDelete("choice_set", t.dataset.id); return; }
+    if (act === "save-choice-set")   { this._doSaveChoiceSet(); return; }
+    if (act === "toggle-cs-assigned") { this._toggleArrayField("assigned_to", t.dataset.id); return; }
+    if (act === "toggle-cs-chore")   { if (!t.disabled) this._toggleArrayField("chore_ids", t.dataset.id); return; }
+    if (act === "cs-step")           { this._stepChoiceSetField(t.dataset.field, Number(t.dataset.dir)); return; }
+    // Missed mandatory chores and sets on the Today page (#1259)
+    if (act === "miss-penalty")  { this._doResolveMiss("apply_mandatory_penalty", t.dataset.id); return; }
+    if (act === "miss-postpone") { this._doResolveMiss("postpone_mandatory_chore", t.dataset.id); return; }
+    if (act === "miss-dismiss")  { this._doResolveMiss("dismiss_mandatory_chore", t.dataset.id); return; }
+
     // Bounty board (#931)
     if (act === "bounty-subtab")    { this._bountySubTab = t.dataset.id; this._render(); return; }
     if (act === "add-bounty")       { this._openBountyDialog(null); return; }
@@ -1307,6 +1348,22 @@ class TaskMatePanel extends HTMLElement {
     if (act === "bounty-icon")      { this._bountyDialogSet("icon", t.dataset.id); return; }
     if (act === "bounty-exp")       { this._bountyDialogSet("exp_mode", t.dataset.id); return; }
     if (act === "bounty-el-all")    { this._bountyDialogSet("eligible_child_ids", []); return; }
+    if (act === "child-stage" && this._dialog?.data) { this._pickChildStage(t.dataset.v || ""); return; }
+    if (act === "child-chore-stage" && this._dialog?.data) {
+      this._syncIconPickers();
+      const marks = { ...(this._dialog.data.chore_stage || {}) };
+      if (t.dataset.v === "can") delete marks[t.dataset.id]; else marks[t.dataset.id] = t.dataset.v;
+      this._dialog.data.chore_stage = marks;
+      this._renderKeepScroll();
+      return;
+    }
+    if (act === "stage-pop-cancel") {
+      // Only the scrim itself or a button: clicks inside the sheet bubble here too.
+      if (t.classList.contains("tm-scrim-stacked") && e.target !== t) return;
+      this._stagePop = null; this._render(); return;
+    }
+    if (act === "stage-only")  { this._confirmChildStage(false); return; }
+    if (act === "stage-apply") { this._confirmChildStage(true); return; }
     if ((act === "child-color" || act === "child-celebration") && this._dialog?.data) {
       this._syncIconPickers();
       if (act === "child-color") this._dialog.data.color = t.dataset.v || "";
@@ -2000,7 +2057,7 @@ class TaskMatePanel extends HTMLElement {
   }
 
   _confirmDelete(kind, id) {
-    const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups", quest: "quests", challenge: "challenges" }[kind];
+    const collectionKey = { child: "children", chore: "chores", reward: "rewards", penalty: "penalties", bonus: "bonuses", group: "task_groups", quest: "quests", challenge: "challenges", choice_set: "choice_sets" }[kind];
     const item = (this._state[collectionKey] || []).find(x => x.id === id);
     if (!item) return;
     const extraWarn = kind === "child"
@@ -2026,11 +2083,12 @@ class TaskMatePanel extends HTMLElement {
       group:   "taskmate/remove_task_group",
       quest:   "taskmate/delete_quest",
       challenge: "taskmate/delete_challenge",
+      choice_set: "taskmate/choice_sets/remove",
     }[kind];
     const idField = {
       child: "child_id", chore: "chore_id", reward: "reward_id",
       penalty: "penalty_id", bonus: "bonus_id", group: "group_id",
-      quest: "quest_id", challenge: "challenge_id",
+      quest: "quest_id", challenge: "challenge_id", choice_set: "set_id",
     }[kind];
     const collection = { chore: "chores", reward: "rewards", quest: "quests" }[kind];
     const name = collection ? ((this._state[collection] || []).find(x => x.id === id) || {}).name || "" : "";
@@ -2673,6 +2731,7 @@ class TaskMatePanel extends HTMLElement {
         picture_entity: c.picture_entity || "",
         birthday: c.birthday || "",
         age_group: c.age_group || "",
+        chore_stage: { ...(c.chore_stage || {}) },
         is_adult: !!c.is_adult,
         color: c.color || "",
         celebration_style: c.celebration_style || "confetti",
@@ -2745,6 +2804,7 @@ class TaskMatePanel extends HTMLElement {
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
+          chore_stage: { ...(d.chore_stage || {}) },
           color: d.color || "", celebration_style: d.celebration_style || "confetti",
           presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" };
@@ -3040,6 +3100,8 @@ class TaskMatePanel extends HTMLElement {
       publish_calendar_entities: [],
       depends_on: [],
       bonus_subtasks: [],
+      // Multipart chores (#1253): required steps, in order.
+      steps: [],
       tag_ids: [],
       // Set times (several times a day): "once" | "limit" (daily_limit) | "set".
       times: [], times_bonus: 0, _freq: "once",
@@ -3060,6 +3122,7 @@ class TaskMatePanel extends HTMLElement {
         depends_on: [...(c.depends_on || [])],
         tag_ids: [...(c.tag_ids || [])],
         bonus_subtasks: (c.bonus_subtasks || []).map(b => ({...b})),
+        steps: (c.steps || []).map(s => ({...s})),
         visibility_operator: c.visibility_operator || "none",
         weather_block_conditions: [...(c.weather_block_conditions || [])],
         // null/undefined limits render as an empty input, not "null"
@@ -3311,6 +3374,10 @@ class TaskMatePanel extends HTMLElement {
         points: Math.max(0, Math.round(Number(t.points) || 0)),
       })) : [],
       times_bonus: setTimes ? Math.max(0, Math.round(Number(d.times_bonus) || 0)) : 0,
+      // Multipart steps (#1253): never on a timed task or a set-times chore.
+      steps: setTimes || (d.task_type || "standard") === "timed" ? [] : (d.steps || [])
+        .filter(s => s && String(s.name || "").trim())
+        .map(s => ({ ...(s.id ? { id: s.id } : {}), name: String(s.name).trim().slice(0, 100) })),
       estimated_minutes: Math.min(600, Math.max(0, Math.round(Number(d.estimated_minutes) || 0))),
       quantity_unit: (d.task_type || "standard") === "timed" || d.open_ended ? "" : String(d.quantity_unit || "").trim().slice(0, 30),
       quantity_max: Math.min(10000, Math.max(0, Math.round(Number(d.quantity_max) || 0))),
@@ -3401,6 +3468,60 @@ class TaskMatePanel extends HTMLElement {
       d.bonus_subtasks.splice(idx, 1);
       this._render();
     }
+  }
+
+  // Multipart chore steps (#1253): add / remove / reorder in the editor.
+  _addChoreStep() {
+    if (!this._dialog) return;
+    const d = this._dialog.data;
+    d.steps = d.steps || [];
+    if (d.steps.length >= CHORE_STEPS_MAX) return;
+    d.steps.push({ name: "" });
+    (this._dialog._openAdvanced = this._dialog._openAdvanced || new Set()).add("steps");
+    this._render();
+  }
+
+  _removeChoreStep(idx) {
+    if (!this._dialog) return;
+    const d = this._dialog.data;
+    if (d.steps && d.steps[idx] !== undefined) {
+      d.steps.splice(idx, 1);
+      this._render();
+    }
+  }
+
+  _moveChoreStep(idx, dir) {
+    if (!this._dialog) return;
+    const steps = this._dialog.data.steps || [];
+    const to = idx + (dir < 0 ? -1 : 1);
+    if (steps[idx] === undefined || to < 0 || to >= steps.length) return;
+    [steps[idx], steps[to]] = [steps[to], steps[idx]];
+    this._render();
+  }
+
+  _renderChoreSteps(d) {
+    const steps = d.steps || [];
+    const open = steps.length > 0 || this._dialog._openAdvanced?.has("steps");
+    return `<details class="tm-advanced" data-section="steps"${open ? " open" : ""}>
+      <summary>${this._t("panel.chore_steps_label")}${steps.length ? ` (${this._fmtNum(steps.length)})` : ""}</summary>
+      <div>
+        <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_steps_hint")}</span>
+        ${steps.map((s, idx) => {
+          const up = this._esc(this._t("panel.chore_step_move_up"));
+          const down = this._esc(this._t("panel.chore_step_move_down"));
+          const rm = this._esc(this._t("panel.tooltip_remove"));
+          return `
+          <div class="tm-step-row">
+            <span class="tm-step-num" aria-hidden="true">${this._fmtNum(idx + 1)}</span>
+            <input class="tm-input tm-step-name" maxlength="100" aria-label="${this._esc(this._t("panel.chore_step_name_aria", {n: this._fmtNum(idx + 1)}))}" placeholder="${this._esc(this._t("panel.chore_step_name_placeholder"))}" value="${this._esc(s.name)}" data-field="steps[${idx}].name">
+            <button type="button" class="tm-icon-btn" data-act="move-chore-step" data-idx="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} title="${up}" aria-label="${up}"><ha-icon icon="mdi:arrow-up"></ha-icon></button>
+            <button type="button" class="tm-icon-btn" data-act="move-chore-step" data-idx="${idx}" data-dir="1" ${idx === steps.length - 1 ? "disabled" : ""} title="${down}" aria-label="${down}"><ha-icon icon="mdi:arrow-down"></ha-icon></button>
+            <button type="button" class="tm-icon-btn tm-step-rm" data-act="remove-chore-step" data-idx="${idx}" title="${rm}" aria-label="${rm}"><ha-icon icon="mdi:close"></ha-icon></button>
+          </div>`;
+        }).join("")}
+        ${steps.length < CHORE_STEPS_MAX ? `<button type="button" class="tm-btn" data-act="add-chore-step" style="margin-top:4px">${this._t("panel.btn_add_chore_step")}</button>` : ""}
+      </div>
+    </details>`;
   }
 
   // ---- Rewards ---------------------------------------------------------
@@ -3602,6 +3723,232 @@ class TaskMatePanel extends HTMLElement {
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-challenge">${this._t("panel.btn_save")}</button>`
     );
+  }
+
+  // ---- Choice sets (#1259) ----------------------------------------------
+  // "Do at least N of these": member chores stay ordinary chores, the set is
+  // what the child owes. Rotation, first-come, planner-pool and mandatory
+  // chores can't join (the server refuses them too), nor can a chore that is
+  // already in another set.
+  _openChoiceSetDialog(id) {
+    const blank = { name: "", description: "", icon: "mdi:hand-heart-outline",
+      chore_ids: [], min_required: 1, penalty_points: 0, assigned_to: [], active: true };
+    if (id) {
+      const cs = (this._state.choice_sets || []).find(x => x.id === id);
+      if (!cs) return;
+      this._openDialog({ kind: "choice_set", mode: "edit", data: {
+        ...blank, ...cs,
+        chore_ids: [...(cs.chore_ids || [])],
+        assigned_to: [...(cs.assigned_to || [])],
+      } });
+    } else {
+      this._openDialog({ kind: "choice_set", mode: "add", data: blank });
+    }
+  }
+
+  // Why a chore can't join this set, or "" when it can.
+  _choiceSetChoreBlock(chore, setId) {
+    if (chore.mandatory) return this._t("panel.choice_set_blocked_mandatory");
+    const mode = chore.assignment_mode || "everyone";
+    if (mode === "first_come") return this._t("panel.choice_set_blocked_first_come");
+    if (mode !== "everyone") return this._t("panel.choice_set_blocked_rotation");
+    const other = (this._state.choice_sets || []).find(s => s.id !== setId && (s.chore_ids || []).includes(chore.id));
+    if (other) return this._t("panel.choice_set_blocked_other", { name: other.name });
+    return "";
+  }
+
+  _stepChoiceSetField(field, dir) {
+    if (!this._dialog || this._dialog.kind !== "choice_set" || !["min_required", "penalty_points"].includes(field)) return;
+    const max = field === "min_required" ? 50 : 100000;
+    const cur = Math.max(0, Number(this._dialog.data[field]) || 0);
+    this._dialog.data[field] = Math.min(max, Math.max(0, cur + (dir < 0 ? -1 : 1)));
+    const body = this.querySelector(".tm-dialog-body");
+    const scrollY = body ? body.scrollTop : 0;
+    this._render();
+    const b = this.querySelector(".tm-dialog-body");
+    if (b) b.scrollTop = scrollY;
+  }
+
+  _choiceSetStepper(label, field, value, hint) {
+    const v = Math.max(0, Number(value) || 0);
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(label)}</span>
+        <span class="tm-cs-stepper">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="cs-step" data-field="${field}" data-dir="-1" aria-label="−" ${v <= 0 ? "disabled" : ""}>−</button>
+          <output aria-live="polite">${this._fmtNum(v)}</output>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="cs-step" data-field="${field}" data-dir="1" aria-label="+">+</button>
+        </span>
+        ${hint ? `<span class="tm-field-hint">${hint}</span>` : ""}
+      </div>`;
+  }
+
+  async _doSaveChoiceSet() {
+    this._syncIconPickers();
+    const d = this._dialog.data;
+    if (!d.name || !d.name.trim()) { this._showToast("err", this._t("panel.toast_name_required")); return; }
+    if (!d.chore_ids || d.chore_ids.length === 0) { this._showToast("err", this._t("panel.choice_set_need_chore")); return; }
+    const wasAdd = this._dialog.mode === "add";
+    const base = {
+      name: d.name.trim(),
+      description: d.description || "",
+      icon: d.icon || "mdi:hand-heart-outline",
+      chore_ids: [...d.chore_ids],
+      min_required: Math.min(50, Math.max(0, Math.round(Number(d.min_required) || 0))),
+      penalty_points: Math.min(100000, Math.max(0, Math.round(Number(d.penalty_points) || 0))),
+      assigned_to: d.assigned_to || [],
+      active: d.active !== false,
+    };
+    const payload = wasAdd ? { type: "taskmate/choice_sets/create", ...base } : { type: "taskmate/choice_sets/update", set_id: d.id, ...base };
+    const { ok, err } = await this._callWS(payload);
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    this._closeDialog(true);
+    await this._fetchState();
+    this._showToast("ok", wasAdd ? this._t("panel.toast_choice_set_added") : this._t("panel.toast_choice_set_updated"));
+  }
+
+  _renderChoiceSetDialog() {
+    const d = this._dialog.data;
+    const children = this._state.children || [];
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    const chores = (this._state.chores || []).filter(c => c.enabled !== false || (d.chore_ids || []).includes(c.id));
+    const picked = d.chore_ids || [];
+    return this._dialogShell(this._dialog.mode === "add" ? this._t("panel.dialog_add_choice_set") : this._t("panel.dialog_edit_choice_set"),
+      [
+        `<p class="tm-meta">${this._t("panel.choice_set_editor_hint")}</p>`,
+        this._field(this._t("panel.chore_name_label"), "name", d.name, "text"),
+        this._field(this._t("panel.chore_description_label"), "description", d.description, "text"),
+        `<div class="tm-field-row">
+          ${this._choiceSetStepper(this._t("panel.choice_set_min_label"), "min_required", d.min_required, this._t("panel.choice_set_min_hint"))}
+          ${this._choiceSetStepper(this._t("panel.choice_set_penalty_label", { points_name: pointsName }), "penalty_points", d.penalty_points, this._t("panel.choice_set_penalty_hint"))}
+        </div>`,
+        this._iconPickerField(this._t("panel.reward_icon_label"), "icon", d.icon),
+        `<div class="tm-field">
+          <span class="tm-field-label">${this._t("panel.choice_set_chores_label")}</span>
+          <div class="tm-chip-row">
+            ${chores.length ? chores.map(c => {
+              const on = picked.includes(c.id);
+              // A chore already picked stays removable even if it no longer fits.
+              const block = on ? "" : this._choiceSetChoreBlock(c, d.id);
+              return `<button type="button" class="tm-chip-btn ${on ? "tm-chip-on" : ""}" aria-pressed="${on}" data-act="toggle-cs-chore" data-id="${this._esc(c.id)}"${block ? ` disabled title="${this._esc(block)}"` : ""}>${this._esc(c.name)}</button>`;
+            }).join("") : `<span class="tm-meta">${this._t("panel.choice_set_need_chores")}</span>`}
+          </div>
+          <span class="tm-field-hint">${this._t("panel.choice_set_chores_hint")}</span>
+        </div>`,
+        children.length > 0 ? `
+          <div class="tm-field">
+            <span class="tm-field-label">${this._t("panel.quest_assigned_label")}</span>
+            <div class="tm-chip-row">
+              ${children.map(c => `
+                <button type="button" class="tm-chip-btn ${(d.assigned_to || []).includes(c.id) ? "tm-chip-on" : ""}" aria-pressed="${(d.assigned_to || []).includes(c.id)}" data-act="toggle-cs-assigned" data-id="${this._esc(c.id)}">
+                  ${this._esc(c.name)}
+                </button>
+              `).join("")}
+            </div>
+            <span class="tm-field-hint">${this._t("panel.choice_set_assigned_hint")}</span>
+          </div>
+        ` : "",
+        this._switch(this._t("panel.quest_active_label"), "active", d.active !== false,
+          this._t("panel.choice_set_active_hint")),
+      ].join(""),
+      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
+       <button type="button" class="tm-btn tm-btn-raised" data-act="save-choice-set">${this._t("panel.btn_save")}</button>`
+    );
+  }
+
+  _renderChoiceSetsTab() {
+    const all = this._state.choice_sets || [];
+    const sets = this._filterByName(all);
+    const haveChores = (this._state.chores || []).length > 0;
+    const pointsName = this._state.settings.points_name || this._t("common.points");
+    return `
+      <div class="tm-toolbar">
+        <h2 class="tm-toolbar-title">${this._t("panel.choice_set_title")} <span class="tm-toolbar-count">${all.length}</span></h2>
+        ${all.length > 0 ? this._searchBox(this._t("panel.search_choice_sets")) : ""}
+        ${haveChores ? `<button type="button" class="tm-btn tm-btn-raised" data-act="add-choice-set">${this._t("panel.btn_add_choice_set")}</button>` : ""}
+      </div>
+      ${!haveChores ? `<div class="tm-card tm-empty"><p>${this._t("panel.choice_set_need_chores")}</p></div>` :
+        all.length === 0 ? this._emptyState("🤲", this._t("panel.empty_choice_sets_title"), this._t("panel.empty_choice_sets_copy"), "add-choice-set", this._t("panel.btn_add_choice_set")) :
+        sets.length === 0 ? `<div class="tm-card tm-empty"><p>${this._t("panel.empty_no_match_filter", { filter: this._esc(this._filter) })}</p></div>` : `
+        <div class="tm-grid">
+          ${sets.map(cs => this._renderChoiceSetCard(cs, pointsName)).join("")}
+          <button type="button" class="tm-add-tile" data-act="add-choice-set"><span class="tm-add-plus">＋</span>${this._t("panel.choice_set_add_tile")}</button>
+        </div>
+      `}
+    `;
+  }
+
+  _renderChoiceSetCard(cs, pointsName) {
+    const children = this._state.children || [];
+    const choreById = {};
+    (this._state.chores || []).forEach(c => { choreById[c.id] = c; });
+    const assigned = (cs.assigned_to && cs.assigned_to.length)
+      ? children.filter(ch => cs.assigned_to.includes(ch.id)).map(ch => ch.name)
+      : [this._t("panel.quest_all_children")];
+    const names = (cs.chore_ids || []).map(id => choreById[id] ? choreById[id].name : this._t("panel.quest_missing_chore"));
+    const min = Number(cs.min_required) || 0;
+    return `
+      <article class="tm-card tm-quest-card${cs.active ? "" : " tm-quest-inactive"}">
+        <div class="tm-child-head">
+          <div class="tm-avatar">${this._mdi(cs.icon || "mdi:hand-heart-outline")}</div>
+          <div class="tm-child-name">
+            <h3>${this._esc(cs.name)}
+              ${min === 0 ? `<span class="tm-pill">${this._t("panel.choice_set_optional_pill")}</span>` : ""}
+              ${cs.active ? "" : `<span class="tm-pill tm-pill-muted">${this._t("panel.quest_badge_inactive")}</span>`}
+            </h3>
+            ${this._idBadge(cs.id)}
+            <div class="tm-meta">${this._esc(cs.description || "")}</div>
+          </div>
+        </div>
+        <div class="tm-stats-row" style="grid-template-columns: 1fr 1fr;">
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._ltrNums(`${this._fmtNum(min)} / ${this._fmtNum(names.length)}`)}</div><div class="tm-stat-label">${this._t("panel.choice_set_min_label")}</div></div>
+          <div class="tm-stat"><div class="tm-stat-value tm-numeric">${this._fmtNum(Number(cs.penalty_points) || 0)}</div><div class="tm-stat-label">${this._t("panel.choice_set_penalty_label", { points_name: this._esc(pointsName) })}</div></div>
+        </div>
+        <ul class="tm-quest-steps">${names.map(n => `<li>${this._esc(n)}</li>`).join("")}</ul>
+        <div class="tm-meta">${this._t("panel.quest_for_names", { names: this._esc(assigned.join(", ")) })}</div>
+        <div class="tm-card-foot">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="edit-choice-set" data-id="${this._esc(cs.id)}">${this._t("panel.btn_edit")}</button>
+          <button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="delete-choice-set" data-id="${this._esc(cs.id)}">${this._t("panel.btn_delete")}</button>
+        </div>
+      </article>
+    `;
+  }
+
+  // One missed mandatory chore or choice set in the Today queue, with the
+  // same three answers as the approvals card. Resolving it in either place
+  // clears it in both: it is one review item on the server.
+  _missQueueItem(m, childById, pointsName) {
+    const child = childById[m.child_id];
+    const who = this._esc((child && child.name) || m.child_name || "?");
+    const what = this._esc(m.chore_name || "?");
+    const penalty = Number(m.penalty_points) || 0;
+    const meta = [this._fmtIsoDate(m.due_date, { weekday: "long", day: "numeric", month: "short" })];
+    if (m.set_id && m.set_min != null) meta.push(this._t("panel.miss_set_progress", { done: this._fmtNum(m.set_done || 0), min: this._fmtNum(m.set_min) }));
+    meta.push(penalty > 0
+      ? this._t("panel.miss_penalty_if", { points: this._fmtNum(penalty), points_name: pointsName })
+      : this._t("panel.miss_no_penalty"));
+    return `
+      <div class="tm-approval-item" data-kind="miss">
+        <div class="tm-approval-icon"><ha-icon icon="${m.set_id ? "mdi:hand-heart-outline" : "mdi:alert-octagon-outline"}"></ha-icon></div>
+        <div class="tm-approval-body">
+          <div class="tm-approval-line">${this._t(m.set_id ? "panel.miss_set_text" : "panel.miss_chore_text", { child: who, name: what })}</div>
+          <div class="tm-meta">${meta.map(x => this._esc(x)).join(" · ")}</div>
+        </div>
+        <div class="tm-approval-actions">
+          <button type="button" class="tm-btn tm-btn-sm" data-act="miss-dismiss" data-id="${this._esc(m.id)}">${this._t("panel.miss_dismiss")}</button>
+          <button type="button" class="tm-btn tm-btn-sm" data-act="miss-postpone" data-id="${this._esc(m.id)}">${this._t("panel.miss_postpone")}</button>
+          ${penalty > 0 ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="miss-penalty" data-id="${this._esc(m.id)}">${this._t("panel.miss_apply_penalty")}</button>` : ""}
+        </div>
+      </div>`;
+  }
+
+  async _doResolveMiss(service, missId) {
+    if (!missId) return;
+    const { ok, err } = await this._callService(service, { miss_id: missId });
+    if (!ok) { this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t(service === "apply_mandatory_penalty" ? "panel.miss_toast_penalty"
+      : service === "postpone_mandatory_chore" ? "panel.miss_toast_postponed" : "panel.miss_toast_dismissed"));
   }
 
   // ---- Avatar unlockables ----------------------------------------------
@@ -4678,6 +5025,8 @@ class TaskMatePanel extends HTMLElement {
       auctions:  (this._state.auctions || []).filter(a => a.status === "open").length,
       raffles:   (this._state.raffles || []).filter(r => r.status === "open").length,
     } : {};
+    // Family style (#1260): tabs of switched-off features, when hidden.
+    const hidden = this._styleHiddenTabs();
     // Each group is a section of the nav rail; its items are the tabs along
     // the top of that section. Group keys use `key`, not `id`: only nav items
     // carry an id.
@@ -4696,6 +5045,7 @@ class TaskMatePanel extends HTMLElement {
         { id: "auctions",  label: this._t("panel.tab_auctions"),  icon: "mdi:gavel" },
         { id: "quests",    label: this._t("panel.tab_quests"),    icon: "mdi:map-marker-path" },
         { id: "challenges", label: this._t("panel.tab_challenges"), icon: "mdi:trophy-outline" },
+        { id: "choice_sets", label: this._t("panel.tab_choice_sets"), icon: "mdi:hand-heart-outline" },
         { id: "templates", label: this._t("panel.tab_templates"), icon: "mdi:clipboard-list-outline" },
       ]},
       { key: "spend", head: this._t("panel.nav_spend"), icon: "mdi:gift-outline", items: [
@@ -4726,7 +5076,7 @@ class TaskMatePanel extends HTMLElement {
       ]},
     ].map(g => ({
       ...g,
-      items: g.items.map(it => ({ ...it, count: counts[it.id] }))
+      items: g.items.filter(it => !hidden.has(it.id)).map(it => ({ ...it, count: counts[it.id] }))
     }));
   }
 
@@ -5070,6 +5420,7 @@ class TaskMatePanel extends HTMLElement {
       case "groups":    return this._renderGroupsTab();
       case "quests":    return this._renderQuestsTab();
       case "challenges": return this._renderChallengesTab();
+      case "choice_sets": return this._renderChoiceSetsTab();
       case "bounties":   return this._renderBountiesTab();
       case "raffles":    return this._renderRafflesTab();
       case "auctions":   return this._renderAuctionsTab();
@@ -5787,7 +6138,12 @@ class TaskMatePanel extends HTMLElement {
 
   // Everything waiting on a parent, as approval rows. The Activity tab and
   // the Today page (#966) share this; Today also lists new wishes.
-  _approvalQueue({ wishes = false } = {}) {
+  _approvalQueue({ wishes = false, misses = false } = {}) {
+    // Missed mandatory chores and choice sets (#1259): on the Today page
+    // when the miss_review_location setting says panel or both.
+    const where = (this._state.settings && this._state.settings.miss_review_location) || "card";
+    const pendingMisses = misses && (where === "panel" || where === "both")
+      ? (this._state.mandatory_misses || []).filter(m => this._childInScope(m.child_id)) : [];
     const pendingCompletions = (this._state.pending_completions || []).filter(c => this._childInScope(c.child_id));
     const pendingClaims = (this._state.pending_reward_claims || []).filter(c => this._childInScope(c.child_id));
     const pendingSwaps = (this._state.swap_requests || []).filter(r => this._childInScope(r.requester_id));
@@ -5799,6 +6155,7 @@ class TaskMatePanel extends HTMLElement {
     const inspections = this._openInspections();
     const html = `
     ${this._inspectionQueueHtml()}
+    ${pendingMisses.map(m => this._missQueueItem(m, childById, pointsName)).join("")}
     ${pendingCompletions.map(c => {
       const chore = choreById[c.chore_id];
       const child = childById[c.child_id];
@@ -5897,9 +6254,9 @@ class TaskMatePanel extends HTMLElement {
     }).join("")}
     `;
     return {
-      count: pendingCompletions.length + pendingClaims.length + pendingSwaps.length + pendingWishes.length + inspections.length,
+      count: pendingCompletions.length + pendingClaims.length + pendingSwaps.length + pendingWishes.length + inspections.length + pendingMisses.length,
       chores: pendingCompletions.length,
-      kinds: { chore: pendingCompletions.length + inspections.length, reward: pendingClaims.length, swap: pendingSwaps.length, wish: pendingWishes.length },
+      kinds: { chore: pendingCompletions.length + inspections.length, reward: pendingClaims.length, swap: pendingSwaps.length, wish: pendingWishes.length, ...(misses ? { miss: pendingMisses.length } : {}) },
       html,
     };
   }
@@ -5915,7 +6272,7 @@ class TaskMatePanel extends HTMLElement {
     const present = Object.keys(kinds).filter(k => kinds[k] > 0);
     if (present.length < 2) return "";
     const on = this._needsFilterOn(kinds);
-    const label = { chore: "panel.tab_chores", reward: "panel.tab_rewards", swap: "panel.needs_filter_swaps", wish: "panel.needs_filter_wishes" };
+    const label = { chore: "panel.tab_chores", reward: "panel.tab_rewards", swap: "panel.needs_filter_swaps", wish: "panel.needs_filter_wishes", miss: "panel.needs_filter_misses" };
     const chip = (key, text, n) => `
       <button type="button" class="tm-chip-btn ${on === key ? "tm-chip-on" : ""}" data-act="needs-filter" data-kind="${key}" aria-pressed="${on === key ? "true" : "false"}">${this._esc(text)}${n != null ? ` <span class="tm-chip-n">${n}</span>` : ""}</button>`;
     return `
@@ -6008,7 +6365,7 @@ class TaskMatePanel extends HTMLElement {
   _renderTodayTab() {
     const kids = (this._state.children || []).filter(c => this._childInScope(c.id));
     const pointsName = (this._state.settings && this._state.settings.points_name) || this._t("common.points");
-    const queue = this._approvalQueue({ wishes: true });
+    const queue = this._approvalQueue({ wishes: true, misses: true });
     // Morning / afternoon / evening by HA's clock (#771): the server's when
     // HA is set to show server time, not this browser's.
     const hour = window.__taskmate_dates && window.__taskmate_dates.hourNow
@@ -6073,7 +6430,7 @@ class TaskMatePanel extends HTMLElement {
               <button type="button" class="tm-btn" data-act="add-bounty"><ha-icon icon="mdi:flag-outline"></ha-icon>${this._t("panel.new_bounty")}</button>
               <button type="button" class="tm-btn tm-boost-btn" data-act="boost-open"><span aria-hidden="true">⚡</span>${this._t("panel.boost_start")}</button>
               <button type="button" class="tm-btn" data-act="tab" data-tab="bonuses"><ha-icon icon="mdi:flash-outline"></ha-icon>${this._t("panel.today_quick_bonus")}</button>
-              <button type="button" class="tm-btn" data-act="tab" data-tab="penalties"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("panel.today_quick_penalty")}</button>
+              ${this._styleHiddenTabs().has("penalties") ? "" : `<button type="button" class="tm-btn" data-act="tab" data-tab="penalties"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._t("panel.today_quick_penalty")}</button>`}
             </div>
           </div>
 
@@ -7384,12 +7741,19 @@ class TaskMatePanel extends HTMLElement {
       // Library picks (📚) arrived after the first drafts.
       if (!d.lib || typeof d.lib !== "object") d.lib = {};
       if (!d.libRewards || typeof d.libRewards !== "object") d.libRewards = {};
+      // Drafts from before the Style page (#1260) count their steps from
+      // Children at 1; every page after Welcome moved up by one.
+      const noStyle = !("style" in d);
       // Drafts from before #1053 had a single "Family chores" switch and
       // Review as step 4; Review is now after the Dashboards step.
       if (!d.dashOpts) {
         d.dash = { kids: d.dash !== false, parents: false, wall: false };
         d.dashOpts = this._wizardDashOpts();
-        if (Number(d.step) === 4) d.step = WZ_REVIEW;
+        if (Number(d.step) === 4) d.step = noStyle ? WZ_REVIEW - 1 : WZ_REVIEW;
+      }
+      if (noStyle) {
+        if (Number(d.step) >= 1) d.step = Number(d.step) + 1;
+        d.style = "";
       }
       d.step = Math.min(Math.max(0, Number(d.step) || 0), WZ_REVIEW);
       return d;
@@ -7412,7 +7776,7 @@ class TaskMatePanel extends HTMLElement {
     const pname = settings.points_name || this._t("wizard.pname_stars");
     const picon = settings.points_icon || "mdi:star";
     const wz = {
-      v: 1, step: 0, seq: 1,
+      v: 1, step: 0, seq: 1, style: "",
       pname, picon, pnameOrig: pname, piconOrig: picon, pnameCustom: false,
       kids: [], form: null,
       chores: {}, packs: [], rewards: {}, custom: [], rwName: "", rwCost: 20, lib: {}, libRewards: {},
@@ -7647,7 +8011,9 @@ class TaskMatePanel extends HTMLElement {
       if (item && !this._libHave("rewards", item)) rewards.push(this._libRewardDef(id, o));
     }
     for (const r of wz.custom) if (r.on) rewards.push({ name: r.name, cost: r.cost, icon: "mdi:gift-outline" });
-    return { children, child_updates, chores, rewards };
+    // Family style (#1260): sent only when the Style page picked a different one.
+    const style = wz.style && wz.style !== this._familyStyle() ? wz.style : "";
+    return { children, child_updates, chores, rewards, ...(style ? { family_style: style } : {}) };
   }
 
   // "YYYY-MM-DD" naming a day that exists (no 13th month, no 30 February).
@@ -7660,7 +8026,7 @@ class TaskMatePanel extends HTMLElement {
 
   // True when the plan would add or fill in anything at all.
   _wizardPlanHasWork(plan) {
-    return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length);
+    return !!(plan.children.length || plan.child_updates.length || plan.chores.length || plan.rewards.length || plan.family_style);
   }
 
   // Dashboards on their own are worth a run of the wizard too (#1053).
@@ -7697,8 +8063,8 @@ class TaskMatePanel extends HTMLElement {
     const wz = this._wz;
     if (wz.busy || step === WZ_DONE) return;
     // Leaving Children with a name typed adds that child, as the footer says.
-    if (wz.step === 1 && step > 1 && (wz.form.name || "").trim() && !this._wizardAddKid()) return;
-    if (step >= 2 && !wz.kids.length) { this._showToast("err", this._t("wizard.toast_need_child")); wz.step = 1; this._render(); return; }
+    if (wz.step === WZ_CHILDREN && step > WZ_CHILDREN && (wz.form.name || "").trim() && !this._wizardAddKid()) return;
+    if (step > WZ_CHILDREN && !wz.kids.length) { this._showToast("err", this._t("wizard.toast_need_child")); wz.step = WZ_CHILDREN; this._render(); return; }
     wz.step = Math.max(0, Math.min(WZ_REVIEW, step));
     this._wizardSaveDraft();
     this._render();
@@ -7724,6 +8090,8 @@ class TaskMatePanel extends HTMLElement {
       case "wz-dashboard": this._dashOpen(v); return;
       case "wz-go": this._wizardGo(Number(v)); return;
       case "wz-next": this._wizardGo(wz.step + 1); return;
+      // Style page (#1260): the preset the run will apply.
+      case "wz-style": wz.style = FAMILY_STYLES.includes(v) ? v : ""; break;
       case "wz-back": this._wizardGo(wz.step - 1); return;
       case "wz-create": this._wizardCreate(); return;
       case "wz-pname":
@@ -8000,13 +8368,18 @@ class TaskMatePanel extends HTMLElement {
       <button type="button" class="tm-wz-step ${i === step ? "tm-wz-on" : i < step ? "tm-wz-done" : ""}" data-act="wz-go" data-v="${i}" ${last || i === WZ_DONE ? "disabled" : ""} ${i === step ? 'aria-current="step"' : ""}>
         <span class="tm-wz-n">${i < step ? `<ha-icon icon="mdi:check"></ha-icon>` : i + 1}</span><span class="tm-wz-l">${this._t(`wizard.step_${id}`)}</span>
       </button>`).join("");
-    const nextKey = ["wizard.next_welcome", "wizard.next_children", "wizard.next_chores", "wizard.next_rewards", "wizard.next_dashboards"][step];
-    const body = [
-      () => this._wizardStepWelcome(), () => this._wizardStepChildren(), () => this._wizardStepChores(),
-      () => this._wizardStepRewards(), () => this._wizardStepDashboards(), () => this._wizardStepReview(),
-      () => this._wizardStepDone(),
-    ][step]();
-    const typed = step === 1 && (wz.form.name || "").trim();
+    const id = WZ_STEPS[step];
+    const nextKey = {
+      welcome: "wizard.next_welcome", style: "wizard.next_style", children: "wizard.next_children",
+      chores: "wizard.next_chores", rewards: "wizard.next_rewards", dashboards: "wizard.next_dashboards",
+    }[id];
+    const body = {
+      welcome: () => this._wizardStepWelcome(), style: () => this._wizardStepStyle(),
+      children: () => this._wizardStepChildren(), chores: () => this._wizardStepChores(),
+      rewards: () => this._wizardStepRewards(), dashboards: () => this._wizardStepDashboards(),
+      review: () => this._wizardStepReview(), done: () => this._wizardStepDone(),
+    }[id]();
+    const typed = step === WZ_CHILDREN && (wz.form.name || "").trim();
     return `
       <div class="tm-wz">
         <div class="tm-wz-box">
@@ -8026,7 +8399,7 @@ class TaskMatePanel extends HTMLElement {
                 : `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-close">${this._t("wizard.skip")}</button>`}
               <span class="tm-wz-sp"></span>
               ${step === 0 && wz.mode === "fresh" ? `<button type="button" class="tm-btn tm-wz-text-btn" data-act="wz-restore">${this._t("wizard.restore")}</button>` : ""}
-              ${step === 1 ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
+              ${step === WZ_CHILDREN ? `<span class="tm-wz-foot-hint">${typed ? this._esc(this._t("wizard.foot_will_add", { name: typed })) : ""}</span>` : ""}
               ${step === WZ_REVIEW
                 ? `<button type="button" class="tm-btn tm-btn-raised tm-wz-create" data-act="wz-create" ${wz.busy || !this._wizardHasWork(this._wizardPlan()) ? "disabled" : ""}>${wz.busy ? `<span class="tm-btn-spinner"></span>${this._t("wizard.creating")}` : this._t(wz.mode === "existing" ? "wizard.create_existing" : "wizard.create")}</button>`
                 : `<button type="button" class="tm-btn tm-btn-raised" data-act="wz-next">${this._t(nextKey)}<ha-icon class="tm-rtl-flip" icon="mdi:chevron-right"></ha-icon></button>`}
@@ -8071,6 +8444,18 @@ class TaskMatePanel extends HTMLElement {
       </div>
       ${wz.pnameCustom ? `<input type="text" class="tm-input tm-wz-pname" data-wz-in="pname" maxlength="120" value="${this._esc(wz.pname)}" aria-label="${this._esc(this._t("wizard.pname_question"))}">` : ""}
       <p class="tm-wz-hint">${this._t("wizard.pname_hint")}</p>`;
+  }
+
+  // Style page (#1260): Game or Team, optional. Custom is left to Settings.
+  _wizardStepStyle() {
+    const pick = this._wz.style || this._familyStyle();
+    return `
+      <h2 class="tm-wz-h">${this._t("wizard.style_question")}</h2>
+      <p class="tm-wz-p">${this._t("wizard.style_hint")}</p>
+      <div class="tm-style-opts tm-style-opts-wz" role="group" aria-label="${this._esc(this._t("wizard.style_question"))}">
+        ${["game", "team"].map(k => this._styleOptHtml(k, pick === k, "wz-style")).join("")}
+      </div>
+      <p class="tm-wz-hint">${this._t("wizard.style_custom_later")}</p>`;
   }
 
   _wizardKidMeta(k) {
@@ -8436,6 +8821,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.appr_title")}<small>${this._t("wizard.appr_hint")}</small></div>
             <div class="tm-seg tm-wz-seg" role="tablist">${appr.map(([v, key]) => `<button type="button" role="tab" class="${wz.approval === v ? "tm-seg-on" : ""}" aria-selected="${wz.approval === v}" data-act="wz-appr" data-v="${v}">${this._t(key)}</button>`).join("")}</div></div>
           <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.review_dashboards")}<small>${this._esc(DASH_KINDS.filter(k => wz.dash[k]).map(k => this._t(`panel.dash_kind_${k}`)).join(", ") || this._t("wizard.review_no_dashboards"))}</small></div></div>
+          <div class="tm-wz-tog"><div class="tm-wz-grow">${this._t("wizard.review_style")}<small>${this._esc(this._t(`panel.style_${wz.style || this._familyStyle()}_title`))}</small></div></div>
           ${sw("wz-notify", wz.notify, this._t("wizard.notify_toggle"), this._t("wizard.notify_hint"))}
         </div>
         <div class="tm-wz-panel"><h4>${this._t("wizard.rewards_n", { count: plan.rewards.length })}</h4>
@@ -8498,6 +8884,178 @@ class TaskMatePanel extends HTMLElement {
   }
 
   // Settings → Setup wizard (#980), at the top of Settings.
+  // -- Family style (#1260) ------------------------------------------------
+  // Game / Team / Custom: one choice that sets several switches. Picking a
+  // style first shows exactly what will change (taskmate/family_style/preview),
+  // then applies it in one call (taskmate/apply_family_style). Nothing is
+  // deleted, and every switch stays editable; changing one by hand makes the
+  // style Custom (the backend does that).
+
+  _familyStyle() {
+    const v = ((this._state && this._state.settings) || {}).family_style;
+    return FAMILY_STYLES.includes(v) ? v : "game";
+  }
+
+  _styleHideScope() {
+    return ((this._state && this._state.settings) || {}).style_hide_scope === "both" ? "both" : "cards";
+  }
+
+  // A covered switch is on unless it was stored as off.
+  _styleSwitchOn(s, key) {
+    const v = s[key];
+    return !(v === false || v === "false");
+  }
+
+  // Tabs a switched-off feature takes out of the admin menu, when the
+  // family chose "Cards and admin panel". Their data stays.
+  _styleHiddenTabs() {
+    const s = (this._state && this._state.settings) || {};
+    if (this._styleHideScope() !== "both") return new Set();
+    return new Set([
+      !this._styleSwitchOn(s, "penalties_enabled") && "penalties",
+      !this._styleSwitchOn(s, "raffles_enabled") && "raffles",
+    ].filter(Boolean));
+  }
+
+  _styleOptHtml(k, on, act) {
+    return `
+      <button type="button" class="tm-style-opt ${on ? "tm-style-opt-on" : ""}" data-act="${act}" data-v="${k}" aria-pressed="${on}">
+        <span class="tm-style-opt-h"><ha-icon icon="${FAMILY_STYLE_ICONS[k]}"></ha-icon><span>${this._t(`panel.style_${k}_title`)}</span>${k === "game" ? `<span class="tm-style-tag">${this._t("panel.style_default_tag")}</span>` : ""}</span>
+        <span class="tm-style-opt-d">${this._t(`panel.style_${k}_desc`)}</span>
+        <span class="tm-style-opt-fit">${this._t(`panel.style_${k}_fit`)}</span>
+      </button>`;
+  }
+
+  _familyStyleSection(s) {
+    const cur = this._familyStyle();
+    const scope = this._styleHideScope();
+    const sw = (key, name) => `
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t(`panel.style_switch_${name}`)}<small>${this._t(`panel.style_switch_${name}_hint`)}</small></div>
+              <ha-switch data-setting="${key}" ${this._styleSwitchOn(s, key) ? "checked" : ""}></ha-switch>
+            </div>`;
+    return `
+        <div class="tm-section tm-style-settings">
+          <div class="tm-section-head"><div><h3><ha-icon icon="mdi:account-group-outline"></ha-icon> ${this._t("panel.style_title")}</h3><p class="tm-meta">${this._t("panel.style_hint")}</p></div></div>
+          <div class="tm-section-body">
+            <div class="tm-style-opts" role="group" aria-label="${this._esc(this._t("panel.style_title"))}">
+              ${FAMILY_STYLES.map(k => this._styleOptHtml(k, cur === k, "style-pick")).join("")}
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.style_hide_label")}<small>${this._t("panel.style_hide_hint")}</small></div>
+              <div class="tm-style-hide">
+                <input type="hidden" data-setting="style_hide_scope" value="${scope}">
+                <span class="tm-seg" role="radiogroup" aria-label="${this._esc(this._t("panel.style_hide_label"))}">
+                  ${["cards", "both"].map(v => `<button type="button" role="radio" class="${scope === v ? "tm-seg-on" : ""}" aria-checked="${scope === v}" data-act="style-hide" data-v="${v}">${this._t(`panel.style_hide_${v}`)}</button>`).join("")}
+                </span>
+                <small class="tm-style-hide-note">${this._t(`panel.style_hide_${scope}_note`)}</small>
+              </div>
+            </div>
+            ${sw("leaderboard_enabled", "leaderboard")}
+            ${sw("penalties_enabled", "penalties")}
+            ${sw("raffles_enabled", "raffles")}
+          </div>
+        </div>`;
+  }
+
+  // The segmented control only edits the hidden field; Save sends it.
+  _styleHideSet(v) {
+    const scope = v === "both" ? "both" : "cards";
+    const root = this.querySelector(".tm-style-hide");
+    if (!root) return;
+    root.querySelector('input[data-setting="style_hide_scope"]').value = scope;
+    root.querySelectorAll('[data-act="style-hide"]').forEach(b => {
+      const on = b.dataset.v === scope;
+      b.classList.toggle("tm-seg-on", on);
+      b.setAttribute("aria-checked", String(on));
+    });
+    const note = root.querySelector(".tm-style-hide-note");
+    if (note) note.textContent = this._t(`panel.style_hide_${scope}_note`);
+    this._paintUnsavedBar();
+  }
+
+  async _stylePick(style) {
+    if (!FAMILY_STYLES.includes(style) || style === this._familyStyle()) return;
+    const { ok, res, err } = await this._callWS({ type: "taskmate/family_style/preview", style });
+    if (!ok) { this._showToast("err", this._t("panel.style_apply_failed", { error: err })); return; }
+    this._openDialog({ kind: "family-style", data: { style, changes: (res && res.changes) || [] } });
+  }
+
+  async _styleApply() {
+    const style = this._dialog && this._dialog.data && this._dialog.data.style;
+    if (!style) return;
+    this._closeDialog(true);
+    const { ok, err } = await this._callWS({ type: "taskmate/apply_family_style", style });
+    if (!ok) { this._showToast("err", this._t("panel.style_apply_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.style_applied"));
+  }
+
+  // A "what will change" summary: an intro, then groups of rows with a
+  // before → after state. Shared by presets that switch several options at
+  // once: family style (#1260) and a child's stage (#1262).
+  //   groups: [{title, tone: off|on|same, rows: [{label, state}], list?: [text], notes?: [text]}]
+  //   list: plain names under the rows (muted); notes: lines under the group.
+  //   confirmAct may be empty (nothing to confirm yet); secondaryAct/Label add a
+  //   second button before it; showCancel: false leaves Cancel out.
+  //   stacked: opened from an editor drawer (the child editor), so it is its
+  //   own centred overlay ABOVE the drawer instead of replacing it, and
+  //   closes with cancelAct instead of closing the editor.
+  _presetSummaryDialog({ title, intro = "", groups = [], confirmAct = "", confirmLabel = "",
+    secondaryAct = "", secondaryLabel = "", cancelAct = "close-dialog", showCancel = true,
+    busy = false, stacked = false }) {
+    const dis = busy ? " disabled" : "";
+    const body = `
+      ${intro ? `<p class="tm-preset-intro">${intro}</p>` : ""}
+      ${groups.filter(g => (g.rows && g.rows.length) || (g.list && g.list.length) || (g.notes && g.notes.length)).map(g => `
+        <div class="tm-preset-grp">${this._esc(g.title)}</div>
+        ${g.rows && g.rows.length ? `<table class="tm-preset-diff"><tbody>
+          ${g.rows.map(r => `<tr><td>${this._esc(r.label)}</td><td class="tm-preset-st tm-preset-${g.tone}">${this._esc(r.state || "")}</td></tr>`).join("")}
+        </tbody></table>` : ""}
+        ${g.list && g.list.length ? `<ul class="tm-preset-list">${g.list.map(x => `<li>${this._esc(x)}</li>`).join("")}</ul>` : ""}
+        ${(g.notes || []).map(n => `<p class="tm-preset-note">${this._esc(n)}</p>`).join("")}`).join("")}`;
+    const foot = [
+      showCancel ? `<button type="button" class="tm-btn" data-act="${cancelAct}">${this._t("panel.btn_cancel")}</button>` : "",
+      secondaryAct ? `<button type="button" class="tm-btn" data-act="${secondaryAct}"${dis}>${this._esc(secondaryLabel)}</button>` : "",
+      confirmAct ? `<button type="button" class="tm-btn tm-btn-raised" data-act="${confirmAct}"${dis}>${this._esc(confirmLabel)}</button>` : "",
+    ].filter(Boolean).join("\n       ");
+    if (!stacked) return this._dialogShell(title, body, foot);
+    return `
+      <div class="tm-scrim tm-scrim-stacked" data-act="${cancelAct}">
+        <div class="tm-dialog tm-preset-stacked" role="dialog" aria-modal="true" aria-label="${this._esc(title)}">
+          <header class="tm-dialog-head">
+            <h2>${this._esc(title)}</h2>
+            <button type="button" class="tm-icon-btn" data-act="${cancelAct}" title="${this._t("panel.tooltip_close")}">&times;</button>
+          </header>
+          <div class="tm-dialog-body">${body}</div>
+          <footer class="tm-dialog-foot">${foot}</footer>
+        </div>
+      </div>`;
+  }
+
+  _renderFamilyStyleDialog() {
+    const { style, changes } = this._dialog.data;
+    const label = key => this._t(`panel.style_opt_${key.replace(/_enabled$/, "")}`);
+    const changed = new Set(changes.map(c => c.key));
+    const off = changes.filter(c => c.old && !c.new).map(c => ({ label: label(c.key), state: this._t("panel.style_on_off") }));
+    const on = changes.filter(c => !c.old && c.new).map(c => ({ label: label(c.key), state: this._t("panel.style_off_on") }));
+    if (style === "team") on.push({ label: this._t("panel.style_opt_help_button"), state: this._t("panel.style_default_on") });
+    const same = FAMILY_STYLE_SWITCHES.filter(k => !changed.has(k)).map(k => ({ label: label(k), state: "—" }));
+    same.push({ label: this._t("panel.style_unchanged_rest"), state: "—" });
+    const intro = style === "team" ? this._t(`panel.style_dialog_team_intro_${this._styleHideScope()}`)
+      : style === "game" ? this._t("panel.style_dialog_game_intro")
+      : this._t("panel.style_dialog_custom_intro");
+    const groups = style === "custom" || (style === "game" && !changes.length) ? [] : [
+      { title: this._t("panel.style_group_off"), tone: "off", rows: off },
+      { title: this._t("panel.style_group_on"), tone: "on", rows: on },
+      { title: this._t("panel.style_group_same"), tone: "same", rows: same },
+    ];
+    return this._presetSummaryDialog({
+      title: this._t("panel.style_dialog_title", { style: this._t(`panel.style_${style}_title`) }),
+      intro, groups, confirmAct: "style-apply", confirmLabel: this._t("panel.style_apply"),
+    });
+  }
+
   _wizardSettingsSection() {
     return `
       <div class="tm-section tm-wz-settings">
@@ -14697,6 +15255,7 @@ class TaskMatePanel extends HTMLElement {
         <h2 class="tm-toolbar-title">${this._t("panel.settings_title")}</h2>
       </div>
       <div class="tm-settings">
+        ${this._familyStyleSection(s)}
         ${this._wizardSettingsSection()}
         ${this._dashSettingsSection()}
         <div class="tm-section">
@@ -14754,6 +15313,21 @@ class TaskMatePanel extends HTMLElement {
 
         <div class="tm-section">
           <div class="tm-section-head"><div>
+            <h3>${this._t("panel.settings_children_title")}</h3>
+            <p class="tm-meta">${this._t("panel.settings_children_hint")}</p>
+          </div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_stage_scope_label")}<small>${this._t("panel.settings_stage_scope_hint")}</small></div>
+              <select class="tm-select" data-setting="stage_scope" aria-label="${this._esc(this._t("panel.settings_stage_scope_label"))}">
+                ${["cards", "all"].map(v => `<option value="${v}" ${v === (s.stage_scope === "all" ? "all" : "cards") ? "selected" : ""}>${this._esc(this._t(`panel.stage_scope_${v}`))}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div>
             <h3>${this._t("panel.settings_parents_title")}</h3>
             <p class="tm-meta">${this._t("panel.settings_parents_hint")}</p>
           </div></div>
@@ -14775,6 +15349,12 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.settings_auto_approve_label")}<small>${this._t("panel.settings_auto_approve_hint")}</small></div>
               <input type="number" class="tm-input" min="0" max="168" step="1" data-setting="auto_approve_hours" aria-label="${this._esc(this._t("panel.settings_auto_approve_label"))}" value="${this._num(s.auto_approve_hours, 0)}">
+            </div>
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_miss_review_label")}<small>${this._t("panel.settings_miss_review_hint")}</small></div>
+              <select class="tm-select" data-setting="miss_review_location" aria-label="${this._esc(this._t("panel.settings_miss_review_label"))}">
+                ${["card", "panel", "both"].map(v => `<option value="${v}" ${v === (s.miss_review_location || "card") ? "selected" : ""}>${this._esc(this._t("panel.miss_review_" + v))}</option>`).join("")}
+              </select>
             </div>
           </div>
         </div>
@@ -15917,6 +16497,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "quest")        return this._renderQuestDialog();
     if (this._dialog.kind === "avatar-catalog") return this._renderAvatarCatalogDialog();
     if (this._dialog.kind === "challenge")    return this._renderChallengeDialog();
+    if (this._dialog.kind === "choice_set")   return this._renderChoiceSetDialog();
     if (this._dialog.kind === "bounty")       return this._renderBountyDialog();
     if (this._dialog.kind === "boost")        return this._renderBoostDialog();
     if (this._dialog.kind === "boost-rule")   return this._renderBoostRuleDialog();
@@ -15930,6 +16511,7 @@ class TaskMatePanel extends HTMLElement {
     if (this._dialog.kind === "kid-drawer")    return this._renderKidDrawer();
     if (this._dialog.kind === "view-as")       return this._renderViewAsDialog();
     if (this._dialog.kind === "leave-settings") return this._renderLeaveSettingsDialog();
+    if (this._dialog.kind === "family-style") return this._renderFamilyStyleDialog();
     if (this._dialog.kind === "create-template" || this._dialog.kind === "edit-template") return this._renderCreateEditTemplateDialog();
     if (this._dialog.kind === "badge")       return this._renderBadgeDialog();
     if (this._dialog.kind === "award-badge") return this._renderAwardDialog();
@@ -16016,10 +16598,9 @@ class TaskMatePanel extends HTMLElement {
           this._esc(this._t("panel.child_adult_hint"))),
         this._field(this._t("panel.child_birthday_label"), "birthday", d.birthday, "text",
           this._esc(this._t("panel.child_birthday_hint"))),
-        // Setup wizard age group (#980): only steers chore suggestions.
-        this._select(this._t("panel.child_age_group_label"), "age_group", d.age_group || "",
-          [{ v: "", l: this._t("panel.child_age_group_none") }].concat(WZ_AGE_GROUPS.map(([id]) => ({ v: id, l: this._t(`wizard.age_group.${id}`) }))),
-          this._esc(this._t("panel.child_age_group_hint"))),
+        // The child's stage (#1262): the setup wizard's age group (#980).
+        this._childStageField(d),
+        this._dialog.mode === "edit" ? this._childChoreStageField(d) : "",
         this._entityPickerField(this._t("panel.child_availability_label"), "availability_entity", d.availability_entity, ["binary_sensor", "sensor", "input_boolean", "person"],
           this._t("panel.child_availability_hint")),
         hasAvail ? this._switch(this._t("panel.child_invert_label"), "availability_inverted", d.availability_inverted,
@@ -16044,7 +16625,168 @@ class TaskMatePanel extends HTMLElement {
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-child">${this._t("panel.btn_save")}</button>`
-    );
+    ) + this._renderStagePop();
+  }
+
+  // ---- Per-child stage (#1262) ------------------------------------------
+  _stageName(id) { return id ? this._t(`panel.stage_${id}`) : this._t("panel.child_age_group_none"); }
+
+  _stageScope() {
+    const v = ((this._state && this._state.settings) || {}).stage_scope;
+    return v === "all" ? "all" : "cards";
+  }
+
+  /** A tile per stage, and what the picked one suggests. */
+  _childStageField(d) {
+    const cur = d.age_group || "";
+    const tile = (id) => `<button type="button" role="radio" class="tm-stage-opt ${cur === id ? "tm-on" : ""}"
+      data-act="child-stage" data-v="${id}" aria-checked="${cur === id}">
+      <b>${this._esc(this._stageName(id))}</b>
+      ${id ? `<span>${this._esc(this._t(`panel.stage_${id}_what`))}</span><small>${this._esc(this._t(`panel.stage_${id}_age`))}</small>` : ""}
+    </button>`;
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.stage_label"))}</span>
+        <div class="tm-stage-opts" role="radiogroup" aria-label="${this._esc(this._t("panel.stage_label"))}">
+          ${WZ_AGE_GROUPS.map(([id]) => tile(id)).join("")}${tile("")}
+        </div>
+        <span class="tm-field-hint">${this._esc(this._t("panel.stage_hint"))}</span>
+        ${cur ? this._stageSuggestions(cur, d.name) : ""}
+      </div>`;
+  }
+
+  _stageItemText(kind, key, name) {
+    return this._t(kind === "tip" ? `panel.stage_tip_${key}` : `panel.stage_item_${key}`, { name: name || "" });
+  }
+
+  _stageSuggestions(stage, name) {
+    const sg = STAGE_SUGGESTIONS[stage];
+    if (!sg) return "";
+    const all = this._stageScope() === "all";
+    const li = (text, tag, off) => `<li class="${off ? "tm-stage-off" : ""}">${this._esc(text)}${tag ? ` <span class="tm-stage-tag ${off ? "" : "tm-stage-tag-warn"}">${this._esc(tag)}</span>` : ""}</li>`;
+    return `
+      <div class="tm-stage-sets">
+        <b>${this._esc(this._t("panel.stage_suggests", { stage: this._stageName(stage) }))}</b>
+        <ul>
+          ${sg.card.map(k => li(this._stageItemText("card", k, name), "", false)).join("")}
+          ${sg.chores.map(k => li(this._stageItemText("chore", k, name), this._t(all ? "panel.stage_tag_chores" : "panel.stage_tag_chores_off"), !all)).join("")}
+          ${sg.tips.map(k => `<li class="tm-stage-tip">${this._esc(this._stageItemText("tip", k, name))} <span class="tm-stage-tag">${this._esc(this._t("panel.stage_tag_idea"))}</span></li>`).join("")}
+        </ul>
+        <div class="tm-field-hint">${this._esc(this._t("panel.stage_applied_once"))}</div>
+      </div>`;
+  }
+
+  /** Can do / Practising / Later for each of the child's chores. */
+  _childChoreStageField(d) {
+    const name = d.name || "";
+    const chores = (this._state.chores || []).filter(c => !(c.assigned_to || []).length || (c.assigned_to || []).includes(d.id));
+    const marks = d.chore_stage || {};
+    const practising = Object.values(marks).filter(v => v === "practising").length;
+    const rows = chores.map(c => {
+      const cur = marks[c.id] || "can";
+      return `<div class="tm-cstage-row">
+        <ha-icon icon="${this._esc(c.icon || "mdi:checkbox-marked-circle-outline")}"></ha-icon>
+        <span class="tm-cstage-name">${this._esc(c.name)}</span>
+        <span class="tm-seg tm-cstage-seg" role="radiogroup" aria-label="${this._esc(c.name)}">${CHORE_STAGE_VALUES.map(v =>
+          `<button type="button" role="radio" class="${cur === v ? "tm-seg-on" : ""}" aria-checked="${cur === v}" data-act="child-chore-stage" data-id="${this._esc(c.id)}" data-v="${v}">${this._esc(this._t(`panel.chore_stage_${v}`))}</button>`).join("")}</span>
+      </div>`;
+    }).join("");
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.chore_stage_title", { name }))}</span>
+        <span class="tm-field-hint">${this._esc(this._t("panel.chore_stage_hint", { name }))}</span>
+        ${chores.length ? `<div class="tm-cstage">${rows}</div>
+        <span class="tm-field-hint">${this._esc(this._t("panel.chore_stage_count", { count: this._fmtNum(practising) }))}</span>`
+        : `<span class="tm-field-hint">${this._esc(this._t("panel.chore_stage_empty", { name }))}</span>`}
+      </div>`;
+  }
+
+  /** A stage tile was picked. Adding a child just records it; on a saved
+   *  child it opens the confirm, which changes the stage straight away. */
+  async _pickChildStage(stage) {
+    const d = this._dialog && this._dialog.data;
+    if (!d || (d.age_group || "") === stage) return;
+    this._syncIconPickers();
+    if (this._dialog.mode !== "edit") { d.age_group = stage; this._renderKeepScroll(); return; }
+    const pop = { childId: d.id, name: d.name || "", from: d.age_group || "", to: stage, plan: null, busy: false };
+    this._stagePop = pop;
+    this._render();
+    const { ok, res } = await this._callWS({ type: "taskmate/apply_child_stage", child_id: d.id, stage, preview: true });
+    if (this._stagePop !== pop) return;
+    pop.plan = ok && res ? res : { chores: [], skipped_shared: [], chore_items: [] };
+    this._render();
+  }
+
+  async _confirmChildStage(apply) {
+    const pop = this._stagePop;
+    if (!pop || pop.busy) return;
+    pop.busy = true;
+    const { ok, err, res } = await this._callWS({ type: "taskmate/apply_child_stage", child_id: pop.childId, stage: pop.to, apply: !!apply });
+    this._stagePop = null;
+    if (!ok) { this._render(); this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    // The stage is saved now: the open editor shows it, and doesn't count it
+    // as an unsaved change.
+    const d = this._dialog && this._dialog.data;
+    if (d && d.id === pop.childId) {
+      d.age_group = pop.to;
+      try {
+        const base = JSON.parse(this._dialogInitialHash || "{}");
+        base.age_group = pop.to;
+        this._dialogInitialHash = JSON.stringify(base);
+      } catch (_e) { /* keep the old baseline */ }
+    }
+    const changed = ((res && res.chores) || []).length;
+    await this._fetchState();
+    this._showToast("ok", changed
+      ? this._t("panel.stage_toast_applied", { count: this._fmtNum(changed) })
+      : this._t("panel.stage_toast_changed"));
+  }
+
+  _renderStagePop() {
+    const pop = this._stagePop;
+    const d = this._dialog && this._dialog.data;
+    if (!pop || !d || d.id !== pop.childId) return "";
+    const order = ["", ...WZ_AGE_GROUPS.map(g => g[0])];
+    const up = order.indexOf(pop.to) > order.indexOf(pop.from) && pop.from !== "";
+    const title = up ? this._t("panel.stage_pop_up_title", { name: pop.name }) : this._t("panel.stage_pop_title", { name: pop.name });
+    const sg = STAGE_SUGGESTIONS[pop.to] || { card: [], chores: [], tips: [] };
+    const plan = pop.plan;
+    const changes = plan ? plan.chores || [] : [];
+    const skipped = plan ? plan.skipped_shared || [] : [];
+    const choreItems = plan ? plan.chore_items || [] : [];
+    const common = { title, cancelAct: "stage-pop-cancel", busy: !!pop.busy, stacked: true };
+    if (!plan) {
+      return this._presetSummaryDialog({ ...common, intro: this._esc(this._t("panel.stage_pop_loading", { name: pop.name })) });
+    }
+    const row = (kind) => (k) => ({ label: this._stageItemText(kind, k, pop.name), state: "" });
+    const groups = [
+      { title: this._t("panel.stage_pop_card"), tone: "same", rows: sg.card.map(row("card")) },
+      choreItems.length ? {
+        title: this._t("panel.stage_pop_chores"), tone: "same",
+        rows: choreItems.map(row("chore")),
+        list: changes.map(c => c.name),
+        notes: [
+          changes.length ? "" : this._t("panel.stage_pop_chore_none", { name: pop.name }),
+          skipped.length ? this._t("panel.stage_pop_skipped", { list: skipped.map(c => c.name).join(", ") }) : "",
+        ].filter(Boolean),
+      } : null,
+    ].filter(Boolean);
+    // Only ask about applying when there is something to apply.
+    const intro = pop.to ? this._t(changes.length ? "panel.stage_pop_body" : "panel.stage_pop_body_only", { name: this._esc(pop.name), stage: `<b>${this._esc(this._stageName(pop.to))}</b>` }) : "";
+    return changes.length
+      ? this._presetSummaryDialog({ ...common, intro, groups, showCancel: false,
+        secondaryAct: "stage-only", secondaryLabel: this._t("panel.stage_btn_only"),
+        confirmAct: "stage-apply", confirmLabel: this._t("panel.stage_btn_apply") })
+      : this._presetSummaryDialog({ ...common, intro, groups,
+        confirmAct: "stage-only", confirmLabel: this._t("panel.stage_btn_change") });
+  }
+
+  _renderKeepScroll() {
+    const body = this.querySelector(".tm-dialog-body");
+    const scrollY = body ? body.scrollTop : 0;
+    this._render();
+    const b = this.querySelector(".tm-dialog-body");
+    if (b) b.scrollTop = scrollY;
   }
 
   /** The child's colour (#1078): "Automatic" (palette by position) or a swatch. */
@@ -16557,6 +17299,7 @@ class TaskMatePanel extends HTMLElement {
         ]),
         section("more", [
           isTimedTask ? "" : this._renderChoreTeamwork(d),
+          isTimedTask || d._freq === "set" ? "" : this._renderChoreSteps(d),
           memberInGroup ? `
             <div class="tm-field">
               <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: this._esc(this._t(`panel.group_policy_${memberInGroup.policy || "sticky"}_short`))})}</span>
@@ -19649,7 +20392,11 @@ class TaskMatePanel extends HTMLElement {
       .tm-approval-list[data-filter="chore"] .tm-approval-item:not([data-kind="chore"]),
       .tm-approval-list[data-filter="reward"] .tm-approval-item:not([data-kind="reward"]),
       .tm-approval-list[data-filter="swap"] .tm-approval-item:not([data-kind="swap"]),
-      .tm-approval-list[data-filter="wish"] .tm-approval-item:not([data-kind="wish"]) { display: none; }
+      .tm-approval-list[data-filter="wish"] .tm-approval-item:not([data-kind="wish"]),
+      .tm-approval-list[data-filter="miss"] .tm-approval-item:not([data-kind="miss"]) { display: none; }
+      .tm-cs-stepper { display: inline-flex; align-items: center; gap: 8px; }
+      .tm-cs-stepper output { min-width: 2.5ch; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .tm-chip-btn[disabled] { opacity: .45; cursor: not-allowed; }
       /* Recaps (#929) */
       .tm-recap-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
       .tm-recap-next { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--tm-text-muted); }
@@ -19716,6 +20463,26 @@ class TaskMatePanel extends HTMLElement {
       .tm-st-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(118px, 1fr) minmax(118px, 1fr) 60px 32px; gap: 6px; align-items: center; }
       .tm-st-head { font-size: 11px; font-weight: 600; color: var(--tm-text-muted); margin-top: 6px; }
       .tm-st-row .tm-input { min-width: 0; }
+      /* Multipart chore steps (#1253): one row per step at any width —
+         number, name, then three 28px icon buttons; never wraps. */
+      .tm-step-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; min-width: 0; }
+      .tm-step-num { flex: 0 0 auto; min-width: 1.4em; text-align: center; font-weight: 600; color: var(--tm-text-muted); }
+      .tm-step-row .tm-step-name { flex: 1 1 auto; min-width: 0; width: auto; max-width: none; }
+      .tm-step-row .tm-icon-btn { flex: 0 0 28px; }
+      .tm-step-row .tm-icon-btn[disabled] { opacity: 0.35; cursor: default; }
+      .tm-step-rm:hover { color: var(--tm-danger, #c4282e); }
+      /* Phones and touch screens: 40px tap targets, still on one row. */
+      @media (max-width: 600px), (pointer: coarse) {
+        .tm-step-row .tm-icon-btn { flex: 0 0 40px; width: 40px; height: 40px; }
+        .tm-step-row .tm-icon-btn ha-icon { --mdc-icon-size: 20px; }
+      }
+      /* Narrow phones: two lines per step so the name gets the full width —
+         number + name on the first, the buttons right-aligned on the second. */
+      @media (max-width: 420px) {
+        .tm-step-row { flex-wrap: wrap; row-gap: 2px; }
+        .tm-step-row .tm-step-name { flex: 1 1 calc(100% - 1.4em - 4px); }
+        .tm-step-row .tm-step-num + .tm-step-name + .tm-icon-btn { margin-inline-start: auto; }
+      }
       .tm-st-rm { color: var(--tm-danger, #c4282e); }
       .tm-st-add { border: 1px dashed var(--tm-border-strong); background: transparent; border-radius: var(--tm-radius-sm); padding: 8px; font: inherit; font-size: 13px; color: var(--tm-accent-text); cursor: pointer; }
       .tm-st-add[disabled] { color: var(--tm-text-muted); cursor: default; }
@@ -19773,6 +20540,25 @@ class TaskMatePanel extends HTMLElement {
       .tm-fx-pick.tm-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
       .tm-fx-pick-ic { font-size: 28px; line-height: 1.1; }
       .tm-fx-pick small { color: var(--tm-text-muted); font-size: 11.5px; }
+      /* Per-child stage (#1262) */
+      .tm-stage-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 4px 0; }
+      .tm-stage-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: start; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+        border: 2px solid var(--tm-border); background: var(--tm-surface-1, transparent); color: var(--tm-text); font: inherit; }
+      .tm-stage-opt.tm-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
+      .tm-stage-opt b { font-size: 14px; }
+      .tm-stage-opt span { font-size: 12px; color: var(--tm-text-muted); }
+      .tm-stage-opt small { font-size: 11px; color: var(--tm-text-muted); opacity: .85; }
+      .tm-stage-sets { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--tm-surface-2); font-size: 13px; }
+      .tm-stage-sets ul { margin: 6px 0; padding-inline-start: 18px; }
+      .tm-stage-sets li { margin: 2px 0; }
+      .tm-stage-off { opacity: .5; text-decoration: line-through; }
+      .tm-stage-tip { color: var(--tm-text-muted); }
+      .tm-stage-tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 999px; background: var(--tm-surface-0); color: var(--tm-text-muted); text-decoration: none; }
+      .tm-stage-tag-warn { background: var(--tm-warning-soft, rgba(243,156,18,.18)); color: var(--tm-text); }
+      .tm-cstage { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+      .tm-cstage-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; --mdc-icon-size: 18px; }
+      .tm-cstage-row ha-icon { color: var(--tm-text-muted); }
+      .tm-cstage-name { flex: 1; min-width: 120px; overflow-wrap: anywhere; }
       .tm-check-row > div { flex: 1; }
       .tm-check-title { font-size: 13px; color: var(--tm-text); font-weight: 500; }
 
@@ -20668,6 +21454,41 @@ class TaskMatePanel extends HTMLElement {
         padding: 4px 10px; border-radius: 6px;
       }
       .tm-seg .tm-seg-on { background: var(--tm-surface-0); color: var(--tm-text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+
+      /* Family style (#1260): the three preset cards and the summary dialog. */
+      .tm-style-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; margin-bottom: 8px; }
+      .tm-style-opts-wz { grid-template-columns: 1fr; }
+      .tm-style-opt {
+        display: flex; flex-direction: column; gap: 6px; text-align: start; font-family: inherit; cursor: pointer;
+        padding: 12px 14px; border-radius: 12px; border: 1px solid var(--tm-border, var(--divider-color));
+        background: var(--tm-surface-0); color: var(--tm-text); min-width: 0;
+      }
+      .tm-style-opt:hover { border-color: var(--tm-accent-border); }
+      .tm-style-opt-on { border: 2px solid var(--tm-accent); background: var(--tm-accent-soft); padding: 11px 13px; }
+      .tm-style-opt-h { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; flex-wrap: wrap; }
+      .tm-style-opt-h ha-icon { --mdc-icon-size: 18px; color: var(--tm-accent-text); }
+      .tm-style-opt-d { font-size: 13px; color: var(--tm-text-muted); overflow-wrap: anywhere; }
+      .tm-style-opt-fit { font-size: 12px; color: var(--tm-text-faint); overflow-wrap: anywhere; }
+      .tm-style-tag { font-size: 11px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--tm-surface-2); color: var(--tm-text-muted); }
+      .tm-style-hide { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 100%; }
+      .tm-style-hide .tm-seg { margin-inline-start: 0; flex-wrap: wrap; }
+      .tm-style-hide-note { font-size: 12px; color: var(--tm-text-faint); text-align: end; }
+      .tm-preset-intro { margin: 0 0 6px; color: var(--tm-text-muted); }
+      .tm-preset-grp { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tm-text-faint); margin: 14px 0 4px; }
+      .tm-preset-diff { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      .tm-preset-diff td { padding: 6px 0; border-bottom: 1px solid var(--tm-border-soft); vertical-align: top; }
+      .tm-preset-st { text-align: end; white-space: nowrap; padding-inline-start: 12px !important; font-weight: 600; }
+      .tm-preset-off { color: var(--tm-danger); }
+      .tm-preset-on { color: var(--tm-positive); }
+      .tm-preset-same { color: var(--tm-text-faint); font-weight: 400; }
+      .tm-preset-list { margin: 4px 0 6px; padding-inline-start: 18px; color: var(--tm-text-muted); font-size: 13.5px; }
+      .tm-preset-note { margin: 6px 0 0; color: var(--tm-text-muted); font-size: 13px; }
+      /* A summary opened from an editor drawer (a child's stage, #1262): it
+         renders in the dialog zone right after the drawer's .tm-scrim
+         (z-index 100), so it sits above it at every width, centred, and
+         below toasts (200) and the row menu (300). */
+      .tm-scrim.tm-scrim-stacked { z-index: 150; align-items: center; padding: 16px; background: rgba(0,0,0,0.4); pointer-events: auto; }
+      .tm-dialog.tm-preset-stacked { max-width: 460px; max-height: 90vh; }
 
       /* Chore board */
       .tm-board-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }

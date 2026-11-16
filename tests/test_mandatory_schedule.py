@@ -26,6 +26,9 @@ def _coord():
             {"id": "evening", "start": "17:00", "end": "21:00"},
         ]
     )
+    # Choice sets (#1259) ride the same midnight / startup checks.
+    c.async_detect_choice_set_misses = AsyncMock(return_value=0)
+    c.async_catchup_choice_set_misses = AsyncMock(return_value=None)
     return c
 
 

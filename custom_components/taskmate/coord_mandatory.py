@@ -18,6 +18,7 @@ from .const import (
     NOTIF_TYPE_MANDATORY_PARENT_ALERT,
     NOTIF_TYPE_MANDATORY_REMINDER,
 )
+from .coord_choice_sets import choice_set_miss_key
 from .coord_set_times import mandatory_miss_key, set_time_label
 from .models import MandatoryMiss, parse_datetime
 
@@ -61,6 +62,11 @@ class MandatoryMixin:
 
     def _mark_miss_handled(self, miss: MandatoryMiss) -> None:
         """A parent dealt with this miss: never raise it again (#1161)."""
+        if getattr(miss, "set_id", ""):
+            self.storage.add_handled_mandatory(
+                choice_set_miss_key(miss.set_id, miss.child_id, miss.due_date), miss.due_date
+            )
+            return
         self.storage.add_handled_mandatory(
             mandatory_miss_key(miss.chore_id, miss.child_id, miss.due_date, getattr(miss, "time_id", "")),
             miss.due_date,
@@ -127,10 +133,12 @@ class MandatoryMixin:
         the period: submitting just before the deadline and having it rejected
         afterwards left no miss behind. Rejection re-opens the question, so ask
         it again (detection is idempotent and dedupes existing misses).
+        A choice set (#1259) the chore belongs to is asked the same way.
         """
+        created = await self.async_recheck_choice_set_miss(chore_id, child_id, day)
         chore = self.get_chore(chore_id)
         if not chore or not getattr(chore, "mandatory", False):
-            return 0
+            return created
         if isinstance(getattr(chore, "times", None), list) and chore.times:
             return await self.async_detect_set_time_misses(day=day)
         period_id = self._effective_period_for(chore, child_id, day)
@@ -225,14 +233,24 @@ class MandatoryMixin:
         miss = self._get_miss(miss_id)
         if miss is None:
             return
-        chore = next((c for c in self.storage.get_chores() if c.id == miss.chore_id), None)
-        name = set_time_label(chore, getattr(miss, "time_id", "")) if chore else "chore"
+        set_id = getattr(miss, "set_id", "")
+        if set_id:
+            # A choice set (#1259): named after the set, never a chore.
+            cs = self.storage.get_choice_set(set_id)
+            name = cs.name if cs else "choice set"
+            reason = f"Penalty: {name} (missed choice set)"
+            reason_key = "penalty_missed_choice_set"
+        else:
+            chore = next((c for c in self.storage.get_chores() if c.id == miss.chore_id), None)
+            name = set_time_label(chore, getattr(miss, "time_id", "")) if chore else "chore"
+            reason = f"Penalty: {name} (missed mandatory)"
+            reason_key = "penalty_missed_mandatory"
         if miss.penalty_points > 0:
             await self.async_remove_points(
                 miss.child_id,
                 miss.penalty_points,
-                reason=f"Penalty: {name} (missed mandatory)",
-                reason_key="penalty_missed_mandatory",
+                reason=reason,
+                reason_key=reason_key,
                 reason_params={"name": name},
             )
         self._mark_miss_handled(miss)
@@ -243,6 +261,7 @@ class MandatoryMixin:
             {
                 "miss_id": miss_id,
                 "chore_id": miss.chore_id,
+                **({"set_id": set_id} if set_id else {}),
                 "child_id": miss.child_id,
                 "points": miss.penalty_points,
                 "timestamp": dt_util.now().isoformat(),
@@ -256,7 +275,9 @@ class MandatoryMixin:
             return
         self._ensure_mandatory_state()
         now = dt_util.now()
-        nxt = self._next_period_after(miss.period_id, now)
+        # A choice set (#1259) is owed for the whole day, and the day is over:
+        # postponing it just means "not this time".
+        nxt = None if getattr(miss, "set_id", "") else self._next_period_after(miss.period_id, now)
         if nxt:
             key = f"{miss.chore_id}:{miss.child_id}:{miss.due_date}"
             self.mandatory_postpone[key] = nxt
@@ -264,7 +285,7 @@ class MandatoryMixin:
         # A set time has no later window to move to — it closed — so postponing
         # it can only mean "not now"; left unrecorded, the 5-minute check
         # raised it straight back (#1161).
-        if getattr(miss, "time_id", ""):
+        if getattr(miss, "time_id", "") or getattr(miss, "set_id", ""):
             self._mark_miss_handled(miss)
         self.storage.remove_mandatory_miss(miss_id)
         await self.storage.async_save()
@@ -327,6 +348,8 @@ class MandatoryMixin:
         for miss in self.storage.get_mandatory_misses():
             if miss.due_date != today_iso:
                 continue  # only escalate same-day misses (skips midnight backfill)
+            if getattr(miss, "set_id", ""):
+                continue  # a choice set is reviewed after its day, never chased
             if getattr(miss, "time_id", ""):
                 if self.set_time_miss_done(miss, now.date()):
                     continue
@@ -453,6 +476,8 @@ class MandatoryMixin:
             if dt_time(hour, minute) <= cur:
                 await self.async_detect_mandatory_misses(period_id, today)
         await self.async_detect_set_time_misses(now)
+        # Choice sets (#1259): yesterday's, if HA was off at midnight.
+        await self.async_catchup_choice_set_misses()
 
     async def async_detect_anytime_mandatory_misses(self) -> None:
         """Midnight: raise misses for incomplete mandatory 'anytime' chores for the
@@ -462,6 +487,8 @@ class MandatoryMixin:
         await self.async_detect_mandatory_misses("anytime", yesterday)
         # A set time that closed in the last minutes of yesterday.
         await self.async_detect_set_time_misses(day=yesterday)
+        # Choice sets (#1259) are owed by the end of the day, like "anytime".
+        await self.async_detect_choice_set_misses(yesterday)
         self.mandatory_postpone = {}
 
     # ---- maintenance -------------------------------------------------------
@@ -471,10 +498,13 @@ class MandatoryMixin:
         chores = {c.id: c for c in self.storage.get_chores()}
         removed = 0
         for m in self.storage.get_mandatory_misses():
+            if getattr(m, "set_id", ""):
+                continue  # choice sets: async_prune_orphan_choice_set_misses
             chore = chores.get(m.chore_id)
             if chore is None or not getattr(chore, "mandatory", False) or not getattr(chore, "enabled", True):
                 self.storage.remove_mandatory_miss(m.id)
                 removed += 1
+        removed += await self.async_prune_orphan_choice_set_misses()
         if removed:
             await self.storage.async_save()
             await self.async_refresh()
@@ -485,8 +515,24 @@ class MandatoryMixin:
         chores = {c.id: c for c in self.storage.get_chores()}
         children = {c.id: c for c in self.storage.get_children()}
         out = []
+        sets = {c.id: c for c in self.storage.get_choice_sets()}
         for m in self.storage.get_mandatory_misses():
             d = m.to_dict()
+            if getattr(m, "set_id", ""):
+                # A choice set (#1259): its name stands in for the chore's,
+                # with how far the child got that day.
+                cs = sets.get(m.set_id)
+                d["chore_name"] = cs.name if cs else ""
+                d["set_name"] = d["chore_name"]
+                if cs:
+                    try:
+                        st = self.choice_set_status(cs, m.child_id, date.fromisoformat(m.due_date))
+                        d["set_done"], d["set_min"] = st["done"], st["min"]
+                    except ValueError:
+                        pass
+                d["child_name"] = getattr(children.get(m.child_id), "name", "")
+                out.append(d)
+                continue
             chore = chores.get(m.chore_id)
             d["chore_name"] = set_time_label(chore, getattr(m, "time_id", "")) if chore else ""
             d["child_name"] = getattr(children.get(m.child_id), "name", "")

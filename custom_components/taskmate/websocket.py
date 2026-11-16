@@ -73,6 +73,7 @@ from .const import (
     BOUNTY_POINTS_MAX,
     BOUNTY_TITLE_MAX_LENGTH,
     CELEBRATION_STYLES,
+    CHORE_STAGES,
     DEFAULT_NOTIFICATION_GROUP,
     DEFAULT_NOTIFICATION_NAV_URL,
     DEFAULT_TIME_PERIODS,
@@ -91,6 +92,8 @@ from .const import (
     SEASON_PACK_KEYS,
     SEASON_SCHOOL_START_KEY,
     SEASON_THEME_KEYS,
+    STAGE_SCOPE_SETTING,
+    STAGE_SCOPES,
     TAG_ID_MAX_LENGTH,
     TEAM_POINTS_MODES,
     TEAM_SIZE_MAX,
@@ -102,6 +105,7 @@ from .coord_auto_approve import AUTO_APPROVE_MAX_HOURS
 from .coord_bin_days import BIN_DAY_MAX_CALENDARS, BIN_DAY_MAX_POINTS, BIN_DAY_MODES
 from .coord_birthdays import normalize_birthday
 from .coord_boosts import BOOST_STACKING_MODES
+from .coord_choice_sets import MISS_REVIEW_LOCATIONS
 from .coord_inspections import INSPECTION_BONUS_MAX, INSPECTION_FAIL_MODES, INSPECTION_WINDOWS
 from .coord_pets import PET_BOOL_SETTINGS, PET_INT_SETTINGS
 from .coord_points_expiry import POINTS_EXPIRY_MAX_DAYS, POINTS_EXPIRY_MAX_WARN
@@ -118,7 +122,9 @@ from .coord_sibling_checks import SIBLING_CHECK_MAX_BONUS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .errors import TaskMateError, error_translation, send_translated_error
+from .family_style import FAMILY_STYLE_KEY, STYLE_HIDE_SCOPES, note_manual_change, switch_values
 from .models import (
+    CHORE_STEP_NAME_MAX_LENGTH,
     CHORE_TIME_NAME_MAX_LENGTH,
     MAX_CHORE_TIME_POINTS,
     MAX_ESTIMATED_MINUTES,
@@ -131,6 +137,7 @@ from .models import (
     BonusSubTask,
     Reward,
     normalize_tag_ids,
+    validate_chore_steps,
     validate_chore_times,
 )
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
@@ -144,6 +151,7 @@ WS_GET_STATE: Final = "taskmate/get_state"
 
 WS_ADD_CHILD: Final = "taskmate/add_child"
 WS_UPDATE_CHILD: Final = "taskmate/update_child"
+WS_APPLY_CHILD_STAGE: Final = "taskmate/apply_child_stage"
 WS_REMOVE_CHILD: Final = "taskmate/remove_child"
 WS_LIST_HA_USERS: Final = "taskmate/list_ha_users"
 
@@ -291,6 +299,8 @@ _AUDIT_EXCLUDE: Final = {
     "taskmate/auctions/occurrences",
     # Week planner: the read-only rotation picks for a week.
     "taskmate/planner/week",
+    # Family style (#1260): the confirm dialog's read-only diff.
+    "taskmate/family_style/preview",
     WS_NOTIF_GET_STATE,
     WS_NOTIF_LIST_NOTIFY,
     WS_TEMPLATES_LIST,
@@ -518,6 +528,8 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
         "bonuses": list(data.get("bonuses", [])),
         "task_groups": list(data.get("task_groups", [])),
         "quests": list(data.get("quests", [])),
+        # Choice sets (#1259): "do at least N of these".
+        "choice_sets": list(data.get("choice_sets", [])),
         "quest_progress": dict(data.get("quest_progress", {}) or {}),
         "avatar_catalog": coordinator.avatar_catalog(),
         "challenges": list(data.get("challenges", [])),
@@ -551,6 +563,9 @@ def _build_state_snapshot(coordinator: TaskMateCoordinator) -> dict[str, Any]:
             "points_icon": data.get("points_icon", "mdi:star"),
             "card_design": "classic",
             "set_times_layout": "rows",
+            # Where missed sets and mandatory chores are reviewed (#1259).
+            "miss_review_location": "card",
+            STAGE_SCOPE_SETTING: "cards",
             # Family-wide chore order on the cards (#1231).
             CHORE_SORT_SETTING: "manual",
             # Child undo window (#918): off unless a parent opts in.
@@ -687,6 +702,11 @@ async def _ws_add_child(hass, connection, msg, coordinator):
         vol.Optional("is_adult"): bool,
         vol.Optional("color"): validate_child_color,
         vol.Optional("celebration_style"): vol.In(CELEBRATION_STYLES),
+        # Can do / Practising / Later per chore (#1262): the whole map; chores
+        # left out are "can do".
+        vol.Optional("chore_stage"): vol.All(
+            {vol.All(str, vol.Length(min=1, max=64)): vol.In(CHORE_STAGES)}, vol.Length(max=500)
+        ),
     }
 )
 @websocket_api.async_response
@@ -731,6 +751,10 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing.color = msg["color"]
     if "celebration_style" in msg:
         existing.celebration_style = msg["celebration_style"]
+    if "chore_stage" in msg:
+        # Only chores that still exist are kept.
+        known = {c.id for c in coordinator.storage.get_chores()}
+        existing.chore_stage = {k: v for k, v in msg["chore_stage"].items() if k in known}
     if "is_guest" in msg or "guest_expires_on" in msg:
         # Routed through the coordinator so the expiry is validated and an
         # archived guest is un-archived when promoted to a family member.
@@ -746,6 +770,32 @@ async def _ws_update_child(hass, connection, msg, coordinator):
         existing = coordinator.storage.get_child(msg["child_id"])
     await coordinator.async_update_child(existing)
     connection.send_result(msg["id"], {"id": existing.id})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_APPLY_CHILD_STAGE,
+        vol.Required("child_id"): str,
+        vol.Required("stage"): vol.In(("", *AGE_GROUPS)),
+        # False: change the stage only. True: also make the stage's chore
+        # changes once (only when stage_scope is "all").
+        vol.Optional("apply", default=False): bool,
+        # True: say what would change and write nothing.
+        vol.Optional("preview", default=False): bool,
+    }
+)
+@websocket_api.async_response
+@_admin_only
+async def _ws_apply_child_stage(hass, connection, msg, coordinator):
+    """Change a child's stage (#1262); returns what changed."""
+    if not coordinator.storage.get_child(msg["child_id"]):
+        send_translated_error(connection, msg["id"], "not_found", "child_not_found", child_id=msg["child_id"])
+        return
+    if msg.get("preview"):
+        connection.send_result(msg["id"], coordinator.stage_plan(msg["child_id"], msg["stage"]))
+        return
+    result = await coordinator.async_apply_child_stage(msg["child_id"], msg["stage"], apply=bool(msg.get("apply")))
+    connection.send_result(msg["id"], result)
 
 
 @websocket_api.websocket_command(
@@ -893,6 +943,7 @@ _CHORE_EDITABLE_FIELDS = {
     "quantity_max",
     "times",
     "times_bonus",
+    "steps",
 }
 
 
@@ -1052,6 +1103,14 @@ def _chore_payload_schema(*, require_name: bool):
             }
         ],
         vol.Optional("times_bonus"): vol.All(int, vol.Range(min=0, max=MAX_CHORE_TIME_POINTS)),
+        # Multipart chores (#1253): required steps, in order. The count and
+        # the cross-field rules are checked by validate_chore_steps.
+        vol.Optional("steps"): [
+            {
+                vol.Optional("id"): str,
+                vol.Required("name"): vol.All(str, vol.Length(max=CHORE_STEP_NAME_MAX_LENGTH)),
+            }
+        ],
     }
 
 
@@ -1099,6 +1158,12 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         open_ended=bool(msg.get("open_ended", False)),
         quantity_unit=msg.get("quantity_unit", ""),
         team_size=msg.get("team_size", 0),
+    )
+    # And multipart steps (#1253).
+    validate_chore_steps(
+        msg.get("steps"),
+        task_type=msg.get("task_type", "standard"),
+        has_times=bool(msg.get("times")),
     )
     one_off_date = _one_off_date(msg)
     chore = await coordinator.async_add_chore(
@@ -2271,6 +2336,9 @@ _SUBKEY_SETTINGS = {
     "streak_reset_mode",
     "card_design",
     "set_times_layout",
+    "miss_review_location",
+    # Per-child stage (#1262): may a stage change touch chores too.
+    STAGE_SCOPE_SETTING,
     # Seasons & events: each season's theme (the card look) and its event
     # pack (the content), all off by default; the first school day for Back
     # to school; and who each pack is for.
@@ -2381,6 +2449,13 @@ _SUBKEY_SETTINGS = {
     "family_goal_name",
     "family_goal_target",
     "family_goal_reward",
+    # Family style (#1260): the switches a style covers that had none before,
+    # and whether a switched-off feature also leaves the admin panel.
+    # family_style itself is only set by taskmate/apply_family_style.
+    "leaderboard_enabled",
+    "penalties_enabled",
+    "raffles_enabled",
+    "style_hide_scope",
     "notify_service",
     "calendar_projection_days",
     "skip_confirmation_enabled",
@@ -2632,6 +2707,8 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("points_icon"): str,
     vol.Optional("card_design"): vol.In(_ALLOWED_CARD_DESIGNS),
     vol.Optional("set_times_layout"): vol.In(["rows", "pills"]),
+    vol.Optional("miss_review_location"): vol.In(MISS_REVIEW_LOCATIONS),
+    vol.Optional(STAGE_SCOPE_SETTING): vol.In(STAGE_SCOPES),
     vol.Optional(CHORE_SORT_SETTING): vol.In(CHORE_SORT_MODES),
     **{vol.Optional(key): bool for key in SEASON_THEME_KEYS.values()},
     **{vol.Optional(key): bool for key in SEASON_PACK_KEYS.values()},
@@ -2773,6 +2850,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("family_goal_name"): vol.All(str, vol.Length(max=120)),
     vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
     vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
+    vol.Optional("leaderboard_enabled"): bool,
+    vol.Optional("penalties_enabled"): bool,
+    vol.Optional("raffles_enabled"): bool,
+    vol.Optional("style_hide_scope"): vol.In(STYLE_HIDE_SCOPES),
     vol.Optional("streak_milestones"): str,
     # Comma-separated quick point-adjust amounts, e.g. "5, 10, 20" (#746). Kept a
     # string like streak_milestones so the panel's generic settings collector can
@@ -2821,6 +2902,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         storage.set_parent_user_ids(list(msg["parent_user_ids"]))
         changed.append("parent_user_ids")
     old_pack_children = dict(storage.get_setting(SEASON_PACK_CHILDREN_KEY, {}) or {})
+    # Family style (#1260): a covered switch changed by hand makes it Custom.
+    style_switches_before = switch_values(storage.get_settings())
     for k, v in msg.items():
         if k in {"id", "type", "time_periods", "vacation_periods", "parent_user_ids"}:
             continue
@@ -2838,6 +2921,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
     # Re-arm a family goal when its target/enabled changes (FEAT-4).
     if "family_goal_target" in changed or "family_goal_enabled" in changed:
         storage.set_setting("family_goal_achieved", False)
+    if note_manual_change(storage, style_switches_before):
+        changed.append(FAMILY_STYLE_KEY)
     if changed:
         await storage.async_save()
         # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)
@@ -3761,6 +3846,7 @@ _COMMANDS = (
     _ws_undo_transaction,
     _ws_add_child,
     _ws_update_child,
+    _ws_apply_child_stage,
     _ws_remove_child,
     _ws_list_ha_users,
     _ws_add_chore,
@@ -3868,7 +3954,9 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .kiosk import KIOSK_COMMANDS
     from .websocket_auctions import AUCTION_COMMANDS
     from .websocket_boosts import BOOST_COMMANDS
+    from .websocket_choice_sets import CHOICE_SET_COMMANDS
     from .websocket_chore_extras import CHORE_EXTRA_COMMANDS
+    from .websocket_family_style import FAMILY_STYLE_COMMANDS
     from .websocket_household import HOUSEHOLD_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
     from .websocket_panel_tools import PANEL_TOOL_COMMANDS
@@ -3892,9 +3980,11 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *PANEL_TOOL_COMMANDS,
         *REWARD_EXTRA_COMMANDS,
         *CHORE_EXTRA_COMMANDS,
+        *CHOICE_SET_COMMANDS,
         *PET_SHOP_COMMANDS,
         *PLANNER_COMMANDS,
         *TOUR_COMMANDS,
+        *FAMILY_STYLE_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

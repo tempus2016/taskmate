@@ -28,10 +28,12 @@ from .models import (
     PRAISE_NOTE_MAX,
     Chore,
     ChoreCompletion,
+    ChoreStep,
     ChoreTime,
     PointsTransaction,
     clean_label,
     parse_datetime,
+    validate_chore_steps,
     validate_chore_times,
 )
 
@@ -606,6 +608,12 @@ class ChoresMixin:
         )
         if team_error:
             raise team_error if isinstance(team_error, Exception) else ValueError(team_error)
+        # A choice-set member must stay a plain "everyone" chore (#1259):
+        # mandatory would make one job count twice at the end of the day, and
+        # rotation / first-come would count a chore the child may not have.
+        for cs in self.storage.get_choice_sets():
+            if chore.id in cs.chore_ids and self._choice_set_member_problem(chore):
+                raise TaskMateError("choice_set_member_locked", name=chore.name, set=cs.name)
         # Set times (several times a day): checked here so every way of
         # editing a chore (panel, services, import) gets the same rules.
         stored = self.storage.get_chore(chore.id)
@@ -618,6 +626,12 @@ class ChoresMixin:
             team_size=int(getattr(chore, "team_size", 0) or 0),
         )
         chore.times_bonus = max(0, int(getattr(chore, "times_bonus", 0) or 0)) if chore.times else 0
+        # Multipart chore steps (#1253), same rule for every way in.
+        chore.steps = validate_chore_steps(
+            [s.to_dict() if isinstance(s, ChoreStep) else s for s in (getattr(chore, "steps", None) or [])],
+            task_type=getattr(chore, "task_type", "standard") or "standard",
+            has_times=bool(chore.times),
+        )
         today = dt_util.as_local(dt_util.now()).date()
         # Capture pre-update state before storage is mutated below.
         existing = self.storage.get_chore(chore.id)
@@ -732,6 +746,8 @@ class ChoresMixin:
         self.storage.remove_swap_requests_for_chore(chore_id)
         # Teamwork joins (#928) belong to the occurrence of a chore that's gone.
         self.storage.remove_team_joins_for_chore(chore_id)
+        # So are the steps ticked on it today (#1253).
+        self.storage.remove_step_progress_for_chore(chore_id)
         # A running or paused timer on it goes now, not at the midnight sweep.
         # Not snapshotted, so a restore never brings a stale timer back (#771).
         self.storage.remove_timed_sessions_for_chore(chore_id)
@@ -742,6 +758,8 @@ class ChoresMixin:
             if chore_id in child.chore_order:
                 child.chore_order.remove(chore_id)
                 self.storage.update_child(child)
+        # Its Can do / Practising / Later marks (#1262) go with it.
+        self.chore_stage_cleanup(chore_id)
         await self.storage.async_save()
         if refresh:
             await self.async_refresh()
@@ -1060,6 +1078,12 @@ class ChoresMixin:
             )
             return None
 
+        # Multipart chores (#1253): a child's completion only counts once every
+        # step is ticked. Enforced here rather than only in the card, so the
+        # button entity, an NFC tag or Dev Tools can't skip the checklist.
+        # Parents completing on behalf are the authority and stay exempt.
+        if not as_parent and self.chore_steps_outstanding(chore, child_id, now):
+            raise TaskMateError("chore_steps_incomplete", name=chore.name)
         # A photo-required chore always goes through parent approval (unless a
         # parent is completing on behalf), so the evidence gets reviewed.
         requires_photo = bool(getattr(chore, "require_photo", False))
@@ -1311,6 +1335,9 @@ class ChoresMixin:
                 **({"backdated": True} if backdated else {}),
             },
         )
+
+        # Choice sets (#1259): say so when this chore completed a set.
+        self.fire_choice_set_fulfilled(child, chore.id, dt_util.as_local(now).date())
 
         # Update last_completed store (window starts at completion time, midnight-rounded).
         # A job logged for an earlier day must not pull the window back behind a

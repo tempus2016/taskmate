@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Definir passo da tarefa",
+      "description": "Marca ou desmarca um passo de uma tarefa com várias partes para hoje. Os passos não dão pontos sozinhos: a tarefa é concluída com complete_chore quando todos os passos estiverem marcados.",
+      "fields": {
+        "chore_id": {
+          "name": "ID da tarefa",
+          "description": "O ID da tarefa com várias partes"
+        },
+        "child_id": {
+          "name": "ID da criança",
+          "description": "O ID da criança que marca o passo"
+        },
+        "step_id": {
+          "name": "ID do passo",
+          "description": "O ID do passo"
+        },
+        "done": {
+          "name": "Feito",
+          "description": "Verdadeiro marca o passo, falso desmarca-o"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Concluir a próxima tarefa",
       "description": "Conclui a próxima tarefa pendente da criança, pela ordem mostrada no cartão da criança. As tarefas que exigem uma fotografia, uma nota, um temporizador ou uma equipa são ignoradas. Pensado para botões e atalhos do relógio; aplicam-se as regras de aprovação habituais.",
@@ -2024,6 +2046,96 @@
           "description": "O ID da criança que gira"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Adicionar conjunto à escolha",
+      "description": "Cria um conjunto «faz pelo menos N destas tarefas». A criança escolhe quais; um dia falhado deixa um item para rever, nunca um desconto automático.",
+      "fields": {
+        "name": {
+          "name": "Nome",
+          "description": "O que as crianças veem por cima do conjunto"
+        },
+        "chore_ids": {
+          "name": "IDs das tarefas",
+          "description": "As tarefas do conjunto. Cada uma só pode estar num conjunto; sem tarefas obrigatórias, rotativas ou de quem chegar primeiro."
+        },
+        "min_required": {
+          "name": "Escolher pelo menos",
+          "description": "Quantas tarefas diferentes do conjunto a criança tem de fazer por dia. 0 torna-o numa lista opcional que nunca falha."
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nota opcional para os adultos"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Um ícone mdi, p. ex. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Atribuído a",
+          "description": "IDs das crianças. Deixa vazio para todas as crianças (sem os adultos)."
+        },
+        "penalty_points": {
+          "name": "Penalização se falhar",
+          "description": "Pontos que um adulto pode retirar depois de rever um dia falhado. Nunca são descontados automaticamente."
+        },
+        "active": {
+          "name": "Ativo",
+          "description": "Um conjunto inativo mostra as tarefas como tarefas normais e nunca falha."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Atualizar conjunto à escolha",
+      "description": "Altera um conjunto à escolha. Só mudam os campos indicados.",
+      "fields": {
+        "set_id": {
+          "name": "ID do conjunto",
+          "description": "O ID do conjunto à escolha"
+        },
+        "name": {
+          "name": "Nome",
+          "description": "O que as crianças veem por cima do conjunto"
+        },
+        "chore_ids": {
+          "name": "IDs das tarefas",
+          "description": "As tarefas do conjunto. Cada uma só pode estar num conjunto; sem tarefas obrigatórias, rotativas ou de quem chegar primeiro."
+        },
+        "min_required": {
+          "name": "Escolher pelo menos",
+          "description": "Quantas tarefas diferentes do conjunto a criança tem de fazer por dia. 0 torna-o numa lista opcional que nunca falha."
+        },
+        "description": {
+          "name": "Descrição",
+          "description": "Nota opcional para os adultos"
+        },
+        "icon": {
+          "name": "Ícone",
+          "description": "Um ícone mdi, p. ex. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Atribuído a",
+          "description": "IDs das crianças. Deixa vazio para todas as crianças (sem os adultos)."
+        },
+        "penalty_points": {
+          "name": "Penalização se falhar",
+          "description": "Pontos que um adulto pode retirar depois de rever um dia falhado. Nunca são descontados automaticamente."
+        },
+        "active": {
+          "name": "Ativo",
+          "description": "Um conjunto inativo mostra as tarefas como tarefas normais e nunca falha."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Remover conjunto à escolha",
+      "description": "Elimina um conjunto à escolha. As tarefas voltam a ser normais e os itens por rever também desaparecem.",
+      "fields": {
+        "set_id": {
+          "name": "ID do conjunto",
+          "description": "O ID do conjunto à escolha"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2246,8 @@
               "penalty_applied": "Penalização aplicada",
               "surprise_bonus": "Bónus surpresa",
               "mandatory_missed": "Tarefa obrigatória falhada",
+              "choice_set_fulfilled": "Conjunto à escolha cumprido",
+              "choice_set_missed": "Conjunto à escolha falhado",
               "team_chore_completed": "Tarefa de equipa concluída",
               "points_gifted": "Pontos oferecidos",
               "help_requested": "Pediu ajuda",
@@ -2274,6 +2388,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "A tarefa “{name}” não é uma tarefa de equipa"
+    },
+    "chore_steps_not_list": {
+      "message": "Os passos têm de ser uma lista."
+    },
+    "chore_steps_too_many": {
+      "message": "Uma tarefa pode ter no máximo {max} passos."
+    },
+    "chore_steps_timed": {
+      "message": "Uma tarefa cronometrada não pode ter passos."
+    },
+    "chore_steps_set_times": {
+      "message": "Uma tarefa com horas fixas não pode ter passos."
+    },
+    "chore_steps_need_name": {
+      "message": "Cada passo precisa de um nome."
+    },
+    "chore_steps_none": {
+      "message": "A tarefa “{name}” não tem passos."
+    },
+    "chore_step_not_found": {
+      "message": "Passo {step_id} não encontrado na tarefa “{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Termina primeiro todos os passos de “{name}”."
     },
     "swap_only_rotation": {
       "message": "Só as tarefas em rotação podem ser trocadas"
@@ -3516,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Não foi possível guardar o som"
+    },
+    "choice_set_name_required": {
+      "message": "Um conjunto à escolha precisa de um nome"
+    },
+    "choice_set_needs_chore": {
+      "message": "Um conjunto à escolha precisa de pelo menos uma tarefa"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Um conjunto à escolha pode ter no máximo {max} tarefas"
+    },
+    "choice_set_min_too_high": {
+      "message": "«Escolher pelo menos» pode ser no máximo {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} é obrigatória, por isso não pode estar num conjunto à escolha"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} é de quem chegar primeiro, por isso não pode estar num conjunto à escolha"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} roda entre as crianças, por isso não pode estar num conjunto à escolha"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} já está no conjunto à escolha {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} está no conjunto à escolha {set}. Retire-a primeiro do conjunto."
+    },
+    "choice_set_not_found": {
+      "message": "Conjunto à escolha {set_id} não encontrado"
     }
   },
   "issues": {

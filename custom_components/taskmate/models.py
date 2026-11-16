@@ -9,7 +9,15 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any
 
-from .const import AGE_GROUPS, AUCTION_STATUSES, BOUNTY_STATUSES, CELEBRATION_STYLES, MAX_CHORE_TAGS, TAG_ID_MAX_LENGTH
+from .const import (
+    AGE_GROUPS,
+    AUCTION_STATUSES,
+    BOUNTY_STATUSES,
+    CELEBRATION_STYLES,
+    CHORE_STAGES,
+    MAX_CHORE_TAGS,
+    TAG_ID_MAX_LENGTH,
+)
 from .errors import TaskMateError
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,6 +32,21 @@ def generate_id() -> str:
     will ever create.
     """
     return str(uuid.uuid4()).replace("-", "")[:16]
+
+
+def local_today_iso() -> str:
+    """Today's local date as ``YYYY-MM-DD``."""
+    from homeassistant.util import dt as dt_util
+
+    return dt_util.as_local(dt_util.now()).date().isoformat()
+
+
+def _iso_date_or_today(value) -> str:
+    """A stored ``YYYY-MM-DD``, or today when missing or unreadable."""
+    try:
+        return date.fromisoformat(str(value)).isoformat()
+    except (TypeError, ValueError):
+        return local_today_iso()
 
 
 def dt_util_now_iso() -> str:
@@ -216,6 +239,85 @@ class BonusSubTask:
 
 
 @dataclass
+class ChoreStep:
+    """One required step of a multipart chore (#1253).
+
+    A chore with ``steps`` is a checklist: the child ticks each step off and
+    the chore itself is only completed (and paid) once every step is done.
+    Unlike a BonusSubTask a step earns nothing on its own.
+    """
+
+    name: str = ""
+    id: str = field(default_factory=generate_id)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ChoreStep:
+        return cls(
+            name=str(data.get("name", "") or "").strip()[:CHORE_STEP_NAME_MAX_LENGTH],
+            id=str(data.get("id") or "") or generate_id(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "name": self.name}
+
+
+# Steps per multipart chore (#1253).
+MAX_CHORE_STEPS = 20
+CHORE_STEP_NAME_MAX_LENGTH = 100
+
+
+def clean_chore_steps(raw: Any) -> list[ChoreStep]:
+    """Stored steps coerced to a valid ordered list; anything broken is dropped.
+
+    Loading never raises, so a step with no name or a repeated id is skipped
+    and the list is cut at ``MAX_CHORE_STEPS``. Saving a chore goes through
+    ``validate_chore_steps``, which refuses the same problems with a message.
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[ChoreStep] = []
+    seen: set[str] = set()
+    for item in raw:
+        if isinstance(item, ChoreStep):
+            step = ChoreStep(name=item.name, id=item.id)
+        elif isinstance(item, dict):
+            step = ChoreStep.from_dict(item)
+        else:
+            continue
+        if not step.name or step.id in seen:
+            continue
+        seen.add(step.id)
+        out.append(step)
+    return out[:MAX_CHORE_STEPS]
+
+
+def validate_chore_steps(raw: Any, *, task_type: str = "standard", has_times: bool = False) -> list[ChoreStep]:
+    """Parse the steps a parent sent, raising TaskMateError on any problem.
+
+    At most ``MAX_CHORE_STEPS``, each with a name. A timed task or a chore
+    with set times can't also be a multipart chore: neither is completed
+    with a single tap that the last step could stand in for.
+    """
+    if raw in (None, ""):
+        return []
+    if not isinstance(raw, list):
+        raise TaskMateError("chore_steps_not_list")
+    if not raw:
+        return []
+    if len(raw) > MAX_CHORE_STEPS:
+        raise TaskMateError("chore_steps_too_many", max=MAX_CHORE_STEPS)
+    if task_type == "timed":
+        raise TaskMateError("chore_steps_timed")
+    if has_times:
+        raise TaskMateError("chore_steps_set_times")
+    for item in raw:
+        name = item.get("name") if isinstance(item, dict) else getattr(item, "name", None)
+        if not str(name or "").strip():
+            raise TaskMateError("chore_steps_need_name")
+    return clean_chore_steps(raw)
+
+
+@dataclass
 class ChoreTime:
     """One set time of day a chore comes up ("Wash hands · Lunch").
 
@@ -367,6 +469,16 @@ def normalize_age_group(value: Any) -> str:
     return value if isinstance(value, str) and value in AGE_GROUPS else ""
 
 
+def normalize_chore_stage(value: Any) -> dict[str, str]:
+    """A stored chore-stage map (#1262): {chore_id: "practising" | "later"}.
+
+    "can" is the default and is never stored; anything else is dropped.
+    """
+    if not isinstance(value, dict):
+        return {}
+    return {k: v for k, v in value.items() if isinstance(k, str) and k and v in CHORE_STAGES}
+
+
 def normalize_celebration_style(value: Any) -> str:
     """A stored celebration style: one of CELEBRATION_STYLES, else confetti."""
     return value if isinstance(value, str) and value in CELEBRATION_STYLES else "confetti"
@@ -432,6 +544,9 @@ class Child:
     color: str = ""
     # What the child card plays on a tick-off: one of CELEBRATION_STYLES.
     celebration_style: str = "confetti"
+    # Where the child is with each chore (#1262): {chore_id: "practising" |
+    # "later"}. Chores not listed are "can do"; only those are stored.
+    chore_stage: dict[str, str] = field(default_factory=dict)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -461,6 +576,7 @@ class Child:
             is_adult=bool(data.get("is_adult", False)),
             color=str(data.get("color", "") or ""),
             celebration_style=normalize_celebration_style(data.get("celebration_style")),
+            chore_stage=normalize_chore_stage(data.get("chore_stage")),
             availability_entity=data.get("availability_entity", ""),
             availability_inverted=data.get("availability_inverted", False),
             unavailability_entity=data.get("unavailability_entity", ""),
@@ -503,6 +619,7 @@ class Child:
             "is_adult": self.is_adult,
             "color": self.color,
             "celebration_style": self.celebration_style,
+            "chore_stage": dict(self.chore_stage),
             "availability_entity": self.availability_entity,
             "availability_inverted": self.availability_inverted,
             "unavailability_entity": self.unavailability_entity,
@@ -683,6 +800,10 @@ class Chore:
     # time has been done.
     times: list[ChoreTime] = field(default_factory=list)
     times_bonus: int = 0
+    # Multipart chores (#1253): required steps, in order. Empty = an ordinary
+    # chore. Which steps a child has ticked today is runtime state, kept in
+    # storage["chore_steps"], not on the chore.
+    steps: list[ChoreStep] = field(default_factory=list)
     id: str = field(default_factory=generate_id)
 
     @classmethod
@@ -775,6 +896,7 @@ class Chore:
             template_id=clean_template_id(data.get("template_id")),
             times=clean_chore_times(data.get("times")),
             times_bonus=_clamp_int(data.get("times_bonus"), 0, MAX_CHORE_TIME_POINTS),
+            steps=clean_chore_steps(data.get("steps")),
             id=data.get("id") or generate_id(),
         )
 
@@ -854,6 +976,7 @@ class Chore:
             "template_id": self.template_id,
             "times": [t.to_dict() for t in self.times],
             "times_bonus": self.times_bonus,
+            "steps": [step.to_dict() for step in self.steps],
             "id": self.id,
         }
 
@@ -1096,6 +1219,67 @@ class Quest:
             "repeatable": self.repeatable,
             "active": self.active,
             "id": self.id,
+        }
+
+
+@dataclass
+class ChoiceSet:
+    """ "Do at least N of these M chores" — the child picks which (#1259).
+
+    Member chores stay ordinary chores; the set is what the child owes.
+    Progress is never stored: it is counted from the day's completions.
+    ``min_required`` 0 makes the set a labelled list of optional chores that
+    can never be missed. ``penalty_points`` is only ever applied by a parent
+    from the review item an unmet set leaves at the end of the day.
+    ``created_on`` (local ISO date) is the first day the set can be missed;
+    a set saved before the field existed gets today's date (storage stamps
+    it once on load), so nothing is backfilled.
+    """
+
+    name: str
+    description: str = ""
+    icon: str = "mdi:hand-heart-outline"
+    chore_ids: list[str] = field(default_factory=list)
+    min_required: int = 1
+    assigned_to: list[str] = field(default_factory=list)  # child IDs; empty = every child
+    penalty_points: int = 0
+    active: bool = True
+    id: str = field(default_factory=generate_id)
+    created_on: str = field(default_factory=lambda: local_today_iso())
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ChoiceSet:
+        def _int(value, default: int) -> int:
+            try:
+                return max(0, int(value))
+            except (TypeError, ValueError):
+                return default
+
+        return cls(
+            name=str(data.get("name", "") or ""),
+            description=str(data.get("description", "") or ""),
+            icon=str(data.get("icon", "") or "mdi:hand-heart-outline"),
+            chore_ids=list(dict.fromkeys(str(c) for c in (data.get("chore_ids") or []))),
+            min_required=_int(data.get("min_required", 1), 1),
+            assigned_to=[str(c) for c in (data.get("assigned_to") or [])],
+            penalty_points=_int(data.get("penalty_points", 0), 0),
+            active=bool(data.get("active", True)),
+            id=data.get("id") or generate_id(),
+            created_on=_iso_date_or_today(data.get("created_on")),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "icon": self.icon,
+            "chore_ids": self.chore_ids,
+            "min_required": self.min_required,
+            "assigned_to": self.assigned_to,
+            "penalty_points": self.penalty_points,
+            "active": self.active,
+            "id": self.id,
+            "created_on": self.created_on,
         }
 
 
@@ -1540,6 +1724,9 @@ class MandatoryMiss:
     # Set when the miss is for one of the chore's set times: there is one
     # miss per (chore, child, day, time) then, and period_id is "set_time".
     time_id: str = ""
+    # Set when the miss is for a choice set (#1259): one per (set, child,
+    # day), chore_id is empty and period_id is "anytime".
+    set_id: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MandatoryMiss":
@@ -1555,6 +1742,7 @@ class MandatoryMiss:
             created_at=data.get("created_at", "") or dt_util_now_iso(),
             id=data.get("id") or generate_id(),
             time_id=str(data.get("time_id", "") or ""),
+            set_id=str(data.get("set_id", "") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1572,6 +1760,8 @@ class MandatoryMiss:
         }
         if self.time_id:
             data["time_id"] = self.time_id
+        if self.set_id:
+            data["set_id"] = self.set_id
         return data
 
 

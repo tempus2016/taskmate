@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Angi oppgavetrinn",
+      "description": "Kryss av eller fjern avkrysningen for ett trinn i en oppgave i flere deler for i dag. Trinn gir ingen poeng alene: oppgaven fullføres med complete_chore når alle trinnene er krysset av.",
+      "fields": {
+        "chore_id": {
+          "name": "Oppgave-ID",
+          "description": "ID-en til oppgaven i flere deler"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID-en til barnet som krysser av trinnet"
+        },
+        "step_id": {
+          "name": "Trinn-ID",
+          "description": "ID-en til trinnet"
+        },
+        "done": {
+          "name": "Gjort",
+          "description": "Sann krysser av trinnet, usann fjerner avkrysningen"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Fullfør neste oppgave",
       "description": "Fullfører barnets neste utestående oppgave, i rekkefølgen barnekortet viser dem. Oppgaver som krever bilde, notat, tidtaker eller lag hoppes over. Laget for klokkeknapper og snarveier; vanlige godkjenningsregler gjelder.",
@@ -2024,6 +2046,96 @@
           "description": "ID-en til barnet som snurrer"
         }
       }
+    },
+    "add_choice_set": {
+      "name": "Legg til valgsett",
+      "description": "Opprett et sett «gjør minst N av disse oppgavene». Barnet velger hvilke; en forsømt dag gir ett punkt til vurdering, aldri automatisk trekk.",
+      "fields": {
+        "name": {
+          "name": "Navn",
+          "description": "Det barna ser over settet"
+        },
+        "chore_ids": {
+          "name": "Oppgave-ID-er",
+          "description": "Oppgavene i settet. Hver kan bare være i ett sett; ingen obligatoriske oppgaver, rotasjonsoppgaver eller førstemann-oppgaver."
+        },
+        "min_required": {
+          "name": "Velg minst",
+          "description": "Hvor mange ulike oppgaver fra settet barnet må gjøre hver dag. 0 gjør det til en frivillig liste som aldri blir forsømt."
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfritt notat til foreldre"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Et mdi-ikon, f.eks. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Barne-ID-er. La stå tomt for alle barn (voksne er ikke med)."
+        },
+        "penalty_points": {
+          "name": "Straff hvis forsømt",
+          "description": "Poeng en forelder kan trekke etter å ha vurdert en forsømt dag. Trekkes aldri automatisk."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "Et inaktivt sett viser oppgavene som vanlige oppgaver og blir aldri forsømt."
+        }
+      }
+    },
+    "update_choice_set": {
+      "name": "Oppdater valgsett",
+      "description": "Endre et valgsett. Bare feltene du oppgir, endres.",
+      "fields": {
+        "set_id": {
+          "name": "Sett-ID",
+          "description": "ID-en til valgsettet"
+        },
+        "name": {
+          "name": "Navn",
+          "description": "Det barna ser over settet"
+        },
+        "chore_ids": {
+          "name": "Oppgave-ID-er",
+          "description": "Oppgavene i settet. Hver kan bare være i ett sett; ingen obligatoriske oppgaver, rotasjonsoppgaver eller førstemann-oppgaver."
+        },
+        "min_required": {
+          "name": "Velg minst",
+          "description": "Hvor mange ulike oppgaver fra settet barnet må gjøre hver dag. 0 gjør det til en frivillig liste som aldri blir forsømt."
+        },
+        "description": {
+          "name": "Beskrivelse",
+          "description": "Valgfritt notat til foreldre"
+        },
+        "icon": {
+          "name": "Ikon",
+          "description": "Et mdi-ikon, f.eks. mdi:hand-heart-outline"
+        },
+        "assigned_to": {
+          "name": "Tildelt",
+          "description": "Barne-ID-er. La stå tomt for alle barn (voksne er ikke med)."
+        },
+        "penalty_points": {
+          "name": "Straff hvis forsømt",
+          "description": "Poeng en forelder kan trekke etter å ha vurdert en forsømt dag. Trekkes aldri automatisk."
+        },
+        "active": {
+          "name": "Aktiv",
+          "description": "Et inaktivt sett viser oppgavene som vanlige oppgaver og blir aldri forsømt."
+        }
+      }
+    },
+    "remove_choice_set": {
+      "name": "Fjern valgsett",
+      "description": "Slett et valgsett. Oppgavene blir vanlige oppgaver igjen, og åpne punkter til vurdering forsvinner også.",
+      "fields": {
+        "set_id": {
+          "name": "Sett-ID",
+          "description": "ID-en til valgsettet"
+        }
+      }
     }
   },
   "entity": {
@@ -2134,6 +2246,8 @@
               "penalty_applied": "Straff gitt",
               "surprise_bonus": "Overraskelsesbonus",
               "mandatory_missed": "Obligatorisk oppgave glemt",
+              "choice_set_fulfilled": "Valgsett fullført",
+              "choice_set_missed": "Valgsett ikke fullført",
               "team_chore_completed": "Lagoppgave fullført",
               "points_gifted": "Poeng gitt bort",
               "help_requested": "Ba om hjelp",
@@ -2274,6 +2388,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Oppgaven «{name}» er ikke en lagoppgave"
+    },
+    "chore_steps_not_list": {
+      "message": "Trinn må være en liste."
+    },
+    "chore_steps_too_many": {
+      "message": "En oppgave kan ha høyst {max} trinn."
+    },
+    "chore_steps_timed": {
+      "message": "En tidsoppgave kan ikke ha trinn."
+    },
+    "chore_steps_set_times": {
+      "message": "En oppgave med faste tider kan ikke ha trinn."
+    },
+    "chore_steps_need_name": {
+      "message": "Hvert trinn må ha et navn."
+    },
+    "chore_steps_none": {
+      "message": "Oppgaven «{name}» har ingen trinn."
+    },
+    "chore_step_not_found": {
+      "message": "Fant ikke trinn {step_id} i oppgaven «{name}»."
+    },
+    "chore_steps_incomplete": {
+      "message": "Gjør først ferdig alle trinnene i «{name}»."
     },
     "swap_only_rotation": {
       "message": "Bare oppgaver på omgang kan byttes"
@@ -3516,6 +3654,36 @@
     },
     "upload_sound_store_failed": {
       "message": "Kunne ikke lagre lyden"
+    },
+    "choice_set_name_required": {
+      "message": "Et valgsett må ha et navn"
+    },
+    "choice_set_needs_chore": {
+      "message": "Et valgsett må ha minst én oppgave"
+    },
+    "choice_set_too_many_chores": {
+      "message": "Et valgsett kan ha høyst {max} oppgaver"
+    },
+    "choice_set_min_too_high": {
+      "message": "«Velg minst» kan høyst være {max}"
+    },
+    "choice_set_mandatory_member": {
+      "message": "{name} er obligatorisk og kan derfor ikke være i et valgsett"
+    },
+    "choice_set_first_come_member": {
+      "message": "{name} er førstemann-til-mølla og kan derfor ikke være i et valgsett"
+    },
+    "choice_set_rotation_member": {
+      "message": "{name} går på omgang mellom barna og kan derfor ikke være i et valgsett"
+    },
+    "choice_set_chore_in_other_set": {
+      "message": "{name} er allerede i valgsettet {set}"
+    },
+    "choice_set_member_locked": {
+      "message": "{name} er i valgsettet {set}. Fjern den fra settet først."
+    },
+    "choice_set_not_found": {
+      "message": "Fant ikke valgsett {set_id}"
     }
   },
   "issues": {

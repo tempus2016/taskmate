@@ -48,6 +48,7 @@ You can add chores one at a time or in bulk (multiple chores with the same setti
 | **Reference photo** | none | *(v7.0.0)* A picture of the job done well, shown next to the child's photo when you approve — see [Reference Photos](Reference-Photos.md) |
 | **Count in (unit)** | empty | *(v7.0.0)* Makes it a quantity chore ("pages", "laps"): the child says how many and **Points** become points per unit — see [Quantity Chores](Quantity-Chores.md) |
 | **Most per go** | `0` | *(v7.0.0)* Caps how many units one completion counts. `0` = no cap, and a parent approves each one |
+| **Steps** | none | Required steps the child ticks off one by one; the points come only once every step is done — see [Multipart Chores](Multipart-Chores.md) |
 | **Bonus Subtasks** | none | Optional extra-credit tasks within this chore — see [Bonus Subtasks](Bonus-Subtasks.md) |
 | **Weather conditions** | none | Hide the chore in unsuitable weather — see [Weather-Aware Chores](Weather-Aware-Chores.md) |
 | **Scheduled changes** | none | Queue a field change for a future date — see [Scheduled Config Changes](Scheduled-Config-Changes.md) |

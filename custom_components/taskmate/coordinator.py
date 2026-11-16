@@ -31,6 +31,7 @@ from .coord_boosts import BoostsMixin
 from .coord_bounties import BountiesMixin
 from .coord_calendar import CalendarMixin
 from .coord_challenges import ChallengesMixin
+from .coord_choice_sets import ChoiceSetsMixin
 from .coord_chore_insights import ChoreInsightsMixin
 from .coord_chore_reminders import ChoreRemindersMixin
 from .coord_chores import ChoresMixin
@@ -64,6 +65,8 @@ from .coord_shopping_jobs import ShoppingJobsMixin
 from .coord_sibling_checks import SiblingChecksMixin
 from .coord_sick import SickDaysMixin
 from .coord_sounds import SoundsMixin
+from .coord_stages import StagesMixin
+from .coord_steps import StepsMixin
 from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
 from .coord_templates import TemplatesMixin
@@ -112,6 +115,7 @@ class TaskMateCoordinator(
     RewardsMixin,
     PointsMixin,
     QuestsMixin,
+    ChoiceSetsMixin,
     AvatarsMixin,
     ChallengesMixin,
     TimedMixin,
@@ -129,6 +133,7 @@ class TaskMateCoordinator(
     BirthdaysMixin,
     TagsMixin,
     TeamworkMixin,
+    StepsMixin,
     WishlistMixin,
     FulfilmentMixin,
     PersonalBestsMixin,
@@ -144,6 +149,7 @@ class TaskMateCoordinator(
     AutoApproveMixin,
     WellbeingMixin,
     SickDaysMixin,
+    StagesMixin,
     WeeklyGoalsMixin,
     PlannerMixin,
     RedemptionsMixin,
@@ -1031,6 +1037,8 @@ class TaskMateCoordinator(
         # Teamwork joins are per occurrence (#928): yesterday's half-formed
         # teams are dead, so drop them rather than carry them in the store.
         self.storage.prune_team_joins(dt_util.as_local(dt_util.now()).date().isoformat())
+        # Multipart chore steps (#1253) are ticked per day, so yesterday's go.
+        self.storage.prune_step_progress(dt_util.as_local(dt_util.now()).date().isoformat())
         await self.storage.async_save()
 
     async def _async_sweep_orphan_photos(self) -> None:
@@ -1182,6 +1190,8 @@ class TaskMateCoordinator(
         # And out of any teamwork chore they had joined (#928), or the team
         # would count a member who can never be paid.
         self.storage.remove_team_joins_for_child(child_id)
+        # And their ticked steps on multipart chores (#1253).
+        self.storage.remove_step_progress_for_child(child_id)
         # Their wishes (#932) go too — and the pictures stored for them.
         await self._async_remove_wishes_for_child(child_id)
         # Free any bounty they had claimed and take them off eligibility (#931).

@@ -16,6 +16,9 @@
  * the grown-ups for approval like any other, and names the child, so the
  * backend's linked-child check decides, as for chores.
  *
+ * Chore descriptions (#1255), off unless `show_description: true`: shown
+ * under the chore name, as on the child card.
+ *
  * Bounties (#1054), off unless `show_bounties: true`: the unlocked child sees
  * the bounty board's child side — claim, give back, finish (taking a photo
  * with the tablet when the bounty asks for one) and undo. Each call names the
@@ -505,7 +508,10 @@ class TaskMateKioskCard extends LitElement {
         }
         continue;
       }
-      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit);
+      // A multipart chore (#1253) is ticked step by step on the child card,
+      // so the tablet sends it there like the other chores it can't finish.
+      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit
+        || (Array.isArray(chore.steps) && chore.steps.length));
       // A chore for a later part of the day isn't open yet (#771): the child
       // card shows it as a locked "Available at …" preview, so the tablet
       // does too, instead of a live Done button at any hour.
@@ -1350,6 +1356,7 @@ class TaskMateKioskCard extends LitElement {
   // child, so the backend's linked-child check decides, as for chores.
 
   _showBounties() { return this.config.show_bounties === true; }
+  _showDescription() { return this.config.show_description === true; }
 
   /** What this child may claim, anything they hold, and what they finished. */
   _bountiesFor(child) {
@@ -2111,6 +2118,7 @@ class TaskMateKioskCard extends LitElement {
         </div>
         <div class="km-row-body">
           <div class="km-row-name">${chore.name}</div>
+          ${this._showDescription() && chore.description ? html`<div class="km-row-desc">${chore.description}</div>` : ""}
           ${row.setTime && this._setTimeLayout() === "rows" ? html`<div class="km-st-sub">🕑 <b>${row.setTime.entry.time.name || __tmClock(this.hass, row.setTime.entry.opens)}</b>
             <span>${_ltrNums(this._t("child.set_time_of", { n: row.setTime.all.indexOf(row.setTime.entry) + 1, total: __tmNum(this.hass, row.setTime.all.length) }))}</span></div>` : ""}
           ${row.setTime && this._setTimeLayout() === "pills" ? this._renderSetTimePills(child, row) : ""}

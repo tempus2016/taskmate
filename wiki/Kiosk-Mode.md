@@ -60,6 +60,7 @@ The card works best in a **Panel** view, so it fills the screen. The full-screen
 | `show_completion_popup` | boolean | `true` | *(v6.2.0)* The "AWESOME! You did it!" popup with the points earned |
 | `default_sound` | string | `coin` | *(v6.2.0)* Sound for chores without their own. YAML only, same as the child card |
 | `undo_sound` | string | `undo` | *(v6.2.0)* Sound played when a child undoes a chore. YAML only, same as the child card |
+| `show_description` | boolean | `false` | Show each chore's description under its name, when it has one. Same option as the child card |
 | `show_bounties` | boolean | `false` | *(v6.3.0)* A **Bounty Board** section in the child's view, where they can claim and finish bounties. See [Bounties](#bounties) |
 | `show_rewards` | boolean | `false` | A **Spend your points** section in the child's view, where they can claim rewards. Every claim still goes to a grown-up for approval. See [Rewards](#rewards) |
 | `completed_mode` | string | `show` | *(v7.0.0)* `show` keeps done and waiting chores in the list with their Undo button; `hide` drops them. See [Less clutter](#less-clutter) |

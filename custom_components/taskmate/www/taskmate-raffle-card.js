@@ -292,6 +292,15 @@ class TaskMateRaffleCard extends LitElement {
     if (!this.hass || !this.config) return html``;
     this._applyDesign();
     const title = this.config.title || this._t("raffle.title");
+    // Family style (#1260): raffles switched off show a short note instead.
+    if (window.__taskmate_feature_on && !window.__taskmate_feature_on(this.hass, "raffles")) {
+      const admin = !!(this.hass.user && this.hass.user.is_admin);
+      return html`<ha-card class="rf-off">${this._header(title, null)}<div class="rf-empty">
+        <div class="rf-off-title">${this._t("common.feature_off_raffles")}</div>
+        <div>${this._t("common.feature_off_sub")}</div>
+        ${admin ? html`<div>${this._t("common.feature_off_admin")}</div>` : ""}
+      </div></ha-card>`;
+    }
     const child = this._child();
     if (this.config.child_id && !child) {
       return html`<ha-card>${this._header(title, null)}<div class="rf-empty">${this._t("raffle.no_child")}</div></ha-card>`;
@@ -391,6 +400,7 @@ class TaskMateRaffleCard extends LitElement {
       .rf-hd-pill { flex: none; background: rgba(var(--tmd-hd-ink, 255,255,255), .2); padding: 4px 12px; border-radius: 16px; font-size: .9rem; white-space: nowrap; }
       .rf-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
       .rf-empty { text-align: center; padding: 26px 12px; color: var(--tmd-dim, var(--secondary-text-color)); }
+      .rf-off-title { font-weight: 600; color: var(--tmd-text, var(--primary-text-color)); margin-bottom: 4px; }
       .rf-sec { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--tmd-dim, var(--secondary-text-color)); margin: 4px 2px -4px; }
       .rf-row { display: flex; gap: 14px; padding: 14px; border: 1px solid var(--tmd-border, var(--divider-color, #e0e0e0)); border-radius: var(--tmd-radius-sm, 14px);
         background: var(--tmd-surface, var(--ha-card-background, var(--card-background-color, #fff))); }

@@ -1477,6 +1477,145 @@ remove_task_group:
       selector:
         text:
 
+add_choice_set:
+  name: Add Choice Set
+  description: "Create a \"do at least N of these chores\" set. The child picks which; a missed day leaves one review item, never an automatic deduction."
+  fields:
+    name:
+      name: Name
+      description: "What the children see above the set"
+      required: true
+      selector:
+        text:
+    chore_ids:
+      name: Chore IDs
+      description: "The chores in the set. Each may be in one set only; no mandatory, rotation or first-come chores."
+      required: true
+      selector:
+        text:
+          multiple: true
+    min_required:
+      name: Pick at least
+      description: "How many different chores from the set the child must do each day. 0 makes it an optional list that is never missed."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 50
+          mode: box
+    description:
+      name: Description
+      description: "Optional note for parents"
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      description: "An mdi icon, e.g. mdi:hand-heart-outline"
+      required: false
+      selector:
+        icon:
+    assigned_to:
+      name: Assigned to
+      description: "Child IDs. Leave empty for every child (grown-ups are left out)."
+      required: false
+      selector:
+        text:
+          multiple: true
+    penalty_points:
+      name: Penalty if missed
+      description: "Points a parent may take after reviewing a missed day. Never deducted automatically."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100000
+          mode: box
+    active:
+      name: Active
+      description: "An inactive set shows its chores as ordinary chores and is never missed."
+      required: false
+      selector:
+        boolean:
+
+update_choice_set:
+  name: Update Choice Set
+  description: "Change a choice set. Only the fields you pass change."
+  fields:
+    set_id:
+      name: Set ID
+      description: "The ID of the choice set"
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: "What the children see above the set"
+      required: false
+      selector:
+        text:
+    chore_ids:
+      name: Chore IDs
+      description: "The chores in the set. Each may be in one set only; no mandatory, rotation or first-come chores."
+      required: false
+      selector:
+        text:
+          multiple: true
+    min_required:
+      name: Pick at least
+      description: "How many different chores from the set the child must do each day. 0 makes it an optional list that is never missed."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 50
+          mode: box
+    description:
+      name: Description
+      description: "Optional note for parents"
+      required: false
+      selector:
+        text:
+    icon:
+      name: Icon
+      description: "An mdi icon, e.g. mdi:hand-heart-outline"
+      required: false
+      selector:
+        icon:
+    assigned_to:
+      name: Assigned to
+      description: "Child IDs. Leave empty for every child (grown-ups are left out)."
+      required: false
+      selector:
+        text:
+          multiple: true
+    penalty_points:
+      name: Penalty if missed
+      description: "Points a parent may take after reviewing a missed day. Never deducted automatically."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 100000
+          mode: box
+    active:
+      name: Active
+      description: "An inactive set shows its chores as ordinary chores and is never missed."
+      required: false
+      selector:
+        boolean:
+
+remove_choice_set:
+  name: Remove Choice Set
+  description: "Delete a choice set. Its chores become ordinary chores again and its open review items go too."
+  fields:
+    set_id:
+      name: Set ID
+      description: "The ID of the choice set"
+      required: true
+      selector:
+        text:
+
 start_timed_task:
   name: Start Timed Task
   description: Start or resume the timer on a timed task
@@ -1510,6 +1649,37 @@ leave_team_chore:
       required: true
       selector:
         text:
+
+set_chore_step:
+  name: Set Chore Step
+  description: >-
+    Tick or untick one step of a multipart chore for today. Steps earn nothing on their own: the chore is completed with complete_chore once every step is ticked.
+  fields:
+    chore_id:
+      name: Chore ID
+      description: The ID of the multipart chore
+      required: true
+      selector:
+        text:
+    child_id:
+      name: Child ID
+      description: The ID of the child ticking the step
+      required: true
+      selector:
+        text:
+    step_id:
+      name: Step ID
+      description: The ID of the step
+      required: true
+      selector:
+        text:
+    done:
+      name: Done
+      description: True ticks the step, false unticks it
+      required: false
+      default: true
+      selector:
+        boolean:
 
 complete_next_chore:
   name: Complete Next Chore

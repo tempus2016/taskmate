@@ -8,6 +8,8 @@ createIncentiveCard({
   moduleUrl: import.meta.url,
   tag: "taskmate-penalties-card",
   kind: "penalty",
+  // Family style (#1260): the card honours the family's penalties switch.
+  feature: "penalties",
   idKey: "penalty_id",
   i18n: "penalties",
   // The card's own "Add …" / "New …" button labels (#1234).

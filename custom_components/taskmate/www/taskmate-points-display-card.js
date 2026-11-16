@@ -633,6 +633,13 @@ class TaskMatePointsDisplayCard extends LitElement {
     return attrs.points_name || this._t("common.points");
   }
 
+  // Rank medals follow the card's show_rank and the family's leaderboard
+  // switch (#1260): with the leaderboard off, nobody is ranked anywhere.
+  _showRank() {
+    if (this.config.show_rank === false) return false;
+    return window.__taskmate_feature_on ? window.__taskmate_feature_on(this.hass, "leaderboard") : true;
+  }
+
   _allChildren() {
     const s = this._stateObj();
     const all = s ? getChildren(s) : [];
@@ -746,7 +753,7 @@ class TaskMatePointsDisplayCard extends LitElement {
                 <div class="pill-label">${this._t("points_display.streak")}</div>
               </div>
             </div>` : ""}
-          ${this.config.show_rank && children.length > 1 ? html`
+          ${this._showRank() && children.length > 1 ? html`
             <div class="stat-pill">
               <ha-icon icon="mdi:trophy"></ha-icon>
               <div>
@@ -783,7 +790,7 @@ class TaskMatePointsDisplayCard extends LitElement {
           return html`
             <div class="child-tile ${isTop ? "top-child" : ""}"
                  style="${isTop ? `border-color:${colour};` : ""}">
-              ${idx < 3 && this.config.show_rank ? html`<div class="rank-badge">${RANK_MEDAL[idx]}</div>` : ""}
+              ${idx < 3 && this._showRank() ? html`<div class="rank-badge">${RANK_MEDAL[idx]}</div>` : ""}
               ${childAvatar(child, colour)}
               <div class="child-name">${child.name}</div>
               <div class="tile-points" style="color:${colour}">
@@ -860,7 +867,7 @@ class TaskMatePointsDisplayCard extends LitElement {
                   <span style="font-size:0.75rem;font-weight:600;color:var(--secondary-text-color);flex-shrink:0;">${pct}%</span>
                 </div>
               </div>
-              ${this.config.show_rank && idx < 3 ? html`
+              ${this._showRank() && idx < 3 ? html`
                 <div style="font-size:1.4rem;flex-shrink:0;">${RANK_MEDAL[idx]}</div>` : ""}
             </div>`;
         })}
@@ -1035,7 +1042,7 @@ class TaskMatePointsDisplayCard extends LitElement {
   }
 
   _designPlayroom(rows) {
-    const showRank = this.config.show_rank !== false;
+    const showRank = this._showRank();
     const showWeekly = this.config.show_weekly !== false;
     const showStreak = this.config.show_streak !== false;
     return html`
@@ -1057,7 +1064,7 @@ class TaskMatePointsDisplayCard extends LitElement {
 
   _designConsole(rows) {
     const max = Math.max(...rows.map((r) => r.points), 1);
-    const showRank = this.config.show_rank !== false;
+    const showRank = this._showRank();
     const showWeekly = this.config.show_weekly !== false;
     const showStreak = this.config.show_streak !== false;
     return html`
@@ -1079,7 +1086,7 @@ class TaskMatePointsDisplayCard extends LitElement {
   }
 
   _designCleanpro(rows, total) {
-    const showRank = this.config.show_rank !== false;
+    const showRank = this._showRank();
     const showWeekly = this.config.show_weekly !== false;
     const showStreak = this.config.show_streak !== false;
     return html`

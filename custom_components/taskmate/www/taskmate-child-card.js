@@ -114,6 +114,16 @@ if (!LitElement) throw new Error("TaskMate Child Card: Home Assistant's Lit base
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+// Per-child stage (#1262): what the card does by default at each stage. Only
+// used for options the card's own YAML leaves unset, so explicit YAML always
+// wins. Mirrors STAGE_CARD_ITEMS in coord_stages.py.
+const STAGE_CARD_DEFAULTS = {
+  "3_5": { pre_reader: true },
+  "6_8": { pre_reader: false, show_description: true },
+  "9_12": { pre_reader: false },
+  "13_plus": { pre_reader: false, show_roulette: false, show_confetti: false },
+};
+
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 // Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
 // identity until the design layer has loaded (it is also what stamps dir).
@@ -134,6 +144,7 @@ class TaskMateChildCard extends LitElement {
       _photoCapture: { type: Object },
       _extraCapture: { type: Object },
       _quantityCapture: { type: Object },
+      _stepsSheet: { type: Object },
       _goalSheet: { type: Object },
       _helpSent: { type: Object },
       _moodSent: { type: Object },
@@ -162,6 +173,9 @@ class TaskMateChildCard extends LitElement {
     // Optimistic completions: track chores that were just completed
     // These are used to immediately hide the DONE button before the server confirms
     this._optimisticCompletions = {};
+    // Multipart chores (#1253): steps ticked/unticked here but not yet seen
+    // on the chores sensor, {"<chore>_<child>": [step ids]}.
+    this._stepOptimistic = {};
     // Audio context for generating sounds (lazy initialized)
     this._audioContext = null;
     // Timer intervals for live counters (timed tasks)
@@ -719,6 +733,15 @@ class TaskMateChildCard extends LitElement {
       .section-title ha-icon { --mdc-icon-size: 28px; }
 
       .section-title-text { flex: 1; }
+
+      /* Practising chores (#1262): their own section first. */
+      .tm-practising-head { color: var(--tmd-c3, #1abc9c); }
+      .tm-practising-tag {
+        font-size: 11px; font-weight: 700; line-height: 1.3; padding: 2px 8px; border-radius: 999px;
+        background: color-mix(in srgb, currentColor 14%, transparent);
+        color: color-mix(in srgb, currentColor 70%, var(--primary-text-color, #212121));
+        font-family: inherit;
+      }
 
       /* Individual chore card - optimized for tablet touch, ENTIRE ROW IS CLICKABLE */
       .chore-card {
@@ -1516,6 +1539,35 @@ class TaskMateChildCard extends LitElement {
       }
       .tm-pre-dots i.on { background: currentColor; opacity: 1; }
       .child-name-container .tm-pre-dots { color: inherit; }
+      /* Choice sets (#1259): "pick at least N of these". The set's chores
+         sit only inside its group. Met = solid green; never the red
+         mandatory look, since no single chore is owed. */
+      .tm-cs { margin: 10px 0 14px; }
+      .tm-cs-head {
+        display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+        border-radius: var(--tmd-radius, 14px);
+        background: color-mix(in srgb, var(--tm-child, var(--fun-purple)) 12%, var(--card-background-color, #fff));
+        border: 2px dashed color-mix(in srgb, var(--tm-child, var(--fun-purple)) 55%, transparent);
+        color: var(--primary-text-color);
+      }
+      .tm-cs.met .tm-cs-head {
+        border-style: solid; border-color: var(--tmd-good, var(--fun-green));
+        background: color-mix(in srgb, var(--tmd-good, var(--fun-green)) 12%, var(--card-background-color, #fff));
+      }
+      .tm-cs-head ha-icon { --mdc-icon-size: 26px; flex: none; color: var(--tm-child, var(--fun-purple)); }
+      .tm-cs.met .tm-cs-head ha-icon { color: var(--tmd-good, var(--fun-green)); }
+      .tm-cs-text { flex: 1; min-width: 0; }
+      .tm-cs-name { font-size: 1.1rem; font-weight: 700; overflow-wrap: anywhere; }
+      .tm-cs-sub { font-size: 0.86rem; color: var(--secondary-text-color); }
+      .tm-cs-count { text-align: end; flex: none; }
+      .tm-cs-count .tm-pre-dots { justify-content: flex-end; margin-top: 0; color: var(--tm-child, var(--fun-purple)); }
+      .tm-cs.met .tm-cs-count .tm-pre-dots { color: var(--tmd-good, var(--fun-green)); }
+      .tm-cs-group {
+        display: flex; flex-direction: column; gap: 0; margin-top: 8px;
+        padding-inline-start: 10px; margin-inline-start: 6px;
+        border-inline-start: 3px solid color-mix(in srgb, var(--tm-child, var(--fun-purple)) 40%, transparent);
+      }
+      .tm-cs-other { font-size: 1.05rem; font-weight: 600; color: var(--secondary-text-color); margin: 6px 0 8px; }
       /* Pre-reader: badges as pictures only. The earned badges are rewards a
          child recognises by sight and the next badge is a filling bar, so
          both keep working without the words (aria-label/title keep them). */
@@ -1800,6 +1852,24 @@ class TaskMateChildCard extends LitElement {
       .tm-qty-unit { text-align: center; font-weight: 700; opacity: .75; }
       .tm-qty-worth { text-align: center; font-size: 1.05rem; font-weight: 800; color: var(--fun-green, #2e9e5b); margin: 6px 0 2px; }
       .tm-minutes-left { white-space: nowrap; }
+      /* Multipart chores (#1253): the checklist sheet and the row's progress. */
+      .tm-steps-list { list-style: none; margin: 10px 0 4px; padding: 0; display: flex; flex-direction: column; gap: 8px;
+        max-height: 55vh; overflow-y: auto; }
+      .tm-step { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; text-align: start;
+        padding: 10px 12px; border-radius: 14px; border: 2px solid var(--divider-color, #e0e0e0); cursor: pointer;
+        background: var(--card-background-color, #fff); color: var(--primary-text-color, #33373d); font: inherit; font-size: 1rem; }
+      .tm-step.done { border-color: var(--fun-green, #2e9e5b); }
+      .tm-step.done .tm-step-name { text-decoration: line-through; opacity: .7; }
+      .tm-step:disabled { cursor: progress; }
+      .tm-step-box { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center;
+        justify-content: center; font-weight: 800; border: 2px solid var(--divider-color, #ccc); --mdc-icon-size: 22px; }
+      .tm-step.done .tm-step-box { background: var(--fun-green, #2e9e5b); border-color: var(--fun-green, #2e9e5b); color: #fff; }
+      .tm-step-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+      .tm-steps-sheet.pre .tm-step-box { width: 52px; height: 52px; font-size: 1.4rem; --mdc-icon-size: 30px; }
+      .tm-steps-sheet.pre .tm-step { padding: 12px 14px; font-size: 1.1rem; }
+      .pre-tile-steps { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
+      .tm-step-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; opacity: .6; }
+      .tm-step-dot.on { background: currentColor; opacity: 1; }
       .tm-tag-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
       .tm-help-btn { border: 0; cursor: pointer; font-family: inherit; line-height: inherit; }
       .tm-pts-count { font-size: max(12px, 0.8em); font-weight: 500; }
@@ -3212,7 +3282,11 @@ class TaskMateChildCard extends LitElement {
     // An explicit header_color beats the child's own colour; the default
     // merged in below must not count as one.
     this._explicitHeader = typeof config.header_color === "string" && config.header_color !== "";
-    this.config = {
+    // The YAML as written, so the child's stage (#1262) can fill only the
+    // options it leaves unset.
+    this._userConfig = config;
+    this._stageApplied = null;
+    this._configDefaults = {
       time_category: "anytime",
       include_anytime_chores: true,  // false hides the Anytime bucket from every filter
       debug: false,
@@ -3227,8 +3301,32 @@ class TaskMateChildCard extends LitElement {
       show_next_badge: true,         // Show progress toward the closest unearned badge
       show_badge_nudge: true,        // Encouraging line when one away from that badge
             header_color: '#9b59b6',
-    ...config,
     };
+    this.config = { ...this._configDefaults, ...config };
+  }
+
+  /** The card config with the child's stage defaults (#1262) under the YAML. */
+  static stageConfig(defaults, userConfig, stage) {
+    return { ...defaults, ...(STAGE_CARD_DEFAULTS[stage] || {}), ...userConfig };
+  }
+
+  // Runs before every render, so both render paths see it: re-merge the
+  // config when the child's stage changes.
+  willUpdate(changed) {
+    if (super.willUpdate) super.willUpdate(changed);
+    this._syncStageConfig();
+  }
+
+  _syncStageConfig() {
+    if (!this.hass || !this._userConfig) return;
+    const entity = this._userConfig.entity;
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, entity))
+      || this.hass.states?.[entity]?.attributes || {};
+    const child = (attrs.children || []).find(c => c.id === this._userConfig.child_id);
+    const stage = (child && child.age_group) || "";
+    if (stage === this._stageApplied) return;
+    this._stageApplied = stage;
+    this.config = TaskMateChildCard.stageConfig(this._configDefaults, this._userConfig, stage);
   }
 
   getCardSize() {
@@ -3256,6 +3354,7 @@ class TaskMateChildCard extends LitElement {
     if (!this.hass || !this.config) {
       return html``;
     }
+    this._syncStageConfig();
 
     const design = window.__taskmate_design
       ? window.__taskmate_design.apply(this, this.hass, this.config, this.config.entity)
@@ -3341,6 +3440,16 @@ class TaskMateChildCard extends LitElement {
     const look = this._look(child, attrs, "classic", "#9b59b6");
     this._headerInk(look, "classic");
     const allDone = this._allDoneView(childChores, child, todaysCompletions, allChores);
+    const [classicPrac, classicRest] = this._splitPractising(allDone.list, child);
+    const classicOrder = this._displayOrder(child, classicPrac, classicRest);
+    const classicRow = (chore, index) => html`
+                  ${chore.task_type === 'timed'
+                    ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
+                    : html`
+                      ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
+                      ${chore._setTime ? '' : this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
+                    `}
+                `;
 
     return html`
       <ha-card class="${this._compact() ? "compact" : ""}" style="${look.tint ? `--tm-child:${look.tint}` : ""}">
@@ -3464,6 +3573,7 @@ class TaskMateChildCard extends LitElement {
             ? this._renderEmptyState(this._emptyIsAllDone(child, todaysCompletions))
             : html`
                 ${allDone.banner ? this._renderAllDone(child, childChores, todaysCompletions, "classic") : ""}
+                ${classicPrac.length ? html`${this._renderPractisingHead("classic")}${classicPrac.map((chore, i) => classicRow(chore, i))}` : ""}
                 ${allDone.collapsed ? "" : html`<div class="section-title ${this.config.pre_reader === true && this._getTimeCategoryIcon(this._effectiveTimeCategory()) === 'mdi:clock-outline' ? 'pre-hidden' : ''}">
                   <ha-icon icon="${this._getTimeCategoryIcon(this._effectiveTimeCategory())}"></ha-icon>
                   ${this.config.pre_reader === true ? '' : html`
@@ -3480,19 +3590,12 @@ class TaskMateChildCard extends LitElement {
                   })() : ''}
                 </div>
                 ${this._renderRoulette(child, childChores, pointsIcon)}`}
-                ${this.config.pre_reader === true ? html`
+                ${this.config.pre_reader === true ? this._renderChoiceSetGroups(child, childChores, (list) => html`
                   <div class="pre-reader-grid">
-                    ${childChores.map((chore) =>
+                    ${list.map((chore) =>
                       this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
                   </div>
-                ` : allDone.list.map((chore, index) => html`
-                  ${chore.task_type === 'timed'
-                    ? this._renderTimedChoreCard(chore, child, pointsIcon, todaysCompletions, index)
-                    : html`
-                      ${this._renderChoreCard(chore, child, pointsIcon, todaysCompletions, index)}
-                      ${chore._setTime ? '' : this._renderBonusSubtasks(chore, child, pointsIcon, todaysCompletions)}
-                    `}
-                `)}
+                `) : this._renderChoiceSetGroups(child, classicRest, (list) => list.map((chore) => classicRow(chore, classicOrder.indexOf(chore))))}
               `}
         </div>
 
@@ -3507,6 +3610,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderPhotoCapture()}
         ${this._renderExtraCapture()}
         ${this._renderQuantityCapture()}
+        ${this._renderStepsSheet()}
         <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
                style="display:none" @change="${this._onPhotoSelected}">
         ${this._renderTour(child, attrs, "classic")}
@@ -4013,6 +4117,10 @@ class TaskMateChildCard extends LitElement {
     // silently ignored under every designed style — including accessible,
     // which is the one a child who needs picture tiles is most likely on.
     // The tiles keep the designed shell (header, tokens) around them.
+    const [pracRaw, restRaw] = this._splitPractising(listRows, child, r => r.chore);
+    const shown = new Map(this._displayOrder(child, pracRaw, restRaw, r => r.chore).map((r, i) => [r, { ...r, index: i }]));
+    const pracRows = pracRaw.map(r => shown.get(r));
+    const restRows = restRaw.map(r => shown.get(r));
     const renderList = (list) =>
       design === "playroom" ? this._designPlayroom(child, list, remaining, tone) :
       design === "console"  ? this._designConsole(child, list, remaining, tone) :
@@ -4020,13 +4128,13 @@ class TaskMateChildCard extends LitElement {
     const body = this.config.pre_reader === true && childChores.length === 0
       ? this._designEmpty(child)
       : this.config.pre_reader === true
-      ? html`
+      ? this._renderChoiceSetGroups(child, childChores, (list) => html`
         <div class="pre-reader-grid">
-          ${childChores.map((chore) =>
+          ${list.map((chore) =>
             this._renderPreReaderTile(chore, child, pointsIcon, todaysCompletions))}
-        </div>`
+        </div>`)
       : allDone.collapsed && listRows.length === 0 ? ""
-      : html`${renderList(listRows)}${foldFinished ? html`
+      : html`${pracRows.length ? html`${this._renderPractisingHead("tmd")}${renderList(pracRows)}` : ""}${restRows.length || !pracRows.length ? this._renderChoiceSetGroups(child, restRows, renderList, (r) => r.chore) : ""}${foldFinished ? html`
         <button type="button" class="tmd-finished-toggle" aria-expanded="${this._showFinished ? "true" : "false"}"
           @click=${() => { this._showFinished = !this._showFinished; }}>
           <ha-icon icon="${this._showFinished ? "mdi:chevron-up" : "mdi:chevron-down"}"></ha-icon>
@@ -4103,6 +4211,7 @@ class TaskMateChildCard extends LitElement {
       ${this._renderPhotoCapture()}
       ${this._renderExtraCapture()}
       ${this._renderQuantityCapture()}
+      ${this._renderStepsSheet()}
       <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
              style="display:none" @change="${this._onPhotoSelected}">
       ${this._renderTour(child, attrs, design)}
@@ -4212,7 +4321,8 @@ class TaskMateChildCard extends LitElement {
     // chip (whose name reads "{chore}, waiting for a grown-up. Undo"), so
     // there is no second note here squeezing the name.
     return html`
-      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
+      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length
+        || (!r.done && this._choreSteps(r.chore).length) || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
@@ -4230,6 +4340,7 @@ class TaskMateChildCard extends LitElement {
           ${sharedLabel ? html`<span class="tmd-tag tm-shared-limit">👥 ${sharedLabel}</span>` : ""}
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
+          ${this._renderStepsTag(r.chore, r.child, r.done, "tmd-tag")}
         </div>` : ""}
       ${this._renderSetTimeInfo(r.chore, r.child, "designed")}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}
@@ -4464,12 +4575,48 @@ class TaskMateChildCard extends LitElement {
   }
 
   _filterAndSortChores(chores, child) {
-    const base = this._filterAndSortChoresBase(chores, child);
+    // "Later" chores (#1262) are kept off this child's card altogether.
+    const marks = (child && child.chore_stage) || {};
+    const base = this._filterAndSortChoresBase(chores, child).filter(c => marks[c.id] !== "later");
     // Kept so a pill can rebuild the row for any of the chore's times.
     this._setTimeBase = {};
     for (const c of base) if (Array.isArray(c.times) && c.times.length) this._setTimeBase[c.id] = c;
     const expanded = this._expandSetTimeChores(base, child);
-    return this.config.sort_available_first === false ? expanded : this._availableFirst(expanded, child);
+    const sorted = this.config.sort_available_first === false ? expanded : this._availableFirst(expanded, child);
+    return this._practisingFirst(sorted, child);
+  }
+
+  // ── Practising chores (#1262) ───────────────────────────────────────────
+  // A chore the child is still practising goes first, in its own section, in
+  // every design (both render paths read _splitPractising). Pre-reader mode
+  // keeps the order and drops the words.
+  _isPractising(chore, child) {
+    const marks = (child && child.chore_stage) || {};
+    return marks[chore._baseId || chore.id] === "practising";
+  }
+
+  _practisingFirst(chores, child) {
+    if (!child || !child.chore_stage) return chores;
+    const first = chores.filter(c => this._isPractising(c, child));
+    if (!first.length) return chores;
+    return [...first, ...chores.filter(c => !this._isPractising(c, child))];
+  }
+
+  /** [practising, the rest] — the practising half is empty in pre-reader mode. */
+  _splitPractising(list, child, chorOf = (x) => x) {
+    if (this.config.pre_reader === true) return [[], list];
+    // A practising chore inside a choice set (#1259) stays in its set.
+    const inSet = new Set(((child && child.choice_sets) || []).flatMap(s => s.chore_ids || []));
+    const prac = list.filter(x => this._isPractising(chorOf(x), child) && !inSet.has((chorOf(x) || {}).id));
+    return prac.length ? [prac, list.filter(x => !prac.includes(x))] : [[], list];
+  }
+
+  _renderPractisingHead(kind) {
+    return html`<div class="${kind === "tmd" ? "tmd-section" : "section-title"} tm-practising-head">
+      <ha-icon icon="mdi:sprout"></ha-icon>
+      <span class="${kind === "tmd" ? "" : "section-title-text"}">${this._t("child.practising_title")}</span>
+      <span class="tm-practising-tag">${this._t("child.practising_tag")}</span>
+    </div>`;
   }
 
   // ── Available first (#1231) ─────────────────────────────────────────────
@@ -5487,6 +5634,7 @@ class TaskMateChildCard extends LitElement {
           ? html`<div class="pre-tile-label">${chore.name}</div>` : ''}
         ${!isDone && this._teamState(chore, child)
           ? this._renderTeamProgress(this._teamState(chore, child), 'pre-tile-team') : ''}
+        ${this._renderStepsTag(chore, child, isDone, 'pre-tile-steps')}
       </button>
     `;
   }
@@ -5533,6 +5681,72 @@ class TaskMateChildCard extends LitElement {
     return html`<span class="tm-pre-dots ${cls}" role="img"
       aria-label="${_ltrNums(this._t("child.pre_reader_progress", { done: __tmNum(this.hass, n), total: __tmNum(this.hass, done.length) }))}">${
       done.map((d) => html`<i class="${d ? "on" : ""}"></i>`)}</span>`;
+  }
+
+  /** Choice sets (#1259): split a list into each set's members and the rest.
+   *  `choreOf` reads the chore from an item (a chore, or a designed row).
+   *  Member chores appear only inside their set, never twice. Sets with no
+   *  member in this list are left out. */
+  _choiceSetSplit(child, items, choreOf = (x) => x) {
+    const sets = (child && Array.isArray(child.choice_sets)) ? child.choice_sets : [];
+    if (!sets.length) return { groups: [], rest: items };
+    const owner = new Map();
+    sets.forEach((s) => (s.chore_ids || []).forEach((id) => { if (!owner.has(id)) owner.set(id, s.set_id); }));
+    const bySet = new Map();
+    const rest = [];
+    items.forEach((it) => {
+      const sid = owner.get((choreOf(it) || {}).id);
+      if (!sid) { rest.push(it); return; }
+      if (!bySet.has(sid)) bySet.set(sid, []);
+      bySet.get(sid).push(it);
+    });
+    const groups = sets.filter((s) => bySet.has(s.set_id)).map((s) => ({ set: s, items: bySet.get(s.set_id) }));
+    return { groups, rest };
+  }
+
+  /** One set's head: name, "Pick at least N", dots and "x of N".
+   *  Pre-reader mode keeps the dots only (the words go to the aria-label). */
+  _renderChoiceSetHead(set) {
+    const min = Math.max(0, Number(set.min) || 0);
+    const done = Math.max(0, Number(set.done) || 0);
+    const met = min > 0 && set.fulfilled === true;
+    const pre = this.config.pre_reader === true;
+    const sub = min === 0
+      ? this._t("child.choice_set_optional")
+      : met ? this._t("child.choice_set_done")
+      : this._t("child.choice_set_pick", { count: __tmNum(this.hass, min) });
+    const progress = _ltrNums(this._t("child.choice_set_progress", { done: __tmNum(this.hass, Math.min(done, min)), min: __tmNum(this.hass, min) }));
+    const dots = min > 0 ? html`<span class="tm-pre-dots" role="img" aria-label="${progress}">${
+      Array.from({ length: min }, (_, i) => html`<i class="${i < done ? "on" : ""}"></i>`)}</span>` : "";
+    return html`<div class="tm-cs-head" aria-label="${pre ? `${set.name}: ${sub}` : ""}">
+      <ha-icon icon="${met ? "mdi:check-circle" : (set.icon || "mdi:hand-heart-outline")}"></ha-icon>
+      <div class="tm-cs-text">
+        ${pre ? "" : html`<div class="tm-cs-name">${set.name}</div><div class="tm-cs-sub">${sub}</div>`}
+      </div>
+      ${min > 0 ? html`<div class="tm-cs-count">${dots}${pre ? "" : html`<div class="tm-cs-sub">${progress}</div>`}</div>` : ""}
+    </div>`;
+  }
+
+  /** Every set group then the other chores, each list drawn by `renderItems`.
+   *  The "Other chores" line shows only when a set came first. */
+  /** Rows in the order they are drawn: practising first (#1262), then each
+   *  choice set's chores (#1259), then the rest. Numbers follow this order so
+   *  no two visible rows share one. */
+  _displayOrder(child, prac, rest, choreOf = (x) => x) {
+    const { groups, rest: loose } = this._choiceSetSplit(child, rest, choreOf);
+    return [...prac, ...groups.flatMap((g) => g.items), ...loose];
+  }
+
+  _renderChoiceSetGroups(child, items, renderItems, choreOf = (x) => x) {
+    const { groups, rest } = this._choiceSetSplit(child, items, choreOf);
+    if (!groups.length) return renderItems(items);
+    const pre = this.config.pre_reader === true;
+    return html`
+      ${groups.map((g) => html`<div class="tm-cs ${g.set.min > 0 && g.set.fulfilled === true ? "met" : ""}" data-set="${g.set.set_id}">
+        ${this._renderChoiceSetHead(g.set)}
+        <div class="tm-cs-group">${renderItems(g.items)}</div>
+      </div>`)}
+      ${rest.length ? html`${pre ? "" : html`<div class="tm-cs-other">${this._t("child.choice_set_other_chores")}</div>`}${renderItems(rest)}` : ""}`;
   }
 
   /** The coloured badge at the head of a chore row.
@@ -5839,6 +6053,8 @@ class TaskMateChildCard extends LitElement {
               <div class="tm-tag-wrap">${this._choreExtraTags(chore, false, 'photo-badge')}</div>
             ` : ''}
             ${team ? html`<div>${this._renderTeamProgress(team, 'team-label')}</div>` : ''}
+            ${this._choreSteps(chore).length && !isCompletedForToday
+              ? html`<div class="tm-tag-wrap">${this._renderStepsTag(chore, child, false, 'photo-badge')}</div>` : ''}
           </div>
         </div>
         <div class="chore-checkbox ${team ? 'team' : ''} ${team?.mine ? 'team-joined' : ''}">
@@ -6351,6 +6567,16 @@ class TaskMateChildCard extends LitElement {
       return;
     }
 
+    // Multipart chores (#1253): until every step is ticked, a tap opens the
+    // checklist instead. Ticking the last step there comes back here, so the
+    // photo, note and quantity prompts and the celebration below all still
+    // run. Gated here so every render path (classic, designed, pre-reader)
+    // opens the same checklist.
+    if (this._stepsOutstanding(chore, child)) {
+      this._openStepsSheet(chore, child);
+      return;
+    }
+
     // Photo-evidence chores can't be completed with a plain tap — open the
     // capture overlay first. The overlay uploads the photo and then calls back
     // into this method with a photoUrl, which takes the service path below.
@@ -6829,6 +7055,143 @@ class TaskMateChildCard extends LitElement {
     `;
   }
 
+  // ── Multipart chores (#1253) ──────────────────────────────────────────────
+
+  /** The chore's required steps, in order ([] for an ordinary chore). */
+  _choreSteps(chore) {
+    return chore && Array.isArray(chore.steps) ? chore.steps.filter(s => s && s.id) : [];
+  }
+
+  /** Ids of the steps this child has ticked on the current go: the card's
+   *  own unconfirmed taps first, else the chores sensor's step_done. */
+  _stepsDone(chore, child) {
+    const steps = this._choreSteps(chore);
+    if (!steps.length || !child) return [];
+    const key = `${chore.id}_${child.id}`;
+    const local = this._stepOptimistic && this._stepOptimistic[key];
+    const ticked = new Set(local || ((chore.step_done || {})[child.id] || []));
+    return steps.filter(s => ticked.has(s.id)).map(s => s.id);
+  }
+
+  _stepsOutstanding(chore, child) {
+    const steps = this._choreSteps(chore);
+    return steps.length > 0 && this._stepsDone(chore, child).length < steps.length;
+  }
+
+  /**
+   * "2/4 steps" on a chore row that still has steps to tick. A pre-reader
+   * tile gets one dot per step instead of words. Called from the classic
+   * row, _designChoreMeta and the pre-reader tile (two-render-paths rule).
+   */
+  _renderStepsTag(chore, child, done, cls) {
+    const steps = this._choreSteps(chore);
+    if (!steps.length || done) return "";
+    const n = this._stepsDone(chore, child).length;
+    const label = this._t("child.steps_progress", { done: __tmNum(this.hass, n), total: __tmNum(this.hass, steps.length) });
+    if (cls === "pre-tile-steps") {
+      return html`<div class="pre-tile-steps" role="img" aria-label="${_ltrNums(label)}">${steps.map((s, i) =>
+        html`<span class="tm-step-dot ${i < n ? "on" : ""}"></span>`)}</div>`;
+    }
+    return html`<span class="${cls} tm-steps-tag">☑️ ${_ltrNums(label)}</span>`;
+  }
+
+  _openStepsSheet(chore, child) {
+    this._stepsSheet = { chore, child, error: "" };
+    this.requestUpdate();
+  }
+
+  _closeStepsSheet() {
+    this._stepsSheet = null;
+    this.requestUpdate();
+  }
+
+  /** Tick or untick one step. Ticking the last one completes the chore
+   *  through _handleComplete, the same path as a plain tap. */
+  async _toggleStep(chore, child, step) {
+    const key = `${chore.id}_${child.id}`;
+    if (this._loading[`${key}_steps`]) return;
+    const before = this._stepsDone(chore, child);
+    const wasDone = before.includes(step.id);
+    const after = wasDone ? before.filter(id => id !== step.id) : [...before, step.id];
+    this._stepOptimistic = { ...this._stepOptimistic, [key]: after };
+    this._loading = { ...this._loading, [`${key}_steps`]: true };
+    if (this._stepsSheet) this._stepsSheet = { ...this._stepsSheet, error: "" };
+    this.requestUpdate();
+    let ok = false;
+    try {
+      await this.hass.callService("taskmate", "set_chore_step", {
+        chore_id: chore.id, child_id: child.id, step_id: step.id, done: !wasDone,
+      });
+      ok = true;
+    } catch (error) {
+      this._stepOptimistic = { ...this._stepOptimistic, [key]: before };
+      if (this._stepsSheet) {
+        this._stepsSheet = { ...this._stepsSheet, error: this._t("child.error_complete", { message: this._errText(error) }) };
+      }
+    } finally {
+      this._loading = { ...this._loading, [`${key}_steps`]: false };
+      this.requestUpdate();
+    }
+    if (!ok) return;
+    // The sensor catches up a moment later; drop our copy once it has.
+    setTimeout(() => {
+      if (this._stepOptimistic[key] === after) {
+        const next = { ...this._stepOptimistic };
+        delete next[key];
+        this._stepOptimistic = next;
+        this.requestUpdate();
+      }
+    }, 5000);
+    if (!wasDone && after.length >= this._choreSteps(chore).length) {
+      this._closeStepsSheet();
+      await this._handleComplete(chore, child);
+    }
+  }
+
+  _renderStepsSheet() {
+    const sheet = this._stepsSheet;
+    if (!sheet) return "";
+    const { chore, child } = sheet;
+    const steps = this._choreSteps(chore);
+    const done = new Set(this._stepsDone(chore, child));
+    const busy = !!this._loading[`${chore.id}_${child.id}_steps`];
+    const pre = this.config.pre_reader === true;
+    const stop = (e) => e.stopPropagation();
+    const progress = this._t("child.steps_progress", { done: __tmNum(this.hass, done.size), total: __tmNum(this.hass, steps.length) });
+    return html`
+      <div class="photo-overlay" @click="${() => this._closeStepsSheet()}">
+        <div class="photo-sheet tm-steps-sheet ${pre ? "pre" : ""}" @click="${stop}" role="dialog" aria-modal="true"
+             aria-label="${chore.name || ""}">
+          <div class="photo-title">${chore.name || ""}</div>
+          <div class="photo-for tm-steps-count">${_ltrNums(progress)}</div>
+          ${pre ? "" : html`<div class="photo-dropzone-hint">${this._t("child.steps_hint")}</div>`}
+          <ol class="tm-steps-list">
+            ${steps.map((s, i) => {
+              const isDone = done.has(s.id);
+              const n = __tmNum(this.hass, i + 1);
+              return html`<li>
+                <button class="tm-step ${isDone ? "done" : ""}" ?disabled=${busy}
+                        role="checkbox" aria-checked="${isDone ? "true" : "false"}"
+                        aria-label="${this._t("child.step_aria", { n, name: s.name })}"
+                        @click="${() => this._toggleStep(chore, child, s)}">
+                  <span class="tm-step-box" aria-hidden="true">${isDone
+                    ? html`<ha-icon icon="mdi:check-bold"></ha-icon>` : n}</span>
+                  <span class="tm-step-name">${s.name}</span>
+                </button>
+              </li>`;
+            })}
+          </ol>
+          ${sheet.error ? html`<div class="photo-error">${sheet.error}</div>` : ""}
+          <div class="photo-btn-row">
+            <button class="photo-btn ghost" @click="${() => this._closeStepsSheet()}">
+              ${this._t("child.steps_close")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   /**
    * Minutes of today's outstanding chores that carry an estimate, or 0.
    * Feeds the "about N minutes of jobs left" line on every design.
@@ -6871,7 +7234,12 @@ class TaskMateChildCard extends LitElement {
   // ── Help, mood, sick day, weekly goal, make it right ─────────────────────
 
   _helpEnabled() {
-    return this.config.show_help_button !== false && this.config.pre_reader !== true;
+    if (this.config.show_help_button === false) return false;
+    // Family style (#1260): under Team style the help button is part of the
+    // card even in Pre-Reader Mode, unless the YAML says otherwise.
+    if (this.config.show_help_button === undefined && window.__taskmate_family_style
+      && window.__taskmate_family_style(this.hass) === "team") return true;
+    return this.config.pre_reader !== true;
   }
 
   /** Done for today: completions (incl. optimistic ones) reach the daily limit. */
@@ -8337,8 +8705,11 @@ class TaskMateChildCard extends LitElement {
       design: (this.getAttribute && this.getAttribute("data-tm-design")) || design,
       dark: !!(d && d.isDark && d.isDark(this.hass, this)),
       // Step aside while the card celebrates, so the popup isn't drawn over
-      // a second dark layer; the tour comes back on the same step.
-      paused: !!(this._celebrating || this._inspCelebration || (this._confetti && this._confetti.length)),
+      // a second dark layer; the tour comes back on the same step. The same
+      // while a multipart chore's checklist sheet (#1253) is open, so the
+      // bubble never sits on top of the steps the child is ticking.
+      paused: !!(this._celebrating || this._inspCelebration || (this._confetti && this._confetti.length)
+        || this._stepsSheet),
       onSpeak: (k) => T.speak(this.hass, childId, k),
       onFinish: (status, step) => this._finishTour(childId, status, step),
     }}></taskmate-tour>`;
@@ -8365,6 +8736,9 @@ class TaskMateChildCard extends LitElement {
   /* `style` is the child's own tick-off animation (celebration_style); every
      other celebration passes none and gets the season's effect or confetti. */
   _spawnConfetti(style) {
+    // show_confetti: false (or the "Taking ownership" stage, #1262) keeps
+    // tick-offs calm: no burst at all.
+    if (this.config && this.config.show_confetti === false) return;
     const fx = window.__taskmate_fx;
     const attrs = this._attrsNow ? this._attrsNow() : {};
     const child = (attrs.children || []).find(c => c.id === this.config?.child_id);

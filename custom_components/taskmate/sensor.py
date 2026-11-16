@@ -27,6 +27,7 @@ from .coord_set_times import set_time_label, set_time_of
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .entity_names import TranslatedNameMixin
+from .family_style import current_style, features_off
 from .models import Child
 from .seasons import active_season
 from .watch import DEFAULT_STATE_STRINGS, today_board, watch_state, watch_summary
@@ -248,6 +249,14 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                     if (style := getattr(c, "celebration_style", "confetti")) != "confetti"
                     else {}
                 ),
+                # Per-child stage (#1262): the card's defaults follow it when its
+                # YAML is unset; the chore marks only when any are set.
+                **({"age_group": stage} if isinstance(stage := getattr(c, "age_group", ""), str) and stage else {}),
+                **(
+                    {"chore_stage": dict(marks)}
+                    if isinstance(marks := getattr(c, "chore_stage", None), dict) and marks
+                    else {}
+                ),
                 # Chore roulette (#677): today's pick + spins left, so the card can
                 # show the result and disable the button once the allowance is used.
                 **(
@@ -293,6 +302,8 @@ def _build_children_summary(coordinator: TaskMateCoordinator, common: dict) -> l
                 "quests": coordinator.quest_progress_for_child(c.id),
                 "avatar_options": coordinator.avatar_options_for_child(c),
                 "challenges": coordinator.challenge_progress_for_child(c.id),
+                # Choice sets (#1259): today's "pick at least N", only when any.
+                **({"choice_sets": sets} if (sets := coordinator.choice_set_progress_for_child(c.id)) else {}),
                 **({"weekly_chore_progress": weekly_progress} if weekly_progress else {}),
                 # Reject reasons (#976): why a chore / claim was just sent back,
                 # only while there's one to show.
@@ -494,6 +505,20 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
                     time_done[kid] = {tid: ("done" if comp.approved else "pending") for tid, comp in done.items()}
             if time_done:
                 record["time_done"] = time_done
+        # Multipart chores (#1253): only chores with steps carry them, plus
+        # the steps each child has ticked on the current go,
+        # {child_id: [step_id, ...]}, omitted while nobody has ticked any.
+        steps = getattr(c, "steps", None)
+        if isinstance(steps, list) and steps:
+            record["steps"] = [{"id": s.id, "name": s.name} for s in steps]
+            kids = assigned_to or list((common.get("child_lookup") or {}).keys())
+            step_done: dict = {}
+            for kid in kids:
+                ticked = coordinator.chore_steps_done(c, kid)
+                if ticked:
+                    step_done[kid] = ticked
+            if step_done:
+                record["step_done"] = step_done
         due_days = getattr(c, "due_days", []) or []
         if due_days:
             record["due_days"] = due_days
@@ -1423,6 +1448,11 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             **({"boosts": boosts} if boosts else {}),
             # Gifts between children: the rewards card offers "Who is it for?".
             **({"reward_gifting": True} if self.coordinator.reward_gifting_enabled() else {}),
+            # Family style (#1260): the card features switched off, and the
+            # style when it's Team (the child card's help button follows it).
+            # Both only when set, so a default family adds nothing.
+            **({"features_off": off} if (off := features_off(settings)) else {}),
+            **({"family_style": "team"} if current_style(settings) == "team" else {}),
             # Child-chosen reminders: the times a child may pick, while on.
             **({"chore_reminders": reminders} if reminders else {}),
             # Kid onboarding tour: {speak, auto} switches, only while it's on.
@@ -2374,6 +2404,10 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             "reward_claims": reward_details,
             "mandatory_misses": mandatory_misses,
         }
+        # Missed chores and sets reviewed in the admin panel (#1259): tells the
+        # approvals card to leave them out. Absent while it is the card.
+        if (where := self.coordinator.miss_review_location()) != "card":
+            attrs["miss_review_location"] = where
         # Reward fulfilment (#1098): redeemed rewards still to hand over, only
         # while the tracker is on and something is owed.
         if owed := self.coordinator.owed_rewards():
