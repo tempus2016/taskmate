@@ -43,13 +43,23 @@ test("features_off and family_style come off the overview sensor", () => {
   assert.equal(helpers.__taskmate_family_style(h), "team");
 });
 
+// The off-state header: the card's title, its header colour, and the header
+// block of that design (classic and designed paths differ).
+function assertHeader(markup, design, title, colour, block) {
+  assert.match(markup, block, `${design}: header block`);
+  assert.ok(markup.includes(title), `${design}: title`);
+  assert.ok(markup.includes(colour), `${design}: header colour`);
+  const head = markup.search(block);
+  assert.ok(head >= 0 && head < markup.indexOf(localize("common.feature_off_sub")), `${design}: header above the note`);
+}
+
 // ── Leaderboard ──────────────────────────────────────────────────────────────
 
 const Leaderboard = loadCard("taskmate-leaderboard-card.js", { window: helpers }).get("taskmate-leaderboard-card");
 
-function leaderboard(attrs, design = "classic", admin = true) {
+function leaderboard(attrs, design = "classic", admin = true, config = {}) {
   const card = new Leaderboard();
-  card.setConfig({ entity: OVERVIEW, card_design: design });
+  card.setConfig({ entity: OVERVIEW, card_design: design, ...config });
   card.hass = hass(attrs, admin);
   return render(card.render()).markup;
 }
@@ -60,6 +70,13 @@ for (const design of DESIGNS) {
     assert.ok(markup.includes(localize("common.feature_off_leaderboard")));
     assert.ok(markup.includes(localize("common.feature_off_admin")));
     assert.doesNotMatch(markup, /🥇|Ella/);
+  });
+
+  test(`leaderboard (${design}): the off-state keeps the full-colour header`, () => {
+    const markup = leaderboard({ features_off: ["leaderboard"] }, design, true, { title: "Our board", header_color: "#123456" });
+    assertHeader(markup, design, "Our board", "#123456", design === "classic" ? /class="card-header"/ : /class="tmd-hd"/);
+    const plain = leaderboard({ features_off: ["leaderboard"] }, design);
+    assert.ok(plain.includes(localize("leaderboard.default_title")));
   });
 
   test(`leaderboard (${design}): a family that never switched it off still ranks`, () => {
@@ -92,7 +109,7 @@ test("points display: rank medals follow the leaderboard switch and show_rank", 
 
 // ── Penalties (the shared incentive base) ───────────────────────────────────
 
-function penalties(attrs, design = "classic") {
+function penalties(attrs, design = "classic", config = {}) {
   const tag = "taskmate-penalties-card";
   const loaded = loadCard("taskmate-incentive-card.js", {
     window: helpers,
@@ -103,7 +120,7 @@ function penalties(attrs, design = "classic") {
     sandbox: { console: { info() {}, log() {}, warn() {}, error() {} } },
   });
   const card = new (loaded.get(tag))();
-  card.setConfig({ entity: OVERVIEW, card_design: design });
+  card.setConfig({ entity: OVERVIEW, card_design: design, ...config });
   card.hass = hass({ penalties: [{ id: "p1", name: "Shouting", points: 5 }], ...attrs });
   return render(card.render()).markup;
 }
@@ -113,6 +130,11 @@ for (const design of DESIGNS) {
     const markup = penalties({ features_off: ["penalties"] }, design);
     assert.ok(markup.includes(localize("common.feature_off_penalties")));
     assert.doesNotMatch(markup, /Shouting/);
+  });
+
+  test(`penalties (${design}): the off-state keeps the full-colour header`, () => {
+    const markup = penalties({ features_off: ["penalties"] }, design, { title: "House rules", header_color: "#123456" });
+    assertHeader(markup, design, "House rules", "#123456", design === "classic" ? /class="card-header"/ : /class="tmd-hd"/);
   });
 
   test(`penalties (${design}): on by default`, () => {
@@ -136,11 +158,14 @@ const Raffle = loadCard("taskmate-raffle-card.js", { window: helpers }).get("tas
 
 test("raffles: switched off shows a note instead of the draws", () => {
   const card = new Raffle();
-  card.setConfig({ entity: OVERVIEW });
+  card.setConfig({ entity: OVERVIEW, title: "Prize draw", header_color: "#123456" });
   card.hass = hass({ features_off: ["raffles"], raffles: [{ id: "r1", name: "Cinema night", status: "open", tickets: {}, total: 0 }] });
   const markup = render(card.render()).markup;
   assert.ok(markup.includes(localize("common.feature_off_raffles")));
   assert.doesNotMatch(markup, /Cinema night/);
+  // The raffle card's header colour is set on the host, so check the header block and title.
+  assert.match(markup, /class="rf-hd"/);
+  assert.ok(markup.indexOf("Prize draw") >= 0 && markup.indexOf("Prize draw") < markup.indexOf(localize("common.feature_off_sub")));
   card.hass = hass({ raffles: [{ id: "r1", name: "Cinema night", status: "open", tickets: {}, total: 0 }] });
   assert.match(render(card.render()).markup, /Cinema night/);
 });
