@@ -51,8 +51,19 @@ test("the row never wraps and fits a 360px phone", () => {
   assert.doesNotMatch(row, /flex-wrap: wrap/);
   assert.match(SRC, /\.tm-step-row \.tm-step-name \{[^}]*flex: 1 1 auto;[^}]*min-width: 0/);
   assert.match(SRC, /\.tm-step-row \.tm-icon-btn \{[^}]*flex: 0 0 28px/);
-  // Fixed parts: number (~1.4em ≈ 20px) + 3 × 28px buttons + 4 × 4px gaps.
-  // The phone dialog's content is ~320px wide, so the name keeps ≥ 180px.
-  const fixed = 20 + 3 * 28 + 4 * 4;
-  assert.ok(320 - fixed >= 180, `the name keeps ${320 - fixed}px`);
+});
+
+test("phones and touch screens get 40px tap targets, still on one row", () => {
+  const block = SRC.match(/@media \(max-width: 600px\), \(pointer: coarse\) \{\s*\.tm-step-row \.tm-icon-btn \{([^}]*)\}/);
+  assert.ok(block, "a touch/narrow rule for the step buttons");
+  const rule = block[1];
+  assert.match(rule, /flex: 0 0 40px/);
+  assert.match(rule, /width: 40px/);
+  assert.match(rule, /height: 40px/);
+  // Fixed parts at 360px: number (~1.4em ≈ 20px) + 3 × 40px buttons + 4 × 4px
+  // gaps. The phone dialog's content is ~300px wide, so the name input
+  // (flex: 1; min-width: 0) keeps well over 120px and nothing overflows.
+  const gap = Number(SRC.match(/\.tm-step-row \{[^}]*gap: (\d+)px/)[1]);
+  const fixed = 20 + 3 * 40 + 4 * gap;
+  assert.ok(300 - fixed >= 120, `the name keeps ${300 - fixed}px`);
 });
