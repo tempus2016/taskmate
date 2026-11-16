@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} ya puede probar más",
   "panel.stage_pop_title": "Cambiar la etapa de {name}",
   "panel.stage_pop_body": "Pasar a {name} a {stage}. ¿Aplicar también sus sugerencias?",
+  "panel.stage_pop_body_only": "Pasar a {name} a {stage}.",
   "panel.stage_pop_card": "La tarjeta del niño sigue la etapa siempre que sus propias opciones no estén configuradas:",
   "panel.stage_pop_chores": "Cambios en las tareas, una sola vez:",
   "panel.stage_pop_chore_none": "No hay nada que cambiar en las tareas de {name}.",

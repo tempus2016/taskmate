@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} kan nu meer proberen",
   "panel.stage_pop_title": "Fase van {name} wijzigen",
   "panel.stage_pop_body": "{name} naar {stage} zetten. Ook de suggesties toepassen?",
+  "panel.stage_pop_body_only": "{name} naar {stage} zetten.",
   "panel.stage_pop_card": "De kindkaart volgt de fase overal waar de eigen opties niet zijn ingesteld:",
   "panel.stage_pop_chores": "Wijzigingen aan taken, eenmalig:",
   "panel.stage_pop_chore_none": "Niets te wijzigen aan de eigen taken van {name}.",

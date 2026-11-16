@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} can try more now",
   "panel.stage_pop_title": "Change {name}'s stage",
   "panel.stage_pop_body": "Move {name} to {stage}. Apply its suggestions too?",
+  "panel.stage_pop_body_only": "Move {name} to {stage}.",
   "panel.stage_pop_card": "The child card follows the stage wherever its own options are left unset:",
   "panel.stage_pop_chores": "Chore changes, made once:",
   "panel.stage_pop_chore_none": "Nothing to change on {name}'s own chores.",

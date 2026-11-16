@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} może teraz spróbować więcej",
   "panel.stage_pop_title": "Zmień etap: {name}",
   "panel.stage_pop_body": "Przenieść {name} na etap {stage}? Zastosować też sugestie?",
+  "panel.stage_pop_body_only": "{name} przechodzi na etap {stage}.",
   "panel.stage_pop_card": "Karta dziecka podąża za etapem wszędzie tam, gdzie jej własne opcje nie są ustawione:",
   "panel.stage_pop_chores": "Zmiany w obowiązkach, jednorazowo:",
   "panel.stage_pop_chore_none": "Nic do zmiany w obowiązkach: {name}.",

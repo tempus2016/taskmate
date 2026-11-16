@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} kan prøve mer nå",
   "panel.stage_pop_title": "Endre trinn for {name}",
   "panel.stage_pop_body": "Flytt {name} til {stage}. Bruke forslagene også?",
+  "panel.stage_pop_body_only": "Flytt {name} til {stage}.",
   "panel.stage_pop_card": "Barnekortet følger trinnet der egne innstillinger ikke er satt:",
   "panel.stage_pop_chores": "Endringer på oppgaver, én gang:",
   "panel.stage_pop_chore_none": "Ingenting å endre på {name}s egne oppgaver.",

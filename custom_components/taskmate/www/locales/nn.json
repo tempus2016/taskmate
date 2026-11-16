@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} kan prøve meir no",
   "panel.stage_pop_title": "Endre steg for {name}",
   "panel.stage_pop_body": "Flytt {name} til {stage}. Bruke forslaga òg?",
+  "panel.stage_pop_body_only": "Flytt {name} til {stage}.",
   "panel.stage_pop_card": "Barnekortet følgjer steget der eigne innstillingar ikkje er sette:",
   "panel.stage_pop_chores": "Endringar på oppgåver, éin gong:",
   "panel.stage_pop_chore_none": "Ingenting å endre på oppgåvene til {name}.",

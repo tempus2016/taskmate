@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} já pode experimentar mais",
   "panel.stage_pop_title": "Mudar a fase de {name}",
   "panel.stage_pop_body": "Passar {name} para {stage}. Aplicar também as sugestões?",
+  "panel.stage_pop_body_only": "Passar {name} para {stage}.",
   "panel.stage_pop_card": "O cartão da criança segue a fase sempre que as suas próprias opções não estão definidas:",
   "panel.stage_pop_chores": "Alterações às tarefas, uma só vez:",
   "panel.stage_pop_chore_none": "Nada a mudar nas tarefas de {name}.",

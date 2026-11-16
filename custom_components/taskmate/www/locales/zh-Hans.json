@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name}现在可以尝试更多了",
   "panel.stage_pop_title": "更改{name}的阶段",
   "panel.stage_pop_body": "将{name}调到“{stage}”。同时应用建议吗？",
+  "panel.stage_pop_body_only": "将{name}调到“{stage}”。",
   "panel.stage_pop_card": "在卡片自身选项未设置的地方，孩子卡片会跟随阶段：",
   "panel.stage_pop_chores": "家务更改（仅一次）：",
   "panel.stage_pop_chore_none": "{name}自己的家务没有需要更改的。",

@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} ora può provare di più",
   "panel.stage_pop_title": "Cambia la fase di {name}",
   "panel.stage_pop_body": "Porta {name} a {stage}. Applicare anche i suggerimenti?",
+  "panel.stage_pop_body_only": "Porta {name} a {stage}.",
   "panel.stage_pop_card": "La scheda del bambino segue la fase ovunque le sue opzioni non siano impostate:",
   "panel.stage_pop_chores": "Modifiche alle faccende, una sola volta:",
   "panel.stage_pop_chore_none": "Niente da cambiare nelle faccende di {name}.",

@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name} kan prøve mere nu",
   "panel.stage_pop_title": "Skift trin for {name}",
   "panel.stage_pop_body": "Flyt {name} til {stage}. Anvend også forslagene?",
+  "panel.stage_pop_body_only": "Flyt {name} til {stage}.",
   "panel.stage_pop_card": "Børnekortet følger trinnet, hvor dets egne indstillinger ikke er sat:",
   "panel.stage_pop_chores": "Ændringer af pligter, én gang:",
   "panel.stage_pop_chore_none": "Intet at ændre på {name}s egne pligter.",

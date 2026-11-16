@@ -4607,6 +4607,7 @@
   "panel.stage_pop_up_title": "{name}はもっと挑戦できるようになりました",
   "panel.stage_pop_title": "{name}のステージを変更",
   "panel.stage_pop_body": "{name}を{stage}にします。おすすめも適用しますか？",
+  "panel.stage_pop_body_only": "{name}を{stage}にします。",
   "panel.stage_pop_card": "子どもカードは、カード側の設定が未設定の項目でステージに従います：",
   "panel.stage_pop_chores": "お手伝いの変更（一度だけ）：",
   "panel.stage_pop_chore_none": "{name}自身のお手伝いに変更はありません。",
