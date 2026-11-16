@@ -1827,6 +1827,7 @@ class TaskMateKioskCard extends LitElement {
     const date = this._now.toLocaleDateString(...__tmDateArgs(this.hass, { weekday: "long", day: "numeric", month: "long" }, "now"));
     const canFullscreen = typeof document !== "undefined" && document.fullscreenEnabled !== false;
 
+    this._overlays = "";
     let body;
     // A child removed from the config mid-session falls back to the picker
     // (updated() then resets the state to match).
@@ -1839,6 +1840,7 @@ class TaskMateKioskCard extends LitElement {
 
     return html`
       <ha-card class="km">
+        <div class="km-cq">
         <div class="km-top">
           <ha-icon class="km-top-icon" icon="mdi:tablet-dashboard"></ha-icon>
           <span class="km-title">${title}</span>
@@ -1856,7 +1858,6 @@ class TaskMateKioskCard extends LitElement {
         ${this._renderBoostStrip()}
         <div class="km-main">${body}</div>
         ${this._screen === "child" && entry ? this._renderTour(entry.child, attrs) : ""}
-        ${this._renderRaffleReveal()}
         ${this._renderBoostTakeover(attrs)}
         ${this._showBounties() ? html`
           <input id="km-photo" type="file" accept="image/*" hidden
@@ -1866,6 +1867,9 @@ class TaskMateKioskCard extends LitElement {
             ${window.__taskmate_fx ? window.__taskmate_fx.render(html, { effect: this._fxEffect || "confetti", pieces: this._confetti },
               { tint: this._fxTint, label: this._t("child.fx_stamp") }) : ""}
           </div>` : ""}
+        </div>
+        ${this._overlays}
+        ${this._renderRaffleReveal()}
       </ha-card>
     `;
   }
@@ -1977,6 +1981,42 @@ class TaskMateKioskCard extends LitElement {
     const levelPct = child.level_target ? Math.min(100, Math.round(((child.level_progress || 0) / child.level_target) * 100)) : 0;
 
     const season = this._season();
+    // Popups and dialogs are drawn outside the container-query wrapper
+    // (see render()), so position: fixed pins them to the screen.
+    this._overlays = html`
+        ${this._showBounties() ? this._renderBountyDialog(child) : ""}
+        ${this._showRewards() ? this._renderRewardDialog(child, icon) : ""}
+        ${warn ? html`
+          <div class="km-idle">
+            <div class="km-idle-n" style="--p:${left / WARN_SECONDS}"><span>${left}</span></div>
+            <h2>${this._t("kiosk.still_there", { name: child.name })}</h2>
+            <p>${this._t("kiosk.going_back")}</p>
+            <button class="km-primary" @click=${() => { this._idle = 0; this.requestUpdate(); }}>
+              <ha-icon icon="mdi:hand-wave"></ha-icon> ${this._t("kiosk.still_here")}
+            </button>
+          </div>` : ""}
+        ${this._popup && !this._celebrating ? html`
+          <div class="km-idle km-pop" role="status" @click=${() => { this._popup = null; }}>
+            ${this._popup.won ? html`
+            <div class="km-pop-card km-pop-won">
+              <div class="km-pop-medal" aria-hidden="true"><ha-icon icon="mdi:medal"></ha-icon></div>
+              <h2>${this._t("kiosk.win_title")}</h2>
+              <p>${this._t(this._popup.check ? "kiosk.win_check" : "kiosk.win_message")}</p>
+              ${showPoints && !this._popup.check ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
+            </div>` : html`
+            <div class="km-pop-card">
+              <div class="km-pop-stars">🌟🌟🌟</div>
+              <h2>${this._t("child.celebration_title")}</h2>
+              <p>${this._t("child.celebration_message")}</p>
+              ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
+            </div>`}
+          </div>` : ""}
+        ${this._celebrating ? html`
+          <div class="km-idle km-party">
+            <div class="km-cheer">🎉</div>
+            <h2>${this._t("kiosk.all_done", { name: child.name })}</h2>
+          </div>` : ""}
+    `;
     return html`
       <div class="km-child" style="--kc:${tone}">
         <div class="km-head" style="${season ? `background:${season.grad}` : ""}${this._bandInk(season ? season.grad : tone)}">
@@ -2038,38 +2078,6 @@ class TaskMateKioskCard extends LitElement {
           </div>
         </div>
 
-        ${this._showBounties() ? this._renderBountyDialog(child) : ""}
-        ${this._showRewards() ? this._renderRewardDialog(child, icon) : ""}
-        ${warn ? html`
-          <div class="km-idle">
-            <div class="km-idle-n" style="--p:${left / WARN_SECONDS}"><span>${left}</span></div>
-            <h2>${this._t("kiosk.still_there", { name: child.name })}</h2>
-            <p>${this._t("kiosk.going_back")}</p>
-            <button class="km-primary" @click=${() => { this._idle = 0; this.requestUpdate(); }}>
-              <ha-icon icon="mdi:hand-wave"></ha-icon> ${this._t("kiosk.still_here")}
-            </button>
-          </div>` : ""}
-        ${this._popup && !this._celebrating ? html`
-          <div class="km-idle km-pop" role="status" @click=${() => { this._popup = null; }}>
-            ${this._popup.won ? html`
-            <div class="km-pop-card km-pop-won">
-              <div class="km-pop-medal" aria-hidden="true"><ha-icon icon="mdi:medal"></ha-icon></div>
-              <h2>${this._t("kiosk.win_title")}</h2>
-              <p>${this._t(this._popup.check ? "kiosk.win_check" : "kiosk.win_message")}</p>
-              ${showPoints && !this._popup.check ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
-            </div>` : html`
-            <div class="km-pop-card">
-              <div class="km-pop-stars">🌟🌟🌟</div>
-              <h2>${this._t("child.celebration_title")}</h2>
-              <p>${this._t("child.celebration_message")}</p>
-              ${showPoints ? html`<div class="km-pop-pts"><ha-icon icon="${icon}"></ha-icon> +${__tmNum(this.hass, this._popup.points)}</div>` : ""}
-            </div>`}
-          </div>` : ""}
-        ${this._celebrating ? html`
-          <div class="km-idle km-party">
-            <div class="km-cheer">🎉</div>
-            <h2>${this._t("kiosk.all_done", { name: child.name })}</h2>
-          </div>` : ""}
       </div>
     `;
   }
@@ -2417,9 +2425,19 @@ class TaskMateKioskCard extends LitElement {
       @keyframes km-boost-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
       @keyframes km-boost-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
       @media (prefers-reduced-motion: reduce) { .km-boost-bolt, .km-boost-take { animation: none; } }
-      ha-card.km {
+      /* The container lives on .km-cq, not the card: a container is the
+         frame position: fixed measures from, and the popups and dialogs drawn
+         after .km-cq must pin to the screen. */
+      .km-cq {
         container-type: inline-size;
         container-name: km;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      ha-card.km {
         position: relative;
         overflow: hidden;
         display: flex;
