@@ -20001,7 +20001,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-cstage-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; --mdc-icon-size: 18px; }
       .tm-cstage-row ha-icon { color: var(--tm-text-muted); }
       .tm-cstage-name { flex: 1; min-width: 120px; overflow-wrap: anywhere; }
-      .tm-stage-pop-scrim { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: auto; }
+      /* Opened from the child editor: it renders in the dialog zone right
+         after the drawer's .tm-scrim (z-index 100), so it must sit above it
+         at every width, and below toasts (200) and the row menu (300). */
+      .tm-stage-pop-scrim { position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: auto; }
       .tm-stage-pop { width: min(460px, 100%); max-height: 90vh; display: flex; flex-direction: column; }
       .tm-stage-pop ul { margin: 4px 0 10px; padding-inline-start: 18px; }
       .tm-stage-pop-h { margin: 10px 0 2px; font-weight: 700; font-size: 13px; }

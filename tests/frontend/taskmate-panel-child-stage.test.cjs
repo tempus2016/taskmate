@@ -105,3 +105,37 @@ test("adding a child just records the stage", async () => {
   assert.equal(p._dialog.data.age_group, "13_plus");
   assert.ok(!p._stagePop);
 });
+
+// HAOS-Dev: the confirm opened behind the Edit child drawer (z-index 30 under
+// the drawer's 100), so "Change and apply" could not be reached.
+test("the stage confirm sits above the child drawer", async () => {
+  const { readFileSync } = require("node:fs");
+  const path = require("node:path");
+  const src = readFileSync(path.join(__dirname, "../../custom_components/taskmate/www/taskmate-panel.js"), "utf8");
+  const zOf = (selector) => {
+    const m = src.match(new RegExp(`\\n\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\{[^}]*?z-index:\\s*(\\d+)`));
+    assert.ok(m, `${selector} has a z-index`);
+    return Number(m[1]);
+  };
+  const pop = zOf(".tm-stage-pop-scrim");
+  assert.ok(pop > zOf(".tm-scrim"), "above the drawer's scrim");
+  assert.ok(pop < zOf(".tm-toast"), "toasts still show on top");
+  assert.match(src, /\.tm-stage-pop-scrim \{ position: fixed; inset: 0;/);
+
+  // Rendered in the same dialog zone, after the drawer, so equal stacking
+  // contexts compare by z-index alone.
+  const p = panel({ scope: "all" });
+  p._callWS = async () => ({ ok: true, res: { chores: [{ chore_id: "a", name: "Brush teeth", changes: {} }], skipped_shared: [], chore_items: ["no_deadlines"] } });
+  p._kioskPinField = () => "";
+  p._entityPickerField = () => "";
+  p._iconPickerField = () => "";
+  p._childColorField = () => "";
+  p._childCelebrationField = () => "";
+  p._haUsers = [];
+  await p._pickChildStage("3_5");
+  const html = p._renderChildDialog();
+  const drawer = html.indexOf("tm-scrim tm-scrim-drawer");
+  const popAt = html.indexOf("tm-stage-pop-scrim");
+  assert.ok(drawer >= 0 && popAt > drawer, "the confirm follows the drawer");
+  assert.ok(html.includes('data-act="stage-apply"'));
+});
