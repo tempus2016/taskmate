@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} est déjà dans le lot au choix {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} est dans le lot au choix {set}. Retire-la d'abord du lot."
+    },
     "choice_set_not_found": {
       "message": "Lot au choix {set_id} introuvable"
     }

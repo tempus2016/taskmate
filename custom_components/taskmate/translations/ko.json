@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name}은(는) 이미 선택 세트 {set}에 있어요"
     },
+    "choice_set_member_locked": {
+      "message": "{name}은(는) 선택 세트 {set}에 있어요. 먼저 세트에서 빼 주세요."
+    },
     "choice_set_not_found": {
       "message": "선택 세트 {set_id}을(를) 찾을 수 없어요"
     }

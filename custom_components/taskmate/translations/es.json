@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} ya está en el grupo a elegir {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} está en el grupo a elegir {set}. Quítala primero del grupo."
+    },
     "choice_set_not_found": {
       "message": "No se encontró el grupo a elegir {set_id}"
     }

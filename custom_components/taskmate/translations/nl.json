@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} zit al in de keuzeset {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} zit in de keuzeset {set}. Haal hem eerst uit de set."
+    },
     "choice_set_not_found": {
       "message": "Keuzeset {set_id} niet gevonden"
     }

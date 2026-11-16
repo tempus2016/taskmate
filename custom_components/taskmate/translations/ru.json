@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} уже в наборе на выбор {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} входит в набор на выбор {set}. Сначала уберите её из набора."
+    },
     "choice_set_not_found": {
       "message": "Набор на выбор {set_id} не найден"
     }

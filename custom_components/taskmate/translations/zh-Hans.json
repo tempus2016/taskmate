@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} 已在自选组 {set} 中"
     },
+    "choice_set_member_locked": {
+      "message": "{name} 在自选组 {set} 中，请先将其移出该组。"
+    },
     "choice_set_not_found": {
       "message": "找不到自选组 {set_id}"
     }

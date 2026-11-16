@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} finns redan i den valfria gruppen {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} finns i den valfria gruppen {set}. Ta bort den från gruppen först."
+    },
     "choice_set_not_found": {
       "message": "Hittade inte den valfria gruppen {set_id}"
     }

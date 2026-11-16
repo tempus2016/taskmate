@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} já está no conjunto de escolha {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} está no conjunto de escolha {set}. Remova do conjunto primeiro."
+    },
     "choice_set_not_found": {
       "message": "Conjunto de escolha {set_id} não encontrado"
     }

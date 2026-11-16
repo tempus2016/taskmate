@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} er allerede i valgsættet {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} er i valgsættet {set}. Fjern den fra sættet først."
+    },
     "choice_set_not_found": {
       "message": "Valgsæt {set_id} blev ikke fundet"
     }

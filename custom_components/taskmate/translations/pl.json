@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} jest już w zestawie do wyboru {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} jest w zestawie do wyboru {set}. Najpierw usuń go z zestawu."
+    },
     "choice_set_not_found": {
       "message": "Nie znaleziono zestawu do wyboru {set_id}"
     }

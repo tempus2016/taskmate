@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} is already in the choice set {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} is in the choice set {set}. Remove it from the set first."
+    },
     "choice_set_not_found": {
       "message": "Choice set {set_id} not found"
     }

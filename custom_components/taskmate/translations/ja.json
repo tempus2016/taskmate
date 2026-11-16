@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name}はすでにえらべるセット「{set}」に入っています"
     },
+    "choice_set_member_locked": {
+      "message": "{name}はえらべるセット「{set}」に入っています。先にセットから外してください。"
+    },
     "choice_set_not_found": {
       "message": "えらべるセット {set_id} が見つかりません"
     }

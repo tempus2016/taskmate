@@ -3633,6 +3633,9 @@
     "choice_set_chore_in_other_set": {
       "message": "{name} er allereie i valsettet {set}"
     },
+    "choice_set_member_locked": {
+      "message": "{name} er i valsettet {set}. Fjern han frå settet først."
+    },
     "choice_set_not_found": {
       "message": "Fann ikkje valsett {set_id}"
     }

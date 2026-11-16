@@ -22,7 +22,7 @@ from custom_components.taskmate import sensor as sensor_module
 from custom_components.taskmate.choice_set_services import CHOICE_SET_SERVICES
 from custom_components.taskmate.coordinator import TaskMateCoordinator
 from custom_components.taskmate.errors import TaskMateError
-from custom_components.taskmate.models import ChoiceSet, MandatoryMiss
+from custom_components.taskmate.models import ChoiceSet, Chore, MandatoryMiss
 from custom_components.taskmate.storage import TaskMateStorage
 
 from .conftest import FakeHass, FakeStore, dt_util_mock
@@ -158,6 +158,50 @@ def test_a_chore_can_be_in_one_set_only():
         assert err.value.translation_key == "choice_set_chore_in_other_set"
         # Saving the first set again with its own chore is fine.
         await coord.async_update_choice_set(first, min_required=1)
+
+    run(go())
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"mandatory": True},
+        {"assignment_mode": "alternating"},
+        {"assignment_mode": "random"},
+        {"assignment_mode": "first_come"},
+    ],
+)
+def test_a_member_chore_cannot_be_edited_into_a_forbidden_kind(change):
+    async def go():
+        coord = await _system()
+        _child, chores = await _family(coord, 2)
+        await coord.async_create_choice_set(name="Your part", chore_ids=[c.id for c in chores])
+        edited = Chore.from_dict(coord.storage.get_chore(chores[0].id).to_dict())
+        for k, v in change.items():
+            setattr(edited, k, v)
+        with pytest.raises(TaskMateError) as err:
+            await coord.async_update_chore(edited)
+        assert err.value.translation_key == "choice_set_member_locked"
+        assert err.value.translation_placeholders == {"name": "Chore 0", "set": "Your part"}
+        stored = coord.storage.get_chore(chores[0].id)
+        assert stored.mandatory is False and stored.assignment_mode == "everyone"
+
+    run(go())
+
+
+def test_member_chores_still_take_ordinary_edits_and_non_members_are_free():
+    async def go():
+        coord = await _system()
+        _child, chores = await _family(coord, 2)
+        await coord.async_create_choice_set(name="Your part", chore_ids=[chores[0].id])
+        member = Chore.from_dict(coord.storage.get_chore(chores[0].id).to_dict())
+        member.points = 9
+        await coord.async_update_chore(member)
+        assert coord.storage.get_chore(chores[0].id).points == 9
+        outsider = Chore.from_dict(coord.storage.get_chore(chores[1].id).to_dict())
+        outsider.mandatory = True
+        await coord.async_update_chore(outsider)
+        assert coord.storage.get_chore(chores[1].id).mandatory is True
 
     run(go())
 
