@@ -396,6 +396,12 @@ In **Settings → Seasons & events** (it used to be called *Seasonal themes*; th
 
 **Preview** lists everything a pack holds with its points. **Remove pack** deletes what it installed (chores, reward and quest via [Recently Deleted](Recently-Deleted.md)) and switches it off. A badge a child has already earned is kept for the children who have it.
 
+### Children
+
+| Setting | Default | Options | Description |
+|---------|---------|---------|-------------|
+| **Stage suggestions change** (`stage_scope`) | `cards` | `cards` / `all` | What a new [stage](Child-Stages.md) may change once you confirm it. `cards`: card behaviour only. `all`: also that child's own chores, once. Shared chores are never changed |
+
 ### Per-child settings (v6.0.0)
 
 Set under **Children → Edit** for each child, not globally.
@@ -403,7 +409,8 @@ Set under **Children → Edit** for each child, not globally.
 | Setting | Format | Description |
 |---------|--------|-------------|
 | **Birthday** (`birthday`) | `YYYY-MM-DD`, or `MM-DD` to leave the age off | Turns on [Birthday Mode](Birthday-Mode.md) for that day. 29 February is celebrated on 28 February in other years |
-| **Age group** (`age_group`) | `3_5` / `6_8` / `9_12` / `13_plus` | Used by the [Setup Wizard](Setup-Wizard.md) to suggest chores when no birthday is given |
+| **Stage** (`age_group`) | `3_5` / `6_8` / `9_12` / `13_plus` | The child's [stage](Child-Stages.md): Joining in / Doing my part / Contributing / Taking ownership. Used by the [Setup Wizard](Setup-Wizard.md) to suggest chores when no birthday is given, and by the child card for options its YAML leaves unset |
+| **Chores for <name>** (`chore_stage`) | Can do / Practising / Later per chore | Practising chores come first on the child card; Later ones are hidden from it. See [Child Stages](Child-Stages.md) |
 | **Presence (for reminders)** (`presence_entity`) | a `person.*` or `device_tracker.*` entity | While it isn't `home`, this child's reminders are held back. An `unavailable` tracker counts as home. See [Presence-Aware Reminders](Presence-Aware-Reminders.md) |
 | **Colour** (`color`) | `#rrggbb`, or *Automatic* | (v7.0.0) Marks this child's avatar and name in the admin panel. *Automatic* picks one from the child's place in the list |
 | **Kiosk PIN** | 4 digits | Asked for on a shared [kiosk](Kiosk-Mode.md) tablet. Stored hashed, so it can't be read back; leave blank to keep the current PIN |

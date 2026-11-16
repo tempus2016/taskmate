@@ -322,6 +322,16 @@ DEFAULT_DIFFICULTY_MULTIPLIERS: Final = {"easy": 0.5, "medium": 1.0, "hard": 2.0
 # birthday (which would set off birthday mode on the wrong day).
 AGE_GROUPS: Final = ("3_5", "6_8", "9_12", "13_plus")
 
+# Per-child stage (#1262): the panel labels the age group "Stage". Whether a
+# stage change may also touch that child's chores is the admin's choice:
+# "cards" (the default) only changes card behaviour, "all" may change chores
+# too, once, after a confirmation.
+STAGE_SCOPE_SETTING: Final = "stage_scope"
+STAGE_SCOPES: Final = ("cards", "all")
+# Where a child is with one chore (#1262). "can" is the default and never
+# stored; "practising" goes first on the card, "later" is hidden from it.
+CHORE_STAGES: Final = ("practising", "later")
+
 # What the child card plays when this child ticks a chore off. "confetti" is the
 # default and is never stored on the overview sensor (16 KB cap).
 CELEBRATION_STYLES: Final = ("confetti", "stamp", "fireworks", "sticker")

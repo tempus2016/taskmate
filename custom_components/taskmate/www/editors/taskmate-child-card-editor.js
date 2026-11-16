@@ -340,11 +340,15 @@ class TaskMateChildCardEditor extends LitElement {
       const defaults = {
         show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
         show_personal_bests: true, show_boost_alert: true, show_appeals: true, show_screen_time: true,
-        show_tour: true, show_description: false, debug: false, density: 'normal', seasonal: true,
+        show_tour: true, debug: false, density: 'normal', seasonal: true,
         time_category: 'morning', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
         first_come_claimed_mode: 'hide', set_times_layout: 'family', sort_available_first: true,
       };
+      // Options the child's stage (#1262) fills in stay out of the YAML
+      // until the parent actually sets them, so the stage keeps working.
+      const stageKey = ['pre_reader', 'show_description', 'show_roulette', 'show_confetti'].includes(key);
+      if (stageKey && !(key in this.config) && value === false) continue;
       if (value === '' || value === null || value === undefined) {
         delete newConfig[key];
       } else if (key === 'card_design' && value === 'global') {

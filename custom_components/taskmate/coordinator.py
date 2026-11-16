@@ -66,6 +66,7 @@ from .coord_sibling_checks import SiblingChecksMixin
 from .coord_sick import SickDaysMixin
 from .coord_sounds import SoundsMixin
 from .coord_steps import StepsMixin
+from .coord_stages import StagesMixin
 from .coord_tags import TagsMixin
 from .coord_teamwork import TeamworkMixin
 from .coord_templates import TemplatesMixin
@@ -148,6 +149,7 @@ class TaskMateCoordinator(
     AutoApproveMixin,
     WellbeingMixin,
     SickDaysMixin,
+    StagesMixin,
     WeeklyGoalsMixin,
     PlannerMixin,
     RedemptionsMixin,

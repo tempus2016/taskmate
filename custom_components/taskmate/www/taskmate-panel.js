@@ -246,6 +246,17 @@ const TASK_GROUP_POLICIES = [
 // Setup wizard (#980). Age groups mirror AGE_GROUP_INFO in setup_catalogue.py
 // (youngest age, oldest age) — tests/test_setup_wizard.py keeps them in step.
 const WZ_AGE_GROUPS = [["3_5", 3, 5], ["6_8", 6, 8], ["9_12", 9, 12], ["13_plus", 13, 999]];
+// Per-child stage (#1262): the age group, labelled "Stage". What each stage
+// suggests: card behaviour (the child card follows it when its YAML leaves the
+// option unset), chore changes (applied once, only with stage_scope "all") and
+// ideas that are never applied. Mirrors coord_stages.py.
+const STAGE_SUGGESTIONS = {
+  "3_5": { card: ["pre_reader_on"], chores: ["no_deadlines"], tips: ["few_chores"] },
+  "6_8": { card: ["pre_reader_off", "descriptions_on"], chores: [], tips: ["rotation"] },
+  "9_12": { card: ["pre_reader_off"], chores: [], tips: ["open_ended", "weekly_targets"] },
+  "13_plus": { card: ["pre_reader_off", "fewer_game_bits"], chores: [], tips: ["savings_goals"] },
+};
+const CHORE_STAGE_VALUES = ["can", "practising", "later"];
 const WZ_STEPS = ["welcome", "style", "children", "chores", "rewards", "dashboards", "review", "done"];
 const WZ_CHILDREN = WZ_STEPS.indexOf("children");
 const WZ_REVIEW = WZ_STEPS.indexOf("review");
@@ -960,6 +971,7 @@ class TaskMatePanel extends HTMLElement {
 
   _closeDialog(force = false) {
     if (!force && !this._mayLeaveDialog()) return;
+    this._stagePop = null;
     this._dialog = null;
     this._dialogInitialHash = null;
     this._render();
@@ -1336,6 +1348,22 @@ class TaskMatePanel extends HTMLElement {
     if (act === "bounty-icon")      { this._bountyDialogSet("icon", t.dataset.id); return; }
     if (act === "bounty-exp")       { this._bountyDialogSet("exp_mode", t.dataset.id); return; }
     if (act === "bounty-el-all")    { this._bountyDialogSet("eligible_child_ids", []); return; }
+    if (act === "child-stage" && this._dialog?.data) { this._pickChildStage(t.dataset.v || ""); return; }
+    if (act === "child-chore-stage" && this._dialog?.data) {
+      this._syncIconPickers();
+      const marks = { ...(this._dialog.data.chore_stage || {}) };
+      if (t.dataset.v === "can") delete marks[t.dataset.id]; else marks[t.dataset.id] = t.dataset.v;
+      this._dialog.data.chore_stage = marks;
+      this._renderKeepScroll();
+      return;
+    }
+    if (act === "stage-pop-cancel") {
+      // Only the scrim itself or a button: clicks inside the sheet bubble here too.
+      if (t.classList.contains("tm-stage-pop-scrim") && e.target !== t) return;
+      this._stagePop = null; this._render(); return;
+    }
+    if (act === "stage-only")  { this._confirmChildStage(false); return; }
+    if (act === "stage-apply") { this._confirmChildStage(true); return; }
     if ((act === "child-color" || act === "child-celebration") && this._dialog?.data) {
       this._syncIconPickers();
       if (act === "child-color") this._dialog.data.color = t.dataset.v || "";
@@ -2703,6 +2731,7 @@ class TaskMatePanel extends HTMLElement {
         picture_entity: c.picture_entity || "",
         birthday: c.birthday || "",
         age_group: c.age_group || "",
+        chore_stage: { ...(c.chore_stage || {}) },
         is_adult: !!c.is_adult,
         color: c.color || "",
         celebration_style: c.celebration_style || "confetti",
@@ -2775,6 +2804,7 @@ class TaskMatePanel extends HTMLElement {
           unavailability_entity: d.unavailability_entity || "",
           pause_streak_when_unavailable: !!d.pause_streak_when_unavailable, linked_user_id: d.linked_user_id || "",
           birthday: (d.birthday || "").trim(), age_group: d.age_group || "", is_adult: !!d.is_adult,
+          chore_stage: { ...(d.chore_stage || {}) },
           color: d.color || "", celebration_style: d.celebration_style || "confetti",
           presence_entity: d.presence_entity || "",
           picture_entity: d.picture_entity || "" };
@@ -15253,6 +15283,21 @@ class TaskMatePanel extends HTMLElement {
 
         <div class="tm-section">
           <div class="tm-section-head"><div>
+            <h3>${this._t("panel.settings_children_title")}</h3>
+            <p class="tm-meta">${this._t("panel.settings_children_hint")}</p>
+          </div></div>
+          <div class="tm-section-body">
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.settings_stage_scope_label")}<small>${this._t("panel.settings_stage_scope_hint")}</small></div>
+              <select class="tm-select" data-setting="stage_scope" aria-label="${this._esc(this._t("panel.settings_stage_scope_label"))}">
+                ${["cards", "all"].map(v => `<option value="${v}" ${v === (s.stage_scope === "all" ? "all" : "cards") ? "selected" : ""}>${this._esc(this._t(`panel.stage_scope_${v}`))}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-section">
+          <div class="tm-section-head"><div>
             <h3>${this._t("panel.settings_parents_title")}</h3>
             <p class="tm-meta">${this._t("panel.settings_parents_hint")}</p>
           </div></div>
@@ -16523,10 +16568,9 @@ class TaskMatePanel extends HTMLElement {
           this._esc(this._t("panel.child_adult_hint"))),
         this._field(this._t("panel.child_birthday_label"), "birthday", d.birthday, "text",
           this._esc(this._t("panel.child_birthday_hint"))),
-        // Setup wizard age group (#980): only steers chore suggestions.
-        this._select(this._t("panel.child_age_group_label"), "age_group", d.age_group || "",
-          [{ v: "", l: this._t("panel.child_age_group_none") }].concat(WZ_AGE_GROUPS.map(([id]) => ({ v: id, l: this._t(`wizard.age_group.${id}`) }))),
-          this._esc(this._t("panel.child_age_group_hint"))),
+        // The child's stage (#1262): the setup wizard's age group (#980).
+        this._childStageField(d),
+        this._dialog.mode === "edit" ? this._childChoreStageField(d) : "",
         this._entityPickerField(this._t("panel.child_availability_label"), "availability_entity", d.availability_entity, ["binary_sensor", "sensor", "input_boolean", "person"],
           this._t("panel.child_availability_hint")),
         hasAvail ? this._switch(this._t("panel.child_invert_label"), "availability_inverted", d.availability_inverted,
@@ -16551,7 +16595,172 @@ class TaskMatePanel extends HTMLElement {
       ].join(""),
       `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
        <button type="button" class="tm-btn tm-btn-raised" data-act="save-child">${this._t("panel.btn_save")}</button>`
-    );
+    ) + this._renderStagePop();
+  }
+
+  // ---- Per-child stage (#1262) ------------------------------------------
+  _stageName(id) { return id ? this._t(`panel.stage_${id}`) : this._t("panel.child_age_group_none"); }
+
+  _stageScope() {
+    const v = ((this._state && this._state.settings) || {}).stage_scope;
+    return v === "all" ? "all" : "cards";
+  }
+
+  /** A tile per stage, and what the picked one suggests. */
+  _childStageField(d) {
+    const cur = d.age_group || "";
+    const tile = (id) => `<button type="button" role="radio" class="tm-stage-opt ${cur === id ? "tm-on" : ""}"
+      data-act="child-stage" data-v="${id}" aria-checked="${cur === id}">
+      <b>${this._esc(this._stageName(id))}</b>
+      ${id ? `<span>${this._esc(this._t(`panel.stage_${id}_what`))}</span><small>${this._esc(this._t(`panel.stage_${id}_age`))}</small>` : ""}
+    </button>`;
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.stage_label"))}</span>
+        <div class="tm-stage-opts" role="radiogroup" aria-label="${this._esc(this._t("panel.stage_label"))}">
+          ${WZ_AGE_GROUPS.map(([id]) => tile(id)).join("")}${tile("")}
+        </div>
+        <span class="tm-field-hint">${this._esc(this._t("panel.stage_hint"))}</span>
+        ${cur ? this._stageSuggestions(cur, d.name) : ""}
+      </div>`;
+  }
+
+  _stageItemText(kind, key, name) {
+    return this._t(kind === "tip" ? `panel.stage_tip_${key}` : `panel.stage_item_${key}`, { name: name || "" });
+  }
+
+  _stageSuggestions(stage, name) {
+    const sg = STAGE_SUGGESTIONS[stage];
+    if (!sg) return "";
+    const all = this._stageScope() === "all";
+    const li = (text, tag, off) => `<li class="${off ? "tm-stage-off" : ""}">${this._esc(text)}${tag ? ` <span class="tm-stage-tag ${off ? "" : "tm-stage-tag-warn"}">${this._esc(tag)}</span>` : ""}</li>`;
+    return `
+      <div class="tm-stage-sets">
+        <b>${this._esc(this._t("panel.stage_suggests", { stage: this._stageName(stage) }))}</b>
+        <ul>
+          ${sg.card.map(k => li(this._stageItemText("card", k, name), "", false)).join("")}
+          ${sg.chores.map(k => li(this._stageItemText("chore", k, name), this._t(all ? "panel.stage_tag_chores" : "panel.stage_tag_chores_off"), !all)).join("")}
+          ${sg.tips.map(k => `<li class="tm-stage-tip">${this._esc(this._stageItemText("tip", k, name))} <span class="tm-stage-tag">${this._esc(this._t("panel.stage_tag_idea"))}</span></li>`).join("")}
+        </ul>
+        <div class="tm-field-hint">${this._esc(this._t("panel.stage_applied_once"))}</div>
+      </div>`;
+  }
+
+  /** Can do / Practising / Later for each of the child's chores. */
+  _childChoreStageField(d) {
+    const name = d.name || "";
+    const chores = (this._state.chores || []).filter(c => !(c.assigned_to || []).length || (c.assigned_to || []).includes(d.id));
+    const marks = d.chore_stage || {};
+    const practising = Object.values(marks).filter(v => v === "practising").length;
+    const rows = chores.map(c => {
+      const cur = marks[c.id] || "can";
+      return `<div class="tm-cstage-row">
+        <ha-icon icon="${this._esc(c.icon || "mdi:checkbox-marked-circle-outline")}"></ha-icon>
+        <span class="tm-cstage-name">${this._esc(c.name)}</span>
+        <span class="tm-seg tm-cstage-seg" role="radiogroup" aria-label="${this._esc(c.name)}">${CHORE_STAGE_VALUES.map(v =>
+          `<button type="button" role="radio" class="${cur === v ? "tm-seg-on" : ""}" aria-checked="${cur === v}" data-act="child-chore-stage" data-id="${this._esc(c.id)}" data-v="${v}">${this._esc(this._t(`panel.chore_stage_${v}`))}</button>`).join("")}</span>
+      </div>`;
+    }).join("");
+    return `
+      <div class="tm-field">
+        <span class="tm-field-label">${this._esc(this._t("panel.chore_stage_title", { name }))}</span>
+        <span class="tm-field-hint">${this._esc(this._t("panel.chore_stage_hint", { name }))}</span>
+        ${chores.length ? `<div class="tm-cstage">${rows}</div>
+        <span class="tm-field-hint">${this._esc(this._t("panel.chore_stage_count", { count: this._fmtNum(practising) }))}</span>`
+        : `<span class="tm-field-hint">${this._esc(this._t("panel.chore_stage_empty", { name }))}</span>`}
+      </div>`;
+  }
+
+  /** A stage tile was picked. Adding a child just records it; on a saved
+   *  child it opens the confirm, which changes the stage straight away. */
+  async _pickChildStage(stage) {
+    const d = this._dialog && this._dialog.data;
+    if (!d || (d.age_group || "") === stage) return;
+    this._syncIconPickers();
+    if (this._dialog.mode !== "edit") { d.age_group = stage; this._renderKeepScroll(); return; }
+    const pop = { childId: d.id, name: d.name || "", from: d.age_group || "", to: stage, plan: null, busy: false };
+    this._stagePop = pop;
+    this._render();
+    const { ok, res } = await this._callWS({ type: "taskmate/apply_child_stage", child_id: d.id, stage, preview: true });
+    if (this._stagePop !== pop) return;
+    pop.plan = ok && res ? res : { chores: [], skipped_shared: [], chore_items: [] };
+    this._render();
+  }
+
+  async _confirmChildStage(apply) {
+    const pop = this._stagePop;
+    if (!pop || pop.busy) return;
+    pop.busy = true;
+    const { ok, err, res } = await this._callWS({ type: "taskmate/apply_child_stage", child_id: pop.childId, stage: pop.to, apply: !!apply });
+    this._stagePop = null;
+    if (!ok) { this._render(); this._showToast("err", this._t("panel.toast_save_failed", { error: err })); return; }
+    // The stage is saved now: the open editor shows it, and doesn't count it
+    // as an unsaved change.
+    const d = this._dialog && this._dialog.data;
+    if (d && d.id === pop.childId) {
+      d.age_group = pop.to;
+      try {
+        const base = JSON.parse(this._dialogInitialHash || "{}");
+        base.age_group = pop.to;
+        this._dialogInitialHash = JSON.stringify(base);
+      } catch (_e) { /* keep the old baseline */ }
+    }
+    const changed = ((res && res.chores) || []).length;
+    await this._fetchState();
+    this._showToast("ok", changed
+      ? this._t("panel.stage_toast_applied", { count: this._fmtNum(changed) })
+      : this._t("panel.stage_toast_changed"));
+  }
+
+  _renderStagePop() {
+    const pop = this._stagePop;
+    const d = this._dialog && this._dialog.data;
+    if (!pop || !d || d.id !== pop.childId) return "";
+    const order = ["", ...WZ_AGE_GROUPS.map(g => g[0])];
+    const up = order.indexOf(pop.to) > order.indexOf(pop.from) && pop.from !== "";
+    const title = up ? this._t("panel.stage_pop_up_title", { name: pop.name }) : this._t("panel.stage_pop_title", { name: pop.name });
+    const sg = STAGE_SUGGESTIONS[pop.to] || { card: [], chores: [], tips: [] };
+    const plan = pop.plan;
+    const changes = plan ? plan.chores || [] : [];
+    const skipped = plan ? plan.skipped_shared || [] : [];
+    const choreItems = plan ? plan.chore_items || [] : [];
+    const li = (x) => `<li>${this._esc(x)}</li>`;
+    const body = !plan
+      ? `<p class="tm-meta">${this._esc(this._t("panel.stage_pop_loading", { name: pop.name }))}</p>`
+      : `
+        ${pop.to ? `<p class="tm-meta">${this._t("panel.stage_pop_body", { name: this._esc(pop.name), stage: `<b>${this._esc(this._stageName(pop.to))}</b>` })}</p>` : ""}
+        ${sg.card.length ? `<p class="tm-stage-pop-h">${this._esc(this._t("panel.stage_pop_card"))}</p>
+          <ul>${sg.card.map(k => li(this._stageItemText("card", k, pop.name))).join("")}</ul>` : ""}
+        ${choreItems.length ? `<p class="tm-stage-pop-h">${this._esc(this._t("panel.stage_pop_chores"))}</p>
+          <ul>${choreItems.map(k => li(this._stageItemText("chore", k, pop.name))).join("")}</ul>
+          ${changes.length ? `<ul class="tm-stage-pop-list">${changes.map(c => li(c.name)).join("")}</ul>`
+            : `<p class="tm-meta">${this._esc(this._t("panel.stage_pop_chore_none", { name: pop.name }))}</p>`}
+          ${skipped.length ? `<p class="tm-meta">${this._esc(this._t("panel.stage_pop_skipped", { list: skipped.map(c => c.name).join(", ") }))}</p>` : ""}` : ""}`;
+    const foot = !plan ? `<button type="button" class="tm-btn" data-act="stage-pop-cancel">${this._t("panel.btn_cancel")}</button>`
+      : changes.length
+      ? `<button type="button" class="tm-btn" data-act="stage-only" ${pop.busy ? "disabled" : ""}>${this._t("panel.stage_btn_only")}</button>
+         <button type="button" class="tm-btn tm-btn-raised" data-act="stage-apply" ${pop.busy ? "disabled" : ""}>${this._t("panel.stage_btn_apply")}</button>`
+      : `<button type="button" class="tm-btn" data-act="stage-pop-cancel">${this._t("panel.btn_cancel")}</button>
+         <button type="button" class="tm-btn tm-btn-raised" data-act="stage-only" ${pop.busy ? "disabled" : ""}>${this._t("panel.stage_btn_change")}</button>`;
+    return `
+      <div class="tm-stage-pop-scrim" data-act="stage-pop-cancel">
+        <div class="tm-dialog tm-stage-pop" role="dialog" aria-modal="true" aria-label="${this._esc(title)}">
+          <header class="tm-dialog-head">
+            <h2>${this._esc(title)}</h2>
+            <button type="button" class="tm-icon-btn" data-act="stage-pop-cancel" title="${this._t("panel.tooltip_close")}">&times;</button>
+          </header>
+          <div class="tm-dialog-body">${body}</div>
+          <footer class="tm-dialog-foot">${foot}</footer>
+        </div>
+      </div>`;
+  }
+
+  _renderKeepScroll() {
+    const body = this.querySelector(".tm-dialog-body");
+    const scrollY = body ? body.scrollTop : 0;
+    this._render();
+    const b = this.querySelector(".tm-dialog-body");
+    if (b) b.scrollTop = scrollY;
   }
 
   /** The child's colour (#1078): "Automatic" (palette by position) or a swatch. */
@@ -20285,6 +20494,30 @@ class TaskMatePanel extends HTMLElement {
       .tm-fx-pick.tm-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
       .tm-fx-pick-ic { font-size: 28px; line-height: 1.1; }
       .tm-fx-pick small { color: var(--tm-text-muted); font-size: 11.5px; }
+      /* Per-child stage (#1262) */
+      .tm-stage-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 4px 0; }
+      .tm-stage-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: start; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+        border: 2px solid var(--tm-border); background: var(--tm-surface-1, transparent); color: var(--tm-text); font: inherit; }
+      .tm-stage-opt.tm-on { border-color: var(--tm-accent); background: var(--tm-accent-soft); }
+      .tm-stage-opt b { font-size: 14px; }
+      .tm-stage-opt span { font-size: 12px; color: var(--tm-text-muted); }
+      .tm-stage-opt small { font-size: 11px; color: var(--tm-text-muted); opacity: .85; }
+      .tm-stage-sets { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--tm-surface-2); font-size: 13px; }
+      .tm-stage-sets ul { margin: 6px 0; padding-inline-start: 18px; }
+      .tm-stage-sets li { margin: 2px 0; }
+      .tm-stage-off { opacity: .5; text-decoration: line-through; }
+      .tm-stage-tip { color: var(--tm-text-muted); }
+      .tm-stage-tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 7px; border-radius: 999px; background: var(--tm-surface-0); color: var(--tm-text-muted); text-decoration: none; }
+      .tm-stage-tag-warn { background: var(--tm-warning-soft, rgba(243,156,18,.18)); color: var(--tm-text); }
+      .tm-cstage { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+      .tm-cstage-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; --mdc-icon-size: 18px; }
+      .tm-cstage-row ha-icon { color: var(--tm-text-muted); }
+      .tm-cstage-name { flex: 1; min-width: 120px; overflow-wrap: anywhere; }
+      .tm-stage-pop-scrim { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: auto; }
+      .tm-stage-pop { width: min(460px, 100%); max-height: 90vh; display: flex; flex-direction: column; }
+      .tm-stage-pop ul { margin: 4px 0 10px; padding-inline-start: 18px; }
+      .tm-stage-pop-h { margin: 10px 0 2px; font-weight: 700; font-size: 13px; }
+      .tm-stage-pop-list { color: var(--tm-text-muted); }
       .tm-check-row > div { flex: 1; }
       .tm-check-title { font-size: 13px; color: var(--tm-text); font-weight: 500; }
 

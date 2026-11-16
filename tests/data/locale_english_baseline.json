@@ -248,6 +248,7 @@
     "panel.screen_time_hours",
     "panel.screen_time_minutes",
     "panel.seasonal_halloween",
+    "panel.stage_tag_idea",
     "panel.template_requires_approval_no",
     "points_display.editor.title_placeholder",
     "wizard.avatar"
@@ -451,6 +452,7 @@
     "panel.seasonal_halloween",
     "panel.settings_surprise_max",
     "panel.settings_surprise_min",
+    "panel.stage_tag_idea",
     "panel.template_requires_approval_no",
     "pet.shop_level_short",
     "points_display.editor.title_placeholder",
@@ -626,6 +628,7 @@
     "panel.celebration_confetti",
     "panel.child_avatar_label",
     "panel.child_stat_level",
+    "panel.chore_stage_later",
     "panel.chore_table_status",
     "panel.chore_timed_rate",
     "panel.chore_weekly_target_pill",

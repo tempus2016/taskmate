@@ -103,9 +103,9 @@ When you already have children, the wizard asks before opening and works in **ad
 
 ## New Chore Ideas as Children Grow
 
-When a birthday moves a child into the next age group, the Today page shows a one-time nudge: "Vaiha is 9 now. See new chore ideas for their age?" Either button records the new age group, so it won't come back. Suggestions never move up a group by themselves.
+When a birthday moves a child into the next age group, the Today page shows a one-time nudge: "Vaiha is 9 now and can try more on their own. See new chore ideas?" Either button records the new age group, so it won't come back. Suggestions never move up a group by themselves.
 
-A child's age group can also be set by hand under **Children → Edit → Age group**. It only decides which chores the wizard suggests; it changes nothing else.
+A child's age group is their **stage** in the panel: **Children → Edit → Stage**. Besides the wizard's suggestions, the child card follows it for options its YAML leaves unset. See [Child Stages](Child-Stages.md).
 
 ---
 

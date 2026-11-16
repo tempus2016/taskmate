@@ -137,13 +137,14 @@ show_reminders: true          # the 🔔 Remind me tag (needs the global setting
 show_praise: true             # praise notes sent with today's approvals
 elapsed_time_mode: dim        # dim | hide | show — time-of-day chores whose window has passed
 sort_available_first: true    # (v7.8.0) what can be done now first; later, missed, then finished chores below
-show_description: false       # show chore description below name
+show_description: false       # show chore description below name (unset: follows the child's stage)
 show_badges: true             # show earned badge strip below points
 show_next_badge: true         # show progress toward the closest unearned badge
 show_due_days_only: false     # only show chores due today (ignore time_category filter)
 show_swaps: true              # show the "Take over a chore" swap section
 show_roulette: false          # show the chore-roulette spin button (also needs the global setting)
-pre_reader: false             # picture-only mode for children who can't read yet
+show_confetti: true           # (#1262) the tick-off confetti burst; false keeps tick-offs calm
+pre_reader: false             # picture-only mode for children who can't read yet (unset: follows the child's stage)
 pre_reader_labels: false      # in pre-reader mode, put the chore name back under each tile
 pre_reader_points: false      # in pre-reader mode, show the point value instead of stars
 show_tour: true               # the first-time tour for this child (needs the global setting)
