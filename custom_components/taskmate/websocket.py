@@ -119,6 +119,7 @@ from .coord_sibling_checks import SIBLING_CHECK_MAX_BONUS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .errors import TaskMateError, error_translation, send_translated_error
+from .family_style import FAMILY_STYLE_KEY, STYLE_HIDE_SCOPES, note_manual_change, switch_values
 from .models import (
     CHORE_STEP_NAME_MAX_LENGTH,
     CHORE_TIME_NAME_MAX_LENGTH,
@@ -294,6 +295,8 @@ _AUDIT_EXCLUDE: Final = {
     "taskmate/auctions/occurrences",
     # Week planner: the read-only rotation picks for a week.
     "taskmate/planner/week",
+    # Family style (#1260): the confirm dialog's read-only diff.
+    "taskmate/family_style/preview",
     WS_NOTIF_GET_STATE,
     WS_NOTIF_LIST_NOTIFY,
     WS_TEMPLATES_LIST,
@@ -2404,6 +2407,13 @@ _SUBKEY_SETTINGS = {
     "family_goal_name",
     "family_goal_target",
     "family_goal_reward",
+    # Family style (#1260): the switches a style covers that had none before,
+    # and whether a switched-off feature also leaves the admin panel.
+    # family_style itself is only set by taskmate/apply_family_style.
+    "leaderboard_enabled",
+    "penalties_enabled",
+    "raffles_enabled",
+    "style_hide_scope",
     "notify_service",
     "calendar_projection_days",
     "skip_confirmation_enabled",
@@ -2797,6 +2807,10 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("family_goal_name"): vol.All(str, vol.Length(max=120)),
     vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
     vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
+    vol.Optional("leaderboard_enabled"): bool,
+    vol.Optional("penalties_enabled"): bool,
+    vol.Optional("raffles_enabled"): bool,
+    vol.Optional("style_hide_scope"): vol.In(STYLE_HIDE_SCOPES),
     vol.Optional("streak_milestones"): str,
     # Comma-separated quick point-adjust amounts, e.g. "5, 10, 20" (#746). Kept a
     # string like streak_milestones so the panel's generic settings collector can
@@ -2845,6 +2859,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         storage.set_parent_user_ids(list(msg["parent_user_ids"]))
         changed.append("parent_user_ids")
     old_pack_children = dict(storage.get_setting(SEASON_PACK_CHILDREN_KEY, {}) or {})
+    # Family style (#1260): a covered switch changed by hand makes it Custom.
+    style_switches_before = switch_values(storage.get_settings())
     for k, v in msg.items():
         if k in {"id", "type", "time_periods", "vacation_periods", "parent_user_ids"}:
             continue
@@ -2862,6 +2878,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
     # Re-arm a family goal when its target/enabled changes (FEAT-4).
     if "family_goal_target" in changed or "family_goal_enabled" in changed:
         storage.set_setting("family_goal_achieved", False)
+    if note_manual_change(storage, style_switches_before):
+        changed.append(FAMILY_STYLE_KEY)
     if changed:
         await storage.async_save()
         # Period boundaries moved → re-arm the mandatory-chore end-of-period checks (#532)
@@ -3894,6 +3912,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     from .websocket_boosts import BOOST_COMMANDS
     from .websocket_choice_sets import CHOICE_SET_COMMANDS
     from .websocket_chore_extras import CHORE_EXTRA_COMMANDS
+    from .websocket_family_style import FAMILY_STYLE_COMMANDS
     from .websocket_household import HOUSEHOLD_COMMANDS
     from .websocket_inspections import INSPECTION_COMMANDS
     from .websocket_panel_tools import PANEL_TOOL_COMMANDS
@@ -3921,6 +3940,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         *PET_SHOP_COMMANDS,
         *PLANNER_COMMANDS,
         *TOUR_COMMANDS,
+        *FAMILY_STYLE_COMMANDS,
     )
     for cmd in (*_COMMANDS, *extra):
         websocket_api.async_register_command(hass, cmd)

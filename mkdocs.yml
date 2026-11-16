@@ -55,6 +55,7 @@ nav:
       - "Children": "Children.md"
       - "Adult Profiles": "Adult-Profiles.md"
       - "Settings": "Settings.md"
+      - "Cooperative Setup": "Cooperative-Setup.md"
   - "Chores":
       - "Chores": "Chores.md"
       - "Chore Scheduling": "Chore-Scheduling.md"

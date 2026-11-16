@@ -27,6 +27,7 @@ from .coord_set_times import set_time_label, set_time_of
 from .coordinator import TaskMateCoordinator
 from .entity import taskmate_device_info
 from .entity_names import TranslatedNameMixin
+from .family_style import current_style, features_off
 from .models import Child
 from .seasons import active_season
 from .watch import DEFAULT_STATE_STRINGS, today_board, watch_state, watch_summary
@@ -1439,6 +1440,11 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             **({"boosts": boosts} if boosts else {}),
             # Gifts between children: the rewards card offers "Who is it for?".
             **({"reward_gifting": True} if self.coordinator.reward_gifting_enabled() else {}),
+            # Family style (#1260): the card features switched off, and the
+            # style when it's Team (the child card's help button follows it).
+            # Both only when set, so a default family adds nothing.
+            **({"features_off": off} if (off := features_off(settings)) else {}),
+            **({"family_style": "team"} if current_style(settings) == "team" else {}),
             # Child-chosen reminders: the times a child may pick, while on.
             **({"chore_reminders": reminders} if reminders else {}),
             # Kid onboarding tour: {speak, auto} switches, only while it's on.

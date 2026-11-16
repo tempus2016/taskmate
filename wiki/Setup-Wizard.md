@@ -11,7 +11,7 @@ The **setup wizard** gets a new family from an empty panel to a working chore ch
 ## Where to Find It
 
 - **First run.** It opens by itself the first time you open the TaskMate panel with no children. If you skip it, the Today page offers **Start setup** and **Add a child myself**.
-- **Settings.** **Settings → Setup wizard → Run setup wizard**, at the top of the page.
+- **Settings.** **Settings → Setup wizard → Run setup wizard**, near the top of the page.
 - **Command search.** Press **Ctrl K** and type "Run setup wizard".
 - **Integration setup.** A link at the end of adding TaskMate in Home Assistant.
 
@@ -27,7 +27,11 @@ If you close it part-way, your draft is kept in the browser and picked up next t
 
 Choose what your points are called: **Points**, **Stars**, **Coins**, **Gems** or your own name. It shows on every card and can be changed later in [Settings](Settings.md).
 
-### 2. Children
+### 2. Style (optional)
+
+"How would you like TaskMate to feel?" Pick **Game style** (the default, all game mechanics) or **Team style** (shared goals, no ranking and no automatic deductions). Leave it on Game to keep everything as it is. You can change it any time in **Settings → Family style**; see [Cooperative Setup](Cooperative-Setup.md).
+
+### 3. Children
 
 Add each child with a name plus one of:
 
@@ -39,7 +43,7 @@ Choose an avatar icon and a colour, and a preview shows their card header. The c
 
 ![Adding children in the setup wizard](images/wizard-children.png)
 
-### 3. Chores
+### 4. Chores
 
 Suggestions are grouped by age: **3–5**, **6–8**, **9–12** and **13+**, 32 in all. Each group that has a child in it opens with its first five chores ticked.
 
@@ -48,11 +52,11 @@ Suggestions are grouped by age: **3–5**, **6–8**, **9–12** and **13+**, 32
 - Prefer a themed set? The six built-in [template packs](Template-Packs.md) (Morning routine, Evening routine, Kitchen helper and so on) are offered alongside.
 - A pack chore with the same name as a ticked suggestion, or as a chore you already have, is only added once.
 
-### 4. Rewards
+### 5. Rewards
 
 Starter rewards in three tiers: **Small treats**, **Worth saving for** and **Big goals**. Each shows roughly how often it could be earned with the chores you picked. Adjust the costs, or add your own. Costs are fixed.
 
-### 5. Dashboards
+### 6. Dashboards
 
 > **New in v6.3.0.** Replaces the old "Create a Family chores dashboard" switch.
 
@@ -62,7 +66,7 @@ Pick any, all or none of the three [ready-made dashboards](Ready-Made-Dashboards
 
 You can make more at any time from **Settings → Ready-made dashboards**.
 
-### 6. Review
+### 7. Review
 
 A summary per child and the dashboards you picked, plus two choices:
 
@@ -73,7 +77,7 @@ A summary per child and the dashboards you picked, plus two choices:
 
 ![The review step](images/wizard-review.png)
 
-### 7. Done
+### 8. Done
 
 **Add everything** on the review step creates it all in one go, and the Done step confirms what was added. Each dashboard is listed with an **Open** button, and any that already existed are noted as left alone. Everything is checked before anything is written, so a mistake leaves nothing half-created.
 

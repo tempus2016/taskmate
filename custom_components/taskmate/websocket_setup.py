@@ -17,6 +17,7 @@ from homeassistant.components import websocket_api
 from .const import AGE_GROUPS, SCHEDULE_MODES
 from .coord_birthdays import normalize_birthday, parse_birthday
 from .errors import TaskMateError, error_translation
+from .family_style import FAMILY_STYLES, apply_family_style
 from .setup_catalogue import setup_catalogue
 from .websocket import WS_LIBRARY_ADD, WS_SETUP_APPLY, WS_SETUP_CATALOGUE, _admin_only, validate_child_color
 
@@ -107,6 +108,8 @@ async def ws_setup_catalogue(hass, connection, msg, coordinator):
         vol.Optional("child_updates", default=[]): vol.All([_CHILD_UPDATE_SCHEMA], vol.Length(max=MAX_CHILDREN)),
         vol.Optional("chores", default=[]): vol.All([_CHORE_SCHEMA], vol.Length(max=MAX_CHORES)),
         vol.Optional("rewards", default=[]): vol.All([_REWARD_SCHEMA], vol.Length(max=MAX_REWARDS)),
+        # The wizard's optional Style page (#1260); sent only when it changes.
+        vol.Optional("family_style"): vol.In(FAMILY_STYLES),
     }
 )
 @websocket_api.async_response
@@ -123,6 +126,10 @@ async def ws_setup_apply(hass, connection, msg, coordinator):
         chores=msg.get("chores"),
         rewards=msg.get("rewards"),
     )
+    if msg.get("family_style"):
+        result["family_style"] = apply_family_style(coordinator.storage, msg["family_style"])
+        await coordinator.storage.async_save()
+        await coordinator.async_refresh()
     connection.send_result(msg["id"], result)
 
 

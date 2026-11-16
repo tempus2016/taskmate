@@ -7137,7 +7137,12 @@ class TaskMateChildCard extends LitElement {
   // ── Help, mood, sick day, weekly goal, make it right ─────────────────────
 
   _helpEnabled() {
-    return this.config.show_help_button !== false && this.config.pre_reader !== true;
+    if (this.config.show_help_button === false) return false;
+    // Family style (#1260): under Team style the help button is part of the
+    // card even in Pre-Reader Mode, unless the YAML says otherwise.
+    if (this.config.show_help_button === undefined && window.__taskmate_family_style
+      && window.__taskmate_family_style(this.hass) === "team") return true;
+    return this.config.pre_reader !== true;
   }
 
   /** Done for today: completions (incl. optimistic ones) reach the daily limit. */
