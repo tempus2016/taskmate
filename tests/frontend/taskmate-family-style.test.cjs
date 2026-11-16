@@ -294,3 +294,16 @@ test("panel: picking a style previews it first, and Apply applies it", async () 
   await p._styleApply();
   assert.deepEqual(JSON.parse(JSON.stringify(sent[1])), { type: "taskmate/apply_family_style", style: "team" });
 });
+
+test("panel: the family style summary stays a normal dialog with Cancel and Apply", () => {
+  // The helper is shared with the child stage confirm (#1262), which stacks
+  // above the child drawer; the Settings summary must not.
+  const p = panel({});
+  p._dialog = { kind: "family-style", data: { style: "team", changes: [{ key: "leaderboard_enabled", old: true, new: false }] } };
+  const html = p._renderDialog();
+  assert.doesNotMatch(html, /tm-scrim-stacked/);
+  assert.match(html, /class="tm-scrim "/);
+  assert.match(html, /data-act="close-dialog">panel\.btn_cancel<\/button>/);
+  assert.match(html, /data-act="style-apply">/);
+  assert.equal((html.match(/<button type="button" class="tm-btn/g) || []).length, 2);
+});

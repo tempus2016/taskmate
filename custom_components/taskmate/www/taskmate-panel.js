@@ -1359,7 +1359,7 @@ class TaskMatePanel extends HTMLElement {
     }
     if (act === "stage-pop-cancel") {
       // Only the scrim itself or a button: clicks inside the sheet bubble here too.
-      if (t.classList.contains("tm-stage-pop-scrim") && e.target !== t) return;
+      if (t.classList.contains("tm-scrim-stacked") && e.target !== t) return;
       this._stagePop = null; this._render(); return;
     }
     if (act === "stage-only")  { this._confirmChildStage(false); return; }
@@ -8993,18 +8993,44 @@ class TaskMatePanel extends HTMLElement {
 
   // A "what will change" summary: an intro, then groups of rows with a
   // before → after state. Shared by presets that switch several options at
-  // once (family style, #1260). groups: [{title, tone: off|on|same, rows: [{label, state}]}].
-  _presetSummaryDialog({ title, intro = "", groups = [], confirmAct, confirmLabel }) {
+  // once: family style (#1260) and a child's stage (#1262).
+  //   groups: [{title, tone: off|on|same, rows: [{label, state}], list?: [text], notes?: [text]}]
+  //   list: plain names under the rows (muted); notes: lines under the group.
+  //   confirmAct may be empty (nothing to confirm yet); secondaryAct/Label add a
+  //   second button before it; showCancel: false leaves Cancel out.
+  //   stacked: opened from an editor drawer (the child editor), so it is its
+  //   own centred overlay ABOVE the drawer instead of replacing it, and
+  //   closes with cancelAct instead of closing the editor.
+  _presetSummaryDialog({ title, intro = "", groups = [], confirmAct = "", confirmLabel = "",
+    secondaryAct = "", secondaryLabel = "", cancelAct = "close-dialog", showCancel = true,
+    busy = false, stacked = false }) {
+    const dis = busy ? " disabled" : "";
     const body = `
       ${intro ? `<p class="tm-preset-intro">${intro}</p>` : ""}
-      ${groups.filter(g => g.rows && g.rows.length).map(g => `
+      ${groups.filter(g => (g.rows && g.rows.length) || (g.list && g.list.length) || (g.notes && g.notes.length)).map(g => `
         <div class="tm-preset-grp">${this._esc(g.title)}</div>
-        <table class="tm-preset-diff"><tbody>
-          ${g.rows.map(r => `<tr><td>${this._esc(r.label)}</td><td class="tm-preset-st tm-preset-${g.tone}">${this._esc(r.state)}</td></tr>`).join("")}
-        </tbody></table>`).join("")}`;
-    return this._dialogShell(title, body,
-      `<button type="button" class="tm-btn" data-act="close-dialog">${this._t("panel.btn_cancel")}</button>
-       <button type="button" class="tm-btn tm-btn-raised" data-act="${confirmAct}">${this._esc(confirmLabel)}</button>`);
+        ${g.rows && g.rows.length ? `<table class="tm-preset-diff"><tbody>
+          ${g.rows.map(r => `<tr><td>${this._esc(r.label)}</td><td class="tm-preset-st tm-preset-${g.tone}">${this._esc(r.state || "")}</td></tr>`).join("")}
+        </tbody></table>` : ""}
+        ${g.list && g.list.length ? `<ul class="tm-preset-list">${g.list.map(x => `<li>${this._esc(x)}</li>`).join("")}</ul>` : ""}
+        ${(g.notes || []).map(n => `<p class="tm-preset-note">${this._esc(n)}</p>`).join("")}`).join("")}`;
+    const foot = [
+      showCancel ? `<button type="button" class="tm-btn" data-act="${cancelAct}">${this._t("panel.btn_cancel")}</button>` : "",
+      secondaryAct ? `<button type="button" class="tm-btn" data-act="${secondaryAct}"${dis}>${this._esc(secondaryLabel)}</button>` : "",
+      confirmAct ? `<button type="button" class="tm-btn tm-btn-raised" data-act="${confirmAct}"${dis}>${this._esc(confirmLabel)}</button>` : "",
+    ].filter(Boolean).join("\n       ");
+    if (!stacked) return this._dialogShell(title, body, foot);
+    return `
+      <div class="tm-scrim tm-scrim-stacked" data-act="${cancelAct}">
+        <div class="tm-dialog tm-preset-stacked" role="dialog" aria-modal="true" aria-label="${this._esc(title)}">
+          <header class="tm-dialog-head">
+            <h2>${this._esc(title)}</h2>
+            <button type="button" class="tm-icon-btn" data-act="${cancelAct}" title="${this._t("panel.tooltip_close")}">&times;</button>
+          </header>
+          <div class="tm-dialog-body">${body}</div>
+          <footer class="tm-dialog-foot">${foot}</footer>
+        </div>
+      </div>`;
   }
 
   _renderFamilyStyleDialog() {
@@ -16728,35 +16754,30 @@ class TaskMatePanel extends HTMLElement {
     const changes = plan ? plan.chores || [] : [];
     const skipped = plan ? plan.skipped_shared || [] : [];
     const choreItems = plan ? plan.chore_items || [] : [];
-    const li = (x) => `<li>${this._esc(x)}</li>`;
-    const body = !plan
-      ? `<p class="tm-meta">${this._esc(this._t("panel.stage_pop_loading", { name: pop.name }))}</p>`
-      : `
-        ${pop.to ? `<p class="tm-meta">${this._t("panel.stage_pop_body", { name: this._esc(pop.name), stage: `<b>${this._esc(this._stageName(pop.to))}</b>` })}</p>` : ""}
-        ${sg.card.length ? `<p class="tm-stage-pop-h">${this._esc(this._t("panel.stage_pop_card"))}</p>
-          <ul>${sg.card.map(k => li(this._stageItemText("card", k, pop.name))).join("")}</ul>` : ""}
-        ${choreItems.length ? `<p class="tm-stage-pop-h">${this._esc(this._t("panel.stage_pop_chores"))}</p>
-          <ul>${choreItems.map(k => li(this._stageItemText("chore", k, pop.name))).join("")}</ul>
-          ${changes.length ? `<ul class="tm-stage-pop-list">${changes.map(c => li(c.name)).join("")}</ul>`
-            : `<p class="tm-meta">${this._esc(this._t("panel.stage_pop_chore_none", { name: pop.name }))}</p>`}
-          ${skipped.length ? `<p class="tm-meta">${this._esc(this._t("panel.stage_pop_skipped", { list: skipped.map(c => c.name).join(", ") }))}</p>` : ""}` : ""}`;
-    const foot = !plan ? `<button type="button" class="tm-btn" data-act="stage-pop-cancel">${this._t("panel.btn_cancel")}</button>`
-      : changes.length
-      ? `<button type="button" class="tm-btn" data-act="stage-only" ${pop.busy ? "disabled" : ""}>${this._t("panel.stage_btn_only")}</button>
-         <button type="button" class="tm-btn tm-btn-raised" data-act="stage-apply" ${pop.busy ? "disabled" : ""}>${this._t("panel.stage_btn_apply")}</button>`
-      : `<button type="button" class="tm-btn" data-act="stage-pop-cancel">${this._t("panel.btn_cancel")}</button>
-         <button type="button" class="tm-btn tm-btn-raised" data-act="stage-only" ${pop.busy ? "disabled" : ""}>${this._t("panel.stage_btn_change")}</button>`;
-    return `
-      <div class="tm-stage-pop-scrim" data-act="stage-pop-cancel">
-        <div class="tm-dialog tm-stage-pop" role="dialog" aria-modal="true" aria-label="${this._esc(title)}">
-          <header class="tm-dialog-head">
-            <h2>${this._esc(title)}</h2>
-            <button type="button" class="tm-icon-btn" data-act="stage-pop-cancel" title="${this._t("panel.tooltip_close")}">&times;</button>
-          </header>
-          <div class="tm-dialog-body">${body}</div>
-          <footer class="tm-dialog-foot">${foot}</footer>
-        </div>
-      </div>`;
+    const common = { title, cancelAct: "stage-pop-cancel", busy: !!pop.busy, stacked: true };
+    if (!plan) {
+      return this._presetSummaryDialog({ ...common, intro: this._esc(this._t("panel.stage_pop_loading", { name: pop.name })) });
+    }
+    const row = (kind) => (k) => ({ label: this._stageItemText(kind, k, pop.name), state: "" });
+    const groups = [
+      { title: this._t("panel.stage_pop_card"), tone: "same", rows: sg.card.map(row("card")) },
+      choreItems.length ? {
+        title: this._t("panel.stage_pop_chores"), tone: "same",
+        rows: choreItems.map(row("chore")),
+        list: changes.map(c => c.name),
+        notes: [
+          changes.length ? "" : this._t("panel.stage_pop_chore_none", { name: pop.name }),
+          skipped.length ? this._t("panel.stage_pop_skipped", { list: skipped.map(c => c.name).join(", ") }) : "",
+        ].filter(Boolean),
+      } : null,
+    ].filter(Boolean);
+    const intro = pop.to ? this._t("panel.stage_pop_body", { name: this._esc(pop.name), stage: `<b>${this._esc(this._stageName(pop.to))}</b>` }) : "";
+    return changes.length
+      ? this._presetSummaryDialog({ ...common, intro, groups, showCancel: false,
+        secondaryAct: "stage-only", secondaryLabel: this._t("panel.stage_btn_only"),
+        confirmAct: "stage-apply", confirmLabel: this._t("panel.stage_btn_apply") })
+      : this._presetSummaryDialog({ ...common, intro, groups,
+        confirmAct: "stage-only", confirmLabel: this._t("panel.stage_btn_change") });
   }
 
   _renderKeepScroll() {
@@ -20525,14 +20546,6 @@ class TaskMatePanel extends HTMLElement {
       .tm-cstage-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; --mdc-icon-size: 18px; }
       .tm-cstage-row ha-icon { color: var(--tm-text-muted); }
       .tm-cstage-name { flex: 1; min-width: 120px; overflow-wrap: anywhere; }
-      /* Opened from the child editor: it renders in the dialog zone right
-         after the drawer's .tm-scrim (z-index 100), so it must sit above it
-         at every width, and below toasts (200) and the row menu (300). */
-      .tm-stage-pop-scrim { position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: auto; }
-      .tm-stage-pop { width: min(460px, 100%); max-height: 90vh; display: flex; flex-direction: column; }
-      .tm-stage-pop ul { margin: 4px 0 10px; padding-inline-start: 18px; }
-      .tm-stage-pop-h { margin: 10px 0 2px; font-weight: 700; font-size: 13px; }
-      .tm-stage-pop-list { color: var(--tm-text-muted); }
       .tm-check-row > div { flex: 1; }
       .tm-check-title { font-size: 13px; color: var(--tm-text); font-weight: 500; }
 
@@ -21455,6 +21468,14 @@ class TaskMatePanel extends HTMLElement {
       .tm-preset-off { color: var(--tm-danger); }
       .tm-preset-on { color: var(--tm-positive); }
       .tm-preset-same { color: var(--tm-text-faint); font-weight: 400; }
+      .tm-preset-list { margin: 4px 0 6px; padding-inline-start: 18px; color: var(--tm-text-muted); font-size: 13.5px; }
+      .tm-preset-note { margin: 6px 0 0; color: var(--tm-text-muted); font-size: 13px; }
+      /* A summary opened from an editor drawer (a child's stage, #1262): it
+         renders in the dialog zone right after the drawer's .tm-scrim
+         (z-index 100), so it sits above it at every width, centred, and
+         below toasts (200) and the row menu (300). */
+      .tm-scrim.tm-scrim-stacked { z-index: 150; align-items: center; padding: 16px; background: rgba(0,0,0,0.4); pointer-events: auto; }
+      .tm-dialog.tm-preset-stacked { max-width: 460px; max-height: 90vh; }
 
       /* Chore board */
       .tm-board-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }

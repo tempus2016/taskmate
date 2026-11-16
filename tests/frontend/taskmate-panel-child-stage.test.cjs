@@ -117,10 +117,12 @@ test("the stage confirm sits above the child drawer", async () => {
     assert.ok(m, `${selector} has a z-index`);
     return Number(m[1]);
   };
-  const pop = zOf(".tm-stage-pop-scrim");
+  // The shared summary dialog (#1260) opened from the drawer is "stacked":
+  // still a .tm-scrim (fixed, full viewport) but above the drawer's.
+  const pop = zOf(".tm-scrim.tm-scrim-stacked");
   assert.ok(pop > zOf(".tm-scrim"), "above the drawer's scrim");
   assert.ok(pop < zOf(".tm-toast"), "toasts still show on top");
-  assert.match(src, /\.tm-stage-pop-scrim \{ position: fixed; inset: 0;/);
+  assert.match(src, /\n\s*\.tm-scrim \{\s*position: fixed; inset: 0;/);
 
   // Rendered in the same dialog zone, after the drawer, so equal stacking
   // contexts compare by z-index alone.
@@ -135,7 +137,49 @@ test("the stage confirm sits above the child drawer", async () => {
   await p._pickChildStage("3_5");
   const html = p._renderChildDialog();
   const drawer = html.indexOf("tm-scrim tm-scrim-drawer");
-  const popAt = html.indexOf("tm-stage-pop-scrim");
+  const popAt = html.indexOf("tm-scrim tm-scrim-stacked");
   assert.ok(drawer >= 0 && popAt > drawer, "the confirm follows the drawer");
-  assert.ok(html.includes('data-act="stage-apply"'));
+  const pop2 = html.slice(popAt);
+  assert.match(pop2, /aria-modal="true"/);
+  assert.ok(!pop2.includes('data-act="close-dialog"'), "closing the confirm never closes the editor");
+  assert.ok(pop2.includes('data-act="stage-pop-cancel"'));
+  // Content: title, intro, card and chore groups, the chores and both buttons.
+  assert.ok(pop2.includes("<h2>Change Isla's stage</h2>"));
+  assert.ok(pop2.includes("Move Isla to <b>Joining in</b>. Apply its suggestions too?"));
+  assert.ok(pop2.includes("Pre-Reader Mode on (child card)"));
+  assert.ok(pop2.includes("No deadlines or deductions on chores only Isla does"));
+  assert.ok(pop2.includes("<li>Brush teeth</li>"));
+  assert.ok(pop2.includes('data-act="stage-only"') && pop2.includes("Change stage only"));
+  assert.ok(pop2.includes('data-act="stage-apply"') && pop2.includes("Change and apply"));
+  assert.ok(!pop2.includes(localize("panel.btn_cancel") + "</button>"), "no Cancel next to the two choices");
+});
+
+test("stage confirm: shared chores are named, nothing-to-change is said, and cards scope hides chore items", async () => {
+  const p = panel({ scope: "all" });
+  p._callWS = async () => ({ ok: true, res: { chores: [], skipped_shared: [{ chore_id: "b", name: "Feed the cat" }], chore_items: ["no_deadlines"] } });
+  await p._pickChildStage("3_5");
+  const html = p._renderStagePop();
+  assert.ok(html.includes("Nothing to change on Isla's own chores."));
+  assert.ok(html.includes("Shared with other children, so left alone: Feed the cat"));
+  assert.ok(html.includes('data-act="stage-pop-cancel"') && html.includes('data-act="stage-only"'));
+  assert.ok(html.includes("Change stage<"));
+
+  const cards = panel({ scope: "cards" });
+  cards._callWS = async () => ({ ok: true, res: { chores: [], skipped_shared: [], chore_items: [] } });
+  await cards._pickChildStage("3_5");
+  const c = cards._renderStagePop();
+  assert.ok(c.includes("Pre-Reader Mode on (child card)"));
+  assert.ok(!c.includes("No deadlines or deductions"));
+});
+
+test("stage confirm: while it checks the chores, only Cancel is offered", async () => {
+  const p = panel();
+  let release;
+  p._callWS = () => new Promise((r) => { release = r; });
+  const pending = p._pickChildStage("9_12");
+  const html = p._renderStagePop();
+  assert.ok(html.includes("Checking Isla's chores"));
+  assert.ok(!html.includes('data-act="stage-only"'));
+  release({ ok: true, res: { chores: [], skipped_shared: [], chore_items: [] } });
+  await pending;
 });
