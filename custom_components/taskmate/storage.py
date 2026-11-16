@@ -188,6 +188,10 @@ class TaskMateStorage:
         # left by a downgrade to a version without the cascades.
         self._drop_dead_swap_requests()
 
+        # Choice sets (#1259) saved before created_on existed: stamp today,
+        # once, so the end-of-day check never backfills days before it.
+        self._stamp_choice_set_dates()
+
         # Notifications overhaul (v3.9.0)
         if "parent_recipients" not in self._data:
             self._data["parent_recipients"] = []
@@ -1676,6 +1680,16 @@ class TaskMateStorage:
                 return
         self.add_choice_set(choice_set)
 
+    def _stamp_choice_set_dates(self) -> None:
+        """Give every choice set a ``created_on`` (today) if it has none."""
+        from .models import local_today_iso
+
+        today = None
+        for cs in self._data.get("choice_sets", []) or []:
+            if isinstance(cs, dict) and not cs.get("created_on"):
+                today = today or local_today_iso()
+                cs["created_on"] = today
+
     def remove_choice_set(self, set_id: str) -> None:
         self._data["choice_sets"] = [
             c for c in self._data.get("choice_sets", []) if not (isinstance(c, dict) and c.get("id") == set_id)
@@ -1902,6 +1916,7 @@ class TaskMateStorage:
             self._data["weekly_target_bonuses"] = {}
         self._restore_authorisation_state(kept)
         self._sanitize_imported_records()
+        self._stamp_choice_set_dates()
 
     def _sanitize_imported_records(self) -> None:
         """Re-validate untrusted inner records after a full-replace import (SEC-5).

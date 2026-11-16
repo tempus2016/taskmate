@@ -46,6 +46,14 @@ MISS_REVIEW_LOCATIONS = ("card", "panel", "both")
 MISS_REVIEW_SETTING = "miss_review_location"
 
 
+def _before(created: str, day: date) -> bool:
+    """True when ``day`` is earlier than the ISO date ``created`` (unknown = False)."""
+    try:
+        return bool(created) and day < date.fromisoformat(str(created)[:10])
+    except ValueError:
+        return False
+
+
 def choice_set_miss_key(set_id: str, child_id: str, due_date: str) -> str:
     """The handled-miss key for a set: its own namespace, never a chore's."""
     return mandatory_miss_key(f"set:{set_id}", child_id, due_date)
@@ -106,8 +114,11 @@ class ChoiceSetsMixin:
     # ── CRUD ─────────────────────────────────────────────────────────────
     async def async_create_choice_set(self, **fields) -> str:
         fields.pop("id", None)
+        fields.pop("created_on", None)
         cs = ChoiceSet.from_dict(fields)
         cs.name = cs.name.strip()
+        # The first day it can be missed is today.
+        cs.created_on = dt_util.as_local(dt_util.now()).date().isoformat()
         self._validate_choice_set(cs)
         self.storage.add_choice_set(cs)
         await self.storage.async_save()
@@ -119,7 +130,7 @@ class ChoiceSetsMixin:
         if existing is None:
             raise TaskMateError("choice_set_not_found", set_id=set_id)
         data = existing.to_dict()
-        data.update({k: v for k, v in fields.items() if v is not None})
+        data.update({k: v for k, v in fields.items() if v is not None and k != "created_on"})
         data["id"] = set_id
         cs = ChoiceSet.from_dict(data)
         cs.name = cs.name.strip()
@@ -193,6 +204,8 @@ class ChoiceSetsMixin:
                 continue
             if child_id in (getattr(chore, "disabled_for", []) or []):
                 continue
+            if _before(getattr(chore, "created_date", ""), day):
+                continue  # the chore didn't exist yet that day
             if not self._is_chore_scheduled_for_date(chore, day):
                 continue
             if self._chore_hidden_by_gate(chore):
@@ -264,6 +277,10 @@ class ChoiceSetsMixin:
         created = 0
         for cs in self.storage.get_choice_sets():
             if not cs.active or cs.min_required <= 0:
+                continue
+            # A set can't be missed on a day before it existed (a restart on
+            # the day it was made runs the catch-up for yesterday).
+            if _before(cs.created_on, day):
                 continue
             for child in self.storage.get_children():
                 if not self._choice_set_applies_to(cs, child):

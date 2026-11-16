@@ -58,6 +58,8 @@ for (const where of ["panel", "both"]) {
     assert.match(q.html, /panel\.miss_chore_text\(Vaiha,Make bed\)/);
     assert.match(q.html, /panel\.miss_set_progress\(1,2\)/);
     assert.match(q.html, /data-act="miss-penalty" data-id="m1"/);
+    // The panel's danger style, not red text on the raised (primary) button.
+    assert.match(q.html, /class="tm-btn tm-btn-sm tm-btn-danger" data-act="miss-penalty"/);
     assert.doesNotMatch(q.html, /data-act="miss-penalty" data-id="m2"/, "no penalty button without penalty points");
     for (const act of ["miss-postpone", "miss-dismiss"]) {
       assert.match(q.html, new RegExp(`data-act="${act}" data-id="m2"`));
