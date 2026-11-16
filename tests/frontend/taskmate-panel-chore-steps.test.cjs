@@ -60,10 +60,30 @@ test("phones and touch screens get 40px tap targets, still on one row", () => {
   assert.match(rule, /flex: 0 0 40px/);
   assert.match(rule, /width: 40px/);
   assert.match(rule, /height: 40px/);
-  // Fixed parts at 360px: number (~1.4em ≈ 20px) + 3 × 40px buttons + 4 × 4px
-  // gaps. The phone dialog's content is ~300px wide, so the name input
-  // (flex: 1; min-width: 0) keeps well over 120px and nothing overflows.
+});
+
+test("wide screens keep each step on one row", () => {
+  // The base rule (outside any media query) never wraps.
+  const base = SRC.match(/\.tm-step-row \{[^}]*\}/)[0];
+  assert.doesNotMatch(base, /flex-wrap/);
+  const narrow = SRC.indexOf("@media (max-width: 420px)");
+  assert.ok(SRC.indexOf(base) < narrow, "the two-line layout is narrow-only");
+});
+
+test("narrow phones put the name on its own line and the 40px buttons under it", () => {
+  const block = SRC.match(/@media \(max-width: 420px\) \{([\s\S]*?)\n {6}\}/);
+  assert.ok(block, "a narrow-phone rule for the step rows");
+  const css = block[1];
+  assert.match(css, /\.tm-step-row \{[^}]*flex-wrap: wrap/);
+  // Number + name fill line one, so the buttons can only go on line two...
+  assert.match(css, /\.tm-step-row \.tm-step-name \{[^}]*flex: 1 1 calc\(100% - 1\.4em - 4px\)/);
+  assert.match(SRC, /\.tm-step-num \{[^}]*min-width: 1\.4em/);
+  // ...right-aligned, and still the 40px touch size (≤ 420px is under 600px).
+  assert.match(css, /\.tm-step-name \+ \.tm-icon-btn \{[^}]*margin-inline-start: auto/);
+  assert.match(SRC, /@media \(max-width: 600px\), \(pointer: coarse\) \{\s*\.tm-step-row \.tm-icon-btn \{[^}]*width: 40px/);
+  // At 360px the name line is the full content width (~300px) minus the
+  // number; the button line is 3 × 40px + 2 gaps. Neither overflows.
   const gap = Number(SRC.match(/\.tm-step-row \{[^}]*gap: (\d+)px/)[1]);
-  const fixed = 20 + 3 * 40 + 4 * gap;
-  assert.ok(300 - fixed >= 120, `the name keeps ${300 - fixed}px`);
+  assert.ok(3 * 40 + 2 * gap <= 300);
+  assert.ok(300 - 20 - gap >= 260, "the name gets nearly the whole width");
 });
