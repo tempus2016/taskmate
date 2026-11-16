@@ -3937,7 +3937,7 @@ class TaskMatePanel extends HTMLElement {
         <div class="tm-approval-actions">
           <button type="button" class="tm-btn tm-btn-sm" data-act="miss-dismiss" data-id="${this._esc(m.id)}">${this._t("panel.miss_dismiss")}</button>
           <button type="button" class="tm-btn tm-btn-sm" data-act="miss-postpone" data-id="${this._esc(m.id)}">${this._t("panel.miss_postpone")}</button>
-          ${penalty > 0 ? `<button type="button" class="tm-btn tm-btn-raised tm-btn-sm tm-btn-danger" data-act="miss-penalty" data-id="${this._esc(m.id)}">${this._t("panel.miss_apply_penalty")}</button>` : ""}
+          ${penalty > 0 ? `<button type="button" class="tm-btn tm-btn-sm tm-btn-danger" data-act="miss-penalty" data-id="${this._esc(m.id)}">${this._t("panel.miss_apply_penalty")}</button>` : ""}
         </div>
       </div>`;
   }

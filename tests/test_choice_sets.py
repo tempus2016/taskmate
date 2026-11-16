@@ -111,6 +111,75 @@ def test_model_round_trip_and_defaults():
     assert ChoiceSet.from_dict({"name": "x", "min_required": 0}).min_required == 0
 
 
+def test_created_on_round_trips_and_falls_back_to_today():
+    cs = ChoiceSet.from_dict({"name": "x", "created_on": "2024-01-02"})
+    assert cs.created_on == "2024-01-02"
+    assert ChoiceSet.from_dict(cs.to_dict()).created_on == "2024-01-02"
+    # Saved before the field existed (or garbage): today, so nothing is backfilled.
+    assert ChoiceSet.from_dict({"name": "x"}).created_on == TODAY.isoformat()
+    assert ChoiceSet.from_dict({"name": "x", "created_on": "nope"}).created_on == TODAY.isoformat()
+
+
+def test_storage_stamps_old_sets_once_on_load():
+    async def go():
+        storage = TaskMateStorage.__new__(TaskMateStorage)
+        storage.entry_id = "test_entry"
+        storage._store = FakeStore(None, 1, "test")
+        storage._store._data = {"choice_sets": [{"id": "s1", "name": "Old", "chore_ids": ["a"]}]}
+        storage._data = {}
+        await storage.async_load()
+        assert storage._data["choice_sets"][0]["created_on"] == TODAY.isoformat()
+        # A later day still reads the stamped date, not "today".
+        dt_util_mock._now = NOW + dt.timedelta(days=3)
+        assert storage.get_choice_set("s1").created_on == TODAY.isoformat()
+
+    run(go())
+
+
+def test_restart_on_the_creation_day_backfills_nothing():
+    async def go():
+        coord = await _system()
+        child, chores = await _family(coord, 3)
+        set_id = await coord.async_create_choice_set(name="Set", chore_ids=[c.id for c in chores], min_required=1)
+        assert coord.storage.get_choice_set(set_id).created_on == TODAY.isoformat()
+        # HA restarts later the same day: the catch-up looks at yesterday.
+        await coord.async_catchup_choice_set_misses()
+        assert coord.storage.get_mandatory_misses() == []
+        assert await coord.async_detect_choice_set_misses(TODAY - dt.timedelta(days=1)) == 0
+        # Editing the set never moves its date.
+        await coord.async_update_choice_set(set_id, created_on="2000-01-01", min_required=2)
+        assert coord.storage.get_choice_set(set_id).created_on == TODAY.isoformat()
+
+    run(go())
+
+
+def test_a_set_created_yesterday_still_gets_its_miss_on_restart():
+    async def go():
+        coord = await _system()
+        await _family(coord, 3)
+        chores = coord.storage.get_chores()
+        await coord.async_create_choice_set(name="Set", chore_ids=[c.id for c in chores], min_required=1)
+        dt_util_mock._now = NOW + dt.timedelta(days=1)
+        await coord.async_catchup_choice_set_misses()
+        (miss,) = coord.storage.get_mandatory_misses()
+        assert miss.due_date == TODAY.isoformat()
+
+    run(go())
+
+
+def test_a_member_chore_dated_after_the_day_is_not_on_offer():
+    async def go():
+        coord = await _system()
+        child, chores = await _family(coord, 2)
+        set_id = await coord.async_create_choice_set(name="Set", chore_ids=[c.id for c in chores], min_required=2)
+        c = coord.storage.get_chore(chores[1].id)
+        c.created_date = (TODAY + dt.timedelta(days=1)).isoformat()
+        coord.storage.update_chore(c)
+        assert _status(coord, set_id, child.id) == {"min": 1, "done": 0, "fulfilled": False}
+
+    run(go())
+
+
 def test_miss_carries_set_id_only_when_set():
     miss = MandatoryMiss(chore_id="", child_id="k", due_date="2024-03-19", period_id="anytime", set_id="s1")
     assert MandatoryMiss.from_dict(miss.to_dict()).set_id == "s1"

@@ -34,6 +34,21 @@ def generate_id() -> str:
     return str(uuid.uuid4()).replace("-", "")[:16]
 
 
+def local_today_iso() -> str:
+    """Today's local date as ``YYYY-MM-DD``."""
+    from homeassistant.util import dt as dt_util
+
+    return dt_util.as_local(dt_util.now()).date().isoformat()
+
+
+def _iso_date_or_today(value) -> str:
+    """A stored ``YYYY-MM-DD``, or today when missing or unreadable."""
+    try:
+        return date.fromisoformat(str(value)).isoformat()
+    except (TypeError, ValueError):
+        return local_today_iso()
+
+
 def dt_util_now_iso() -> str:
     """Current local time as an ISO string (module-level so dataclass defaults can use it)."""
     from homeassistant.util import dt as dt_util
@@ -1216,6 +1231,9 @@ class ChoiceSet:
     ``min_required`` 0 makes the set a labelled list of optional chores that
     can never be missed. ``penalty_points`` is only ever applied by a parent
     from the review item an unmet set leaves at the end of the day.
+    ``created_on`` (local ISO date) is the first day the set can be missed;
+    a set saved before the field existed gets today's date (storage stamps
+    it once on load), so nothing is backfilled.
     """
 
     name: str
@@ -1227,6 +1245,7 @@ class ChoiceSet:
     penalty_points: int = 0
     active: bool = True
     id: str = field(default_factory=generate_id)
+    created_on: str = field(default_factory=lambda: local_today_iso())
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ChoiceSet:
@@ -1246,6 +1265,7 @@ class ChoiceSet:
             penalty_points=_int(data.get("penalty_points", 0), 0),
             active=bool(data.get("active", True)),
             id=data.get("id") or generate_id(),
+            created_on=_iso_date_or_today(data.get("created_on")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -1259,6 +1279,7 @@ class ChoiceSet:
             "penalty_points": self.penalty_points,
             "active": self.active,
             "id": self.id,
+            "created_on": self.created_on,
         }
 
 
