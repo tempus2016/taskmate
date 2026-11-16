@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Punten en level",
   "kiosk.editor.show_streak": "Reeks",
   "kiosk.editor.show_reward_progress": "Voortgang volgende beloning",
+  "kiosk.editor.show_description": "Uitleg bij de taak tonen",
+  "kiosk.editor.show_description_helper": "Toon de uitleg onder de naam van de taak, als die er een heeft",
   "kiosk.editor.show_bounties": "Klussenbord",
   "kiosk.editor.show_bounties_helper": "Laat elk kind hier klussen reserveren en afronden, met een foto via de tablet als dat gevraagd wordt",
   "kiosk.editor.show_rewards": "Beloningen inwisselen",

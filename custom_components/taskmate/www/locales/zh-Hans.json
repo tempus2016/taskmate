@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "积分和等级",
   "kiosk.editor.show_streak": "连续打卡",
   "kiosk.editor.show_reward_progress": "下一个奖励进度",
+  "kiosk.editor.show_description": "显示家务描述",
+  "kiosk.editor.show_description_helper": "家务有描述时，在名称下方显示",
   "kiosk.editor.show_bounties": "悬赏榜",
   "kiosk.editor.show_bounties_helper": "让每个孩子在这里领取和完成悬赏，需要照片时用平板拍照",
   "kiosk.editor.show_rewards": "领取奖励",

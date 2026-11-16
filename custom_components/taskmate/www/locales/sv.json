@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Poäng och nivå",
   "kiosk.editor.show_streak": "Svit",
   "kiosk.editor.show_reward_progress": "Framsteg mot nästa belöning",
+  "kiosk.editor.show_description": "Visa sysslans beskrivning",
+  "kiosk.editor.show_description_helper": "Visa beskrivningen under sysslans namn när den har en",
   "kiosk.editor.show_bounties": "Extrajobb",
   "kiosk.editor.show_bounties_helper": "Låt varje barn ta och göra klart extrajobb här, med ett foto från surfplattan när det krävs",
   "kiosk.editor.show_rewards": "Lösa in belöningar",

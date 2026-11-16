@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "ポイントとレベル",
   "kiosk.editor.show_streak": "連続記録",
   "kiosk.editor.show_reward_progress": "次のごほうびまでの進み具合",
+  "kiosk.editor.show_description": "お手伝いの説明を表示",
+  "kiosk.editor.show_description_helper": "説明があるお手伝いは、名前の下に説明を表示します",
   "kiosk.editor.show_bounties": "懸賞ボード",
   "kiosk.editor.show_bounties_helper": "子どもがここで懸賞を引き受けて終わらせられるようにします。写真が必要なときはタブレットで撮影します",
   "kiosk.editor.show_rewards": "ごほうびの申請",

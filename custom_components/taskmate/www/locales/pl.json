@@ -3342,6 +3342,8 @@
   "kiosk.editor.show_points": "Punkty i poziom",
   "kiosk.editor.show_streak": "Seria",
   "kiosk.editor.show_reward_progress": "Postęp do następnej nagrody",
+  "kiosk.editor.show_description": "Pokazuj opis obowiązku",
+  "kiosk.editor.show_description_helper": "Pokazuje opis pod nazwą obowiązku, jeśli go ma",
   "kiosk.editor.show_bounties": "Tablica zleceń",
   "kiosk.editor.show_bounties_helper": "Każde dziecko może tu brać i kończyć zlecenia, ze zdjęciem z tabletu, gdy jest wymagane",
   "kiosk.editor.show_rewards": "Odbieranie nagród",

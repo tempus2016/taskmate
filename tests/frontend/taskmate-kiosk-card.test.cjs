@@ -432,6 +432,43 @@ test("the editor offers grabs_first, off by default", () => {
   assert.equal(editor._computeHelper(field), localize("kiosk.editor.grabs_first_helper"));
 });
 
+// ── chore descriptions (#1255) ────────────────────────────────────────────
+
+const describedChores = () => [
+  chore("dishes", { description: "Rinse, stack and wipe the counter" }),
+  chore("bins"),
+];
+
+test("chore descriptions stay hidden by default", async () => {
+  const { markup } = view(await childView({ chores: describedChores() }));
+  assert.doesNotMatch(markup, /Rinse, stack and wipe the counter/);
+  assert.doesNotMatch(markup, /km-row-desc/);
+});
+
+test("show_description: true shows a chore's description under its name", async () => {
+  const { markup } = view(await childView({ config: { show_description: true }, chores: describedChores() }));
+  const name = markup.indexOf('class="km-row-name">Dishes<');
+  const desc = markup.indexOf('class="km-row-desc">Rinse, stack and wipe the counter<');
+  assert.ok(name >= 0 && desc > name, "description follows the name");
+  assert.equal((markup.match(/class="km-row-desc"/g) || []).length, 1, "a chore without one shows none");
+});
+
+test("the editor offers show_description, off by default and stored only when on", () => {
+  const editor = new KioskEditor();
+  editor.hass = makeCard().hass;
+  editor.config = { entity: ENTITY };
+  const field = editor._schema().find((f) => f.name === "show_description");
+  assert.ok(field && field.selector.boolean, "a toggle");
+  assert.equal(editor._computeLabel(field), localize("kiosk.editor.show_description"));
+  assert.equal(editor._computeHelper(field), localize("kiosk.editor.show_description_helper"));
+  let out;
+  editor.dispatchEvent = (e) => { out = e.detail.config; };
+  editor._formChanged({ detail: { value: { show_description: true } } });
+  assert.equal(out.show_description, true);
+  editor._formChanged({ detail: { value: { show_description: false } } });
+  assert.equal("show_description" in out, false);
+});
+
 test("undo follows the #918 window and goes through undo_chore", async () => {
   const card = await childView({
     status: { children: [{ id: "vaiha", has_pin: false, can_act: true, due: [] }] },

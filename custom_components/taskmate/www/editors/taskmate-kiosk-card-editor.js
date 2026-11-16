@@ -70,6 +70,7 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "show_points", selector: { boolean: {} } },
       { name: "show_streak", selector: { boolean: {} } },
       { name: "show_reward_progress", selector: { boolean: {} } },
+      { name: "show_description", selector: { boolean: {} } },
       { name: "show_bounties", selector: { boolean: {} } },
       { name: "show_rewards", selector: { boolean: {} } },
       { name: "show_picker_progress", selector: { boolean: {} } },
@@ -133,6 +134,7 @@ class TaskMateKioskCardEditor extends LitElement {
     show_points: this._t("kiosk.editor.show_points"),
     show_streak: this._t("kiosk.editor.show_streak"),
     show_reward_progress: this._t("kiosk.editor.show_reward_progress"),
+    show_description: this._t("kiosk.editor.show_description"),
     show_bounties: this._t("kiosk.editor.show_bounties"),
     show_rewards: this._t("kiosk.editor.show_rewards"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress"),
@@ -158,6 +160,7 @@ class TaskMateKioskCardEditor extends LitElement {
     title: this._t("kiosk.editor.title_helper"),
     timeout: this._t("kiosk.editor.timeout_helper"),
     warn_before_return: this._t("kiosk.editor.warn_before_return_helper"),
+    show_description: this._t("kiosk.editor.show_description_helper"),
     show_bounties: this._t("kiosk.editor.show_bounties_helper"),
     show_rewards: this._t("kiosk.editor.show_rewards_helper"),
     show_picker_progress: this._t("kiosk.editor.show_picker_progress_helper"),
@@ -226,6 +229,7 @@ class TaskMateKioskCardEditor extends LitElement {
       show_points: this.config.show_points !== false,
       show_streak: this.config.show_streak !== false,
       show_reward_progress: this.config.show_reward_progress !== false,
+      show_description: this.config.show_description === true,
       show_bounties: this.config.show_bounties === true,
       show_rewards: this.config.show_rewards === true,
       show_picker_progress: this.config.show_picker_progress !== false,
@@ -317,7 +321,7 @@ class TaskMateKioskCardEditor extends LitElement {
       else if (key === "timeout") {
         if (clampTimeout(value) === DEFAULT_TIMEOUT) delete next[key];
         else next[key] = clampTimeout(value);
-      } else if (key === "show_bounties" || key === "show_rewards") {
+      } else if (key === "show_bounties" || key === "show_rewards" || key === "show_description") {
         // The toggles that default to off: store only the "on" choice.
         if (value) next[key] = true;
         else delete next[key];

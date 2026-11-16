@@ -796,6 +796,7 @@ show_picker_progress: true        # "3 of 6 done" under each face
 play_sounds: true                 # (v6.2.0) completion and undo sounds
 show_confetti: true               # (v6.2.0) confetti on Done
 show_completion_popup: true       # (v6.2.0) "AWESOME! You did it!" popup with the points
+show_description: false           # chore description under its name, as on the child card
 show_bounties: false              # (v6.3.0) Bounty Board section: claim, finish and give back bounties
 completed_mode: show              # (v7.0.0) show | hide — done and waiting-for-approval chores
 elapsed_time_mode: show           # (v7.0.0) show | dim | hide — time-of-day chores whose part of the day has passed

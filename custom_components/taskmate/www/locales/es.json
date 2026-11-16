@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Puntos y nivel",
   "kiosk.editor.show_streak": "Racha",
   "kiosk.editor.show_reward_progress": "Progreso hacia el siguiente premio",
+  "kiosk.editor.show_description": "Mostrar la descripción de la tarea",
+  "kiosk.editor.show_description_helper": "Muestra la descripción debajo del nombre de la tarea, cuando tenga una",
   "kiosk.editor.show_bounties": "Tablón de recompensas",
   "kiosk.editor.show_bounties_helper": "Permite que cada niño coja y termine recompensas aquí, con una foto desde la tablet cuando se pida",
   "kiosk.editor.show_rewards": "Canjear premios",

@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "포인트와 레벨",
   "kiosk.editor.show_streak": "연속 기록",
   "kiosk.editor.show_reward_progress": "다음 보상 진행",
+  "kiosk.editor.show_description": "집안일 설명 표시",
+  "kiosk.editor.show_description_helper": "설명이 있는 집안일은 이름 아래에 설명을 보여 줘요",
   "kiosk.editor.show_bounties": "현상금 게시판",
   "kiosk.editor.show_bounties_helper": "아이마다 여기서 현상금을 맡고 끝낼 수 있게 해요. 사진이 필요하면 태블릿으로 찍어요",
   "kiosk.editor.show_rewards": "보상 받기",

@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Очки и уровень",
   "kiosk.editor.show_streak": "Серия",
   "kiosk.editor.show_reward_progress": "Прогресс к следующей награде",
+  "kiosk.editor.show_description": "Показывать описание задания",
+  "kiosk.editor.show_description_helper": "Показывает описание под названием задания, если оно есть",
   "kiosk.editor.show_bounties": "Доска бонус-заданий",
   "kiosk.editor.show_bounties_helper": "Каждый ребёнок может брать и выполнять бонус-задания здесь, с фото с планшета, если оно нужно",
   "kiosk.editor.show_rewards": "Получение наград",

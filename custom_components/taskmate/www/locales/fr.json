@@ -3403,6 +3403,8 @@
   "kiosk.editor.show_points": "Points et niveau",
   "kiosk.editor.show_streak": "Série",
   "kiosk.editor.show_reward_progress": "Progression vers la prochaine récompense",
+  "kiosk.editor.show_description": "Afficher la description de la tâche",
+  "kiosk.editor.show_description_helper": "Affiche la description sous le nom de la tâche, quand elle en a une",
   "kiosk.editor.show_bounties": "Tableau des primes",
   "kiosk.editor.show_bounties_helper": "Chaque enfant peut réserver et terminer des primes ici, avec une photo prise sur la tablette quand elle est demandée",
   "kiosk.editor.show_rewards": "Réclamation de récompenses",
