@@ -505,7 +505,10 @@ class TaskMateKioskCard extends LitElement {
         }
         continue;
       }
-      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit);
+      // A multipart chore (#1253) is ticked step by step on the child card,
+      // so the tablet sends it there like the other chores it can't finish.
+      const phone = !!(chore.require_photo || chore.open_ended || chore.task_type === "timed" || chore.quantity_unit
+        || (Array.isArray(chore.steps) && chore.steps.length));
       // A chore for a later part of the day isn't open yet (#771): the child
       // card shows it as a locked "Available at …" preview, so the tablet
       // does too, instead of a live Done button at any hour.

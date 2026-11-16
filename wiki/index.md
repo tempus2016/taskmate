@@ -32,6 +32,7 @@ Welcome to the TaskMate documentation. TaskMate is a Home Assistant integration 
 | [Timed Tasks](Timed-Tasks.md) | Duration-based chores with start/pause/stop timers |
 | [Weekly Targets](Weekly-Targets.md) | "Three times this week, any day" quotas on a chore, with an optional bonus for hitting them |
 | [Task Groups](Task-Groups.md) | Coordinate rotation chores with sticky or spread policies |
+| [Multipart Chores](Multipart-Chores.md) | Required steps inside one chore; points only once every step is done |
 | [Bonus Subtasks](Bonus-Subtasks.md) | Optional extra-credit tasks within a chore |
 | [Photo Proof](Photo-Proof.md) | Require a photo as evidence before approval |
 | [Open-Ended Chores](Open-Ended-Chores.md) | A placeholder the child describes themselves, priced by you at approval |

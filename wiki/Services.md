@@ -277,6 +277,18 @@ Take a child back out of a [teamwork chore](Teamwork-Chores.md) they joined toda
 
 A child can only leave for themselves; parents can remove anyone. Leaving a team you hadn't joined, or one that has already completed, does nothing.
 
+### `taskmate.set_chore_step`
+Tick or untick one step of a [multipart chore](Multipart-Chores.md) for today. Steps earn nothing on their own: once every step is ticked, complete the chore with `complete_chore`, which refuses a child's completion while a step is still open.
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `chore_id` | ✅ | ID of the multipart chore |
+| `child_id` | ✅ | ID of the child |
+| `step_id` | ✅ | ID of the step |
+| `done` | ❌ | `true` (default) ticks the step, `false` unticks it |
+
+A child linked to a Home Assistant user can only tick their own steps.
+
 ### `taskmate.complete_next_chore` (v6.0.0)
 Complete the child's **next** outstanding chore, in the order their child card shows. Made for a watch button or a phone shortcut. See [Watch Complications](Watch-Complications.md).
 
