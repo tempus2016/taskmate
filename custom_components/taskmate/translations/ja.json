@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "お手伝いのステップを設定",
+      "description": "複数パートのお手伝いのステップを今日の分としてチェック、またはチェックを外します。ステップ単体ではポイントになりません。全ステップにチェックが付いたら complete_chore でお手伝いを完了します。",
+      "fields": {
+        "chore_id": {
+          "name": "お手伝いID",
+          "description": "複数パートのお手伝いの ID"
+        },
+        "child_id": {
+          "name": "子どもID",
+          "description": "ステップをチェックする子どもの ID"
+        },
+        "step_id": {
+          "name": "ステップ ID",
+          "description": "ステップの ID"
+        },
+        "done": {
+          "name": "完了",
+          "description": "true でチェック、false でチェックを外します"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "次のお手伝いを完了",
       "description": "子どもカードに表示される順番で、子どもの次の未完了のお手伝いを完了します。写真、メモ、タイマー、チームが必要なお手伝いはスキップします。スマートウォッチのボタンやショートカット用で、通常の承認ルールが適用されます。",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "お手伝い「{name}」はチームワークのお手伝いではありません"
+    },
+    "chore_steps_not_list": {
+      "message": "ステップはリストで指定してください。"
+    },
+    "chore_steps_too_many": {
+      "message": "1つのお手伝いに設定できるステップは最大 {max} 個です。"
+    },
+    "chore_steps_timed": {
+      "message": "時間計測タスクにはステップを設定できません。"
+    },
+    "chore_steps_set_times": {
+      "message": "決まった時刻があるお手伝いにはステップを設定できません。"
+    },
+    "chore_steps_need_name": {
+      "message": "各ステップには名前が必要です。"
+    },
+    "chore_steps_none": {
+      "message": "お手伝い「{name}」にはステップがありません。"
+    },
+    "chore_step_not_found": {
+      "message": "お手伝い「{name}」にステップ {step_id} が見つかりません。"
+    },
+    "chore_steps_incomplete": {
+      "message": "まず「{name}」のステップをすべて終わらせてください。"
     },
     "swap_only_rotation": {
       "message": "交代できるのは交代制のお手伝いだけです"

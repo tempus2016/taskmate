@@ -28,10 +28,12 @@ from .models import (
     PRAISE_NOTE_MAX,
     Chore,
     ChoreCompletion,
+    ChoreStep,
     ChoreTime,
     PointsTransaction,
     clean_label,
     parse_datetime,
+    validate_chore_steps,
     validate_chore_times,
 )
 
@@ -618,6 +620,12 @@ class ChoresMixin:
             team_size=int(getattr(chore, "team_size", 0) or 0),
         )
         chore.times_bonus = max(0, int(getattr(chore, "times_bonus", 0) or 0)) if chore.times else 0
+        # Multipart chore steps (#1253), same rule for every way in.
+        chore.steps = validate_chore_steps(
+            [s.to_dict() if isinstance(s, ChoreStep) else s for s in (getattr(chore, "steps", None) or [])],
+            task_type=getattr(chore, "task_type", "standard") or "standard",
+            has_times=bool(chore.times),
+        )
         today = dt_util.as_local(dt_util.now()).date()
         # Capture pre-update state before storage is mutated below.
         existing = self.storage.get_chore(chore.id)
@@ -732,6 +740,8 @@ class ChoresMixin:
         self.storage.remove_swap_requests_for_chore(chore_id)
         # Teamwork joins (#928) belong to the occurrence of a chore that's gone.
         self.storage.remove_team_joins_for_chore(chore_id)
+        # So are the steps ticked on it today (#1253).
+        self.storage.remove_step_progress_for_chore(chore_id)
         # A running or paused timer on it goes now, not at the midnight sweep.
         # Not snapshotted, so a restore never brings a stale timer back (#771).
         self.storage.remove_timed_sessions_for_chore(chore_id)
@@ -1060,6 +1070,12 @@ class ChoresMixin:
             )
             return None
 
+        # Multipart chores (#1253): a child's completion only counts once every
+        # step is ticked. Enforced here rather than only in the card, so the
+        # button entity, an NFC tag or Dev Tools can't skip the checklist.
+        # Parents completing on behalf are the authority and stay exempt.
+        if not as_parent and self.chore_steps_outstanding(chore, child_id, now):
+            raise TaskMateError("chore_steps_incomplete", name=chore.name)
         # A photo-required chore always goes through parent approval (unless a
         # parent is completing on behalf), so the evidence gets reviewed.
         requires_photo = bool(getattr(chore, "require_photo", False))

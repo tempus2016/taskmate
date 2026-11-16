@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Ustaw krok zadania",
+      "description": "Odhacza lub cofa odhaczenie jednego kroku zadania wieloczęściowego na dziś. Same kroki nie dają punktów: zadanie kończy się przez complete_chore, gdy wszystkie kroki są odhaczone.",
+      "fields": {
+        "chore_id": {
+          "name": "ID obowiązku",
+          "description": "ID zadania wieloczęściowego"
+        },
+        "child_id": {
+          "name": "ID dziecka",
+          "description": "ID dziecka, które odhacza krok"
+        },
+        "step_id": {
+          "name": "ID kroku",
+          "description": "ID kroku"
+        },
+        "done": {
+          "name": "Zrobione",
+          "description": "Prawda odhacza krok, fałsz cofa odhaczenie"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Wykonaj następny obowiązek",
       "description": "Wykonaj następny niewykonany obowiązek dziecka, w kolejności z karty dziecka. Obowiązki wymagające zdjęcia, notatki, stopera lub zespołu są pomijane. Przeznaczone dla przycisków na zegarku i skrótów; obowiązują zwykłe zasady zatwierdzania.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Obowiązek „{name}” nie jest obowiązkiem zespołowym"
+    },
+    "chore_steps_not_list": {
+      "message": "Kroki muszą być listą."
+    },
+    "chore_steps_too_many": {
+      "message": "Zadanie może mieć najwyżej {max} kroków."
+    },
+    "chore_steps_timed": {
+      "message": "Zadanie na czas nie może mieć kroków."
+    },
+    "chore_steps_set_times": {
+      "message": "Zadanie o stałych porach nie może mieć kroków."
+    },
+    "chore_steps_need_name": {
+      "message": "Każdy krok musi mieć nazwę."
+    },
+    "chore_steps_none": {
+      "message": "Zadanie „{name}” nie ma kroków."
+    },
+    "chore_step_not_found": {
+      "message": "Nie znaleziono kroku {step_id} w zadaniu „{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Najpierw wykonaj wszystkie kroki zadania „{name}”."
     },
     "swap_only_rotation": {
       "message": "Zamieniać można tylko obowiązki rotacyjne"

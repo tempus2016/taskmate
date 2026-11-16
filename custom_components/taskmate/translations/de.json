@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Aufgabenschritt setzen",
+      "description": "Hakt einen Schritt einer mehrteiligen Aufgabe für heute ab oder entfernt den Haken. Schritte bringen allein keine Punkte: Die Aufgabe wird mit complete_chore erledigt, sobald alle Schritte abgehakt sind.",
+      "fields": {
+        "chore_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der mehrteiligen Aufgabe"
+        },
+        "child_id": {
+          "name": "Kinder-ID",
+          "description": "Die ID des Kindes, das den Schritt abhakt"
+        },
+        "step_id": {
+          "name": "Schritt-ID",
+          "description": "Die ID des Schritts"
+        },
+        "done": {
+          "name": "Erledigt",
+          "description": "Wahr hakt den Schritt ab, falsch entfernt den Haken"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Nächste Aufgabe erledigen",
       "description": "Erledigt die nächste offene Aufgabe des Kindes in der Reihenfolge, die die Kinderkarte anzeigt. Aufgaben, die ein Foto, eine Notiz, einen Timer oder ein Team brauchen, werden übersprungen. Gedacht für Uhr-Tasten und Verknüpfungen; die normalen Genehmigungsregeln gelten.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Die Aufgabe „{name}“ ist keine Teamaufgabe"
+    },
+    "chore_steps_not_list": {
+      "message": "Schritte müssen eine Liste sein."
+    },
+    "chore_steps_too_many": {
+      "message": "Eine Aufgabe kann höchstens {max} Schritte haben."
+    },
+    "chore_steps_timed": {
+      "message": "Eine zeitgesteuerte Aufgabe kann keine Schritte haben."
+    },
+    "chore_steps_set_times": {
+      "message": "Eine Aufgabe mit festen Zeiten kann keine Schritte haben."
+    },
+    "chore_steps_need_name": {
+      "message": "Jeder Schritt braucht einen Namen."
+    },
+    "chore_steps_none": {
+      "message": "Die Aufgabe „{name}“ hat keine Schritte."
+    },
+    "chore_step_not_found": {
+      "message": "Schritt {step_id} wurde in der Aufgabe „{name}“ nicht gefunden."
+    },
+    "chore_steps_incomplete": {
+      "message": "Erledige zuerst alle Schritte von „{name}“."
     },
     "swap_only_rotation": {
       "message": "Nur reihum wechselnde Aufgaben können getauscht werden"

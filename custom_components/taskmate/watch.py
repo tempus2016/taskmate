@@ -42,6 +42,10 @@ def chore_needs_input(coordinator, chore) -> bool:
     """
     if getattr(chore, "require_photo", False) or getattr(chore, "open_ended", False):
         return True
+    # A multipart chore (#1253) needs its steps ticked one by one first.
+    steps = getattr(chore, "steps", None)
+    if isinstance(steps, list) and steps:
+        return True
     # A quantity chore needs the child to say how many.
     unit = getattr(chore, "quantity_unit", "")
     if isinstance(unit, str) and unit.strip():

@@ -215,6 +215,8 @@ const ROTATION_PERIODS = [
   { v: "month", lk: "panel.chore_rotation_period_month" },
 ];
 const ROTATION_EVERY_MAX = 12;
+// Multipart chores (#1253): models.MAX_CHORE_STEPS.
+const CHORE_STEPS_MAX = 20;
 
 // The week planner's weekdays (Monday first, like the backend) and the edge
 // colour of a chore that belongs to more than one child.
@@ -1271,6 +1273,9 @@ class TaskMatePanel extends HTMLElement {
     }
     if (act === "add-bonus-subtask") { this._addBonusSubtask(); return; }
     if (act === "remove-bonus-subtask") { this._removeBonusSubtask(Number(t.dataset.idx)); return; }
+    if (act === "add-chore-step")    { this._addChoreStep(); return; }
+    if (act === "remove-chore-step") { this._removeChoreStep(Number(t.dataset.idx)); return; }
+    if (act === "move-chore-step")   { this._moveChoreStep(Number(t.dataset.idx), Number(t.dataset.dir)); return; }
 
     // Rewards
     if (act === "add-reward")    { this._openRewardDialog(null); return; }
@@ -3040,6 +3045,8 @@ class TaskMatePanel extends HTMLElement {
       publish_calendar_entities: [],
       depends_on: [],
       bonus_subtasks: [],
+      // Multipart chores (#1253): required steps, in order.
+      steps: [],
       tag_ids: [],
       // Set times (several times a day): "once" | "limit" (daily_limit) | "set".
       times: [], times_bonus: 0, _freq: "once",
@@ -3060,6 +3067,7 @@ class TaskMatePanel extends HTMLElement {
         depends_on: [...(c.depends_on || [])],
         tag_ids: [...(c.tag_ids || [])],
         bonus_subtasks: (c.bonus_subtasks || []).map(b => ({...b})),
+        steps: (c.steps || []).map(s => ({...s})),
         visibility_operator: c.visibility_operator || "none",
         weather_block_conditions: [...(c.weather_block_conditions || [])],
         // null/undefined limits render as an empty input, not "null"
@@ -3311,6 +3319,10 @@ class TaskMatePanel extends HTMLElement {
         points: Math.max(0, Math.round(Number(t.points) || 0)),
       })) : [],
       times_bonus: setTimes ? Math.max(0, Math.round(Number(d.times_bonus) || 0)) : 0,
+      // Multipart steps (#1253): never on a timed task or a set-times chore.
+      steps: setTimes || (d.task_type || "standard") === "timed" ? [] : (d.steps || [])
+        .filter(s => s && String(s.name || "").trim())
+        .map(s => ({ ...(s.id ? { id: s.id } : {}), name: String(s.name).trim().slice(0, 100) })),
       estimated_minutes: Math.min(600, Math.max(0, Math.round(Number(d.estimated_minutes) || 0))),
       quantity_unit: (d.task_type || "standard") === "timed" || d.open_ended ? "" : String(d.quantity_unit || "").trim().slice(0, 30),
       quantity_max: Math.min(10000, Math.max(0, Math.round(Number(d.quantity_max) || 0))),
@@ -3401,6 +3413,56 @@ class TaskMatePanel extends HTMLElement {
       d.bonus_subtasks.splice(idx, 1);
       this._render();
     }
+  }
+
+  // Multipart chore steps (#1253): add / remove / reorder in the editor.
+  _addChoreStep() {
+    if (!this._dialog) return;
+    const d = this._dialog.data;
+    d.steps = d.steps || [];
+    if (d.steps.length >= CHORE_STEPS_MAX) return;
+    d.steps.push({ name: "" });
+    (this._dialog._openAdvanced = this._dialog._openAdvanced || new Set()).add("steps");
+    this._render();
+  }
+
+  _removeChoreStep(idx) {
+    if (!this._dialog) return;
+    const d = this._dialog.data;
+    if (d.steps && d.steps[idx] !== undefined) {
+      d.steps.splice(idx, 1);
+      this._render();
+    }
+  }
+
+  _moveChoreStep(idx, dir) {
+    if (!this._dialog) return;
+    const steps = this._dialog.data.steps || [];
+    const to = idx + (dir < 0 ? -1 : 1);
+    if (steps[idx] === undefined || to < 0 || to >= steps.length) return;
+    [steps[idx], steps[to]] = [steps[to], steps[idx]];
+    this._render();
+  }
+
+  _renderChoreSteps(d) {
+    const steps = d.steps || [];
+    const open = steps.length > 0 || this._dialog._openAdvanced?.has("steps");
+    return `<details class="tm-advanced" data-section="steps"${open ? " open" : ""}>
+      <summary>${this._t("panel.chore_steps_label")}${steps.length ? ` (${this._fmtNum(steps.length)})` : ""}</summary>
+      <div>
+        <span class="tm-field-hint" style="margin-bottom:8px;display:block">${this._t("panel.chore_steps_hint")}</span>
+        ${steps.map((s, idx) => `
+          <div class="tm-field-row tm-step-row" style="align-items:center;gap:6px;margin-bottom:6px">
+            <span class="tm-step-num" aria-hidden="true" style="flex:0 0 auto;min-width:1.6em;text-align:center;font-weight:600">${this._fmtNum(idx + 1)}</span>
+            <div class="tm-field" style="flex:1;margin:0"><input class="tm-input" maxlength="100" aria-label="${this._t("panel.chore_step_name_aria", {n: this._fmtNum(idx + 1)})}" placeholder="${this._t("panel.chore_step_name_placeholder")}" value="${this._esc(s.name)}" data-field="steps[${idx}].name"></div>
+            <button type="button" class="tm-btn tm-btn-icon" data-act="move-chore-step" data-idx="${idx}" data-dir="-1" ${idx === 0 ? "disabled" : ""} title="${this._t("panel.chore_step_move_up")}" aria-label="${this._t("panel.chore_step_move_up")}" style="padding:6px 10px">↑</button>
+            <button type="button" class="tm-btn tm-btn-icon" data-act="move-chore-step" data-idx="${idx}" data-dir="1" ${idx === steps.length - 1 ? "disabled" : ""} title="${this._t("panel.chore_step_move_down")}" aria-label="${this._t("panel.chore_step_move_down")}" style="padding:6px 10px">↓</button>
+            <button type="button" class="tm-btn tm-btn-icon" data-act="remove-chore-step" data-idx="${idx}" title="${this._t("panel.tooltip_remove")}" aria-label="${this._t("panel.tooltip_remove")}" style="padding:6px 10px">✕</button>
+          </div>
+        `).join("")}
+        ${steps.length < CHORE_STEPS_MAX ? `<button type="button" class="tm-btn" data-act="add-chore-step" style="margin-top:4px">${this._t("panel.btn_add_chore_step")}</button>` : ""}
+      </div>
+    </details>`;
   }
 
   // ---- Rewards ---------------------------------------------------------
@@ -16557,6 +16619,7 @@ class TaskMatePanel extends HTMLElement {
         ]),
         section("more", [
           isTimedTask ? "" : this._renderChoreTeamwork(d),
+          isTimedTask || d._freq === "set" ? "" : this._renderChoreSteps(d),
           memberInGroup ? `
             <div class="tm-field">
               <span class="tm-field-hint">${this._t("panel.chore_group_hint", {name: this._esc(memberInGroup.name), policy: this._esc(this._t(`panel.group_policy_${memberInGroup.policy || "sticky"}_short`))})}</span>

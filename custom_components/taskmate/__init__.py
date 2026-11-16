@@ -119,6 +119,7 @@ from .const import (
     SERVICE_REQUEST_SWAP,
     SERVICE_SET_CHORE_MANUAL_START,
     SERVICE_SET_CHORE_ORDER,
+    SERVICE_SET_CHORE_STEP,
     SERVICE_SKIP_CHORE,
     SERVICE_SPIN_ROULETTE,
     SERVICE_START_TIMED_TASK,
@@ -668,6 +669,19 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         # Same gate as completing: a child acts for themselves, parents for anyone.
         await _async_require_linked_child(hass, call, coordinator, child_id)
         await coordinator.async_leave_team_chore(call.data[ATTR_CHORE_ID], child_id)
+
+    async def handle_set_chore_step(call: ServiceCall) -> None:
+        """Tick or untick one step of a multipart chore for today (#1253)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        child_id = call.data[ATTR_CHILD_ID]
+        # Same gate as completing: a child acts for themselves, parents for anyone.
+        await _async_require_linked_child(hass, call, coordinator, child_id)
+        await coordinator.async_set_chore_step(
+            call.data[ATTR_CHORE_ID], child_id, call.data["step_id"], call.data.get("done", True)
+        )
 
     # ── Bounty board (#931) ───────────────────────────────────────────────
     _BOUNTY_FIELDS = (
@@ -1454,6 +1468,20 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
 
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SET_CHORE_STEP,
+        _audited(handle_set_chore_step),
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CHORE_ID): cv.string,
+                vol.Required(ATTR_CHILD_ID): cv.string,
+                vol.Required("step_id"): cv.string,
+                vol.Optional("done", default=True): cv.boolean,
+            }
+        ),
+    )
+
     _bounty_editable = {
         vol.Optional("description"): vol.All(cv.string, vol.Length(max=BOUNTY_DESCRIPTION_MAX_LENGTH)),
         vol.Optional("icon"): cv.string,
@@ -2172,6 +2200,7 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UPDATE_TASK_GROUP,
         SERVICE_REMOVE_TASK_GROUP,
         SERVICE_LEAVE_TEAM_CHORE,
+        SERVICE_SET_CHORE_STEP,
         SERVICE_POST_BOUNTY,
         SERVICE_UPDATE_BOUNTY,
         SERVICE_REMOVE_BOUNTY,

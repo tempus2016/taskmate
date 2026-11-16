@@ -119,6 +119,7 @@ from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .errors import TaskMateError, error_translation, send_translated_error
 from .models import (
+    CHORE_STEP_NAME_MAX_LENGTH,
     CHORE_TIME_NAME_MAX_LENGTH,
     MAX_CHORE_TIME_POINTS,
     MAX_ESTIMATED_MINUTES,
@@ -131,6 +132,7 @@ from .models import (
     BonusSubTask,
     Reward,
     normalize_tag_ids,
+    validate_chore_steps,
     validate_chore_times,
 )
 from .sounds import MAX_NAME_LEN as MAX_SOUND_NAME_LEN
@@ -893,6 +895,7 @@ _CHORE_EDITABLE_FIELDS = {
     "quantity_max",
     "times",
     "times_bonus",
+    "steps",
 }
 
 
@@ -1052,6 +1055,14 @@ def _chore_payload_schema(*, require_name: bool):
             }
         ],
         vol.Optional("times_bonus"): vol.All(int, vol.Range(min=0, max=MAX_CHORE_TIME_POINTS)),
+        # Multipart chores (#1253): required steps, in order. The count and
+        # the cross-field rules are checked by validate_chore_steps.
+        vol.Optional("steps"): [
+            {
+                vol.Optional("id"): str,
+                vol.Required("name"): vol.All(str, vol.Length(max=CHORE_STEP_NAME_MAX_LENGTH)),
+            }
+        ],
     }
 
 
@@ -1099,6 +1110,12 @@ async def _ws_add_chore(hass, connection, msg, coordinator):
         open_ended=bool(msg.get("open_ended", False)),
         quantity_unit=msg.get("quantity_unit", ""),
         team_size=msg.get("team_size", 0),
+    )
+    # And multipart steps (#1253).
+    validate_chore_steps(
+        msg.get("steps"),
+        task_type=msg.get("task_type", "standard"),
+        has_times=bool(msg.get("times")),
     )
     one_off_date = _one_off_date(msg)
     chore = await coordinator.async_add_chore(

@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Görev adımını ayarla",
+      "description": "Çok parçalı bir görevin bir adımını bugün için işaretler ya da işareti kaldırır. Adımlar tek başına puan kazandırmaz: tüm adımlar işaretlenince görev complete_chore ile tamamlanır.",
+      "fields": {
+        "chore_id": {
+          "name": "Görev kimliği",
+          "description": "Çok parçalı görevin kimliği"
+        },
+        "child_id": {
+          "name": "Çocuk kimliği",
+          "description": "Adımı işaretleyen çocuğun kimliği"
+        },
+        "step_id": {
+          "name": "Adım kimliği",
+          "description": "Adımın kimliği"
+        },
+        "done": {
+          "name": "Tamam",
+          "description": "Doğru adımı işaretler, yanlış işareti kaldırır"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Sonraki Görevi Tamamla",
       "description": "Çocuğun bekleyen sonraki görevini, çocuk kartının gösterdiği sırayla tamamla. Fotoğraf, not, zamanlayıcı veya takım gerektiren görevler atlanır. Saat düğmeleri ve kısayollar için yapıldı; normal onay kuralları geçerlidir.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "“{name}” bir takım görevi değil"
+    },
+    "chore_steps_not_list": {
+      "message": "Adımlar bir liste olmalıdır."
+    },
+    "chore_steps_too_many": {
+      "message": "Bir görevde en fazla {max} adım olabilir."
+    },
+    "chore_steps_timed": {
+      "message": "Süreli bir görevin adımları olamaz."
+    },
+    "chore_steps_set_times": {
+      "message": "Belirli saatleri olan bir görevin adımları olamaz."
+    },
+    "chore_steps_need_name": {
+      "message": "Her adımın bir adı olmalıdır."
+    },
+    "chore_steps_none": {
+      "message": "“{name}” görevinin adımı yok."
+    },
+    "chore_step_not_found": {
+      "message": "“{name}” görevinde {step_id} adımı bulunamadı."
+    },
+    "chore_steps_incomplete": {
+      "message": "Önce “{name}” görevinin tüm adımlarını bitir."
     },
     "swap_only_rotation": {
       "message": "Yalnızca dönüşümlü görevler takas edilebilir"

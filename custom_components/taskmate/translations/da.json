@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Angiv opgavetrin",
+      "description": "Sæt eller fjern flueben ved et trin i en opgave i flere dele for i dag. Trin giver ingen point i sig selv: opgaven fuldføres med complete_chore, når alle trin er afkrydset.",
+      "fields": {
+        "chore_id": {
+          "name": "Pligt-ID",
+          "description": "ID for opgaven i flere dele"
+        },
+        "child_id": {
+          "name": "Barn-ID",
+          "description": "ID for barnet, der afkrydser trinnet"
+        },
+        "step_id": {
+          "name": "Trin-ID",
+          "description": "ID for trinnet"
+        },
+        "done": {
+          "name": "Klaret",
+          "description": "Sand afkrydser trinnet, falsk fjerner fluebenet"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Udfør næste pligt",
       "description": "Udfører barnets næste udestående pligt i den rækkefølge, som barnekortet viser dem. Pligter, der kræver et foto, en note, en timer eller et hold, springes over. Lavet til urknapper og genveje; de normale godkendelsesregler gælder.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "Opgaven »{name}« er ikke en holdopgave"
+    },
+    "chore_steps_not_list": {
+      "message": "Trin skal være en liste."
+    },
+    "chore_steps_too_many": {
+      "message": "En opgave kan højst have {max} trin."
+    },
+    "chore_steps_timed": {
+      "message": "En tidsopgave kan ikke have trin."
+    },
+    "chore_steps_set_times": {
+      "message": "En opgave med faste tidspunkter kan ikke have trin."
+    },
+    "chore_steps_need_name": {
+      "message": "Hvert trin skal have et navn."
+    },
+    "chore_steps_none": {
+      "message": "Opgaven “{name}” har ingen trin."
+    },
+    "chore_step_not_found": {
+      "message": "Trin {step_id} blev ikke fundet i opgaven “{name}”."
+    },
+    "chore_steps_incomplete": {
+      "message": "Gør først alle trin i “{name}” færdige."
     },
     "swap_only_rotation": {
       "message": "Kun skiftende opgaver kan byttes"

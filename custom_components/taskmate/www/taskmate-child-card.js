@@ -134,6 +134,7 @@ class TaskMateChildCard extends LitElement {
       _photoCapture: { type: Object },
       _extraCapture: { type: Object },
       _quantityCapture: { type: Object },
+      _stepsSheet: { type: Object },
       _goalSheet: { type: Object },
       _helpSent: { type: Object },
       _moodSent: { type: Object },
@@ -162,6 +163,9 @@ class TaskMateChildCard extends LitElement {
     // Optimistic completions: track chores that were just completed
     // These are used to immediately hide the DONE button before the server confirms
     this._optimisticCompletions = {};
+    // Multipart chores (#1253): steps ticked/unticked here but not yet seen
+    // on the chores sensor, {"<chore>_<child>": [step ids]}.
+    this._stepOptimistic = {};
     // Audio context for generating sounds (lazy initialized)
     this._audioContext = null;
     // Timer intervals for live counters (timed tasks)
@@ -1800,6 +1804,24 @@ class TaskMateChildCard extends LitElement {
       .tm-qty-unit { text-align: center; font-weight: 700; opacity: .75; }
       .tm-qty-worth { text-align: center; font-size: 1.05rem; font-weight: 800; color: var(--fun-green, #2e9e5b); margin: 6px 0 2px; }
       .tm-minutes-left { white-space: nowrap; }
+      /* Multipart chores (#1253): the checklist sheet and the row's progress. */
+      .tm-steps-list { list-style: none; margin: 10px 0 4px; padding: 0; display: flex; flex-direction: column; gap: 8px;
+        max-height: 55vh; overflow-y: auto; }
+      .tm-step { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; text-align: start;
+        padding: 10px 12px; border-radius: 14px; border: 2px solid var(--divider-color, #e0e0e0); cursor: pointer;
+        background: var(--card-background-color, #fff); color: var(--primary-text-color, #33373d); font: inherit; font-size: 1rem; }
+      .tm-step.done { border-color: var(--fun-green, #2e9e5b); }
+      .tm-step.done .tm-step-name { text-decoration: line-through; opacity: .7; }
+      .tm-step:disabled { cursor: progress; }
+      .tm-step-box { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center;
+        justify-content: center; font-weight: 800; border: 2px solid var(--divider-color, #ccc); --mdc-icon-size: 22px; }
+      .tm-step.done .tm-step-box { background: var(--fun-green, #2e9e5b); border-color: var(--fun-green, #2e9e5b); color: #fff; }
+      .tm-step-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+      .tm-steps-sheet.pre .tm-step-box { width: 52px; height: 52px; font-size: 1.4rem; --mdc-icon-size: 30px; }
+      .tm-steps-sheet.pre .tm-step { padding: 12px 14px; font-size: 1.1rem; }
+      .pre-tile-steps { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
+      .tm-step-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; opacity: .6; }
+      .tm-step-dot.on { background: currentColor; opacity: 1; }
       .tm-tag-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
       .tm-help-btn { border: 0; cursor: pointer; font-family: inherit; line-height: inherit; }
       .tm-pts-count { font-size: max(12px, 0.8em); font-weight: 500; }
@@ -3507,6 +3529,7 @@ class TaskMateChildCard extends LitElement {
         ${this._renderPhotoCapture()}
         ${this._renderExtraCapture()}
         ${this._renderQuantityCapture()}
+        ${this._renderStepsSheet()}
         <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
                style="display:none" @change="${this._onPhotoSelected}">
         ${this._renderTour(child, attrs, "classic")}
@@ -4103,6 +4126,7 @@ class TaskMateChildCard extends LitElement {
       ${this._renderPhotoCapture()}
       ${this._renderExtraCapture()}
       ${this._renderQuantityCapture()}
+      ${this._renderStepsSheet()}
       <input type="file" id="tm-photo-input" accept="image/*" capture="environment"
              style="display:none" @change="${this._onPhotoSelected}">
       ${this._renderTour(child, attrs, design)}
@@ -4212,7 +4236,8 @@ class TaskMateChildCard extends LitElement {
     // chip (whose name reads "{chore}, waiting for a grown-up. Undo"), so
     // there is no second note here squeezing the name.
     return html`
-      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
+      ${(r.boost && !r.done) || r.mandatory || r.auction || r.photo || r.openEnded || depNames.length
+        || (!r.done && this._choreSteps(r.chore).length) || recLabel || firstComeLabel || sharedLabel || weeklyLabel || (r.team && !r.done)
         || this._hasStreakOrReminder(r.chore, r.child, r.done)
         || (!r.done && (r.chore.estimated_minutes || r.chore.quantity_unit || this._helpEnabled())) ? html`
         <div class="tmd-meta">
@@ -4230,6 +4255,7 @@ class TaskMateChildCard extends LitElement {
           ${sharedLabel ? html`<span class="tmd-tag tm-shared-limit">👥 ${sharedLabel}</span>` : ""}
           ${weeklyLabel ? html`<span class="tmd-tag">📅 ${weeklyLabel}</span>` : ""}
           ${r.team && !r.done ? this._renderTeamProgress(r.team, "tmd-tag") : ""}
+          ${this._renderStepsTag(r.chore, r.child, r.done, "tmd-tag")}
         </div>` : ""}
       ${this._renderSetTimeInfo(r.chore, r.child, "designed")}
       ${showDesc ? html`<div class="tmd-desc">${r.chore.description}</div>` : ""}
@@ -5487,6 +5513,7 @@ class TaskMateChildCard extends LitElement {
           ? html`<div class="pre-tile-label">${chore.name}</div>` : ''}
         ${!isDone && this._teamState(chore, child)
           ? this._renderTeamProgress(this._teamState(chore, child), 'pre-tile-team') : ''}
+        ${this._renderStepsTag(chore, child, isDone, 'pre-tile-steps')}
       </button>
     `;
   }
@@ -5839,6 +5866,8 @@ class TaskMateChildCard extends LitElement {
               <div class="tm-tag-wrap">${this._choreExtraTags(chore, false, 'photo-badge')}</div>
             ` : ''}
             ${team ? html`<div>${this._renderTeamProgress(team, 'team-label')}</div>` : ''}
+            ${this._choreSteps(chore).length && !isCompletedForToday
+              ? html`<div class="tm-tag-wrap">${this._renderStepsTag(chore, child, false, 'photo-badge')}</div>` : ''}
           </div>
         </div>
         <div class="chore-checkbox ${team ? 'team' : ''} ${team?.mine ? 'team-joined' : ''}">
@@ -6351,6 +6380,16 @@ class TaskMateChildCard extends LitElement {
       return;
     }
 
+    // Multipart chores (#1253): until every step is ticked, a tap opens the
+    // checklist instead. Ticking the last step there comes back here, so the
+    // photo, note and quantity prompts and the celebration below all still
+    // run. Gated here so every render path (classic, designed, pre-reader)
+    // opens the same checklist.
+    if (this._stepsOutstanding(chore, child)) {
+      this._openStepsSheet(chore, child);
+      return;
+    }
+
     // Photo-evidence chores can't be completed with a plain tap — open the
     // capture overlay first. The overlay uploads the photo and then calls back
     // into this method with a photoUrl, which takes the service path below.
@@ -6822,6 +6861,143 @@ class TaskMateChildCard extends LitElement {
             </button>
             <button class="photo-btn primary" @click="${() => this._submitQuantityCapture()}">
               ✓ ${this._t("child.quantity_submit")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Multipart chores (#1253) ──────────────────────────────────────────────
+
+  /** The chore's required steps, in order ([] for an ordinary chore). */
+  _choreSteps(chore) {
+    return chore && Array.isArray(chore.steps) ? chore.steps.filter(s => s && s.id) : [];
+  }
+
+  /** Ids of the steps this child has ticked on the current go: the card's
+   *  own unconfirmed taps first, else the chores sensor's step_done. */
+  _stepsDone(chore, child) {
+    const steps = this._choreSteps(chore);
+    if (!steps.length || !child) return [];
+    const key = `${chore.id}_${child.id}`;
+    const local = this._stepOptimistic && this._stepOptimistic[key];
+    const ticked = new Set(local || ((chore.step_done || {})[child.id] || []));
+    return steps.filter(s => ticked.has(s.id)).map(s => s.id);
+  }
+
+  _stepsOutstanding(chore, child) {
+    const steps = this._choreSteps(chore);
+    return steps.length > 0 && this._stepsDone(chore, child).length < steps.length;
+  }
+
+  /**
+   * "2/4 steps" on a chore row that still has steps to tick. A pre-reader
+   * tile gets one dot per step instead of words. Called from the classic
+   * row, _designChoreMeta and the pre-reader tile (two-render-paths rule).
+   */
+  _renderStepsTag(chore, child, done, cls) {
+    const steps = this._choreSteps(chore);
+    if (!steps.length || done) return "";
+    const n = this._stepsDone(chore, child).length;
+    const label = this._t("child.steps_progress", { done: __tmNum(this.hass, n), total: __tmNum(this.hass, steps.length) });
+    if (cls === "pre-tile-steps") {
+      return html`<div class="pre-tile-steps" role="img" aria-label="${_ltrNums(label)}">${steps.map((s, i) =>
+        html`<span class="tm-step-dot ${i < n ? "on" : ""}"></span>`)}</div>`;
+    }
+    return html`<span class="${cls} tm-steps-tag">☑️ ${_ltrNums(label)}</span>`;
+  }
+
+  _openStepsSheet(chore, child) {
+    this._stepsSheet = { chore, child, error: "" };
+    this.requestUpdate();
+  }
+
+  _closeStepsSheet() {
+    this._stepsSheet = null;
+    this.requestUpdate();
+  }
+
+  /** Tick or untick one step. Ticking the last one completes the chore
+   *  through _handleComplete, the same path as a plain tap. */
+  async _toggleStep(chore, child, step) {
+    const key = `${chore.id}_${child.id}`;
+    if (this._loading[`${key}_steps`]) return;
+    const before = this._stepsDone(chore, child);
+    const wasDone = before.includes(step.id);
+    const after = wasDone ? before.filter(id => id !== step.id) : [...before, step.id];
+    this._stepOptimistic = { ...this._stepOptimistic, [key]: after };
+    this._loading = { ...this._loading, [`${key}_steps`]: true };
+    if (this._stepsSheet) this._stepsSheet = { ...this._stepsSheet, error: "" };
+    this.requestUpdate();
+    let ok = false;
+    try {
+      await this.hass.callService("taskmate", "set_chore_step", {
+        chore_id: chore.id, child_id: child.id, step_id: step.id, done: !wasDone,
+      });
+      ok = true;
+    } catch (error) {
+      this._stepOptimistic = { ...this._stepOptimistic, [key]: before };
+      if (this._stepsSheet) {
+        this._stepsSheet = { ...this._stepsSheet, error: this._t("child.error_complete", { message: this._errText(error) }) };
+      }
+    } finally {
+      this._loading = { ...this._loading, [`${key}_steps`]: false };
+      this.requestUpdate();
+    }
+    if (!ok) return;
+    // The sensor catches up a moment later; drop our copy once it has.
+    setTimeout(() => {
+      if (this._stepOptimistic[key] === after) {
+        const next = { ...this._stepOptimistic };
+        delete next[key];
+        this._stepOptimistic = next;
+        this.requestUpdate();
+      }
+    }, 5000);
+    if (!wasDone && after.length >= this._choreSteps(chore).length) {
+      this._closeStepsSheet();
+      await this._handleComplete(chore, child);
+    }
+  }
+
+  _renderStepsSheet() {
+    const sheet = this._stepsSheet;
+    if (!sheet) return "";
+    const { chore, child } = sheet;
+    const steps = this._choreSteps(chore);
+    const done = new Set(this._stepsDone(chore, child));
+    const busy = !!this._loading[`${chore.id}_${child.id}_steps`];
+    const pre = this.config.pre_reader === true;
+    const stop = (e) => e.stopPropagation();
+    const progress = this._t("child.steps_progress", { done: __tmNum(this.hass, done.size), total: __tmNum(this.hass, steps.length) });
+    return html`
+      <div class="photo-overlay" @click="${() => this._closeStepsSheet()}">
+        <div class="photo-sheet tm-steps-sheet ${pre ? "pre" : ""}" @click="${stop}" role="dialog" aria-modal="true"
+             aria-label="${chore.name || ""}">
+          <div class="photo-title">${chore.name || ""}</div>
+          <div class="photo-for tm-steps-count">${_ltrNums(progress)}</div>
+          ${pre ? "" : html`<div class="photo-dropzone-hint">${this._t("child.steps_hint")}</div>`}
+          <ol class="tm-steps-list">
+            ${steps.map((s, i) => {
+              const isDone = done.has(s.id);
+              const n = __tmNum(this.hass, i + 1);
+              return html`<li>
+                <button class="tm-step ${isDone ? "done" : ""}" ?disabled=${busy}
+                        role="checkbox" aria-checked="${isDone ? "true" : "false"}"
+                        aria-label="${this._t("child.step_aria", { n, name: s.name })}"
+                        @click="${() => this._toggleStep(chore, child, s)}">
+                  <span class="tm-step-box" aria-hidden="true">${isDone
+                    ? html`<ha-icon icon="mdi:check-bold"></ha-icon>` : n}</span>
+                  <span class="tm-step-name">${s.name}</span>
+                </button>
+              </li>`;
+            })}
+          </ol>
+          ${sheet.error ? html`<div class="photo-error">${sheet.error}</div>` : ""}
+          <div class="photo-btn-row">
+            <button class="photo-btn ghost" @click="${() => this._closeStepsSheet()}">
+              ${this._t("child.steps_close")}
             </button>
           </div>
         </div>

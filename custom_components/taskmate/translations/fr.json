@@ -991,6 +991,28 @@
         }
       }
     },
+    "set_chore_step": {
+      "name": "Définir une étape de tâche",
+      "description": "Coche ou décoche une étape d'une tâche en plusieurs parties pour aujourd'hui. Les étapes ne rapportent rien seules : la tâche est terminée avec complete_chore une fois toutes les étapes cochées.",
+      "fields": {
+        "chore_id": {
+          "name": "ID de la corvée",
+          "description": "L'ID de la tâche en plusieurs parties"
+        },
+        "child_id": {
+          "name": "ID de l'enfant",
+          "description": "L'ID de l'enfant qui coche l'étape"
+        },
+        "step_id": {
+          "name": "ID de l'étape",
+          "description": "L'ID de l'étape"
+        },
+        "done": {
+          "name": "Fait",
+          "description": "Vrai coche l'étape, faux la décoche"
+        }
+      }
+    },
     "complete_next_chore": {
       "name": "Terminer la tâche suivante",
       "description": "Termine la prochaine tâche en attente de l'enfant, dans l'ordre affiché par la carte enfant. Les tâches qui demandent une photo, une note, un minuteur ou une équipe sont ignorées. Conçu pour les boutons et raccourcis de montre ; les règles d'approbation habituelles s'appliquent.",
@@ -2274,6 +2296,30 @@
     },
     "teamwork_not_team_chore": {
       "message": "La tâche « {name} » n’est pas une tâche d’équipe"
+    },
+    "chore_steps_not_list": {
+      "message": "Les étapes doivent être une liste."
+    },
+    "chore_steps_too_many": {
+      "message": "Une tâche peut avoir au maximum {max} étapes."
+    },
+    "chore_steps_timed": {
+      "message": "Une tâche chronométrée ne peut pas avoir d'étapes."
+    },
+    "chore_steps_set_times": {
+      "message": "Une tâche avec des heures fixes ne peut pas avoir d'étapes."
+    },
+    "chore_steps_need_name": {
+      "message": "Chaque étape doit avoir un nom."
+    },
+    "chore_steps_none": {
+      "message": "La tâche « {name} » n'a pas d'étapes."
+    },
+    "chore_step_not_found": {
+      "message": "Étape {step_id} introuvable dans la tâche « {name} »."
+    },
+    "chore_steps_incomplete": {
+      "message": "Termine d'abord toutes les étapes de « {name} »."
     },
     "swap_only_rotation": {
       "message": "Seules les tâches en rotation peuvent être échangées"
