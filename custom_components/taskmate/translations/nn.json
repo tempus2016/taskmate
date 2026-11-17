@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "«{name}» nådde alt sine {target} den veka."
     },
+    "backdate_min_days_between": {
+      "message": "«{name}» treng {days} dagar mellom kvar gong, og han vart òg gjord {weekday}."
+    },
     "backdate_not_due": {
       "message": "«{name}» skulle ikkje gjerast {weekday, select, Monday {på måndag} Tuesday {på tysdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på laurdag} Sunday {på sundag} other {på {weekday}}}."
     },

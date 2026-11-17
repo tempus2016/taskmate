@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "«{name}» уже досягло тижневої цілі ({target}) того тижня."
     },
+    "backdate_min_days_between": {
+      "message": "«{name}» потребує перерви в {days} дн., а завдання вже виконано в {weekday}."
+    },
     "backdate_not_due": {
       "message": "«{name}» не було заплановано на {weekday}."
     },

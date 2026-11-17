@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "Haftalık hedef (0 = kapalı)",
   "panel.chore_weekly_target_bonus_label": "Haftalık hedef bonusu",
   "panel.chore_weekly_target_bonus_hint": "Haftalık hedefe ulaşıldığında her tamamlamanın puanına ek olarak ödenen ekstra puan. Haftada bir kez, son tamamlama onaylandığında ödenir. 0 = bonus yok.",
+  "panel.chore_min_days_between_label": "Tamamlamalar arası en az gün",
+  "panel.chore_min_days_between_hint": "0 = kapalı. Çocuk yaptıktan sonra görev bu kadar gün dinlenir — 2, asla arka arkaya iki gün demektir.",
   "panel.chore_team_section": "Takım çalışması (isteğe bağlı)",
   "panel.chore_team_hint": "Takım görevi ancak bu kadar farklı çocuk katıldığında sayılır. Her çocuğun Bitti dokunuşu katılım sayılır ve takım dolunca hepsi için gönderilir. Katılımlar her gün sıfırlanır. \"Herkes\" ataması gerekir ve açık uçlu olamaz.",
   "panel.chore_team_size_label": "Takım büyüklüğü (0 = kapalı)",

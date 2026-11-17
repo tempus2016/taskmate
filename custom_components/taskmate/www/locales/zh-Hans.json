@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "每周目标（0 = 关闭）",
   "panel.chore_weekly_target_bonus_label": "每周目标奖励",
   "panel.chore_weekly_target_bonus_hint": "达到每周目标后额外发放的积分，在每次完成的积分之外。每周发放一次，在最后一次完成被批准时发放。0 = 无奖励。",
+  "panel.chore_min_days_between_label": "两次完成之间的最少天数",
+  "panel.chore_min_days_between_hint": "0 = 关闭。孩子完成后，该家务会休息这么多天——2 表示不能连续两天做。",
   "panel.chore_team_section": "团队合作（可选）",
   "panel.chore_team_hint": "团队家务需要达到这么多不同的孩子加入才算数。每个孩子点“完成”即加入，团队满员后为所有人一起提交。加入情况每天重置。需要“所有人”分配方式，且不能是开放式家务。",
   "panel.chore_team_size_label": "团队人数（0 = 关闭）",

@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "Cel tygodniowy (0 = wył.)",
   "panel.chore_weekly_target_bonus_label": "Premia za cel tygodniowy",
   "panel.chore_weekly_target_bonus_hint": "Dodatkowe punkty po osiągnięciu celu tygodniowego, oprócz punktów za każde wykonanie. Przyznawana raz w tygodniu, gdy ostatnie wykonanie zostanie zatwierdzone. 0 = brak premii.",
+  "panel.chore_min_days_between_label": "Minimalna liczba dni między wykonaniami",
+  "panel.chore_min_days_between_hint": "0 = wyłączone. Po wykonaniu zadanie odpoczywa dla dziecka przez tyle dni — 2 oznacza nigdy dwa dni z rzędu.",
   "panel.chore_team_section": "Praca zespołowa (opcjonalnie)",
   "panel.chore_team_hint": "Obowiązek zespołowy liczy się dopiero, gdy dołączy do niego tyle różnych dzieci. Każde dotknięcie „Zrobione” to dołączenie, a gdy zespół jest pełny, obowiązek zostaje zgłoszony za wszystkich. Dołączenia resetują się codziennie. Wymaga przydziału „Wszyscy” i nie może być obowiązkiem otwartym.",
   "panel.chore_team_size_label": "Wielkość zespołu (0 = wył.)",

@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "「{name}」はその週すでに目標の{target}に達しています。"
     },
+    "backdate_min_days_between": {
+      "message": "「{name}」は次まで{days}日あける必要があり、{weekday}にも行われています。"
+    },
     "backdate_not_due": {
       "message": "「{name}」は{weekday}の予定ではありませんでした。"
     },

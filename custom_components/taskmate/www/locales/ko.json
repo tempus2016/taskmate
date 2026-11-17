@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "주간 목표 (0 = 끔)",
   "panel.chore_weekly_target_bonus_label": "주간 목표 보너스",
   "panel.chore_weekly_target_bonus_hint": "주간 목표를 채우면 완료 포인트와 별도로 주는 추가 포인트예요. 마지막 완료가 승인될 때 일주일에 한 번 지급돼요. 0 = 보너스 없음.",
+  "panel.chore_min_days_between_label": "완료 간 최소 일수",
+  "panel.chore_min_days_between_hint": "0 = 끔. 아이가 완료하면 그 일수만큼 쉬게 됩니다. 2는 이틀 연속으로 할 수 없다는 뜻입니다.",
   "panel.chore_team_section": "팀워크 (선택)",
   "panel.chore_team_hint": "팀 집안일은 서로 다른 아이가 이 인원만큼 참여해야 인정돼요. 아이가 완료를 탭하면 참여하고, 팀이 다 차면 모두의 것으로 제출돼요. 참여는 매일 초기화돼요. \"모두\" 배정이 필요하고 자유 설명형일 수 없어요.",
   "panel.chore_team_size_label": "팀 인원 (0 = 끔)",

@@ -1078,6 +1078,18 @@ class ChoresMixin:
             )
             return None
 
+        # Minimum days between completions (#1267). Parents are held to it too,
+        # like the weekly target: the rest between goes is the point of the chore.
+        rest_until = self.min_gap_rest_until(chore, child_id, today)
+        if rest_until is not None:
+            _LOGGER.debug(
+                "complete_chore no-op: '%s' is resting for %s until %s",
+                chore.name,
+                child.name,
+                rest_until.isoformat(),
+            )
+            return None
+
         # Multipart chores (#1253): a child's completion only counts once every
         # step is ticked. Enforced here rather than only in the card, so the
         # button entity, an NFC tag or Dev Tools can't skip the checklist.
@@ -1524,6 +1536,14 @@ class ChoresMixin:
 
         if not quota:
             return None
+        clash = self.min_gap_conflict(chore, child_id, day)
+        if clash is not None:
+            return TaskMateError(
+                "backdate_min_days_between",
+                name=chore.name,
+                days=self.min_days_between(chore),
+                weekday=clash.strftime("%A"),
+            )
         redo_ids = self.inspection_redo_completion_ids()
         done_that_day = sum(
             1
@@ -2469,6 +2489,11 @@ class ChoresMixin:
         if not self._is_visibility_entity_active(visibility_entity, visibility_state, visibility_operator):
             return False
 
+        # Minimum days between completions (#1267): resting after this child's
+        # last go, so "twice a week" can't be done on two days in a row.
+        if self.min_gap_rest_until(chore, child_id) is not None:
+            return False
+
         # Weather gate (#673): an outdoor chore stays hidden while the chosen
         # weather entity reports unsuitable conditions. Because this sits in the
         # availability path, a rained-off chore also stops counting as a
@@ -2623,16 +2648,87 @@ class ChoresMixin:
         if getattr(chore, "schedule_mode", "specific_days") != "recurring" or not getattr(chore, "enabled", True):
             return None
         today = today or dt_util.as_local(dt_util.now()).date()
-        if self._recurrence_open_on(chore, child_id, today, self.occurrence_override(chore, today)):
+        if self._recurrence_open_on(
+            chore, child_id, today, self.occurrence_override(chore, today)
+        ) and not self.min_gap_rest_until(chore, child_id, today):
             return None
         for step in range(1, 367):
             day = today + timedelta(days=step)
             override = self.occurrence_override(chore, day)
             if override is False:
                 continue
-            if self._recurrence_open_on(chore, child_id, day, override):
+            if self._recurrence_open_on(chore, child_id, day, override) and not self.min_gap_rest_until(
+                chore, child_id, day
+            ):
                 return day
         return None
+
+    def chore_next_open(self, chore, child_id: str, today: date | None = None) -> date | None:
+        """The next day a chore that is shut today opens again for this child.
+
+        A recurring chore asks its recurrence window (which also honours the
+        minimum gap); any other chore only has the gap (#1267) to wait out.
+        """
+        if getattr(chore, "schedule_mode", "specific_days") == "recurring":
+            return self.recurrence_next_open(chore, child_id, today)
+        return self.min_gap_rest_until(chore, child_id, today)
+
+    @staticmethod
+    def min_days_between(chore) -> int:
+        """The chore's minimum gap in days, or 0 when off (0 and 1 both mean off)."""
+        try:
+            gap = int(getattr(chore, "min_days_between", 0) or 0)
+        except (TypeError, ValueError):
+            return 0
+        return gap if gap > 1 else 0
+
+    def _completion_days(self, chore, child_id: str) -> set[date]:
+        """Local days with a completion of ``chore`` that counts for ``child_id``.
+
+        Pending completions count, as for the weekly target, so a slow approval
+        doesn't open the chore early. Bonus sub-tasks don't.
+        """
+        days: set[date] = set()
+        for comp in self._cached_completions_for_chore(chore.id):
+            if getattr(comp, "bonus_subtask_id", ""):
+                continue
+            if not self._counts_toward_child_quota(chore, comp.child_id, child_id, getattr(comp, "for_child_id", "")):
+                continue
+            try:
+                days.add(dt_util.as_local(comp.completed_at).date())
+            except (AttributeError, TypeError, ValueError):
+                continue
+        return days
+
+    def min_gap_rest_until(self, chore, child_id: str, day: date | None = None) -> date | None:
+        """The day the chore opens again when ``day`` falls inside its rest (#1267).
+
+        After a completion on day D the chore rests until D + min_days_between,
+        midnight-rounded. Only completions before ``day`` count: a second go on
+        the same day is the daily limit's business. None when the chore has no
+        gap or ``day`` (default today) isn't inside one.
+        """
+        gap = self.min_days_between(chore)
+        if not gap:
+            return None
+        day = day or dt_util.as_local(dt_util.now()).date()
+        before = [d for d in self._completion_days(chore, child_id) if d < day]
+        if not before:
+            return None
+        opens = max(before) + timedelta(days=gap)
+        return opens if opens > day else None
+
+    def min_gap_conflict(self, chore, child_id: str, day: date) -> date | None:
+        """A completion within the minimum gap of ``day``, either side (#1267).
+
+        For logging a job on a past day: it must keep its distance from the
+        goes after it as well as the ones before.
+        """
+        gap = self.min_days_between(chore)
+        if not gap:
+            return None
+        near = sorted(d for d in self._completion_days(chore, child_id) if d != day and abs((d - day).days) < gap)
+        return near[0] if near else None
 
     def weekly_completion_count(self, chore_id: str, child_id: str, on: date | None = None) -> int:
         """How many times ``child_id`` has completed ``chore_id`` this week.

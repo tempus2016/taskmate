@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "‘{name}’ had die week zijn {target} al gehaald."
     },
+    "backdate_min_days_between": {
+      "message": "“{name}” heeft {days} dagen tussen twee keer nodig, en is ook op {weekday} gedaan."
+    },
     "backdate_not_due": {
       "message": "‘{name}’ stond {weekday, select, Monday {op maandag} Tuesday {op dinsdag} Wednesday {op woensdag} Thursday {op donderdag} Friday {op vrijdag} Saturday {op zaterdag} Sunday {op zondag} other {op {weekday}}} niet gepland."
     },

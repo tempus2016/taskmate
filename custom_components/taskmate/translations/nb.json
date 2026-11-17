@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "«{name}» nådde allerede sine {target} den uken."
     },
+    "backdate_min_days_between": {
+      "message": "«{name}» trenger {days} dager mellom hver gang, og den ble også gjort {weekday}."
+    },
     "backdate_not_due": {
       "message": "«{name}» skulle ikke gjøres {weekday, select, Monday {på mandag} Tuesday {på tirsdag} Wednesday {på onsdag} Thursday {på torsdag} Friday {på fredag} Saturday {på lørdag} Sunday {på søndag} other {på {weekday}}}."
     },

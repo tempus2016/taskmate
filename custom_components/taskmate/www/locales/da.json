@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "Ugemål (0 = fra)",
   "panel.chore_weekly_target_bonus_label": "Bonus for ugens mål",
   "panel.chore_weekly_target_bonus_hint": "Ekstra point, når ugens mål er nået, oven i pointene for hver udførelse. Udbetales én gang om ugen, når den sidste udførelse er godkendt. 0 = ingen bonus.",
+  "panel.chore_min_days_between_label": "Mindst antal dage mellem udførelser",
+  "panel.chore_min_days_between_hint": "0 = slået fra. Når et barn har lavet den, hviler opgaven for dem så mange dage – 2 betyder aldrig to dage i træk.",
   "panel.chore_team_section": "Holdarbejde (valgfrit)",
   "panel.chore_team_hint": "En holdpligt tæller først, når så mange forskellige børn er med. Hvert barns tryk på Færdig melder dem til, og når holdet er fuldt, indsendes pligten for dem alle. Tilmeldinger nulstilles hver dag. Kræver tildelingen \"Alle\" og kan ikke være en åben opgave.",
   "panel.chore_team_size_label": "Holdstørrelse (0 = fra)",

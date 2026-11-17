@@ -485,6 +485,10 @@ def _build_chores_list(coordinator: TaskMateCoordinator, common: dict) -> list[d
             weekly_target_bonus = int(getattr(c, "weekly_target_bonus", 0) or 0)
             if weekly_target_bonus:
                 record["weekly_target_bonus"] = weekly_target_bonus
+        # Minimum days between completions (#1267): only when it is on (2+).
+        min_days_between = int(getattr(c, "min_days_between", 0) or 0)
+        if min_days_between > 1:
+            record["min_days_between"] = min_days_between
         claim_allowance_minutes = getattr(c, "claim_allowance_minutes", 0) or 0
         if claim_allowance_minutes:
             record["claim_allowance_minutes"] = claim_allowance_minutes
@@ -692,7 +696,7 @@ def _build_chore_availability(coordinator: TaskMateCoordinator, common: dict) ->
 
 
 def _build_chore_next_open(coordinator: TaskMateCoordinator, common: dict, availability: dict) -> dict:
-    """When each recurring chore in its cooldown opens again (#771).
+    """When each recurring or resting chore opens again (#771, #1267).
 
     ``{chore_id: {child_id: "YYYY-MM-DD"}}``, only for a recurring chore that
     is unavailable to that child today and opens within a year, so the card can
@@ -702,7 +706,8 @@ def _build_chore_next_open(coordinator: TaskMateCoordinator, common: dict, avail
     out: dict[str, dict[str, str]] = {}
     with coordinator.availability_build_scope():
         for c in common["chores"]:
-            if getattr(c, "schedule_mode", "specific_days") != "recurring":
+            # Recurring chores, and any chore with a minimum gap (#1267).
+            if getattr(c, "schedule_mode", "specific_days") != "recurring" and not coordinator.min_days_between(c):
                 continue
             per_child = {}
             for child in common["children"]:
@@ -712,7 +717,7 @@ def _build_chore_next_open(coordinator: TaskMateCoordinator, common: dict, avail
                 assigned = getattr(c, "assigned_to", []) or []
                 if assigned and child.id not in assigned:
                     continue
-                day = coordinator.recurrence_next_open(c, child.id)
+                day = coordinator.chore_next_open(c, child.id)
                 if day is not None:
                     per_child[child.id] = day.isoformat()
             if per_child:

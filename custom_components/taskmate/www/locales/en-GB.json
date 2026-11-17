@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "Weekly target (0 = off)",
   "panel.chore_weekly_target_bonus_label": "Weekly target bonus",
   "panel.chore_weekly_target_bonus_hint": "Extra points paid once the weekly target is reached, on top of each completion's points. Paid once a week, when the last completion is approved. 0 = no bonus.",
+  "panel.chore_min_days_between_label": "Minimum days between completions",
+  "panel.chore_min_days_between_hint": "0 = off. After a child does it, the chore rests for them until this many days later — 2 means never two days in a row.",
   "panel.chore_team_section": "Teamwork (optional)",
   "panel.chore_team_hint": "A teamwork chore only counts once this many different children have joined it. Each child's Done tap joins, and when the team is full it's submitted for all of them. Joins reset each day. Needs the \"Everyone\" assignment and can't be open-ended.",
   "panel.chore_team_size_label": "Team size (0 = off)",

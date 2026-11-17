@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "Objetivo semanal (0 = desactivado)",
   "panel.chore_weekly_target_bonus_label": "Bonificación del objetivo semanal",
   "panel.chore_weekly_target_bonus_hint": "Puntos extra que se pagan al alcanzar el objetivo semanal, además de los puntos de cada vez. Se paga una vez a la semana, cuando se aprueba la última. 0 = sin bonificación.",
+  "panel.chore_min_days_between_label": "Días mínimos entre veces",
+  "panel.chore_min_days_between_hint": "0 = desactivado. Tras hacerla, la tarea descansa para ese niño hasta tantos días después: 2 significa nunca dos días seguidos.",
   "panel.chore_team_section": "Trabajo en equipo (opcional)",
   "panel.chore_team_hint": "Una tarea de equipo solo cuenta cuando se han unido este número de niños distintos. Al tocar Hecho, cada niño se une, y cuando el equipo está completo se envía por todos. Las uniones se reinician cada día. Requiere la asignación \"Todos\" y no puede ser abierta.",
   "panel.chore_team_size_label": "Tamaño del equipo (0 = desactivado)",

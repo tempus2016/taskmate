@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "Veckomål (0 = av)",
   "panel.chore_weekly_target_bonus_label": "Bonus för veckomål",
   "panel.chore_weekly_target_bonus_hint": "Extrapoäng som betalas när veckomålet är nått, utöver poängen för varje gång. Betalas en gång i veckan, när den sista gången godkänns. 0 = ingen bonus.",
+  "panel.chore_min_days_between_label": "Minsta antal dagar mellan gångerna",
+  "panel.chore_min_days_between_hint": "0 = av. När ett barn har gjort den vilar sysslan för dem så många dagar – 2 betyder aldrig två dagar i rad.",
   "panel.chore_team_section": "Lagarbete (valfritt)",
   "panel.chore_team_hint": "En lagsyssla räknas först när så här många olika barn har gått med. Varje barns Klar-tryck är att gå med, och när laget är fullt skickas den in för alla. Anmälningarna nollställs varje dag. Kräver tilldelningen \"Alla\" och kan inte vara öppen.",
   "panel.chore_team_size_label": "Lagstorlek (0 = av)",

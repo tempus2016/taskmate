@@ -914,6 +914,8 @@
   "panel.chore_weekly_target_label": "Meta semanal (0 = desligado)",
   "panel.chore_weekly_target_bonus_label": "Bónus do objetivo semanal",
   "panel.chore_weekly_target_bonus_hint": "Pontos extra atribuídos quando o objetivo semanal é atingido, além dos pontos de cada conclusão. Atribuído uma vez por semana, quando a última conclusão é aprovada. 0 = sem bónus.",
+  "panel.chore_min_days_between_label": "Dias mínimos entre conclusões",
+  "panel.chore_min_days_between_hint": "0 = desligado. Depois de feita, a tarefa descansa para essa criança durante esses dias — 2 significa nunca dois dias seguidos.",
   "panel.chore_team_section": "Trabalho de equipa (opcional)",
   "panel.chore_team_hint": "Uma tarefa de equipa só conta quando este número de crianças diferentes se juntar. Cada toque em Concluído é uma adesão e, quando a equipa está completa, a tarefa é submetida para todas. As adesões reiniciam todos os dias. Requer a atribuição \"Todos\" e não pode ser uma tarefa aberta.",
   "panel.chore_team_size_label": "Tamanho da equipa (0 = desligado)",

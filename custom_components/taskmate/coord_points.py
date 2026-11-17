@@ -1114,6 +1114,10 @@ class PointsMixin:
                 continue
             if not self._is_chore_scheduled_for_date(chore, day):
                 continue
+            # Minimum days between completions (#1267): a chore resting after
+            # the child's last go isn't owed, and can't be done, that day.
+            if self.min_gap_rest_until(chore, child_id, day) is not None:
+                continue
             out.add(chore.id)
         return out
 

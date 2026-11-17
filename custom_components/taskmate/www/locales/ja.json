@@ -962,6 +962,8 @@
   "panel.chore_weekly_target_label": "週の目標（0 = オフ）",
   "panel.chore_weekly_target_bonus_label": "週の目標ボーナス",
   "panel.chore_weekly_target_bonus_hint": "週の目標に達したとき、各完了のポイントに加えて支払われる追加ポイント。最後の完了が承認されたときに週1回支払われます。0 = ボーナスなし。",
+  "panel.chore_min_days_between_label": "完了の間隔（最小日数）",
+  "panel.chore_min_days_between_hint": "0 = オフ。子どもが完了すると、その日数が経つまでお休みになります。2 なら 2 日連続ではできません。",
   "panel.chore_team_section": "チームワーク（任意）",
   "panel.chore_team_hint": "チームワークのお手伝いは、この人数の異なる子どもが参加して初めてカウントされます。各子どもの「できた」タップで参加し、チームがそろうと全員分がまとめて提出されます。参加は毎日リセットされます。割り当て方法は「全員」が必要で、自由記入にはできません。",
   "panel.chore_team_size_label": "チームの人数（0 = オフ）",
