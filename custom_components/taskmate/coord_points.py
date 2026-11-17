@@ -1065,7 +1065,9 @@ class PointsMixin:
         v = self.storage.get_setting(key, default)
         return v is True or str(v).lower() == "true"
 
-    def _due_chore_ids_for_child(self, child_id: str, day: date, *, include_rotation: bool) -> set[str]:
+    def _due_chore_ids_for_child(
+        self, child_id: str, day: date, *, include_rotation: bool, include_weekly_target: bool = False
+    ) -> set[str]:
         """Chore IDs *due* for ``child_id`` on ``day`` (#563).
 
         A chore is due when it is enabled, assigned to the child (empty
@@ -1073,6 +1075,10 @@ class PointsMixin:
         that date. Rotation-mode chores only count when it's the child's turn —
         and only when ``include_rotation`` is True (past days can't reconstruct
         who was active, so the perfect-week path passes False).
+
+        Weekly-target chores are never owed on one day, so they are left out —
+        unless ``include_weekly_target`` asks for the ones the child can still
+        do that day, i.e. whose quota for that day's week isn't filled (#1266).
         """
         out: set[str] = set()
         birthday_off = self.is_birthday_day_off(self.storage.get_child(child_id), day)
@@ -1098,9 +1104,11 @@ class PointsMixin:
                     continue
             # Weekly target (#883): the child picks the days, so "every chore
             # due today" can't include it — it's owed by Sunday, not by any one
-            # evening.
+            # evening. The tomorrow preview (#1266) still lists it while the
+            # week it falls in has room for another go.
             if int(getattr(chore, "weekly_target", 0) or 0) > 0:
-                continue
+                if not include_weekly_target or self.weekly_target_met(chore, child_id, on=day):
+                    continue
             # Birthday day off (#924): only mandatory chores are still owed.
             if not getattr(chore, "mandatory", False) and birthday_off:
                 continue

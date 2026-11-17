@@ -148,8 +148,11 @@ class ChoreInsightsMixin:
     # ── tomorrow preview ─────────────────────────────────────────────────
 
     def chores_due_on(self, child_id: str, day: date) -> list[str]:
-        """Chore ids due for ``child_id`` on ``day``, in the chores' own order."""
-        due = self._due_chore_ids_for_child(child_id, day, include_rotation=True)
+        """Chore ids the child can do on ``day``, in the chores' own order.
+
+        Includes weekly-target chores whose quota for that week is still open (#1266).
+        """
+        due = self._due_chore_ids_for_child(child_id, day, include_rotation=True, include_weekly_target=True)
         return [c.id for c in self.storage.get_chores() if c.id in due]
 
     def tomorrow_chore_ids(self, child_id: str) -> list[str]:
