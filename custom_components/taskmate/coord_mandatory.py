@@ -159,7 +159,17 @@ class MandatoryMixin:
             # Set times have a miss per time (async_detect_set_time_misses).
             if isinstance(getattr(chore, "times", None), list) and chore.times:
                 continue
-            if not self._is_chore_scheduled_for_date(chore, day):
+            # Weekly target (#883, #1270): owed by the end of the Monday-anchored
+            # week, so it is judged once, on the week's last day, against that
+            # week's count. No daily misses while the target is still reachable.
+            weekly = int(getattr(chore, "weekly_target", 0) or 0) > 0
+            if weekly:
+                if day.weekday() != 6:
+                    continue
+                week = [day - timedelta(days=i) for i in range(6, -1, -1)]
+                if not any(self._is_chore_scheduled_for_date(chore, d) for d in week):
+                    continue
+            elif not self._is_chore_scheduled_for_date(chore, day):
                 continue
             if self._chore_hidden_by_gate(chore):
                 continue
@@ -171,12 +181,12 @@ class MandatoryMixin:
                 # A sick day or time away owes nothing.
                 if self.is_sick_day(child_id, day) or self._child_away(child_id, day):
                     continue
-                if self._child_completed_today(chore.id, child_id, day):
-                    continue
-                # Weekly target (#883): the week's quota is already filled, so
-                # nothing is outstanding — even though the chore is still
-                # "scheduled" every day.
-                if self.weekly_target_met(chore, child_id):
+                if weekly:
+                    # The week containing ``day``, not today's: the Monday
+                    # 00:00 sweep checks Sunday after the new week has begun.
+                    if self.weekly_target_met(chore, child_id, on=day):
+                        continue
+                elif self._child_completed_today(chore.id, child_id, day):
                     continue
                 if (chore.id, child_id, day.isoformat()) in existing:
                     continue

@@ -183,19 +183,66 @@ def test_no_mandatory_miss_once_the_weekly_target_is_met():
         assert run(coord.async_detect_mandatory_misses("afternoon", NOW.date())) == 0
 
 
-def test_mandatory_miss_still_raised_below_the_weekly_target():
-    chore = Chore(
+def _weekly_chore(**kw):
+    return Chore(
         name="Cello",
         mandatory=True,
-        weekly_target=3,
-        time_category="afternoon",
+        weekly_target=2,
+        time_category="anytime",
         assigned_to=["k1"],
         id="c1",
+        **kw,
     )
-    comps = [ChoreCompletion(chore_id="c1", child_id="k1", completed_at=MONDAY)]
-    coord = _mandatory_coord([chore], [Child(name="Kid", id="k1")], comps)
+
+
+def _done(*days):
+    return [
+        ChoreCompletion(chore_id="c1", child_id="k1", completed_at=dt.datetime(2026, 4, d, 9, tzinfo=UTC)) for d in days
+    ]
+
+
+SUNDAY = dt.date(2026, 4, 26)
+NEXT_MONDAY_MIDNIGHT = dt.datetime(2026, 4, 27, 0, 0, 5, tzinfo=UTC)
+
+
+def test_no_daily_miss_while_the_weekly_target_is_still_reachable():
+    """#1270: 1 of 2 by Tuesday — the week isn't over, so Tuesday owes nothing."""
+    coord = _mandatory_coord([_weekly_chore()], [Child(name="Kid", id="k1")], _done(20))
     with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NOW):
-        assert run(coord.async_detect_mandatory_misses("afternoon", NOW.date())) == 1
+        assert run(coord.async_detect_mandatory_misses("anytime", dt.date(2026, 4, 21))) == 0
+
+
+def test_monday_sweep_judges_sunday_against_the_week_that_ended():
+    """#1270: target met Mon+Wed; at Monday 00:00 the new week has 0, Sunday is fine."""
+    coord = _mandatory_coord([_weekly_chore()], [Child(name="Kid", id="k1")], _done(20, 22))
+    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NEXT_MONDAY_MIDNIGHT):
+        assert run(coord.async_detect_mandatory_misses("anytime", SUNDAY)) == 0
+
+
+def test_one_miss_for_a_week_that_fell_short():
+    """Below target at the end of the week: one miss, dated the week's last day.
+
+    Doing it on Sunday itself doesn't excuse the week.
+    """
+    coord = _mandatory_coord([_weekly_chore()], [Child(name="Kid", id="k1")], _done(26))
+    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NEXT_MONDAY_MIDNIGHT):
+        assert run(coord.async_detect_mandatory_misses("anytime", SUNDAY)) == 1
+    assert [m.due_date for m in coord.storage._added] == ["2026-04-26"]
+
+
+def test_week_is_judged_even_when_sunday_is_not_a_due_day():
+    """Weekly target on Mon/Wed/Fri: Sunday isn't scheduled, but the week still is."""
+    coord = _mandatory_coord([_weekly_chore()], [Child(name="Kid", id="k1")], [])
+    coord._is_chore_scheduled_for_date = MagicMock(side_effect=lambda _c, d: d.weekday() in (0, 2, 4))
+    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NEXT_MONDAY_MIDNIGHT):
+        assert run(coord.async_detect_mandatory_misses("anytime", SUNDAY)) == 1
+
+
+def test_week_not_judged_when_the_chore_was_never_scheduled_that_week():
+    coord = _mandatory_coord([_weekly_chore()], [Child(name="Kid", id="k1")], [])
+    coord._is_chore_scheduled_for_date = MagicMock(return_value=False)
+    with patch("custom_components.taskmate.coord_chores.dt_util.now", return_value=NEXT_MONDAY_MIDNIGHT):
+        assert run(coord.async_detect_mandatory_misses("anytime", SUNDAY)) == 0
 
 
 # ── perfect week ─────────────────────────────────────────────────────────────

@@ -21,7 +21,7 @@ In YAML / storage this is two chore fields:
 
 If a mandatory chore isn't completed before its time-of-day period ends, TaskMate records a per-child **miss** and raises a review item for the parent. **Points are never auto-deducted** — the parent always chooses what to do.
 
-Detection runs at the end of each period. A midnight pass handles **Anytime** chores (which have no period boundary during the day), and a catch-up scan runs after Home Assistant restarts — so a restart across a period boundary won't cause a miss to be skipped.
+Detection runs at the end of each period. A midnight pass handles **Anytime** chores (which have no period boundary during the day), and a catch-up scan runs after Home Assistant restarts — so a restart across a period boundary won't cause a miss to be skipped. A chore with a [weekly target](Weekly-Targets.md) is the exception: it's checked once a week, at the end of Sunday, against that week's count.
 
 A chore that is hidden by its [visibility entity](Dynamic-Chore-Visibility.md) or weather setting is never recorded as missed while it's hidden, because it isn't on the child's list *(v7.5.0)*.
 

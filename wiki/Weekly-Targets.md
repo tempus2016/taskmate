@@ -93,7 +93,7 @@ If you **reject** a completion, its slot is freed again — the record is delete
 | Feature | Behaviour |
 |---------|-----------|
 | **Daily limit** | Today's allowance is capped by what's left in the week. A chore with a daily limit of 5 and one tick left in its quota offers one more, not five. |
-| **[Mandatory chores](Mandatory-Chores.md)** | A mandatory chore with a filled quota doesn't raise a nightly miss. It isn't owed today — it's owed by Sunday. |
+| **[Mandatory chores](Mandatory-Chores.md)** | A mandatory weekly-target chore is owed by the end of the week, not every day, so it never raises a nightly miss. The week is checked once, when Sunday's period ends (midnight into Monday for **Anytime**): if that week's count is below the target, one miss is raised, dated Sunday. A sick day or time away on Sunday skips that check. |
 | **Perfect weeks** | With *perfect week requires all chores* enabled, a weekly chore isn't counted as "due today". It has the rest of the week to be done. |
 | **[Rotation](Task-Groups.md) / first-come** | Unchanged. The target applies to whoever the chore lands on. |
 
