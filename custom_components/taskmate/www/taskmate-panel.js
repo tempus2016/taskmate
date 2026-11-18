@@ -3072,6 +3072,7 @@ class TaskMatePanel extends HTMLElement {
       time_category: "anytime", completion_sound: "coin", daily_limit: 1,
       weekly_target: 0,
       weekly_target_bonus: 0,
+      min_days_between: 0,
       difficulty: "medium",
       claim_allowance_minutes: 0,
       schedule_mode: "specific_days",
@@ -3395,6 +3396,8 @@ class TaskMatePanel extends HTMLElement {
       daily_limit: d._freq === "limit" || (d.task_type || "standard") === "timed" ? (Number(d.daily_limit) || 1) : 1,
       weekly_target: Math.max(0, Number(d.weekly_target) || 0),
       weekly_target_bonus: Math.max(0, Number(d.weekly_target_bonus) || 0),
+      // Minimum days between completions (#1267): 0 = off, 31 at most.
+      min_days_between: Math.min(31, Math.max(0, Math.floor(Number(d.min_days_between) || 0))),
       schedule_mode: d.schedule_mode || "specific_days",
       due_days: d.due_days || [],
       recurrence,
@@ -17258,6 +17261,10 @@ class TaskMatePanel extends HTMLElement {
               ${this._select(this._t("panel.chore_first_occurrence_label"), "first_occurrence_mode", d.first_occurrence_mode, FIRST_OCCURRENCE)}
             </div>
           ` : "",
+          // Minimum days between completions (#1267): a rest after each go.
+          // A one-off is only ever done once, so it has nothing to rest from.
+          showOneOff ? "" : this._field(this._t("panel.chore_min_days_between_label"), "min_days_between",
+            d.min_days_between || 0, "number", this._t("panel.chore_min_days_between_hint")),
           // The day a one-off is for (#1169): on the board that day only.
           // Today is HA's today — the backend refuses a day already gone.
           showOneOff ? this._dateField(this._t("panel.chore_one_off_date_label"), "created_date",

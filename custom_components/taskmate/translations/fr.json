@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "« {name} » a déjà atteint ses {target} cette semaine-là."
     },
+    "backdate_min_days_between": {
+      "message": "« {name} » demande {days} jours entre deux fois, et elle a aussi été faite le {weekday}."
+    },
     "backdate_not_due": {
       "message": "« {name} » n’était pas prévue {weekday, select, Monday {ce lundi-là} Tuesday {ce mardi-là} Wednesday {ce mercredi-là} Thursday {ce jeudi-là} Friday {ce vendredi-là} Saturday {ce samedi-là} Sunday {ce dimanche-là} other {ce jour-là ({weekday})}}."
     },

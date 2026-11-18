@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "“{name}”: 그 주에 이미 목표 {target}에 도달했어요."
     },
+    "backdate_min_days_between": {
+      "message": "“{name}”은(는) {days}일 간격이 필요한데 {weekday}에도 완료되었습니다."
+    },
     "backdate_not_due": {
       "message": "“{name}”: {weekday}에 예정되어 있지 않았어요."
     },

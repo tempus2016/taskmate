@@ -565,6 +565,47 @@ class TaskMateApprovalsCard extends LitElement {
       .action-button.delivered .delivered-label { font-size: 0.8rem; font-weight: 600; }
       .approval-item.mandatory {
         border-inline-start: 5px solid var(--fun-red, #e74c3c);
+        flex-wrap: wrap;
+      }
+
+      /* #1271: when and why, plus buttons that say what they do */
+      .miss-help {
+        font-size: 0.78rem;
+        color: var(--secondary-text-color, #888);
+        margin: 0 0 8px;
+      }
+
+      .approval-item.mandatory .miss-context {
+        display: block;
+        font-size: 0.82rem;
+        color: var(--primary-text-color);
+      }
+
+      .approval-item.mandatory .item-info {
+        flex: 1 1 100%;
+      }
+
+      .action-buttons.miss-actions {
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-top: 10px;
+      }
+
+      .action-button.labelled {
+        width: auto;
+        min-height: 36px;
+        height: auto;
+        border-radius: 999px;
+        padding: 0 14px;
+        gap: 6px;
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .action-button.labelled ha-icon {
+        --mdc-icon-size: 18px;
       }
 
       .approval-item.mandatory .penalty-note {
@@ -689,6 +730,9 @@ class TaskMateApprovalsCard extends LitElement {
       .ap-cp-actions { display: flex; gap: 8px; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; max-width: 100%; margin-inline-start: auto; }
       .ap-cp-title { font-weight: 600; }
       .ap-cp-sub { font-size: 12px; }
+      .ap-miss-ctx { font-size: 12px; margin-top: 2px; }
+      .ap-cn-item.miss { flex-wrap: wrap; }
+      .ap-cn-miss-actions { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
       .ap-cp-photo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden;
         background: var(--tmd-surface-2); border: 1px solid var(--tmd-border); display: grid;
         place-items: center; font-size: 14px; flex: none; }
@@ -918,6 +962,7 @@ class TaskMateApprovalsCard extends LitElement {
         childId: miss.child_id,
         points: penalty,
         penalty,
+        context: this._missContext(miss),
         sortTime: 0,
       });
     });
@@ -1089,20 +1134,10 @@ class TaskMateApprovalsCard extends LitElement {
       return html`<button class="btn good ${shape === "ghost" ? "sm" : ""}" style="${shape === "full" ? "flex:1" : ""}"
         ?disabled="${isLoading}" @click="${done}">🎁 ${this._t('approvals.owed_delivered')}</button>`;
     }
-    // mandatory miss: apply penalty (if any) / postpone / dismiss
-    if (shape === "round") {
-      return html`
-        ${it.penalty > 0 ? html`<button class="btn bad sm round" ?disabled="${isLoading}"
-          title="${this._t('approvals.apply_penalty')}"
-          @click="${() => this._handleApplyPenalty(it.id)}">!</button>` : ""}
-        <button class="btn ghost sm round" ?disabled="${isLoading}"
-          title="${this._t('approvals.postpone')}"
-          @click="${() => this._handlePostpone(it.id)}">⏲</button>
-        <button class="btn good sm round" ?disabled="${isLoading}"
-          title="${this._t('approvals.dismiss')}"
-          @click="${() => this._handleDismiss(it.id)}">✓</button>`;
-    }
-    const sm = shape === "sm" ? "sm" : "";
+    // mandatory miss: apply penalty (if any) / postpone / dismiss. Always
+    // labelled, even in the round-button layout: a tooltip never shows on a
+    // phone or tablet (#1271).
+    const sm = shape === "sm" || shape === "round" ? "sm" : "";
     return html`
       ${it.penalty > 0 ? html`<button class="btn bad ${sm}" ?disabled="${isLoading}"
         @click="${() => this._handleApplyPenalty(it.id)}">${this._t('approvals.apply_penalty')}</button>` : ""}
@@ -1210,6 +1245,12 @@ class TaskMateApprovalsCard extends LitElement {
     }
   }
 
+  // A mandatory miss's day, window and progress (#1271); nothing otherwise.
+  _apContext(it) {
+    if (!it.context || !it.context.length) return "";
+    return html`${it.context.map((line) => html`<div class="muted ap-miss-ctx">${line}</div>`)}`;
+  }
+
   _apPlayroom(it, i) {
     const tone = this._designTone(i);
     return html`
@@ -1219,6 +1260,7 @@ class TaskMateApprovalsCard extends LitElement {
           <div style="flex:1;min-width:0">
             <div class="ap-pl-title">${it.title}</div>
             <div class="muted ap-pl-sub">${it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
+          ${this._apContext(it)}
           </div>
           ${this._apPhotoDesigned(it, "ap-pl-photo")}
           <div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
@@ -1232,15 +1274,18 @@ class TaskMateApprovalsCard extends LitElement {
   _apConsole(it, i) {
     const tone = this._designTone(i);
     return html`
-      <div class="row ap-cn-item" style="--ac:${tone}">
+      <div class="row ap-cn-item ${it.kind === "miss" ? "miss" : ""}" style="--ac:${tone}">
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
           <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${__tmNum(this.hass, it.points)} ${this._t('common.xp')}`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
+          ${this._apContext(it)}
           ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
         ${this._apPhotoDesigned(it, "ap-cn-photo")}
-        ${this._designActions(it, "round")}
+        ${it.kind === "miss"
+          ? html`<div class="ap-cn-miss-actions">${this._designActions(it, "round")}</div>`
+          : this._designActions(it, "round")}
       </div>`;
   }
 
@@ -1255,6 +1300,7 @@ class TaskMateApprovalsCard extends LitElement {
         <div class="ap-cp-mid">
           <div class="ap-cp-title">${it.title}</div>
           <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
+          ${this._apContext(it)}
         </div>
         ${this._apPhotoDesigned(it, "ap-cp-photo")}
         <span class="chip soft ap-gold-soft">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)}</span>
@@ -1435,6 +1481,59 @@ class TaskMateApprovalsCard extends LitElement {
     return misses.filter((m) => m.child_id === this.config.child_id);
   }
 
+  // What a parent needs to judge a miss (#1271): the day and window it was
+  // missed in, and how far the child got with a choice set or weekly target.
+  _missContext(miss) {
+    const lines = [];
+    const day = this._missDay(miss.due_date);
+    if (day) {
+      const date = this._missDate(day, { weekday: 'short', day: 'numeric', month: 'short' });
+      const period = this._missPeriod(miss);
+      lines.push(period
+        ? this._t('approvals.missed_on_period', { date, period })
+        : this._t('approvals.missed_on', { date }));
+    }
+    if (miss.set_id && miss.set_min != null) {
+      lines.push(this._t('approvals.choice_set_missed', { done: __tmNum(this.hass, miss.set_done || 0), min: __tmNum(this.hass, miss.set_min) }));
+    }
+    if (miss.weekly_target > 0 && day) {
+      // Monday-anchored, like the weekly target itself.
+      const start = new Date(day);
+      start.setDate(day.getDate() - ((day.getDay() + 6) % 7));
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const opts = { day: 'numeric', month: 'short' };
+      lines.push(this._t('approvals.weekly_target_missed', {
+        done: __tmNum(this.hass, miss.weekly_done || 0),
+        target: __tmNum(this.hass, miss.weekly_target),
+        week: `${this._missDate(start, opts)}–${this._missDate(end, opts)}`,
+      }));
+    }
+    return lines;
+  }
+
+  // due_date is a plain ISO day; parse it as a local date so it never shifts
+  // to the day before west of UTC.
+  _missDay(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+  }
+
+  _missDate(day, opts) {
+    return day.toLocaleDateString(...__tmDateArgs(this.hass, opts, 'date'));
+  }
+
+  // A set time is already named in the chore title; a renamed period comes
+  // from the server; the built-in ones are translated here.
+  _missPeriod(miss) {
+    if (miss.set_id || miss.time_id || miss.period_id === 'set_time') return '';
+    if (miss.period_name) return miss.period_name;
+    if (['anytime', 'morning', 'afternoon', 'evening', 'night'].includes(miss.period_id)) {
+      return this._t(`common.${miss.period_id}`);
+    }
+    return '';
+  }
+
   _renderMandatoryMisses(misses) {
     return html`
       <div class="day-group">
@@ -1442,6 +1541,7 @@ class TaskMateApprovalsCard extends LitElement {
           <ha-icon icon="mdi:alert-octagon-outline" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-inline-end: 6px;"></ha-icon>
           ${this._t('approvals.mandatory_section')}
         </div>
+        <div class="miss-help">${this._t('approvals.miss_help')}</div>
         ${misses.map((miss) => this._renderMissItem(miss))}
       </div>
     `;
@@ -1467,37 +1567,37 @@ class TaskMateApprovalsCard extends LitElement {
               ${childName}
             </span>
           </div>
-          ${miss.set_id && miss.set_min != null ? html`<span class="penalty-note none">${this._t('approvals.choice_set_missed', { done: __tmNum(this.hass, miss.set_done || 0), min: __tmNum(this.hass, miss.set_min) })}</span>` : ''}
+          ${this._missContext(miss).map((line) => html`<span class="miss-context">${line}</span>`)}
           ${penalty > 0
             ? html`<span class="penalty-note">${this._t('approvals.penalty_points', { points: __tmNum(this.hass, penalty), pointsName: this._pointsName() })}</span>`
             : html`<span class="penalty-note none">${this._t('approvals.no_penalty')}</span>`}
         </div>
-        <div class="action-buttons right">
+        <div class="action-buttons miss-actions">
           ${penalty > 0 ? html`
             <button
-              class="action-button penalty ${isLoading ? 'loading' : ''}"
+              class="action-button labelled penalty ${isLoading ? 'loading' : ''}"
               @click="${() => this._handleApplyPenalty(missId)}"
-              title="${this._t('approvals.apply_penalty')}"
               ?disabled="${isLoading}"
             >
               <ha-icon icon="mdi:alert-circle"></ha-icon>
+              <span>${this._t('approvals.apply_penalty')}</span>
             </button>
           ` : ''}
           <button
-            class="action-button postpone ${isLoading ? 'loading' : ''}"
+            class="action-button labelled postpone ${isLoading ? 'loading' : ''}"
             @click="${() => this._handlePostpone(missId)}"
-            title="${this._t('approvals.postpone')}"
             ?disabled="${isLoading}"
           >
             <ha-icon icon="mdi:clock-plus-outline"></ha-icon>
+            <span>${this._t('approvals.postpone')}</span>
           </button>
           <button
-            class="action-button dismiss ${isLoading ? 'loading' : ''}"
+            class="action-button labelled dismiss ${isLoading ? 'loading' : ''}"
             @click="${() => this._handleDismiss(missId)}"
-            title="${this._t('approvals.dismiss')}"
             ?disabled="${isLoading}"
           >
             <ha-icon icon="mdi:check"></ha-icon>
+            <span>${this._t('approvals.dismiss')}</span>
           </button>
         </div>
       </div>

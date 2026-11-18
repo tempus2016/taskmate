@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "“{name}” o hafta için hedefine ({target}) zaten ulaştı."
     },
+    "backdate_min_days_between": {
+      "message": "“{name}” iki yapılış arasında {days} gün ister ve {weekday} günü de yapılmış."
+    },
     "backdate_not_due": {
       "message": "“{name}” şu gün yapılacak değildi: {weekday}."
     },

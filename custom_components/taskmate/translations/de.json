@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "„{name}“ hat in dieser Woche schon seine {target} erreicht."
     },
+    "backdate_min_days_between": {
+      "message": "„{name}“ braucht {days} Tage Abstand, und es wurde auch am {weekday} erledigt."
+    },
     "backdate_not_due": {
       "message": "„{name}“ war {weekday, select, Monday {am Montag} Tuesday {am Dienstag} Wednesday {am Mittwoch} Thursday {am Donnerstag} Friday {am Freitag} Saturday {am Samstag} Sunday {am Sonntag} other {am {weekday}}} nicht fällig."
     },

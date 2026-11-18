@@ -159,7 +159,17 @@ class MandatoryMixin:
             # Set times have a miss per time (async_detect_set_time_misses).
             if isinstance(getattr(chore, "times", None), list) and chore.times:
                 continue
-            if not self._is_chore_scheduled_for_date(chore, day):
+            # Weekly target (#883, #1270): owed by the end of the Monday-anchored
+            # week, so it is judged once, on the week's last day, against that
+            # week's count. No daily misses while the target is still reachable.
+            weekly = int(getattr(chore, "weekly_target", 0) or 0) > 0
+            if weekly:
+                if day.weekday() != 6:
+                    continue
+                week = [day - timedelta(days=i) for i in range(6, -1, -1)]
+                if not any(self._is_chore_scheduled_for_date(chore, d) for d in week):
+                    continue
+            elif not self._is_chore_scheduled_for_date(chore, day):
                 continue
             if self._chore_hidden_by_gate(chore):
                 continue
@@ -171,12 +181,12 @@ class MandatoryMixin:
                 # A sick day or time away owes nothing.
                 if self.is_sick_day(child_id, day) or self._child_away(child_id, day):
                     continue
-                if self._child_completed_today(chore.id, child_id, day):
-                    continue
-                # Weekly target (#883): the week's quota is already filled, so
-                # nothing is outstanding — even though the chore is still
-                # "scheduled" every day.
-                if self.weekly_target_met(chore, child_id):
+                if weekly:
+                    # The week containing ``day``, not today's: the Monday
+                    # 00:00 sweep checks Sunday after the new week has begun.
+                    if self.weekly_target_met(chore, child_id, on=day):
+                        continue
+                elif self._child_completed_today(chore.id, child_id, day):
                     continue
                 if (chore.id, child_id, day.isoformat()) in existing:
                     continue
@@ -516,6 +526,8 @@ class MandatoryMixin:
         children = {c.id: c for c in self.storage.get_children()}
         out = []
         sets = {c.id: c for c in self.storage.get_choice_sets()}
+        # A renamed time period; the built-in ones are translated by the card.
+        period_labels = {p["id"]: p["label"] for p in self.get_time_periods() if p.get("label")}
         for m in self.storage.get_mandatory_misses():
             d = m.to_dict()
             if getattr(m, "set_id", ""):
@@ -536,5 +548,19 @@ class MandatoryMixin:
             chore = chores.get(m.chore_id)
             d["chore_name"] = set_time_label(chore, getattr(m, "time_id", "")) if chore else ""
             d["child_name"] = getattr(children.get(m.child_id), "name", "")
+            # Context a parent needs to judge the miss (#1271). Only added when
+            # it applies: the sensor attributes are size-capped.
+            label = period_labels.get(m.period_id, "")
+            if label:
+                d["period_name"] = label
+            target = int(getattr(chore, "weekly_target", 0) or 0) if chore else 0
+            if target > 0:
+                try:
+                    day = date.fromisoformat(m.due_date)
+                except ValueError:
+                    day = None
+                if day is not None:
+                    d["weekly_target"] = target
+                    d["weekly_done"] = self.weekly_completion_count(chore.id, m.child_id, day)
             out.append(d)
         return out

@@ -180,6 +180,58 @@ class TestTomorrow:
             assert coord.tomorrow_chore_ids(kid.id) == [once.id]
 
 
+class TestTomorrowWeeklyTarget:
+    """#1266: a weekly-target chore is in the preview while its quota is open."""
+
+    def _weekly(self, coord, mod, target=2, **kw):
+        chore = _chore(coord, mod, "Hoover table", **kw)
+        chore.weekly_target = target
+        coord.storage.update_chore(chore)
+        return chore
+
+    def _tomorrow(self, coord, mod, kid, today_offset=0):
+        with patch.object(mod.dt_util, "now", return_value=_day(today_offset, 12)):
+            return coord.tomorrow_chore_ids(kid.id)
+
+    def test_listed_when_not_started(self):
+        coord, _storage, mod, kid, _ = _system()
+        chore = self._weekly(coord, mod)
+        assert chore.id in self._tomorrow(coord, mod, kid)
+
+    def test_listed_when_part_done(self):
+        coord, storage, mod, kid, _ = _system()
+        chore = self._weekly(coord, mod)
+        _done(storage, chore, kid, -1)
+        assert chore.id in self._tomorrow(coord, mod, kid)
+
+    def test_hidden_once_the_week_is_met(self):
+        coord, storage, mod, kid, _ = _system()
+        chore = self._weekly(coord, mod)
+        _done(storage, chore, kid, -2, 0, approved=False)
+        assert chore.id not in self._tomorrow(coord, mod, kid)
+
+    def test_back_when_tomorrow_starts_a_new_week(self):
+        coord, storage, mod, kid, _ = _system()
+        chore = self._weekly(coord, mod)
+        _done(storage, chore, kid, -2, -1)  # Mon + Tue: met for this week
+        assert chore.id not in self._tomorrow(coord, mod, kid, today_offset=3)  # Saturday
+        assert chore.id in self._tomorrow(coord, mod, kid, today_offset=4)  # Sunday -> Monday
+
+    def test_respects_its_days_and_assignment(self):
+        coord, _storage, mod, kid, sib = _system()
+        friday = self._weekly(coord, mod, due_days=["friday", "saturday"])
+        theirs = self._weekly(coord, mod, assigned_to=[sib.id])
+        ids = self._tomorrow(coord, mod, kid)
+        assert friday.id not in ids and theirs.id not in ids
+        assert friday.id in self._tomorrow(coord, mod, kid, today_offset=1)
+
+    def test_still_not_owed_on_any_one_day(self):
+        coord, _storage, mod, kid, _ = _system()
+        chore = self._weekly(coord, mod)
+        due = coord._due_chore_ids_for_child(kid.id, _day(1).date(), include_rotation=True)
+        assert chore.id not in due
+
+
 class TestSensor:
     def _summary(self, coord, mod):
         with patch.object(mod.dt_util, "now", return_value=WED):

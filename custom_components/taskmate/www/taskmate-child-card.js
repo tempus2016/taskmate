@@ -4947,7 +4947,11 @@ class TaskMateChildCard extends LitElement {
           && (String(comp.child_id) === childId || this._parentDidItFor(comp, childId))
           && !comp.bonus_subtask_id
       );
-      chore._isRecurrenceLocked = chore._isRecurring && !availableNow && !completedToday;
+      // A chore resting after this child's last go (#1267, minimum days
+      // between completions) is locked the same way, whatever its schedule:
+      // the backend only lists it in chore_next_open while it is resting.
+      const resting = Number(chore.min_days_between) > 1 && !!(nextOpen[chore.id] || {})[childId];
+      chore._isRecurrenceLocked = (chore._isRecurring || resting) && !availableNow && !completedToday;
       // When the cooldown ends, from the backend's own window maths (#771).
       chore._recurrenceNextOpen = chore._isRecurrenceLocked ? ((nextOpen[chore.id] || {})[childId] || "") : "";
       if (chore._isRecurrenceLocked && recurrenceDoneMode === 'hide') return false;
@@ -7883,6 +7887,11 @@ class TaskMateChildCard extends LitElement {
    * (#771). The sensor omits `recurrence` when it is the default weekly.
    */
   _recurrenceLabel(chore) {
+    // A chore on set days resting between goes (#1267) has no cadence to
+    // name, only the day it is back.
+    if (chore._isRecurring === false && chore._recurrenceNextOpen) {
+      return this._t("child.recurrence_next", { day: this._dayLabel(chore._recurrenceNextOpen) });
+    }
     const rec = chore.recurrence || "weekly";
     const n = /^every_(\d+)_days$/.exec(rec);
     const fixed = { weekly: "weekly", every_2_weeks: "every_2_weeks", monthly: "monthly",

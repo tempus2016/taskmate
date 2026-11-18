@@ -658,6 +658,10 @@ class Chore:
     # Extra points paid once a week when the weekly target is reached (#1044),
     # on top of each completion's own points. 0 = no bonus.
     weekly_target_bonus: int = 0
+    # Minimum days between completions (#1267): after a child does the chore,
+    # it rests for them until this many days after that completion (midnight
+    # rounded), so 2 means "never two days in a row". 0 or 1 = off.
+    min_days_between: int = 0
     completion_sound: str = "coin"  # Sound to play on completion
     # Optional picture for the chore. Text-free pre-reader mode (#683) needs
     # one per chore; everything else falls back to the time-of-day icon.
@@ -827,6 +831,7 @@ class Chore:
             daily_limit=data.get("daily_limit", 1),
             weekly_target=int(data.get("weekly_target", 0) or 0),
             weekly_target_bonus=max(0, int(data.get("weekly_target_bonus", 0) or 0)),
+            min_days_between=max(0, int(data.get("min_days_between", 0) or 0)),
             completion_sound=data.get("completion_sound", "coin"),
             icon=str(data.get("icon", "") or ""),
             image_url=str(data.get("image_url", "") or ""),
@@ -913,6 +918,7 @@ class Chore:
             "daily_limit": self.daily_limit,
             "weekly_target": self.weekly_target,
             "weekly_target_bonus": self.weekly_target_bonus,
+            "min_days_between": self.min_days_between,
             "completion_sound": self.completion_sound,
             "icon": self.icon,
             "image_url": self.image_url,

@@ -82,6 +82,7 @@ from .const import (
     MAX_CHORE_TAGS,
     MAX_RECURRENCE_INTERVAL_DAYS,
     MAX_TIME_PERIODS,
+    MIN_DAYS_BETWEEN_MAX,
     MIN_RECURRENCE_INTERVAL_DAYS,
     REWARD_FULFILMENT_REMINDER_MAX_DAYS,
     ROTATION_EVERY_MAX,
@@ -891,6 +892,7 @@ _CHORE_EDITABLE_FIELDS = {
     "daily_limit",
     "weekly_target",
     "weekly_target_bonus",
+    "min_days_between",
     "completion_sound",
     "icon",
     "image_url",
@@ -1024,6 +1026,8 @@ def _chore_payload_schema(*, require_name: bool):
         # every chore, so it has to be a valid value rather than a floor of 1.
         vol.Optional("weekly_target"): vol.All(int, vol.Range(min=0)),
         vol.Optional("weekly_target_bonus"): vol.All(int, vol.Range(min=0)),
+        # Minimum days between completions (#1267): 0 = off, capped at a month.
+        vol.Optional("min_days_between"): vol.All(int, vol.Range(min=0, max=MIN_DAYS_BETWEEN_MAX)),
         vol.Optional("completion_sound"): _completion_sound,
         vol.Optional("icon"): str,
         vol.Optional("image_url"): _image_url_or_blank,

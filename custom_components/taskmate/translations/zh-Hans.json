@@ -2503,6 +2503,9 @@
     "backdate_weekly_target_met": {
       "message": "“{name}”那一周已经达到 {target} 次。"
     },
+    "backdate_min_days_between": {
+      "message": "“{name}”两次之间需要间隔 {days} 天，而它在{weekday}也完成过。"
+    },
     "backdate_not_due": {
       "message": "“{name}”在{weekday}不需要做。"
     },

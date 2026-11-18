@@ -35,6 +35,7 @@ You can add chores one at a time or in bulk (multiple chores with the same setti
 | **Daily Limit** | `1` | How many times per day this chore can be completed |
 | **Weekly Target** | `0` | How many times a *week* this must be done, on any of its days. `0` = off — see [Weekly Targets](Weekly-Targets.md) |
 | **Weekly Target Bonus** | `0` | *(v6.2.0)* Extra points paid once a week when the weekly target is reached. `0` = no bonus — see [Weekly Target Bonus](Weekly-Targets.md#weekly-target-bonus) |
+| **Minimum days between completions** | `0` | After a child does the chore, it rests for them until this many days later. `2` = never two days in a row. `0` = off — see [Minimum Days Between Completions](#minimum-days-between-completions) |
 | **Completion Sound** | `coin` | Sound played when ticked off on the child card |
 | **Claim Allowance** | `0` min | Grace period (in minutes) after the time window ends during which the chore can still be completed |
 | **Assignment Mode** | `everyone` | How the chore is distributed among assigned children — see [Assignment Modes](#assignment-modes) below |
@@ -148,6 +149,21 @@ A [weekly target](Weekly-Targets.md) caps this in turn: today's allowance is nev
 Sets a weekly quota instead of leaving the chore owed every day it is scheduled: *"three times this week, any day"*. The chore stops being offered once the count is reached and resets on Monday.
 
 It sits on top of the schedule rather than replacing it, so "3× a week but weekdays only" works — choose the days as usual and add a target. Full detail on [Weekly Targets](Weekly-Targets.md).
+
+---
+
+## Minimum Days Between Completions
+
+Keeps goes apart: after a child completes the chore, it rests for **that child** until the set number of days later, counted in whole days from midnight. `2` means at least one day off in between, so the chore can never be done two days in a row; `3` means two days off, and so on up to `31`. `0` (the default) and `1` switch it off.
+
+It pairs well with a [weekly target](Weekly-Targets.md): *"twice a week, on days the child picks, but not back-to-back"* is a weekly target of 2 with a minimum of 2 days between. It works with chores on set days and recurring chores, but not one-off chores, which are only done once.
+
+- **Child card:** a resting chore is shown dimmed with *Done for now — back Thursday* (or hidden, following the card's `recurrence_done_mode` option).
+- **Tomorrow tab:** a chore still resting tomorrow is left out of the preview.
+- **Counts pending work:** a completion waiting for approval starts the rest, so a slow approval never opens the chore early.
+- **Parents are held to it too** when completing on a child's behalf; the rest between goes is the point of the setting.
+- **Logging a past day** is refused if it would sit too close to another go, before or after it.
+- A resting day isn't "owed", so it never counts as a missed mandatory chore or breaks a perfect week.
 
 ---
 

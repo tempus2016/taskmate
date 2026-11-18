@@ -42,6 +42,9 @@ TEAM_POINTS_MODES: Final = ["each", "split"]
 # Upper bound on team_size — more than a family has children is meaningless,
 # and the joins list rides in a sensor attribute.
 TEAM_SIZE_MAX: Final = 10
+# Minimum days between completions (#1267): a month is the longest rest a
+# chore can ask for; anything longer is a recurrence, not a rest.
+MIN_DAYS_BETWEEN_MAX: Final = 31
 
 # Bounty board (#931): one-off jobs any eligible child can claim.
 # A claim locks the bounty to one child for claim_hours (never past its
