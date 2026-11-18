@@ -526,6 +526,8 @@ class MandatoryMixin:
         children = {c.id: c for c in self.storage.get_children()}
         out = []
         sets = {c.id: c for c in self.storage.get_choice_sets()}
+        # A renamed time period; the built-in ones are translated by the card.
+        period_labels = {p["id"]: p["label"] for p in self.get_time_periods() if p.get("label")}
         for m in self.storage.get_mandatory_misses():
             d = m.to_dict()
             if getattr(m, "set_id", ""):
@@ -546,5 +548,19 @@ class MandatoryMixin:
             chore = chores.get(m.chore_id)
             d["chore_name"] = set_time_label(chore, getattr(m, "time_id", "")) if chore else ""
             d["child_name"] = getattr(children.get(m.child_id), "name", "")
+            # Context a parent needs to judge the miss (#1271). Only added when
+            # it applies: the sensor attributes are size-capped.
+            label = period_labels.get(m.period_id, "")
+            if label:
+                d["period_name"] = label
+            target = int(getattr(chore, "weekly_target", 0) or 0) if chore else 0
+            if target > 0:
+                try:
+                    day = date.fromisoformat(m.due_date)
+                except ValueError:
+                    day = None
+                if day is not None:
+                    d["weekly_target"] = target
+                    d["weekly_done"] = self.weekly_completion_count(chore.id, m.child_id, day)
             out.append(d)
         return out
