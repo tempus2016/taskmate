@@ -18,8 +18,14 @@ const LANGS = readdirSync(LOCALES).filter((f) => f.endsWith(".json")).map((f) =>
 /** Evaluate the module with a fake fetch that serves the real bundle files. */
 function loadModule({ guess = "en-GB", missing = [], pathname = "/lovelace/0", version = "7.8.0", stored = null, ha = null } = {}) {
   const fetched = [];
+  const rawFetched = [];
   const events = [];
-  const fetch = async (url) => {
+  const fetch = async (rawUrl) => {
+    // The module builds absolute URLs from its own address; record both the raw
+    // URL and the path a browser would request from that origin.
+    rawFetched.push(rawUrl);
+    const parsed = new URL(rawUrl, "http://localhost");
+    const url = parsed.pathname + parsed.search;
     fetched.push(url);
     const rel = url.split("?")[0].replace(/^\/taskmate\/locales\//, "");
     const file = path.join(LOCALES, rel);
@@ -52,7 +58,7 @@ function loadModule({ guess = "en-GB", missing = [], pathname = "/lovelace/0", v
   const src = readFileSync(path.join(WWW, "taskmate-localize.js"), "utf8").replaceAll("import.meta.url", JSON.stringify(url));
   vm.runInNewContext(src, sandbox);
   const settle = () => new Promise((r) => setTimeout(r, 0)).then(() => new Promise((r) => setTimeout(r, 0)));
-  return { t: window.__taskmate_localize, load: window.__taskmate_loadTranslations, fetched, events, settle, sandbox };
+  return { t: window.__taskmate_localize, load: window.__taskmate_loadTranslations, fetched, rawFetched, events, settle, sandbox };
 }
 
 /** What the old loader returned: the first truthy value down pt-BR → pt → en-GB, else en-GB's. */
@@ -66,6 +72,13 @@ function oldResolve(lang, key) {
   const fb = source("en-GB")[key];
   return fb === undefined ? key : fb;
 }
+
+test("bundles are requested from the module's own origin, not the page's (Google Cast receiver)", async () => {
+  const m = loadModule({ guess: "en-GB" });
+  m.t({ language: "en-GB" }, "common.today");
+  await m.settle();
+  assert.deepEqual(m.rawFetched, ["http://localhost/taskmate/locales/en-GB/cards.json?v=7.8.0"]);
+});
 
 test("a dashboard fetches only the cards bundle, once, cache-busted by the integration version", async () => {
   const m = loadModule({ guess: "de" });

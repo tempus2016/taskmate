@@ -19,7 +19,17 @@
  * Language resolution: pt-BR → pt-BR; de-CH → de; an unshipped language → en-GB.
  */
 
-const _BASE = '/taskmate/locales';
+// Resolve against this module's own URL rather than the page's origin. Hosts
+// that render the cards outside the Home Assistant origin (the Google Cast
+// receiver) would otherwise request /taskmate/locales from the wrong server and
+// show raw keys such as "pet.mood_happy".
+const _BASE = (() => {
+  try {
+    return new URL('/taskmate/locales', import.meta.url).href;
+  } catch {
+    return '/taskmate/locales';
+  }
+})();
 
 // BEGIN locale-bundles — scripts/split_locales.py reads this block: keep it valid JSON.
 const _BUNDLES = {
