@@ -265,7 +265,23 @@ data:
   requester_id: ef19c56175c14bd9
 ```
 
-The requester must be a different child from today's current assignee and must be in the chore's pool. Approve/reject the request from the Admin Panel; on approval the chore's `assignment_current_child_id` is set to the requester. See [Chore Swaps](Chore-Swaps.md).
+The requester must be a different child from today's current assignee and must be in the chore's pool. A child can only request for themselves; a parent can request for any child. Approve or reject the request from the Approvals card, the Admin Panel, or the services below; on approval the chore's `assignment_current_child_id` is set to the requester. See [Chore Swaps](Chore-Swaps.md).
+
+### `taskmate.approve_swap`
+Approve a pending swap request, so the requesting child takes over today's turn. Parent only (an HA admin or a listed parent user).
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `request_id` | ✅ | ID of the pending swap request (`request_id` in the Pending approvals sensor's `swap_requests` attribute) |
+
+```yaml
+service: taskmate.approve_swap
+data:
+  request_id: 3c1e9f0a7b2d4e65
+```
+
+### `taskmate.reject_swap`
+Turn down a pending swap request. Today's turn stays where it is. Parent only. Takes the same `request_id` field as `approve_swap`.
 
 ### `taskmate.leave_team_chore` (v6.0.0)
 Take a child back out of a [teamwork chore](Teamwork-Chores.md) they joined today, before the team is complete. (Joining is just a normal `complete_chore` on a teamwork chore.)
@@ -1344,7 +1360,7 @@ Several services trigger additional actions beyond their primary purpose:
 
 The full set of `taskmate.*` services registered by the integration:
 
-`complete_chore`, `complete_bonus_subtask`, `complete_next_chore`, `approve_chore`, `approve_all_chores`, `reject_chore`, `undo_chore`, `leave_team_chore`, `apply_mandatory_penalty`, `postpone_mandatory_chore`, `dismiss_mandatory_chore`, `undo_transaction`, `undo_chore_approval`, `record_allowance_payout`, `test_notification`, `gift_points`, `adjust_streak_freezes`, `request_swap`, `choose_avatar`, `claim_reward`, `approve_reward`, `reject_reward`, `allocate_points_to_pool`, `add_points`, `remove_points`, `preview_sound`, `set_chore_order`, `add_penalty`, `update_penalty`, `remove_penalty`, `apply_penalty`, `add_bonus`, `update_bonus`, `remove_bonus`, `apply_bonus`, `add_chore`, `update_chore`, `delete_chore`, `skip_chore`, `set_chore_manual_start`, `add_task_group`, `update_task_group`, `remove_task_group`, `start_timed_task`, `pause_timed_task`, `stop_timed_task`, `add_badge`, `update_badge`, `remove_badge`, `award_badge_manually`, `revoke_badge`, `rebuild_badges`, `read_aloud`, `spin_roulette`, `post_bounty`, `update_bounty`, `remove_bounty`, `claim_bounty`, `give_back_bounty`, `complete_bounty`, `add_wish`, `withdraw_wish`, `move_points_to_wish`, `take_points_from_wish`, `request_wish_redeem`, `approve_wish`, `decline_wish`, `pledge_to_wish`, `remove_wish_pledge`, `remove_wish`, `start_inspection`, `pass_inspection`, `fail_inspection`, `cancel_inspection`, `request_help`, `answer_help`, `log_mood`, `set_sick_day`, `set_weekly_goal`, `buy_raffle_tickets`, `draw_raffle`, `adopt_pet`, `buy_pet_item`, `equip_pet_item`.
+`complete_chore`, `complete_bonus_subtask`, `complete_next_chore`, `approve_chore`, `approve_all_chores`, `reject_chore`, `undo_chore`, `leave_team_chore`, `apply_mandatory_penalty`, `postpone_mandatory_chore`, `dismiss_mandatory_chore`, `undo_transaction`, `undo_chore_approval`, `record_allowance_payout`, `test_notification`, `gift_points`, `adjust_streak_freezes`, `request_swap`, `approve_swap`, `reject_swap`, `choose_avatar`, `claim_reward`, `approve_reward`, `reject_reward`, `allocate_points_to_pool`, `add_points`, `remove_points`, `preview_sound`, `set_chore_order`, `add_penalty`, `update_penalty`, `remove_penalty`, `apply_penalty`, `add_bonus`, `update_bonus`, `remove_bonus`, `apply_bonus`, `add_chore`, `update_chore`, `delete_chore`, `skip_chore`, `set_chore_manual_start`, `add_task_group`, `update_task_group`, `remove_task_group`, `start_timed_task`, `pause_timed_task`, `stop_timed_task`, `add_badge`, `update_badge`, `remove_badge`, `award_badge_manually`, `revoke_badge`, `rebuild_badges`, `read_aloud`, `spin_roulette`, `post_bounty`, `update_bounty`, `remove_bounty`, `claim_bounty`, `give_back_bounty`, `complete_bounty`, `add_wish`, `withdraw_wish`, `move_points_to_wish`, `take_points_from_wish`, `request_wish_redeem`, `approve_wish`, `decline_wish`, `pledge_to_wish`, `remove_wish_pledge`, `remove_wish`, `start_inspection`, `pass_inspection`, `fail_inspection`, `cancel_inspection`, `request_help`, `answer_help`, `log_mood`, `set_sick_day`, `set_weekly_goal`, `buy_raffle_tickets`, `draw_raffle`, `adopt_pet`, `buy_pet_item`, `equip_pet_item`.
 
 [Chore auctions](Chore-Auctions.md) have no services: they are run from the admin panel's **Auctions** page and the auction card. Raffles are created, edited and called off from the admin panel's **Raffles** tab; only buying tickets and drawing have services.
 

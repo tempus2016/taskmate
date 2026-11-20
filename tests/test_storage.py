@@ -119,7 +119,13 @@ class TestAsyncLoad:
     @staticmethod
     def _swap_fixture(swap_requests):
         """Storage seeded with children a/b and chores c1-c4, so a request is
-        only dropped for its status — not for referencing something missing."""
+        only dropped for its status — not for referencing something missing.
+        Requests without a ``created_at`` are stamped now, so they are not
+        dropped as stale (#1275) either."""
+        from homeassistant.util import dt as dt_util
+
+        for req in swap_requests:
+            req.setdefault("created_at", dt_util.now().isoformat())
         return {
             "children": [{"id": "a", "name": "Alice"}, {"id": "b", "name": "Bob"}],
             "chores": [{"id": f"c{i}", "name": f"Chore {i}"} for i in range(1, 5)],
@@ -178,6 +184,42 @@ class TestAsyncLoad:
         storage = _make_storage(initial_data=existing)
         run(storage.async_load())
         assert [r["id"] for r in storage.get_swap_requests()] == ["keep"]
+
+    def test_swap_requests_from_an_earlier_day_are_dropped_on_load(self):
+        """A swap covers only the day it was asked for (#1275). If HA was down
+        at midnight, load must still clear yesterday's pending request, or it
+        stays approvable and would move today's turn."""
+        from datetime import timedelta
+
+        from homeassistant.util import dt as dt_util
+
+        yesterday = (dt_util.now() - timedelta(days=1)).isoformat()
+        existing = self._swap_fixture(
+            [
+                {"id": "today", "chore_id": "c1", "requester_id": "a", "status": "pending"},
+                {"id": "old", "chore_id": "c2", "requester_id": "b", "status": "pending", "created_at": yesterday},
+                {"id": "junk", "chore_id": "c3", "requester_id": "b", "status": "pending", "created_at": "nonsense"},
+            ]
+        )
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        assert [r["id"] for r in storage.get_swap_requests()] == ["today"]
+
+    def test_prune_stale_swap_requests_keeps_only_the_given_day(self):
+        existing = self._swap_fixture(
+            [
+                {"id": "mon", "chore_id": "c1", "requester_id": "a", "status": "pending"},
+            ]
+        )
+        storage = _make_storage(initial_data=existing)
+        run(storage.async_load())
+        storage._data["swap_requests"] = [
+            {"id": "mon", "created_at": "2024-03-18T18:00:00+00:00", "status": "pending"},
+            {"id": "tue", "created_at": "2024-03-19T09:00:00+00:00", "status": "pending"},
+        ]
+        assert storage.prune_stale_swap_requests("2024-03-19") == 1
+        assert [r["id"] for r in storage.get_swap_requests()] == ["tue"]
+        assert storage.prune_stale_swap_requests("2024-03-19") == 0
 
     def test_blank_from_child_id_does_not_count_as_orphaned(self):
         """`from_child_id` is "" for a chore with no cached assignee yet — that

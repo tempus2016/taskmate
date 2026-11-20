@@ -132,6 +132,43 @@ def test_approve_twice_is_rejected():
         run(coord.async_approve_swap(rid))
 
 
+def test_approving_a_request_from_an_earlier_day_is_refused():
+    """A swap covers only the day it was asked for (#1275). Approving a
+    request left pending overnight would move *today's* turn, a second swap
+    the family never asked for, so it is refused and cleared out."""
+    from datetime import timedelta
+
+    chore = Chore(name="Bins", assignment_mode="alternating", assignment_current_child_id="a", id="ch1")
+    coord = _coord(chore, [Child(name="A", id="a"), Child(name="B", id="b")])
+    run(coord.async_request_swap("ch1", "b"))
+    coord._reqs[0]["created_at"] = (dt_util.now() - timedelta(days=1)).isoformat()
+    with pytest.raises(ValueError, match="expired"):
+        run(coord.async_approve_swap(coord._reqs[0]["id"]))
+    assert coord._reqs == []
+    assert chore.assignment_current_child_id == "a"
+    assert chore.assignment_swap_child_id == ""
+    assert not any(c[0][0] == "taskmate_swap_approved" for c in coord.hass.bus.async_fire.call_args_list)
+
+
+def test_midnight_maintenance_drops_yesterdays_pending_request():
+    """The overnight run clears a request left pending, so it leaves the
+    parent's approval list at the day change rather than lingering."""
+    from datetime import timedelta
+    from unittest.mock import patch
+
+    from tests.test_rotation_quota import _now
+
+    coord, storage, _mod = _real_system()
+    now = _now()
+    _two_kids_and_chore(coord, _mod, now)
+    assert len(storage.get_swap_requests()) == 1
+
+    next_day = now + timedelta(days=1)
+    with patch.object(_mod.dt_util, "now", return_value=next_day):
+        run(coord._async_run_midnight_maintenance(next_day))
+    assert storage.get_swap_requests() == []
+
+
 # ---------------------------------------------------------------------------
 # Orphan cleanup (#785) — deleting a chore or child must take its pending swap
 # requests with it, or the parent is left with an unclearable "? wants to swap

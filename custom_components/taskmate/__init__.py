@@ -92,6 +92,7 @@ from .const import (
     SERVICE_APPROVE_ALL_CHORES,
     SERVICE_APPROVE_CHORE,
     SERVICE_APPROVE_REWARD,
+    SERVICE_APPROVE_SWAP,
     SERVICE_CHOOSE_AVATAR,
     SERVICE_CLAIM_BOUNTY,
     SERVICE_CLAIM_REWARD,
@@ -111,6 +112,7 @@ from .const import (
     SERVICE_RECORD_ALLOWANCE_PAYOUT,
     SERVICE_REJECT_CHORE,
     SERVICE_REJECT_REWARD,
+    SERVICE_REJECT_SWAP,
     SERVICE_REMOVE_BONUS,
     SERVICE_REMOVE_BOUNTY,
     SERVICE_REMOVE_PENALTY,
@@ -931,8 +933,28 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("No TaskMate coordinator available")
             return
         requester_id = call.data["requester_id"]
-        await _async_require_linked_child(hass, call, coordinator, requester_id)
+        # A parent may ask on a child's behalf (#1275), the same way they can
+        # complete a chore for one. Everyone else goes through the linked-child
+        # rule, so a child still can't request in a sibling's name.
+        if not await authz.async_context_is_parent(hass, coordinator, call.context):
+            await _async_require_linked_child(hass, call, coordinator, requester_id)
         await coordinator.async_request_swap(call.data["chore_id"], requester_id)
+
+    async def handle_approve_swap(call: ServiceCall) -> None:
+        """A parent approves a pending chore swap request (#1275)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_approve_swap(call.data["request_id"])
+
+    async def handle_reject_swap(call: ServiceCall) -> None:
+        """A parent turns down a pending chore swap request (#1275)."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            _LOGGER.error("No TaskMate coordinator available")
+            return
+        await coordinator.async_reject_swap(call.data["request_id"])
 
     async def handle_read_aloud(call: ServiceCall) -> None:
         """Speak a child's outstanding chores to a media player (#684)."""
@@ -1729,6 +1751,19 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         ),
     )
 
+    # Approving or turning down a swap is a day-to-day parent action (#1275),
+    # like approving a chore, so non-admin parents can do it from the cards.
+    for service, handler in (
+        (SERVICE_APPROVE_SWAP, handle_approve_swap),
+        (SERVICE_REJECT_SWAP, handle_reject_swap),
+    ):
+        hass.services.async_register(
+            DOMAIN,
+            service,
+            _parent(handler),
+            schema=vol.Schema({vol.Required("request_id"): cv.string}),
+        )
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_READ_ALOUD,
@@ -2185,6 +2220,8 @@ def _async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_GIFT_POINTS,
         SERVICE_RECORD_ALLOWANCE_PAYOUT,
         SERVICE_REQUEST_SWAP,
+        SERVICE_APPROVE_SWAP,
+        SERVICE_REJECT_SWAP,
         SERVICE_CHOOSE_AVATAR,
         SERVICE_CLAIM_REWARD,
         SERVICE_APPROVE_REWARD,

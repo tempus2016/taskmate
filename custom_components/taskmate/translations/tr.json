@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Görev takasını onayla",
+      "description": "Bekleyen bir takas isteğini onaylar; isteyen çocuk bugünkü sırayı devralır.",
+      "fields": {
+        "request_id": {
+          "name": "İstek kimliği",
+          "description": "Bekleyen takas isteğinin kimliği"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Görev takasını reddet",
+      "description": "Bekleyen bir takas isteğini reddeder. Bugünkü sıra olduğu yerde kalır.",
+      "fields": {
+        "request_id": {
+          "name": "İstek kimliği",
+          "description": "Bekleyen takas isteğinin kimliği"
+        }
+      }
+    },
     "test_notification": {
       "name": "Test Bildirimi",
       "description": "Verilen türde örnek bir bildirimi etkin alıcılarına gönder (yönlendirme doğrulanabilsin diye ana aç/kapa anahtarını yok sayar).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Takas isteği bulunamadı: {request_id}"
+    },
+    "swap_request_expired": {
+      "message": "Bu takas isteği önceki bir gün içindi ve süresi doldu"
     },
     "bulk_unknown_action": {
       "message": "Bilinmeyen toplu işlem: {action}"

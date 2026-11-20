@@ -2278,7 +2278,9 @@ class ChildBadgesSensor(TaskMateBaseSensor):
 class PendingApprovalsSensor(TaskMateBaseSensor):
     """Sensor for pending approvals."""
 
-    _unrecorded_attributes = frozenset({"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards"})
+    _unrecorded_attributes = frozenset(
+        {"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards", "swap_requests"}
+    )
 
     def __init__(
         self,
@@ -2296,7 +2298,39 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         """Return the number of pending approvals."""
         pending_completions = self.coordinator.data.get("pending_completions", [])
         pending_rewards = self.coordinator.data.get("pending_reward_claims", [])
-        return len(pending_completions) + len(pending_rewards)
+        return len(pending_completions) + len(pending_rewards) + len(self._swap_details())
+
+    def _swap_details(self) -> list[dict]:
+        """Pending chore swap requests, named for the approval cards (#1275).
+
+        A request whose chore or requester has gone is left out: it can't be
+        acted on, and storage drops it on the next load anyway.
+        """
+        details = []
+        for req in self.coordinator.storage.get_swap_requests():
+            if req.get("status") != "pending":
+                continue
+            chore = self.coordinator.get_chore(req.get("chore_id", ""))
+            child = self.coordinator.get_child(req.get("requester_id", ""))
+            if not chore or not child:
+                continue
+            detail = {
+                "request_id": req.get("id", ""),
+                "type": "swap",
+                "child_id": child.id,
+                "child_name": child.name,
+                "chore_id": chore.id,
+                "chore_name": chore.name,
+                "requested_at": req.get("created_at", ""),
+            }
+            # Who has the turn now. Blank for a chore with no assignee yet, so
+            # it is only sent when there is someone to name.
+            from_child = self.coordinator.get_child(req.get("from_child_id", "") or "")
+            if from_child:
+                detail["from_child_id"] = from_child.id
+                detail["from_child_name"] = from_child.name
+            details.append(detail)
+        return details
 
     @property
     def icon(self) -> str:
@@ -2409,6 +2443,11 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
             "reward_claims": reward_details,
             "mandatory_misses": mandatory_misses,
         }
+        # Chore swap requests (#1275), only while one is pending, so the
+        # approvals card can show them to every parent, not just the admin.
+        if swaps := self._swap_details():
+            attrs["pending_swap_requests"] = len(swaps)
+            attrs["swap_requests"] = swaps
         # Missed chores and sets reviewed in the admin panel (#1259): tells the
         # approvals card to leave them out. Absent while it is the card.
         if (where := self.coordinator.miss_review_location()) != "card":

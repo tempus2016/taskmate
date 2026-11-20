@@ -66,7 +66,11 @@ class HasPendingApprovalsBinarySensor(TaskMateBaseBinarySensor):
         """Return true if there are pending approvals."""
         pending_completions = self.coordinator.data.get("pending_completions", [])
         pending_rewards = self.coordinator.data.get("pending_reward_claims", [])
-        return len(pending_completions) > 0 or len(pending_rewards) > 0
+        return len(pending_completions) > 0 or len(pending_rewards) > 0 or self._pending_swaps() > 0
+
+    def _pending_swaps(self) -> int:
+        """Chore swap requests waiting for a parent (#1275)."""
+        return sum(1 for r in self.coordinator.storage.get_swap_requests() if r.get("status") == "pending")
 
     @property
     def icon(self) -> str:
@@ -81,8 +85,10 @@ class HasPendingApprovalsBinarySensor(TaskMateBaseBinarySensor):
         pending_completions = self.coordinator.data.get("pending_completions", [])
         pending_rewards = self.coordinator.data.get("pending_reward_claims", [])
 
+        pending_swaps = self._pending_swaps()
         return {
             "pending_chore_completions": len(pending_completions),
             "pending_reward_claims": len(pending_rewards),
-            "total_pending": len(pending_completions) + len(pending_rewards),
+            "pending_swap_requests": pending_swaps,
+            "total_pending": len(pending_completions) + len(pending_rewards) + pending_swaps,
         }

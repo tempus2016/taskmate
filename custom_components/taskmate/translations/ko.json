@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "집안일 교환 승인",
+      "description": "대기 중인 교환 요청을 승인하여 요청한 아이가 오늘 차례를 맡게 합니다.",
+      "fields": {
+        "request_id": {
+          "name": "요청 ID",
+          "description": "대기 중인 교환 요청의 ID"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "집안일 교환 거절",
+      "description": "대기 중인 교환 요청을 거절합니다. 오늘 차례는 그대로입니다.",
+      "fields": {
+        "request_id": {
+          "name": "요청 ID",
+          "description": "대기 중인 교환 요청의 ID"
+        }
+      }
+    },
     "test_notification": {
       "name": "테스트 알림",
       "description": "지정한 종류의 샘플 알림을 켜진 받는 사람에게 보내요 (전체 켜기/끄기를 무시해서 연결을 확인할 수 있어요).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "교대 요청 {request_id} 찾을 수 없음"
+    },
+    "swap_request_expired": {
+      "message": "이 교환 요청은 이전 날짜의 요청이라 만료되었습니다"
     },
     "bulk_unknown_action": {
       "message": "알 수 없는 일괄 작업 {action}"

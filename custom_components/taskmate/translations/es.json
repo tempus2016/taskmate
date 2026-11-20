@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Aprobar intercambio de tarea",
+      "description": "Aprueba una solicitud de intercambio pendiente, para que el niño que la pidió se quede con el turno de hoy.",
+      "fields": {
+        "request_id": {
+          "name": "ID de solicitud",
+          "description": "El ID de la solicitud de intercambio pendiente"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Rechazar intercambio de tarea",
+      "description": "Rechaza una solicitud de intercambio pendiente. El turno de hoy no cambia.",
+      "fields": {
+        "request_id": {
+          "name": "ID de solicitud",
+          "description": "El ID de la solicitud de intercambio pendiente"
+        }
+      }
+    },
     "test_notification": {
       "name": "Probar notificación",
       "description": "Envía una notificación de ejemplo del tipo indicado a sus destinatarios activados (ignora el interruptor general para poder comprobar el envío).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "No se encontró la solicitud de intercambio {request_id}"
+    },
+    "swap_request_expired": {
+      "message": "Esta solicitud de intercambio era de un día anterior y ha caducado"
     },
     "bulk_unknown_action": {
       "message": "Acción en bloque desconocida: {action}"

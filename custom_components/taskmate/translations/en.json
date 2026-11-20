@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Approve Chore Swap",
+      "description": "Approve a pending chore swap request, so the requesting child takes over today's turn.",
+      "fields": {
+        "request_id": {
+          "name": "Request ID",
+          "description": "The ID of the pending swap request"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Reject Chore Swap",
+      "description": "Turn down a pending chore swap request. Today's turn stays where it is.",
+      "fields": {
+        "request_id": {
+          "name": "Request ID",
+          "description": "The ID of the pending swap request"
+        }
+      }
+    },
     "test_notification": {
       "name": "Test Notification",
       "description": "Send a sample notification of the given type to its enabled recipients (ignores the master on/off so routing can be verified).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Swap request {request_id} not found"
+    },
+    "swap_request_expired": {
+      "message": "This swap request was for an earlier day and has expired"
     },
     "bulk_unknown_action": {
       "message": "Unknown bulk action {action}"

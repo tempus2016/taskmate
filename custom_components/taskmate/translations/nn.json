@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Godkjenn oppgåvebyte",
+      "description": "Godkjenn ein ventande byteførespurnad, så barnet som spurde tek over dagens tur.",
+      "fields": {
+        "request_id": {
+          "name": "Førespurnads-ID",
+          "description": "ID-en til den ventande byteførespurnaden"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Avvis oppgåvebyte",
+      "description": "Avvis ein ventande byteførespurnad. Dagens tur blir der han er.",
+      "fields": {
+        "request_id": {
+          "name": "Førespurnads-ID",
+          "description": "ID-en til den ventande byteførespurnaden"
+        }
+      }
+    },
     "test_notification": {
       "name": "Testvarsel",
       "description": "Send eit eksempelvarsel av den angitte typen til dei aktiverte mottakarane (ignorerer hovudbrytaren slik at rutinga kan verifiserast).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Byteførespurnaden {request_id} vart ikkje funnen"
+    },
+    "swap_request_expired": {
+      "message": "Denne byteførespurnaden galdt ein tidlegare dag og har gått ut"
     },
     "bulk_unknown_action": {
       "message": "Ukjend massehandling {action}"

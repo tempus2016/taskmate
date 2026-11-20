@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Aprovar troca de tarefa",
+      "description": "Aprova um pedido de troca pendente, para que a criança que pediu fique com a vez de hoje.",
+      "fields": {
+        "request_id": {
+          "name": "ID do pedido",
+          "description": "O ID do pedido de troca pendente"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Rejeitar troca de tarefa",
+      "description": "Rejeita um pedido de troca pendente. A vez de hoje fica como está.",
+      "fields": {
+        "request_id": {
+          "name": "ID do pedido",
+          "description": "O ID do pedido de troca pendente"
+        }
+      }
+    },
     "test_notification": {
       "name": "Notificação de teste",
       "description": "Envia uma notificação de exemplo do tipo indicado aos destinatários ativados (ignora o interruptor principal para que o encaminhamento possa ser verificado).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Pedido de troca {request_id} não encontrado"
+    },
+    "swap_request_expired": {
+      "message": "Este pedido de troca era de um dia anterior e expirou"
     },
     "bulk_unknown_action": {
       "message": "Ação em massa desconhecida {action}"

@@ -1039,6 +1039,10 @@ class TaskMateCoordinator(
         self.storage.prune_team_joins(dt_util.as_local(dt_util.now()).date().isoformat())
         # Multipart chore steps (#1253) are ticked per day, so yesterday's go.
         self.storage.prune_step_progress(dt_util.as_local(dt_util.now()).date().isoformat())
+        # A swap request covers one day's turn (#1275): left pending past
+        # midnight it would move the new day's turn if approved, so drop it.
+        if self.storage.prune_stale_swap_requests(dt_util.as_local(dt_util.now()).date().isoformat()):
+            await self.async_refresh()
         await self.storage.async_save()
 
     async def _async_sweep_orphan_photos(self) -> None:

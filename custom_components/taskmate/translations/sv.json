@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Godkänn sysslobyte",
+      "description": "Godkänn en väntande bytesförfrågan så att barnet som frågade tar över dagens tur.",
+      "fields": {
+        "request_id": {
+          "name": "Förfrågans ID",
+          "description": "ID för den väntande bytesförfrågan"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Avvisa sysslobyte",
+      "description": "Avvisa en väntande bytesförfrågan. Dagens tur stannar där den är.",
+      "fields": {
+        "request_id": {
+          "name": "Förfrågans ID",
+          "description": "ID för den väntande bytesförfrågan"
+        }
+      }
+    },
     "test_notification": {
       "name": "Testa avisering",
       "description": "Skicka en exempelavisering av angiven typ till dess aktiverade mottagare (ignorerar huvudreglaget så att routningen kan kontrolleras).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Bytesförfrågan {request_id} hittades inte"
+    },
+    "swap_request_expired": {
+      "message": "Den här bytesförfrågan gällde en tidigare dag och har gått ut"
     },
     "bulk_unknown_action": {
       "message": "Okänd massåtgärd {action}"

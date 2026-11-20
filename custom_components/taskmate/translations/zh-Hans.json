@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "批准家务交换",
+      "description": "批准待处理的交换请求，由提出请求的孩子接手今天的轮值。",
+      "fields": {
+        "request_id": {
+          "name": "请求 ID",
+          "description": "待处理交换请求的 ID"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "拒绝家务交换",
+      "description": "拒绝待处理的交换请求。今天的轮值保持不变。",
+      "fields": {
+        "request_id": {
+          "name": "请求 ID",
+          "description": "待处理交换请求的 ID"
+        }
+      }
+    },
     "test_notification": {
       "name": "测试通知",
       "description": "向已启用的接收人发送指定类型的示例通知（忽略总开关，以便验证路由）。",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "未找到交换申请 {request_id}"
+    },
+    "swap_request_expired": {
+      "message": "此交换请求属于之前的某一天，已过期"
     },
     "bulk_unknown_action": {
       "message": "未知的批量操作 {action}"
