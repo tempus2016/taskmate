@@ -70,6 +70,7 @@
       "pending_chore_completions",
       "pending_reward_claims",
       "pending_mandatory_misses",
+      "pending_swap_requests",
     ],
   };
 

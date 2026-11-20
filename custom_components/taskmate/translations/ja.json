@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "お手伝いの交代を承認",
+      "description": "保留中の交代のお願いを承認し、お願いした子どもが今日の担当を引き受けます。",
+      "fields": {
+        "request_id": {
+          "name": "リクエストID",
+          "description": "保留中の交代リクエストのID"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "お手伝いの交代を却下",
+      "description": "保留中の交代のお願いを却下します。今日の担当はそのままです。",
+      "fields": {
+        "request_id": {
+          "name": "リクエストID",
+          "description": "保留中の交代リクエストのID"
+        }
+      }
+    },
     "test_notification": {
       "name": "テスト通知",
       "description": "指定した種類のサンプル通知を、有効な受信者に送ります（送信先を確認できるよう、全体のオン/オフは無視します）。",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "交代のお願い {request_id} が見つかりません"
+    },
+    "swap_request_expired": {
+      "message": "この交換リクエストは前の日のもので、期限が切れています"
     },
     "bulk_unknown_action": {
       "message": "不明な一括操作 {action}"

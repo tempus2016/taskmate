@@ -36,7 +36,7 @@ data:
 | `chore_id` | Yes | The rotation chore to take over |
 | `requester_id` | Yes | The child who wants today's turn |
 
-The service is linked-child gated — a child user can only request on their own behalf. The request is stored with a `pending` status, recording the requester, the child who currently holds the turn (`from_child_id`), and a timestamp.
+The service is linked-child gated: a child user can only request on their own behalf. A parent (an HA admin, or a user listed under **Parent users** in TaskMate's settings) can request on any child's behalf, the same way they can complete a chore for one. The request is stored with a `pending` status, recording the requester, the child who currently holds the turn (`from_child_id`), and a timestamp.
 
 ---
 
@@ -52,7 +52,11 @@ The section is gated by the child card's **`show_swaps`** option, which is **on 
 
 ## Parent Approval
 
-Pending swap requests appear to parents in the [Admin Panel](Admin-Panel.md) (with a count badge). For each, the parent can approve or reject:
+Pending swap requests appear to parents in the [Approvals card](Approvals-Card.md), under **Chore swaps**, and in the [Admin Panel](Admin-Panel.md) (with a count badge). Each row reads "Leo wants to do “Bins” today", with who has the turn now underneath. Any parent can approve or reject one from the Approvals card, including a non-admin parent. The panel itself is admin-only. Automations and scripts can use the `taskmate.approve_swap` and `taskmate.reject_swap` services, which take the request's `request_id`.
+
+Pending swaps also count towards the Parent Dashboard card's pending badge, the **Pending approvals** sensor's state and the **Has pending approvals** binary sensor. The Pending approvals sensor lists them in its `swap_requests` attribute, only while one is pending.
+
+For each request, the parent can approve or reject:
 
 | Action | What happens |
 |--------|--------------|
@@ -84,4 +88,4 @@ A swap changes **only today's assignment** of the chore. It does not alter the u
 - [Chores](Chores.md) — chore configuration
 - [Chore Scheduling](Chores.md#assignment-modes) — rotation assignment modes that swaps act on
 - [Approvals-Card](Approvals-Card.md) — parent approval workflow
-- [Services](Services.md) — full `request_swap` reference
+- [Services](Services.md) — full `request_swap`, `approve_swap` and `reject_swap` reference

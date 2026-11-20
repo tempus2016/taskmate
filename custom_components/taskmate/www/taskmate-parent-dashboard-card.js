@@ -764,7 +764,9 @@ class TaskMateParentDashboardCard extends LitElement {
     const pendingRewardClaims = tmClaimList(attrs.pending_reward_claims);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');
-    const totalPending = pendingCompletions.length + pendingRewardClaims.length;
+    // Chore swap requests (#1275) wait on a parent too.
+    const pendingSwaps = Array.isArray(attrs.swap_requests) ? attrs.swap_requests.length : 0;
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps;
 
     const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 
@@ -906,7 +908,9 @@ class TaskMateParentDashboardCard extends LitElement {
     const pendingRewardClaims = tmClaimList(attrs.pending_reward_claims);
     const pointsIcon = attrs.points_icon || "mdi:star";
     const pointsName = attrs.points_name || this._t('common.points');
-    const totalPending = pendingCompletions.length + pendingRewardClaims.length;
+    // Chore swap requests (#1275) wait on a parent too.
+    const pendingSwaps = Array.isArray(attrs.swap_requests) ? attrs.swap_requests.length : 0;
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps;
 
     const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 

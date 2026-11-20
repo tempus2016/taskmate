@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Aufgabentausch genehmigen",
+      "description": "Genehmigt eine offene Tauschanfrage, sodass das anfragende Kind die heutige Runde übernimmt.",
+      "fields": {
+        "request_id": {
+          "name": "Anfrage-ID",
+          "description": "Die ID der offenen Tauschanfrage"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Aufgabentausch ablehnen",
+      "description": "Lehnt eine offene Tauschanfrage ab. Die heutige Runde bleibt, wo sie ist.",
+      "fields": {
+        "request_id": {
+          "name": "Anfrage-ID",
+          "description": "Die ID der offenen Tauschanfrage"
+        }
+      }
+    },
     "test_notification": {
       "name": "Test-Benachrichtigung",
       "description": "Sendet eine Beispiel-Benachrichtigung des angegebenen Typs an die aktivierten Empfänger (ignoriert den Hauptschalter, damit das Routing geprüft werden kann).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Tauschanfrage {request_id} nicht gefunden"
+    },
+    "swap_request_expired": {
+      "message": "Diese Tauschanfrage galt für einen früheren Tag und ist abgelaufen"
     },
     "bulk_unknown_action": {
       "message": "Unbekannte Sammelaktion {action}"

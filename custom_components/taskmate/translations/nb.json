@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Godkjenn oppgavebytte",
+      "description": "Godkjenn en ventende bytteforespørsel, så barnet som spurte tar over dagens tur.",
+      "fields": {
+        "request_id": {
+          "name": "Forespørsels-ID",
+          "description": "ID-en til den ventende bytteforespørselen"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Avvis oppgavebytte",
+      "description": "Avvis en ventende bytteforespørsel. Dagens tur blir der den er.",
+      "fields": {
+        "request_id": {
+          "name": "Forespørsels-ID",
+          "description": "ID-en til den ventende bytteforespørselen"
+        }
+      }
+    },
     "test_notification": {
       "name": "Testvarsel",
       "description": "Send et eksempelvarsel av den angitte typen til de aktiverte mottakerne (ignorerer hovedbryteren slik at rutingen kan verifiseres).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Bytteforespørselen {request_id} ble ikke funnet"
+    },
+    "swap_request_expired": {
+      "message": "Denne bytteforespørselen gjaldt en tidligere dag og har utløpt"
     },
     "bulk_unknown_action": {
       "message": "Ukjent massehandling {action}"

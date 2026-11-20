@@ -298,6 +298,12 @@ class TaskMateApprovalsCard extends LitElement {
         text-overflow: ellipsis;
       }
 
+      /* A swap row is one sentence naming both the child and the chore, so
+         it wraps instead of cutting the chore off (#1275). */
+      .chore-name.swap-text {
+        white-space: normal;
+      }
+
       .approval-photo {
         display: inline-block;
         margin-top: 4px;
@@ -852,8 +858,10 @@ class TaskMateApprovalsCard extends LitElement {
     // Reward fulfilment (#1098): redeemed rewards still to hand over. Not an
     // approval, so it never counts in the header badge.
     const owed = this._owedRewards(entity, attrs);
+    // Chore swap requests (#1275): a child asking to take over today's turn.
+    const swaps = this._swapRequests(attrs);
 
-    const totalPending = filteredCompletions.length + filteredClaims.length + misses.length;
+    const totalPending = filteredCompletions.length + filteredClaims.length + misses.length + swaps.length;
 
     return html`
       <ha-card>
@@ -878,6 +886,7 @@ class TaskMateApprovalsCard extends LitElement {
           ${totalPending === 0 && owed.length === 0
             ? this._renderEmptyState()
             : html`
+                ${swaps.length > 0 ? this._renderSwapRequests(swaps) : ''}
                 ${misses.length > 0 ? this._renderMandatoryMisses(misses) : ''}
                 ${filteredClaims.length > 0 ? this._renderRewardClaims(filteredClaims) : ''}
                 ${filteredCompletions.length > 0 ? this._renderApprovals(groupedByDay) : ''}
@@ -951,6 +960,19 @@ class TaskMateApprovalsCard extends LitElement {
     const misses = this._filterMissesByChild(attrs.mandatory_misses || [], attrs);
 
     const items = [];
+
+    this._swapRequests(attrs).forEach((swap) => {
+      items.push({
+        kind: "swap",
+        id: swap.request_id,
+        title: this._swapText(swap),
+        childName: swap.child_name || "",
+        childId: swap.child_id,
+        sub: this._swapFrom(swap),
+        icon: "mdi:swap-horizontal",
+        sortTime: 0,
+      });
+    });
 
     misses.forEach((miss) => {
       const penalty = miss.penalty_points ?? 0;
@@ -1120,6 +1142,11 @@ class TaskMateApprovalsCard extends LitElement {
       const reject = () => this._handleReject(it.completion);
       return this._apActionPair(approve, reject, isLoading, shape, it.completion);
     }
+    if (it.kind === "swap") {
+      const approve = () => this._callSwapService("approve_swap", it.id);
+      const reject = () => this._callSwapService("reject_swap", it.id);
+      return this._apActionPair(approve, reject, isLoading, shape);
+    }
     if (it.kind === "claim") {
       const approve = () => this._handleApproveReward(it.id);
       const reject = () => this._handleRejectReward(it.id, it.title, it.childName);
@@ -1177,7 +1204,7 @@ class TaskMateApprovalsCard extends LitElement {
     const photoUrl = this._photoHref(it.photo);
     const ref = it.kind === "completion" ? it.reference : "";
     if (it.kind !== "completion" || !(photoUrl || ref)) {
-      return (it.kind === "claim" || it.kind === "owed") && it.icon
+      return (it.kind === "claim" || it.kind === "owed" || it.kind === "swap") && it.icon
         ? html`<div class="${cls}"><ha-icon icon="${it.icon}"></ha-icon></div>`
         : "";
     }
@@ -1259,11 +1286,11 @@ class TaskMateApprovalsCard extends LitElement {
           ${this._av(it.childName, this._childAvatar(it.childId), tone, 40)}
           <div style="flex:1;min-width:0">
             <div class="ap-pl-title">${it.title}</div>
-            <div class="muted ap-pl-sub">${it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
+            <div class="muted ap-pl-sub">${it.kind === "swap" ? it.sub : it.childName}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
           ${this._apContext(it)}
           </div>
           ${this._apPhotoDesigned(it, "ap-pl-photo")}
-          <div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>
+          ${it.kind === "swap" ? "" : html`<div class="chip ap-gold">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)} <ha-icon style="--mdc-icon-size:1.1em;vertical-align:-0.15em" icon="${this._pointsIcon()}"></ha-icon></div>`}
         </div>
         <div class="row" style="margin-top:11px;gap:8px;flex-wrap:wrap">
           ${this._designActions(it, "full")}
@@ -1278,7 +1305,7 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 34)}
         <div style="flex:1;min-width:0">
           <div class="ap-cn-title">${it.title}</div>
-          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()} · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${__tmNum(this.hass, it.points)} ${this._t('common.xp')}`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
+          <div class="muted num ap-cn-sub">${(it.childName || '').toUpperCase()}${it.kind === "swap" ? (it.sub ? html` · ${it.sub}` : "") : html` · ${it.kind === "owed" ? this._owedFor(it.daysOwed) : html`+${__tmNum(this.hass, it.points)} ${this._t('common.xp')}`}`}${it.quantity ? html` · ${it.quantity}` : ""}</div>
           ${this._apContext(it)}
           ${it.kind === "completion" ? this._renderStars(it.completion, "ap-cn-stars") : ""}
         </div>
@@ -1299,11 +1326,11 @@ class TaskMateApprovalsCard extends LitElement {
         ${this._av(it.childName, this._childAvatar(it.childId), tone, 38)}
         <div class="ap-cp-mid">
           <div class="ap-cp-title">${it.title}</div>
-          <div class="muted ap-cp-sub">${it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
+          <div class="muted ap-cp-sub">${it.kind === "swap" ? it.sub : it.childName}${time ? html` · ${time}` : ""}${it.quantity ? html` · 🔢 ${it.quantity}` : ""}${it.kind === "owed" ? html` · ${this._owedFor(it.daysOwed)}` : ""}</div>
           ${this._apContext(it)}
         </div>
         ${this._apPhotoDesigned(it, "ap-cp-photo")}
-        <span class="chip soft ap-gold-soft">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)}</span>
+        ${it.kind === "swap" ? "" : html`<span class="chip soft ap-gold-soft">${it.kind === "owed" ? "" : "+"}${__tmNum(this.hass, it.points)}</span>`}
         <div class="ap-cp-actions">${this._designActions(it, "ghost")}</div>
       </div>`;
   }
@@ -1320,6 +1347,95 @@ class TaskMateApprovalsCard extends LitElement {
   _filterClaimsByChild(claims) {
     if (!this.config.child_id) return claims;
     return claims.filter((c) => c.child_id === this.config.child_id);
+  }
+
+  // ---- chore swaps (#1275) ---------------------------------------------
+  /** Pending swap requests, limited to the configured child (either side). */
+  _swapRequests(attrs) {
+    const list = Array.isArray(attrs.swap_requests) ? attrs.swap_requests : [];
+    const only = this.config.child_id;
+    if (!only) return list;
+    return list.filter((r) => r.child_id === only || r.from_child_id === only);
+  }
+
+  _swapText(swap) {
+    return this._t('approvals.swap_request_text', { child: swap.child_name || "", chore: swap.chore_name || "" });
+  }
+
+  _swapFrom(swap) {
+    return swap.from_child_name ? this._t('approvals.swap_from', { name: swap.from_child_name }) : "";
+  }
+
+  _renderSwapRequests(swaps) {
+    return html`
+      <div class="day-group">
+        <div class="day-header">
+          <ha-icon icon="mdi:swap-horizontal" style="--mdc-icon-size: 18px; vertical-align: -3px; margin-inline-end: 6px;"></ha-icon>
+          ${this._t('approvals.swap_section')}
+        </div>
+        ${swaps.map((swap) => this._renderSwapItem(swap))}
+      </div>
+    `;
+  }
+
+  _renderSwapItem(swap) {
+    const id = swap.request_id;
+    const isLoading = this._loading[id];
+    const from = this._swapFrom(swap);
+    return html`
+      <div class="approval-item ${isLoading ? 'loading' : ''}">
+        <div class="action-buttons left">
+          <button
+            class="action-button reject ${isLoading ? 'loading' : ''}"
+            @click="${() => this._callSwapService('reject_swap', id)}"
+            title="${this._t('approvals.reject')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+        <div class="item-info">
+          <span class="chore-name swap-text">${this._swapText(swap)}</span>
+          <div class="item-details">
+            <span class="child-name">
+              <ha-icon icon="mdi:swap-horizontal"></ha-icon>
+              ${from || (swap.child_name || '')}
+            </span>
+          </div>
+        </div>
+        <div class="action-buttons right">
+          <button
+            class="action-button approve ${isLoading ? 'loading' : ''}"
+            @click="${() => this._callSwapService('approve_swap', id)}"
+            title="${this._t('approvals.approve')}"
+            ?disabled="${isLoading}"
+          >
+            <ha-icon icon="mdi:check"></ha-icon>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  async _callSwapService(service, requestId) {
+    if (this._loading[requestId]) return;
+    this._loading = { ...this._loading, [requestId]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService('taskmate', service, { request_id: requestId });
+    } catch (error) {
+      console.error(`Failed to call ${service}:`, error);
+      if (this.hass.callService) {
+        this.hass.callService('persistent_notification', 'create', {
+          title: this._t('approvals.error_title'),
+          message: this._t('approvals.error_failed', { message: this._errText(error) }),
+          notification_id: `taskmate_error_${requestId}`,
+        });
+      }
+    } finally {
+      this._loading = { ...this._loading, [requestId]: false };
+      this.requestUpdate();
+    }
   }
 
   _renderRewardClaims(claims) {

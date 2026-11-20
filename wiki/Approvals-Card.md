@@ -30,7 +30,7 @@ The card works with either:
 
 ### Header
 - Title on the left
-- Combined **pending count** badge on the right (chores + reward claims)
+- Combined **pending count** badge on the right (chores, reward claims, missed mandatory chores and chore swaps)
 
 ### Mandatory — needs review (v4.1+)
 If any mandatory chores were missed, they appear at the very top of the content — above pending completions — under a header labelled **"Mandatory — needs review"**. A mandatory chore is missed when it isn't completed before its time-of-day period ends; **points are never auto-deducted**, the parent decides what to do. Each row offers three actions:
@@ -42,6 +42,11 @@ If any mandatory chores were missed, they appear at the very top of the content 
 Each service takes a single `miss_id` parameter. See [Mandatory Chores](Mandatory-Chores.md) for the full feature.
 
 ![Mandatory review section on the Approvals card](images/approvals-mandatory.png)
+
+### Chore swaps section
+If a child has asked to take over today's turn of a rotation chore from a sibling, the request appears at the top of the content, under a header labelled **"Chore swaps"**. A swap only covers today, so it sits above everything else. Each row reads "Leo wants to do “Bins” today", with who has the turn now underneath, and has the same ✗ and ✓ buttons as a reward claim.
+
+Tapping ✓ calls `taskmate.approve_swap`, which moves today's turn to the child who asked. Tapping ✗ calls `taskmate.reject_swap` and leaves the turn where it is. Both are parent actions, so a non-admin parent can use them too. A card filtered to one child shows the swaps that child is on either side of. See [Chore Swaps](Chore-Swaps.md).
 
 ### Reward claims section (v3.0+)
 If any reward claims are pending, they appear at the top of the content, under a header labelled **"Reward claims"**. Each row shows:

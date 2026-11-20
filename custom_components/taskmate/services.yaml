@@ -314,6 +314,26 @@ request_swap:
       selector:
         text:
 
+approve_swap:
+  name: Approve Chore Swap
+  description: Approve a pending chore swap request, so the requesting child takes over today's turn.
+  fields:
+    request_id:
+      name: Request ID
+      required: true
+      selector:
+        text:
+
+reject_swap:
+  name: Reject Chore Swap
+  description: Turn down a pending chore swap request. Today's turn stays where it is.
+  fields:
+    request_id:
+      name: Request ID
+      required: true
+      selector:
+        text:
+
 choose_avatar:
   name: Choose Avatar
   description: A child switches to an avatar they have unlocked.

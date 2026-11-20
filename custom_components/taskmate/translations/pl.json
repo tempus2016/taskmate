@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Zatwierdź zamianę obowiązku",
+      "description": "Zatwierdza oczekującą prośbę o zamianę, więc dziecko, które prosiło, przejmuje dzisiejszą kolejkę.",
+      "fields": {
+        "request_id": {
+          "name": "ID prośby",
+          "description": "ID oczekującej prośby o zamianę"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Odrzuć zamianę obowiązku",
+      "description": "Odrzuca oczekującą prośbę o zamianę. Dzisiejsza kolejka zostaje bez zmian.",
+      "fields": {
+        "request_id": {
+          "name": "ID prośby",
+          "description": "ID oczekującej prośby o zamianę"
+        }
+      }
+    },
     "test_notification": {
       "name": "Testowe powiadomienie",
       "description": "Wyślij przykładowe powiadomienie danego typu do jego włączonych odbiorców (ignoruje główny przełącznik, aby można było sprawdzić routing).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Nie znaleziono prośby o zamianę {request_id}"
+    },
+    "swap_request_expired": {
+      "message": "Ta prośba o zamianę dotyczyła wcześniejszego dnia i wygasła"
     },
     "bulk_unknown_action": {
       "message": "Nieznana akcja zbiorcza {action}"

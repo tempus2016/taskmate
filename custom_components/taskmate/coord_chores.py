@@ -36,6 +36,7 @@ from .models import (
     validate_chore_steps,
     validate_chore_times,
 )
+from .storage import swap_request_day
 
 if TYPE_CHECKING:
     pass
@@ -244,6 +245,13 @@ class ChoresMixin:
         )
         if not req:
             raise TaskMateError("swap_request_not_found", request_id=req_id)
+        # A swap covers only the day it was asked for (#1275). Approving an
+        # older request would move today's turn, so refuse it and clear it out.
+        if swap_request_day(req) != dt_util.as_local(dt_util.now()).date().isoformat():
+            self.storage.remove_swap_request(req_id)
+            await self.storage.async_save()
+            await self.async_refresh()
+            raise TaskMateError("swap_request_expired")
         chore = self.get_chore(req["chore_id"])
         if chore:
             # Stamp the dated override *and* the cached current child. The

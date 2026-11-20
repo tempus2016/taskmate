@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Approva scambio di faccenda",
+      "description": "Approva una richiesta di scambio in sospeso, così il bambino che l'ha chiesta prende il turno di oggi.",
+      "fields": {
+        "request_id": {
+          "name": "ID richiesta",
+          "description": "L'ID della richiesta di scambio in sospeso"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Rifiuta scambio di faccenda",
+      "description": "Rifiuta una richiesta di scambio in sospeso. Il turno di oggi resta com'è.",
+      "fields": {
+        "request_id": {
+          "name": "ID richiesta",
+          "description": "L'ID della richiesta di scambio in sospeso"
+        }
+      }
+    },
     "test_notification": {
       "name": "Notifica di prova",
       "description": "Invia una notifica di esempio del tipo indicato ai suoi destinatari attivi (ignora l'interruttore generale così si può verificare l'instradamento).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Richiesta di scambio {request_id} non trovata"
+    },
+    "swap_request_expired": {
+      "message": "Questa richiesta di scambio era per un giorno precedente ed è scaduta"
     },
     "bulk_unknown_action": {
       "message": "Azione multipla sconosciuta {action}"

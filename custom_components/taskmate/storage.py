@@ -95,6 +95,19 @@ STORAGE_KEY = f"{DOMAIN}.storage"
 _SAVE_DEBOUNCE_SECONDS = 1.0
 
 
+def swap_request_day(req: dict) -> str:
+    """The local ISO date a swap request was made on, or "" if unreadable.
+
+    A swap covers only the day it was asked for (#1275), so this is the day
+    the request is valid on. An unreadable ``created_at`` yields "", which
+    never matches a real day, so such a request is treated as stale.
+    """
+    parsed = parse_datetime(str(req.get("created_at") or ""))
+    if parsed is None:
+        return ""
+    return dt_util.as_local(parsed).date().isoformat()
+
+
 class TaskMateStorage:
     """Manage TaskMate data storage."""
 
@@ -1437,12 +1450,15 @@ class TaskMateStorage:
         return False
 
     def _drop_dead_swap_requests(self) -> None:
-        """Prune swap requests that are settled or dangling (#783, #785).
+        """Prune swap requests that are settled, dangling or stale (#783, #785, #1275).
 
         Called from ``async_load``. A request survives only when it is still
-        pending *and* every id it names still resolves — the chore, the
-        requester, and ``from_child_id`` when set (it is "" for a chore with no
-        cached assignee yet, which is a normal request, not a dead reference).
+        pending, was made today, *and* every id it names still resolves — the
+        chore, the requester, and ``from_child_id`` when set (it is "" for a
+        chore with no cached assignee yet, which is a normal request, not a
+        dead reference). A request from an earlier day goes too: a swap only
+        ever covers the day it was asked for, so HA being down at midnight
+        must not leave yesterday's request approvable.
         """
         swap_requests = self._data.get("swap_requests")
         if not swap_requests:
@@ -1450,9 +1466,12 @@ class TaskMateStorage:
 
         chore_ids = {c.get("id") for c in self._data.get("chores", [])}
         child_ids = {c.get("id") for c in self._data.get("children", [])}
+        today = dt_util.as_local(dt_util.now()).date().isoformat()
 
         def _alive(req: dict) -> bool:
             if req.get("status") != "pending":
+                return False
+            if swap_request_day(req) != today:
                 return False
             if req.get("chore_id") not in chore_ids:
                 return False
@@ -1468,6 +1487,19 @@ class TaskMateStorage:
                 len(swap_requests) - len(kept),
             )
             self._data["swap_requests"] = kept
+
+    def prune_stale_swap_requests(self, keep_date: str) -> int:
+        """Drop pending swap requests made on any day but keep_date (#1275).
+
+        A swap moves one day's rotation turn, so a request left pending past
+        midnight no longer means anything: approving it would move the new
+        day's turn instead. Returns how many were dropped.
+        """
+        reqs = self._data.get("swap_requests", [])
+        kept = [r for r in reqs if swap_request_day(r) == keep_date]
+        if len(kept) != len(reqs):
+            self._data["swap_requests"] = kept
+        return len(reqs) - len(kept)
 
     def remove_swap_requests_for_chore(self, chore_id: str) -> None:
         """Drop a deleted chore's swap requests so they can't linger in the

@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Takenruil goedkeuren",
+      "description": "Keur een openstaand ruilverzoek goed, zodat het kind dat het vroeg de beurt van vandaag overneemt.",
+      "fields": {
+        "request_id": {
+          "name": "Verzoek-ID",
+          "description": "Het ID van het openstaande ruilverzoek"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Takenruil afwijzen",
+      "description": "Wijs een openstaand ruilverzoek af. De beurt van vandaag blijft waar hij is.",
+      "fields": {
+        "request_id": {
+          "name": "Verzoek-ID",
+          "description": "Het ID van het openstaande ruilverzoek"
+        }
+      }
+    },
     "test_notification": {
       "name": "Testmelding sturen",
       "description": "Stuur een voorbeeldmelding van dit soort naar iedereen die hem aan heeft staan (negeert de hoofdschakelaar, zodat je kunt testen of hij aankomt).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Ruilverzoek {request_id} niet gevonden"
+    },
+    "swap_request_expired": {
+      "message": "Dit ruilverzoek was voor een eerdere dag en is verlopen"
     },
     "bulk_unknown_action": {
       "message": "Onbekende bulkactie {action}"

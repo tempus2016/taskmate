@@ -1415,6 +1415,26 @@
         }
       }
     },
+    "approve_swap": {
+      "name": "Approuver l'échange de tâche",
+      "description": "Approuve une demande d'échange en attente : l'enfant qui l'a demandée reprend le tour d'aujourd'hui.",
+      "fields": {
+        "request_id": {
+          "name": "ID de la demande",
+          "description": "L'ID de la demande d'échange en attente"
+        }
+      }
+    },
+    "reject_swap": {
+      "name": "Refuser l'échange de tâche",
+      "description": "Refuse une demande d'échange en attente. Le tour d'aujourd'hui ne change pas.",
+      "fields": {
+        "request_id": {
+          "name": "ID de la demande",
+          "description": "L'ID de la demande d'échange en attente"
+        }
+      }
+    },
     "test_notification": {
       "name": "Notification de test",
       "description": "Envoie un exemple de notification du type indiqué à ses destinataires activés (ignore l'interrupteur principal afin de vérifier le routage).",
@@ -2430,6 +2450,9 @@
     },
     "swap_request_not_found": {
       "message": "Demande d’échange {request_id} introuvable"
+    },
+    "swap_request_expired": {
+      "message": "Cette demande d'échange concernait un jour précédent et a expiré"
     },
     "bulk_unknown_action": {
       "message": "Action groupée inconnue {action}"

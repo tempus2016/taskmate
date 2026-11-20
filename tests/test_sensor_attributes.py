@@ -674,6 +674,25 @@ def _wired_stress_coordinator():
             for i in range(120)
         ]
     )
+    # A full swap queue (#1275): the pending-request cap, every one naming
+    # who has the turn now, so the approvals slice is measured at its largest.
+    by_child = {c.id: c for c in coord.data["children"]}
+    by_chore = {c.id: c for c in coord.data["chores"]}
+    coord.get_child = lambda cid: by_child.get(cid)
+    coord.get_chore = lambda cid: by_chore.get(cid)
+    coord.storage.get_swap_requests = MagicMock(
+        return_value=[
+            {
+                "id": f"swap-request-{i:03d}-0123456789abcdef",
+                "chore_id": f"chore-{i % 30:02d}",
+                "requester_id": f"child-{i % 4}",
+                "from_child_id": f"child-{(i + 1) % 4}",
+                "created_at": "2026-04-20T08:00:00.123456+00:00",
+                "status": "pending",
+            }
+            for i in range(50)
+        ]
+    )
     return coord
 
 
@@ -743,10 +762,12 @@ def test_heavy_lists_are_still_published_to_the_frontend():
     approvals = PendingApprovalsSensor(coord, entry).extra_state_attributes
     assert approvals["chore_completions"]
     assert approvals["mandatory_misses"]
+    assert len(approvals["swap_requests"]) == 50
     # The scalar counters stay recorded so history/statistics keep working.
     recorded = _recorder_payload(PendingApprovalsSensor, approvals)
     assert recorded["pending_chore_completions"] == len(approvals["chore_completions"])
     assert recorded["pending_mandatory_misses"] == 120
+    assert recorded["pending_swap_requests"] == 50
 
 
 def test_history_shows_the_price_a_reward_was_bought_at():
