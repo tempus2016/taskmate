@@ -5295,5 +5295,7 @@
   "wizard.style_question": "你希望 TaskMate 给人什么感觉？",
   "wizard.style_hint": "你可以随时在设置中更改。",
   "wizard.style_custom_later": "想逐项选择功能？稍后在设置中选择“自定义”。",
-  "wizard.review_style": "家庭风格"
+  "wizard.review_style": "家庭风格",
+  "panel.child_said": "孩子说",
+  "panel.child_suggested": "建议：{points}"
 }

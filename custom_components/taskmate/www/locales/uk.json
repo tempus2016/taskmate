@@ -5295,5 +5295,7 @@
   "wizard.style_question": "Яким має бути TaskMate у вашій родині?",
   "wizard.style_hint": "Це можна змінити будь-коли в налаштуваннях.",
   "wizard.style_custom_later": "Хочете обрати кожну функцію самі? Оберіть «Власний варіант» пізніше в налаштуваннях.",
-  "wizard.review_style": "Стиль родини"
+  "wizard.review_style": "Стиль родини",
+  "panel.child_said": "Повідомлення",
+  "panel.child_suggested": "Пропозиція: {points}"
 }

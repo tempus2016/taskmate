@@ -5295,5 +5295,7 @@
   "wizard.style_question": "¿Cómo quieres que se sienta TaskMate?",
   "wizard.style_hint": "Puedes cambiarlo cuando quieras en Ajustes.",
   "wizard.style_custom_later": "¿Prefieres elegir cada función? Elige Personalizado más tarde en Ajustes.",
-  "wizard.review_style": "Estilo familiar"
+  "wizard.review_style": "Estilo familiar",
+  "panel.child_said": "Ha dicho",
+  "panel.child_suggested": "Sugerido: {points}"
 }

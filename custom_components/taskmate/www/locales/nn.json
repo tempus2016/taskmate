@@ -5295,5 +5295,7 @@
   "wizard.style_question": "Korleis vil du at TaskMate skal kjennast?",
   "wizard.style_hint": "Du kan endre dette når som helst under Innstillingar.",
   "wizard.style_custom_later": "Vil du heller velje kvar funksjon? Vel Eigendefinert seinare under Innstillingar.",
-  "wizard.review_style": "Familiestil"
+  "wizard.review_style": "Familiestil",
+  "panel.child_said": "Sa",
+  "panel.child_suggested": "Føreslått: {points}"
 }

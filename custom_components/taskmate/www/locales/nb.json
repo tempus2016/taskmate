@@ -5295,5 +5295,7 @@
   "wizard.style_question": "Hvordan vil du at TaskMate skal føles?",
   "wizard.style_hint": "Du kan endre dette når som helst under Innstillinger.",
   "wizard.style_custom_later": "Vil du heller velge hver funksjon? Velg Egendefinert senere under Innstillinger.",
-  "wizard.review_style": "Familiestil"
+  "wizard.review_style": "Familiestil",
+  "panel.child_said": "Sa",
+  "panel.child_suggested": "Foreslått: {points}"
 }

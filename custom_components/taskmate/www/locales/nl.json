@@ -5295,5 +5295,7 @@
   "wizard.style_question": "Hoe moet TaskMate aanvoelen?",
   "wizard.style_hint": "Je kunt dit altijd wijzigen in Instellingen.",
   "wizard.style_custom_later": "Liever elke functie zelf kiezen? Kies later Aangepast in Instellingen.",
-  "wizard.review_style": "Gezinsstijl"
+  "wizard.review_style": "Gezinsstijl",
+  "panel.child_said": "Ze zeiden",
+  "panel.child_suggested": "Voorgesteld: {points}"
 }

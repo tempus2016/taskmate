@@ -5295,5 +5295,7 @@
   "wizard.style_question": "TaskMate가 어떤 느낌이면 좋을까요?",
   "wizard.style_hint": "설정에서 언제든지 바꿀 수 있어요.",
   "wizard.style_custom_later": "기능을 하나씩 고르고 싶다면 나중에 설정에서 사용자 지정을 선택하세요.",
-  "wizard.review_style": "가족 스타일"
+  "wizard.review_style": "가족 스타일",
+  "panel.child_said": "아이의 말",
+  "panel.child_suggested": "제안: {points}"
 }
