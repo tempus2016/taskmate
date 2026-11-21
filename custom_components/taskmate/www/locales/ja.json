@@ -5295,5 +5295,7 @@
   "wizard.style_question": "TaskMate をどんな雰囲気にしますか？",
   "wizard.style_hint": "設定からいつでも変更できます。",
   "wizard.style_custom_later": "機能をひとつずつ選びたい場合は、あとで設定から「カスタム」を選んでください。",
-  "wizard.review_style": "ファミリースタイル"
+  "wizard.review_style": "ファミリースタイル",
+  "panel.child_said": "子どものコメント",
+  "panel.child_suggested": "希望: {points}"
 }

@@ -737,6 +737,14 @@ class TaskMateApprovalsCard extends LitElement {
       .ap-cp-title { font-weight: 600; }
       .ap-cp-sub { font-size: 12px; }
       .ap-miss-ctx { font-size: 12px; margin-top: 2px; }
+      .ap-kid-note {
+        font-size: 0.85rem; margin-top: 4px; line-height: 1.35;
+        border-inline-start: 3px solid var(--accent-color, #ffc107); padding-inline-start: 8px;
+        white-space: pre-wrap; overflow-wrap: anywhere;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+      }
+      .ap-kid-note-lbl { font-weight: 600; }
+      .ap-kid-sugg { font-size: 12px; margin-top: 2px; }
       .ap-cn-item.miss { flex-wrap: wrap; }
       .ap-cn-miss-actions { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
       .ap-cp-photo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden;
@@ -1272,10 +1280,25 @@ class TaskMateApprovalsCard extends LitElement {
     }
   }
 
-  // A mandatory miss's day, window and progress (#1271); nothing otherwise.
+  // A mandatory miss's day, window and progress (#1271); for a chore, what
+  // the child wrote and the points they suggested (#1279); nothing otherwise.
   _apContext(it) {
+    if (it.kind === "completion") return this._childNote(it.completion);
     if (!it.context || !it.context.length) return "";
     return html`${it.context.map((line) => html`<div class="muted ap-miss-ctx">${line}</div>`)}`;
+  }
+
+  // The child's own description and estimate, on the row itself (#1279):
+  // before this they only showed inside the ✍️ review sheet. Clamped to three
+  // lines here; the sheet shows the whole text.
+  _childNote(completion) {
+    if (!completion) return "";
+    const note = completion.note || "";
+    const suggested = completion.suggested_points || 0;
+    if (!note && !suggested) return "";
+    return html`
+      ${note ? html`<div class="ap-kid-note" title="${note}"><span class="ap-kid-note-lbl">${this._t('approvals.child_said')}</span> “${note}”</div>` : ""}
+      ${suggested ? html`<div class="muted ap-kid-sugg">${this._t('approvals.suggested', { points: __tmNum(this.hass, suggested) })}</div>` : ""}`;
   }
 
   _apPlayroom(it, i) {
@@ -1981,6 +2004,7 @@ class TaskMateApprovalsCard extends LitElement {
             </span>
             ${this._renderStars(completion)}
           </div>
+          ${this._childNote(completion)}
           ${(() => {
             const photo = this._photoHref(completion.photo_url);
             const ref = safeReferenceUrl(completion.reference_image_url);

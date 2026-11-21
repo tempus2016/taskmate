@@ -5295,5 +5295,7 @@
   "wizard.style_question": "Hur vill du att TaskMate ska kännas?",
   "wizard.style_hint": "Du kan ändra det när som helst under Inställningar.",
   "wizard.style_custom_later": "Vill du hellre välja varje funktion? Välj Anpassad senare under Inställningar.",
-  "wizard.review_style": "Familjestil"
+  "wizard.review_style": "Familjestil",
+  "panel.child_said": "De skrev",
+  "panel.child_suggested": "Förslag: {points}"
 }

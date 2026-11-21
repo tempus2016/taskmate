@@ -2375,7 +2375,14 @@ class TaskMateKioskCard extends LitElement {
       :host { display: block; --km-header: var(--tmd-accent, #9b59b6); }
       :host(:fullscreen) { background: var(--tmd-bg, var(--primary-background-color, #111)); }
       :host(:fullscreen) ha-card { height: 100vh; min-height: 100vh; border-radius: 0; }
-      :host(:fullscreen) .km-main { overflow: hidden; }
+      /* Full screen fixes the card's height, so the content scrolls inside it
+         (#1278). Two columns: the chore list and the side column each scroll
+         in one row capped at the space left under the banners. One column
+         (container query below): the whole body scrolls as one page. Other
+         screens (picker, PIN) scroll in .km-main instead of being cut off. */
+      :host(:fullscreen) .km-main { overflow-y: auto; overscroll-behavior: contain; }
+      :host(:fullscreen) .km-body { grid-template-rows: minmax(0, 1fr); }
+      :host(:fullscreen) .km-side { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
       .km-queue { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: .9rem;
         background: rgba(255,255,255,.22); white-space: nowrap; }
       .km-queue.offline { background: rgba(0,0,0,.25); }
@@ -2436,6 +2443,9 @@ class TaskMateKioskCard extends LitElement {
         flex-direction: column;
         flex: 1 1 auto;
         min-width: 0;
+        /* Lets it shrink to a fixed card height (full screen) so the list
+           inside can scroll; without it the flex item grows to its content. */
+        min-height: 0;
       }
       ha-card.km {
         position: relative;
@@ -3009,6 +3019,8 @@ class TaskMateKioskCard extends LitElement {
          three lines; one column gives every row the whole card instead. */
       @container km (max-width: 860px) {
         .km-body { grid-template-columns: 1fr; }
+        :host(:fullscreen) .km-body { grid-template-rows: none; overflow-y: auto; overscroll-behavior: contain; }
+        :host(:fullscreen) .km-list, :host(:fullscreen) .km-side { overflow: visible; min-height: auto; }
       }
       @container km (max-width: 760px) {
         .km-pin { grid-template-columns: 1fr; gap: 20px; }

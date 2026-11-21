@@ -2207,6 +2207,14 @@ class TaskMatePanel extends HTMLElement {
       </div>`;
   }
 
+  // What the child wrote when they submitted, and the points they suggested
+  // (#1279). The 💬 button beside it is the parent's praise note, not this.
+  _childNoteLines(c) {
+    const note = String(c.note || "");
+    const suggested = Number(c.suggested_points) || 0;
+    return `${note ? `<div class="tm-child-note" title="${this._esc(note)}"><span class="tm-child-note-lbl">${this._esc(this._t("panel.child_said"))}</span> “${this._esc(note)}”</div>` : ""}${suggested ? `<div class="tm-meta">${this._esc(this._t("panel.child_suggested", { points: this._fmtNum(suggested) }))}</div>` : ""}`;
+  }
+
   // Sibling check: a brother or sister said "not yet" (approvals only show waiting ones).
   _siblingNoteLine(c, childById) {
     if (!c.checked_by) return "";
@@ -6191,6 +6199,7 @@ class TaskMatePanel extends HTMLElement {
           <div class="tm-approval-body">
             <div class="tm-approval-line">${this._t("panel.activity_completed_text", {child: this._esc((child && child.name) || "?"), chore: this._esc(choreName)})}</div>
             <div class="tm-meta">${this._timeAgo(c.completed_at)} · ${this._fmtNum(chorePoints)} ${this._t("panel.activity_points")}${redoIds.has(c.id) ? ` · ${this._esc(this._t("panel.insp_redo_queue"))}` : ""}</div>
+            ${this._childNoteLines(c)}
             ${this._siblingNoteLine(c, childById)}
             ${this._praiseRow(c.id)}
           </div>
@@ -20236,6 +20245,13 @@ class TaskMatePanel extends HTMLElement {
       .tm-praise-row .tm-input { width: 100%; box-sizing: border-box; }
       .tm-praise-btn.tm-praise-on { background: var(--tm-accent-soft, rgba(3,169,244,.15)); }
       .tm-sibling-note { color: #5b4bb7; }
+      .tm-child-note {
+        font-size: .9em; margin-top: 4px; line-height: 1.35;
+        border-inline-start: 3px solid var(--tm-accent, var(--primary-color, #03a9f4)); padding-inline-start: 8px;
+        white-space: pre-wrap; overflow-wrap: anywhere;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+      }
+      .tm-child-note-lbl { font-weight: 600; }
       .tm-heat-wrap { display: flex; flex-wrap: wrap; gap: 18px 28px; margin-top: 12px; align-items: flex-start; }
       .tm-heat-name { font-weight: 600; margin-bottom: 6px; display: flex; flex-direction: column; gap: 2px; }
       .tm-heat-grid { display: grid; grid-template-columns: repeat(7, 16px); gap: 3px; }
