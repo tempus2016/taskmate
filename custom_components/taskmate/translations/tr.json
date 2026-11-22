@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Aile hedefini sıfırla",
+      "description": "Aile hedefini 0'dan yeniden başlatır. Yalnızca şu andan itibaren kazanılan puanlar sayılır; çocukların puan bakiyeleri değişmez."
+    },
     "adopt_pet": {
       "name": "Evcil hayvan sahiplen",
       "description": "Çocuk sanal evcil hayvanını sahiplenir (veya yeniden adlandırır). Bundan sonra bitirdiği her görevle büyür.",

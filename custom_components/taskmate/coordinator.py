@@ -16,7 +16,7 @@ from homeassistant.helpers.event import async_track_time_change, async_track_tim
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
-from . import notify_strings, photos
+from . import family_goal, notify_strings, photos
 from .const import DOMAIN
 from .coord_appeals import AppealsMixin
 from .coord_assignments import AssignmentsMixin
@@ -694,12 +694,18 @@ class TaskMateCoordinator(
 
     # ── Family co-op goal (FEAT-4) ───────────────────────────────────────
     def family_goal_progress(self) -> int:
-        """Combined current points across all children (the shared goal metric)."""
-        return sum(c.points for c in self.storage.get_children())
+        """Points the children have earned since the goal started (#1282)."""
+        return family_goal.family_goal_progress(self.storage)
+
+    async def async_reset_family_goal(self) -> None:
+        """Start the family goal again at 0 (#1282). Balances are left alone."""
+        family_goal.start_family_goal(self.storage)
+        await self.storage.async_save()
+        await self.async_refresh()
 
     async def _async_check_family_goal(self) -> None:
-        """Fire the family-goal notification once the combined points reach the
-        target. Idempotent via the family_goal_achieved flag (reset when the
+        """Fire the family-goal notification once the points earned since the
+        goal started reach the target. Idempotent via the family_goal_achieved flag (reset when the
         target/enabled setting changes)."""
         if not self._setting_enabled("family_goal_enabled"):
             return

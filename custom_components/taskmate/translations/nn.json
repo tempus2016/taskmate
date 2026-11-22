@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Nullstill familiemål",
+      "description": "Start familiemålet på nytt frå 0. Berre poeng som vert tente frå no av tel; poengsaldoen til barna vert ikkje endra."
+    },
     "adopt_pet": {
       "name": "Adopter eit kjæledyr",
       "description": "Eit barn adopterer (eller gjev nytt namn til) det virtuelle kjæledyret sitt. Det veks med kvar oppgåve barnet gjer frå no.",

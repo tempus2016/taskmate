@@ -38,6 +38,7 @@ class TaskMateFamilyGoalCardEditor extends LitElement {
     return [
       { name: "entity", selector: { entity: { domain: "sensor" } } },
       { name: "title", selector: { text: {} } },
+      { name: "show_parent_actions", selector: { boolean: {} } },
       {
         name: "card_design",
         selector: {
@@ -56,6 +57,7 @@ class TaskMateFamilyGoalCardEditor extends LitElement {
     const labels = {
       entity: this._t("common.editor.overview_entity"),
       title: this._t("common.editor.card_title"),
+      show_parent_actions: this._t("common.editor.show_parent_actions"),
       card_design: this._t("common.design.field_label"),
     };
     return labels[entry.name] ?? entry.name;
@@ -65,6 +67,7 @@ class TaskMateFamilyGoalCardEditor extends LitElement {
     const helpers = {
       entity: this._t("common.editor.overview_entity_helper"),
       title: this._t("family_goal.editor.title_helper"),
+      show_parent_actions: this._t("common.editor.show_parent_actions_helper"),
     };
     return helpers[entry.name] ?? "";
   };
@@ -74,6 +77,7 @@ class TaskMateFamilyGoalCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || "",
       title: this.config.title || "",
+      show_parent_actions: this.config.show_parent_actions !== false,
       card_design: this.config.card_design || "global",
     };
     return html`
@@ -108,7 +112,9 @@ class TaskMateFamilyGoalCardEditor extends LitElement {
     const newValues = e.detail.value || {};
     const newConfig = { ...this.config };
     for (const [key, value] of Object.entries(newValues)) {
-      if (value === "" || value === null || value === undefined || (key === "card_design" && value === "global")) {
+      // show_parent_actions is on unless set to false, so true is left out.
+      if (value === "" || value === null || value === undefined || (key === "card_design" && value === "global")
+        || (key === "show_parent_actions" && value === true)) {
         delete newConfig[key];
       } else {
         newConfig[key] = value;

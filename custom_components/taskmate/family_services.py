@@ -1,4 +1,4 @@
-"""``taskmate.*`` services for help requests, moods, sick days, weekly goals, raffles and pets.
+"""``taskmate.*`` services for help requests, moods, sick days, weekly goals, raffles, pets and the family goal.
 
 The pet shop's two child services (``buy_pet_item``, ``equip_pet_item``) sit
 behind the same linked-child gate: a child buys and dresses only their own pet.
@@ -51,6 +51,7 @@ SERVICE_SAVE_SCREEN_TIME = "save_screen_time"
 SERVICE_RATE_REWARD = "rate_reward"
 SERVICE_SIBLING_CHECK = "sibling_check"
 SERVICE_SET_CHORE_REMINDER = "set_chore_reminder"
+SERVICE_RESET_FAMILY_GOAL = "reset_family_goal"
 
 FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_MARK_REWARD_DELIVERED,
@@ -73,6 +74,7 @@ FAMILY_SERVICES: tuple[str, ...] = (
     SERVICE_ADOPT_PET,
     SERVICE_BUY_PET_ITEM,
     SERVICE_EQUIP_PET_ITEM,
+    SERVICE_RESET_FAMILY_GOAL,
 )
 
 Handler = Callable[[ServiceCall], Awaitable[None]]
@@ -135,6 +137,9 @@ def async_register_family_services(
 
     async def draw_raffle(coordinator, call):
         await coordinator.async_draw_raffle(call.data["raffle_id"])
+
+    async def reset_family_goal(coordinator, call):
+        await coordinator.async_reset_family_goal()
 
     async def start_boost(coordinator, call):
         await coordinator.async_start_boost(
@@ -253,6 +258,8 @@ def async_register_family_services(
             },
         ),
         (SERVICE_DRAW_RAFFLE, draw_raffle, False, {vol.Required("raffle_id"): cv.string}),
+        # Starting the family goal again (#1282) is a parent action from the card.
+        (SERVICE_RESET_FAMILY_GOAL, reset_family_goal, False, {}),
         (
             SERVICE_START_BOOST,
             start_boost,
