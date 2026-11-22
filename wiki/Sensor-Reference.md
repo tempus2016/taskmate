@@ -267,7 +267,7 @@ A chore that a [surprise inspection](Surprise-Inspections.md) sent back to redo 
 
 Up to 35 most recent completions across all time (capped to stay under the 16KB recorder limit).
 
-Same fields as `todays_completions`, plus `rating` (v6.0.0, 1–3) when the parent gave a [quality rating](Quality-Ratings.md) at approval. A finished [bounty](Bounty-Board.md) appears here with the bounty's title as `chore_name`.
+Same fields as `todays_completions`, plus `rating` (v6.0.0, 1–3) when the parent gave a [quality rating](Quality-Ratings.md) at approval. `note` and `suggested_points` appear when the child [described the work](Open-Ended-Chores.md#where-its-stored). A finished [bounty](Bounty-Board.md) appears here with the bounty's title as `chore_name`.
 
 ### `pending_completions` Array
 

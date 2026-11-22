@@ -1049,6 +1049,8 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 # Star rating the parent gave at approval (#927) — only when rated.
                 **({"rating": comp.quality_rating} if getattr(comp, "quality_rating", 0) else {}),
                 **({"for_child_id": comp.for_child_id} if getattr(comp, "for_child_id", "") else {}),
+                # What the child wrote and suggested (#1283), only when they did.
+                **comp.child_note_fields(),
                 **({"time_id": comp.time_id} if set_time is not None else {}),
             }
         )

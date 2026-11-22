@@ -1353,6 +1353,7 @@ class ChoresMixin:
                 **({"time_id": time_id, "label": set_time_label(chore, time_id)} if time_id else {}),
                 "timestamp": now.isoformat() if backdated else dt_util.now().isoformat(),
                 **({"backdated": True} if backdated else {}),
+                **completion.child_note_fields(),
             },
         )
 
@@ -1944,6 +1945,7 @@ class ChoresMixin:
                             **({"quality_rating": stars} if stars else {}),
                             **({"praise_note": completion.praise_note} if completion.praise_note else {}),
                             **({"checked_by": completion.checked_by} if completion.checked_by else {}),
+                            **completion.child_note_fields(),
                         },
                     )
 
@@ -2302,6 +2304,7 @@ class ChoresMixin:
                 "chore_name": chore_name,
                 "completion_id": completion_id,
                 "timestamp": dt_util.now().isoformat(),
+                **target_completion.child_note_fields(),
             }
             if rejected:
                 payload["reason"] = reason

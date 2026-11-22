@@ -6108,6 +6108,8 @@ class TaskMatePanel extends HTMLElement {
       child: c.child_id === "__parent__" ? this._t("panel.activity_parent") : ((childById[c.child_id] || {}).name || "?"),
       label: `${this._t("panel.activity_completed_chore", {name: (choreById[c.chore_id] || {}).name || this._t("panel.activity_deleted_chore")})}`,
       points: c.points_awarded,
+      // What the child wrote when they submitted it (#1283).
+      child_note: c.note || "", suggested_points: c.suggested_points || 0,
     }));
     claims.filter(c => c.approved && this._childInScope(c.child_id)).forEach(c => events.push({
       ts: c.approved_at || c.claimed_at, kind: "claim", child_id: c.child_id, claim_id: c.wish_id ? "" : c.id,
@@ -6139,6 +6141,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-timeline-body">
               <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}${ev.kind === "completion" && ev.completion_id ? ` ${this._inspSlot(ev.completion_id)}` : ""}${ev.kind === "claim" && ev.claim_id ? ` <button type="button" class="tm-btn tm-btn-sm tm-voucher-btn" data-act="print-voucher" data-id="${this._esc(ev.claim_id)}" title="${this._t("panel.voucher_print")}" aria-label="${this._t("panel.voucher_print")}">🖨️</button>` : ""}</div>
               ${ev.note ? `<div class="tm-meta tm-insp-note">“${this._esc(ev.note)}”</div>` : ""}
+              ${ev.kind === "completion" ? this._childNoteLines({ note: ev.child_note, suggested_points: ev.suggested_points }) : ""}
             </div>
             <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points == null ? "" : `${ev.points >= 0 ? '+' : ''}${this._fmtNum(this._num(ev.points))}`}</div>
           </div>
