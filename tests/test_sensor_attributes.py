@@ -693,6 +693,38 @@ def _wired_stress_coordinator():
             for i in range(50)
         ]
     )
+    # Surprise inspections on (#1285): a busy day of open inspections with
+    # long names, and every approved completion still inspectable, so the
+    # dashboard card's slice is measured at its largest (the cap applies).
+    completions = coord.data["completions"]
+    coord.storage.get_completions = MagicMock(return_value=completions)
+    coord.inspections_enabled = MagicMock(return_value=True)
+    coord.inspection_default_bonus = MagicMock(return_value=10)
+    coord.inspection_default_window = MagicMock(return_value="2h")
+    coord.inspection_fail_default = MagicMock(return_value="ask")
+    coord.inspection_tell_default = MagicMock(return_value=True)
+    coord.inspection_bedtime = MagicMock(return_value=(20, 0))
+    coord.inspection_bed_rule = MagicMock(return_value={"min_minutes": 30, "fallback_hours": 1})
+    coord.inspection_can_redo = MagicMock(return_value=True)
+    coord.inspection_item_name = MagicMock(return_value="A chore with a fairly long name to inspect")
+    coord.inspectable_completion_ids = MagicMock(return_value=[c.id for c in completions if c.approved])
+    coord.storage.get_inspections = MagicMock(
+        return_value=[
+            {
+                "id": f"inspection-{i:03d}-0123456789abcdef",
+                "completion_id": f"completion-{i:04d}",
+                "child_id": f"child-{i % 4}",
+                "chore_name": f"A chore with a fairly long name {i:02d}",
+                "points": 12,
+                "bonus": 25,
+                "until": "2026-04-20T20:00:00.123456+00:00",
+                "tell_child": bool(i % 2),
+                "source": "parent",
+                "status": "open",
+            }
+            for i in range(20)
+        ]
+    )
     return coord
 
 

@@ -48,6 +48,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
       },
       { name: 'quick_points_amount', selector: { number: { min: 1, max: 100, mode: 'box' } } },
       { name: 'show_claims', selector: { boolean: {} } },
+      { name: 'show_inspections', selector: { boolean: {} } },
     ];
   }
 
@@ -59,6 +60,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
       card_design: this._t('common.design.field_label'),
       quick_points_amount: this._t('dashboard.editor.quick_points_label'),
       show_claims: this._t('dashboard.editor.show_claims'),
+      show_inspections: this._t('dashboard.editor.show_inspections'),
     };
     return labels[entry.name] ?? entry.name;
   };
@@ -68,6 +70,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
       show_adults: this._t('common.editor.show_adults_helper'),
       entity: this._t('dashboard.editor.entity_helper'),
       quick_points_amount: this._t('dashboard.editor.quick_points_helper'),
+      show_inspections: this._t('dashboard.editor.show_inspections_helper'),
     };
     return helpers[entry.name] ?? '';
   };
@@ -80,6 +83,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
       card_design: this.config.card_design || 'global',
       quick_points_amount: this.config.quick_points_amount || 5,
       show_claims: this.config.show_claims !== false,
+      show_inspections: this.config.show_inspections !== false,
     };
     return html`
       <ha-form
@@ -117,7 +121,7 @@ class TaskMateParentDashboardCardEditor extends LitElement {
         delete newConfig[key];
       } else if (key === 'card_design' && value === 'global') {
         delete newConfig[key];
-      } else if (key === 'show_claims' && value === true) {
+      } else if ((key === 'show_claims' || key === 'show_inspections') && value === true) {
         delete newConfig[key];
       } else if (key === 'quick_points_amount' && value === 5) {
         delete newConfig[key];

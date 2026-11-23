@@ -19,6 +19,17 @@ Each approved chore can be inspected once.
 
 ---
 
+## From the Parent Dashboard Card
+
+You can run the whole thing from your phone on the [Parent Dashboard Card](Dashboard-Cards.md#parent-dashboard-card), without opening the admin panel. While inspections are switched on, the card has an **Inspections** tab (its count is the inspections waiting for you):
+
+- **Waiting for a check** lists open inspections, the random daily pick included, with the child, the bonus, the time left and whether the child was told. **Pass** opens a bonus field (filled in with the inspection's bonus) and an optional note. **Fail** lets you choose **Just note it** or **Send it back to redo** (the starting choice follows **If it fails**), with a note for the child. ✕ cancels it after asking.
+- **Approved in the last 24 hours** lists the chores you can still inspect. Tap 🔍 to choose the time to check, the bonus and **Tell … now**, all filled in from your settings, then **Start inspection**.
+
+Set `show_inspections: false` on the card to hide the tab.
+
+---
+
 ## What the Child Sees
 
 When the child has been told, their card shows an amber **Inspection coming!** banner with the countdown and the bonus, and the chore gets a dashed border and an **Inspection** tag.
@@ -54,13 +65,13 @@ Rejecting the inspected completion itself also cancels an open inspection on it.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| **Inspections** | on | Shows the magnifier on chores approved in the last 24 hours, in Today and Activity |
+| **Inspections** | on | Shows the magnifier on chores approved in the last 24 hours, in Today and Activity, and the Inspections tab on the Parent Dashboard Card |
 | **Bonus for a pass** | `10` | The starting bonus. Can be changed for each inspection |
 | **Time to check** | 2 hours | The starting window: 1 hour, 2 hours, 4 hours or until bedtime |
 | **Bedtime** | `20:00` | Used by "Until bedtime". Less than 30 minutes before it, the window is an hour |
 | **If it fails** | Just note it | Just note it, Send it back to redo, or Ask me each time |
 | **Tell the child when it starts** | on | The starting position of the "Tell … now" switch |
-| **Random daily pick** | off | TaskMate picks one approved chore for you to inspect. It shows up in Needs you |
+| **Random daily pick** | off | TaskMate picks one approved chore for you to inspect. It shows up in Needs you and on the Parent Dashboard Card |
 | **When and how often** | `17:00`, 30% | The daily time the pick is made, and the chance it happens on any given day |
 | **Children** | all | Which children can be picked. None ticked means every child |
 

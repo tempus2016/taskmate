@@ -1086,6 +1086,8 @@ def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
 
 _FEED_REJECTIONS_MAX = 8
 _FEED_INSPECTIONS_MAX = 8
+# Approved chores the parent dashboard card offers to inspect (#1285).
+INSPECTABLE_CARD_MAX = 15
 
 
 def _build_recent_transactions(
@@ -2279,7 +2281,16 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
     """Sensor for pending approvals."""
 
     _unrecorded_attributes = frozenset(
-        {"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards", "swap_requests"}
+        {
+            "chore_completions",
+            "reward_claims",
+            "mandatory_misses",
+            "owed_rewards",
+            "swap_requests",
+            "open_inspections",
+            "inspectable_completions",
+            "inspection_settings",
+        }
     )
 
     def __init__(
@@ -2331,6 +2342,79 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 detail["from_child_name"] = from_child.name
             details.append(detail)
         return details
+
+    def _inspection_attrs(self) -> dict:
+        """Surprise inspections for the parent dashboard card (#1285).
+
+        Nothing at all while the feature is off. The settings always ride
+        along when it is on (they tell the card to show its tab); the two
+        lists only when they have rows, and the inspectable list is capped,
+        newest first, because this sensor shares the 16 KB attribute cap.
+        """
+        coord = self.coordinator
+        enabled = getattr(coord, "inspections_enabled", None)
+        # `is not True`: a stand-in coordinator answers with a non-bool.
+        if not callable(enabled) or enabled() is not True:
+            return {}
+        bed_h, bed_m = coord.inspection_bedtime()
+        out: dict = {
+            "inspection_settings": {
+                "bonus": coord.inspection_default_bonus(),
+                "window": coord.inspection_default_window(),
+                "fail_mode": coord.inspection_fail_default(),
+                "tell_child": coord.inspection_tell_default(),
+                "bedtime": f"{bed_h:02d}:{bed_m:02d}",
+                "bed_rule": coord.inspection_bed_rule(),
+            }
+        }
+        open_rows = []
+        for r in coord.storage.get_inspections():
+            if r.get("status") != "open":
+                continue
+            child = coord.get_child(r.get("child_id", ""))
+            if child is None:
+                continue
+            open_rows.append(
+                {
+                    "id": r.get("id", ""),
+                    "completion_id": r.get("completion_id", ""),
+                    "child_id": child.id,
+                    "child_name": child.name,
+                    "chore_name": r.get("chore_name", ""),
+                    "points": r.get("points", 0),
+                    "bonus": r.get("bonus", 0),
+                    "until": r.get("until", ""),
+                    "tell_child": bool(r.get("tell_child")),
+                    "source": r.get("source", "parent"),
+                    "can_redo": coord.inspection_can_redo(r),
+                }
+            )
+        if open_rows:
+            out["open_inspections"] = open_rows
+        ids = set(coord.inspectable_completion_ids())
+        if ids:
+            rows = []
+            for comp in coord.storage.get_completions():
+                if comp.id not in ids:
+                    continue
+                child = coord.get_child(comp.child_id)
+                if child is None:
+                    continue
+                approved = comp.approved_at or comp.completed_at
+                rows.append(
+                    {
+                        "completion_id": comp.id,
+                        "child_id": child.id,
+                        "child_name": child.name,
+                        "chore_name": coord.inspection_item_name(comp),
+                        "points": int(comp.points_awarded or 0),
+                        "approved_at": approved.isoformat() if approved else "",
+                    }
+                )
+            rows.sort(key=lambda row: row["approved_at"], reverse=True)
+            if rows:
+                out["inspectable_completions"] = rows[:INSPECTABLE_CARD_MAX]
+        return out
 
     @property
     def icon(self) -> str:
@@ -2456,6 +2540,10 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         # while the tracker is on and something is owed.
         if owed := self.coordinator.owed_rewards():
             attrs["owed_rewards"] = owed
+        # Surprise inspections (#1285): open ones, what can still be flagged and
+        # the start defaults, so the parent dashboard card can run them. All
+        # absent while inspections are off.
+        attrs.update(self._inspection_attrs())
         # Quality rating (#927): tells approval cards to draw the star picker,
         # and what each star pays. Absent entirely while the feature is off.
         if self.coordinator.quality_rating_enabled():

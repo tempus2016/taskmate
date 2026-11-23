@@ -374,7 +374,7 @@ header_color: "#16a085"
 
 ![Parent Dashboard Card](images/card-parent-dashboard.png)
 
-**Purpose:** All-in-one parent control centre with four tabs.
+**Purpose:** All-in-one parent control centre with tabs for each kind of job.
 
 **Default header colour:** Crimson `#c0392b`
 
@@ -384,6 +384,7 @@ entity: sensor.taskmate_overview
 title: Parent Dashboard
 quick_points_amount: 5        # points per +/- button press
 show_claims: true             # show the Claims tab
+show_inspections: true        # show the Inspections tab while surprise inspections are on
 header_color: "#c0392b"
 ```
 
@@ -393,6 +394,7 @@ header_color: "#c0392b"
 |-----|---------|
 | **Overview** | All children's today progress bars and points |
 | **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)); with [quality ratings](Quality-Ratings.md) on, a ★ / ★★ / ★★★ picker under each chore rates it as you approve |
+| **Inspections** | Only while [Surprise Inspections](Surprise-Inspections.md) are on. Open inspections to pass, fail or cancel, then chores approved in the last 24 hours with a 🔍 to start one |
 | **Claims** | Pending reward claims with approve/reject |
 | **Points** | Quick +/- buttons per child |
 
