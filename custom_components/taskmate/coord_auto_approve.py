@@ -78,6 +78,7 @@ class AutoApproveMixin:
                     "points": stored.points_awarded,
                     "hours": self.auto_approve_hours(),
                     "timestamp": dt_util.now().isoformat(),
+                    **stored.child_note_fields(),
                 },
             )
         if count:

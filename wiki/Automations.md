@@ -99,9 +99,9 @@ TaskMate fires Home Assistant bus events for most state changes. Trigger your ow
 
 | Event | Data fields |
 |-------|-------------|
-| `taskmate_chore_completed` | `child_id`, `child_name`, `chore_id`, `chore_name`, `points`, `difficulty`, `timestamp` |
-| `taskmate_chore_approved` | `child_id`, `chore_id`, `completion_id`, `timestamp` |
-| `taskmate_chore_rejected` | `child_id`, `child_name`, `chore_id`, `chore_name`, `completion_id`, `reason` (v6.0.0, empty when none was given), `timestamp` |
+| `taskmate_chore_completed` | `child_id`, `child_name`, `chore_id`, `chore_name`, `points`, `difficulty`, `timestamp`, plus `note` and `suggested_points` when the child [described the work](Open-Ended-Chores.md#where-its-stored) |
+| `taskmate_chore_approved` | `child_id`, `chore_id`, `completion_id`, `timestamp`, plus `note` and `suggested_points` when the child [described the work](Open-Ended-Chores.md#where-its-stored) |
+| `taskmate_chore_rejected` | `child_id`, `child_name`, `chore_id`, `chore_name`, `completion_id`, `reason` (v6.0.0, empty when none was given), `timestamp`, plus `note` and `suggested_points` when the child [described the work](Open-Ended-Chores.md#where-its-stored) |
 | `taskmate_swap_approved` | `chore_id`, `requester_id`, `from_child_id`, `timestamp` |
 | `taskmate_weekly_target_reached` | `child_id`, `child_name`, `chore_id`, `chore_name`, `target`, `bonus`, `timestamp` — (v6.2.0) a child's approved completions reached a chore's [weekly target](Weekly-Targets.md#weekly-target-bonus) and the bonus was paid. Only fires on chores with a bonus set, once per child, chore and week |
 
@@ -174,7 +174,7 @@ Grouped the same way as the release notes. Every event carries a `timestamp` unl
 | `taskmate_tag_completion` | `tag_id`, `device_id`, `child_id`, `child_name`, `chore_id`, `chore_name`, `completion_id`, `pending_approval` (no `timestamp`) — a chore was completed by scanning an [NFC tag or QR code](NFC-Tag-Completion.md) |
 | `taskmate_team_chore_joined` | `child_id`, `child_name`, `chore_id`, `chore_name`, `joined`, `team_size` (no `timestamp`) — a child joined a [teamwork chore](Teamwork-Chores.md) that isn't full yet |
 | `taskmate_team_chore_completed` | `chore_id`, `chore_name`, `child_ids`, `team_size` (no `timestamp`) — the team filled up and everyone got a completion |
-| `taskmate_chore_undone` | `child_id`, `child_name`, `chore_id`, `chore_name`, `completion_id`, `timestamp` — a child took back their own chore inside the [undo window](Child-Undo-Window.md) (a parent's rejection fires `taskmate_chore_rejected` instead) |
+| `taskmate_chore_undone` | `child_id`, `child_name`, `chore_id`, `chore_name`, `completion_id`, `timestamp`, plus `note` and `suggested_points` when set — a child took back their own chore inside the [undo window](Child-Undo-Window.md) (a parent's rejection fires `taskmate_chore_rejected` instead) |
 | `taskmate_streak_freeze_used` | `child_id`, `child_name`, `date`, `streak`, `freezes_left`, `timestamp` — a [streak freeze](Streak-Freezes.md) token saved the streak on `date` |
 
 **Recaps**
@@ -247,7 +247,7 @@ All auction events carry `auction_id`, `chore_id`, `chore_name`, `occurrence` (t
 
 | Event | Data fields |
 |-------|-------------|
-| `taskmate_chore_auto_approved` | `child_id`, `child_name`, `chore_id`, `chore_name`, `points`, `hours`, `timestamp` — a chore nobody reviewed within `hours` approved itself. See [Auto-Approve](Auto-Approve.md). The usual `taskmate_chore_approved` fires as well |
+| `taskmate_chore_auto_approved` | `child_id`, `child_name`, `chore_id`, `chore_name`, `points`, `hours`, `timestamp`, plus `note` and `suggested_points` when set — a chore nobody reviewed within `hours` approved itself. See [Auto-Approve](Auto-Approve.md). The usual `taskmate_chore_approved` fires as well |
 | `taskmate_help_requested` | `child_id`, `child_name`, `chore_id`, `chore_name`, `message`, `message_text`, `request_id`, `recipients` (no `timestamp`) — a child tapped "I'm stuck". Pass `request_id` to `taskmate.answer_help`. See [Help Requests](Help-Requests.md) |
 | `taskmate_mood_logged` | `child_id`, `child_name`, `mood`, `emoji`, `timestamp` — a child did the end-of-day [mood check-in](Mood-Check-In.md). `mood` is `great`, `good`, `ok`, `sad` or `upset` |
 | `taskmate_mood_low` | `child_id`, `child_name`, `mood`, `emoji`, `recipients` (no `timestamp`) — the mood was `sad` or `upset` |

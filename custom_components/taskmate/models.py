@@ -1660,6 +1660,19 @@ class ChoreCompletion:
             check_note=clean_label(data.get("check_note", ""), PRAISE_NOTE_MAX),
         )
 
+    def child_note_fields(self) -> dict[str, Any]:
+        """The child's own words and suggested points, only the parts set (#1283).
+
+        Spread into chore event data and history rows, so a completion with
+        no description adds no keys.
+        """
+        out: dict[str, Any] = {}
+        if self.note:
+            out["note"] = self.note
+        if self.suggested_points:
+            out["suggested_points"] = self.suggested_points
+        return out
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         data = {

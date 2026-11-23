@@ -102,7 +102,37 @@ The approval push quotes the child's estimate for an open-ended chore rather tha
 
 ## Where It's Stored
 
-The description and the estimate live on the completion record as `note` and `suggested_points`. Both are only published on the pending-approvals sensor when they actually hold something, so ordinary tap-to-complete chores add nothing to the sensor's payload.
+The description and the estimate live on the completion record as `note` and `suggested_points`, and they stay there after you approve or reject it. Both are only published when they actually hold something, so ordinary tap-to-complete chores add nothing:
+
+| Where | What you get |
+|-------|--------------|
+| `sensor.taskmate_pending_approvals` | `note` and `suggested_points` on each waiting item in `chore_completions` |
+| `sensor.taskmate_activity` | `note` and `suggested_points` on each item in `recent_completions`, so they stay readable after approval |
+| [Admin Panel](Admin-Panel.md) | **They said** and **Suggested** under the chore in **Activity → Recent activity** and the recent activity on **Today** |
+| Bus events | `note` and `suggested_points` in `taskmate_chore_completed`, `taskmate_chore_approved`, `taskmate_chore_auto_approved`, `taskmate_chore_rejected` and `taskmate_chore_undone` |
+
+### Example — send their words to your phone when you approve
+
+```yaml
+alias: "TaskMate — what they did"
+triggers:
+  - trigger: event
+    event_type: taskmate_chore_approved
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.note is defined }}"
+actions:
+  - action: notify.mobile_app_parent_phone
+    data:
+      title: "Approved"
+      message: >-
+        {{ trigger.event.data.note }}
+        {% if trigger.event.data.suggested_points is defined %}
+        (they suggested {{ trigger.event.data.suggested_points }})
+        {% endif %}
+```
+
+`taskmate_chore_approved` carries IDs rather than names; use `taskmate_chore_completed` if you want `child_name` and `chore_name` in the same message.
 
 ---
 
