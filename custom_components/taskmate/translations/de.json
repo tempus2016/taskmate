@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Familienziel zurücksetzen",
+      "description": "Startet das Familienziel wieder bei 0. Es zählen nur ab jetzt verdiente Punkte; die Punktestände der Kinder bleiben unverändert."
+    },
     "adopt_pet": {
       "name": "Haustier adoptieren",
       "description": "Ein Kind adoptiert (oder benennt) sein virtuelles Haustier. Es wächst mit jeder ab jetzt erledigten Aufgabe.",

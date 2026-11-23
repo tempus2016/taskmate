@@ -12,6 +12,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import DEFAULT_NOTIFICATION_NAV_URL, DEFAULT_PRESENCE_ARRIVAL_MIN_AWAY, DOMAIN
 from .errors import TaskMateError
+from .family_goal import seed_family_goal_baseline
 from .models import (
     Auction,
     AwardedBadge,
@@ -233,6 +234,10 @@ class TaskMateStorage:
         await self._migrate_career_score()
         await self._migrate_first_come_daily_limit()
         self._migrate_kid_tour(is_fresh)
+        # Family goal counts points earned since it started (#1282); an existing
+        # goal keeps the number it showed before the upgrade.
+        if seed_family_goal_baseline(self):
+            await self.async_save()
 
         return data
 

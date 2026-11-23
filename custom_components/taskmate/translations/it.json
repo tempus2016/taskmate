@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Azzera obiettivo di famiglia",
+      "description": "Ricomincia l'obiettivo di famiglia da 0. Contano solo i punti guadagnati da adesso; i saldi punti dei bambini non cambiano."
+    },
     "adopt_pet": {
       "name": "Adotta un animaletto",
       "description": "Un bambino adotta (o rinomina) il suo animaletto virtuale. Da ora cresce con ogni faccenda che finisce.",
