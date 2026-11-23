@@ -43,7 +43,7 @@ class TaskMateApprovalsCardEditor extends LitElement {
       : null;
     const children = overviewEntity?.attributes?.children || [];
     return [
-      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'entity', selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
       {
         name: 'child_id',

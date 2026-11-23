@@ -24,7 +24,7 @@ class TaskMateBadgesCardEditor extends LitElement {
 
   _buildSchema() {
     return [
-      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'entity', selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: 'sensor' } } },
       { name: 'title', selector: { text: {} } },
       {
         name: 'card_design',

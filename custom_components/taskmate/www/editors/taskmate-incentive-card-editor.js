@@ -45,7 +45,7 @@ export function defineIncentiveEditor(P) {
 
     _buildSchema() {
       return [
-        { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+        { name: 'entity', selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: 'sensor' } } },
         { name: 'title', selector: { text: {} } },
         { name: 'show_parent_actions', selector: { boolean: {} } },
         {

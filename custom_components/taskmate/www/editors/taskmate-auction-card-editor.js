@@ -32,7 +32,7 @@ class TaskMateAuctionCardEditor extends LitElement {
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
     const children = attrs.children || [];
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: "sensor" } } },
       {
         name: "child_id",
         selector: {
