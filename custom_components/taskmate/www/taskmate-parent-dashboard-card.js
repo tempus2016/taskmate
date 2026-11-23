@@ -40,6 +40,22 @@ const tmSafePhotoUrl = (u) =>
 // value from taking the card down again.
 const tmClaimList = (v) => (Array.isArray(v) ? v : []);
 
+// New wishes waiting for a parent (#1284), from the pending-approvals sensor.
+// Only our own stored images are ever signed or shown, and only an absolute
+// http(s) link is ever rendered: a child typed it.
+const tmWishList = (v) => (Array.isArray(v) ? v : []);
+const tmSafeImageUrl = (u) =>
+  typeof u === "string" && u.startsWith("/api/taskmate/image/") ? u : "";
+const tmSafeLink = (u) => {
+  if (typeof u !== "string" || !u) return "";
+  try {
+    const url = new URL(u);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+  } catch (_e) {
+    return "";
+  }
+};
+
 const _safeColor = (c, d) => (typeof c === "string" && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : d);
 // Keeps number runs like "3 / 1" reading left to right in RTL text (#995);
 // identity until the design layer has loaded (it is also what stamps dir).
@@ -55,6 +71,7 @@ class TaskMateParentDashboardCard extends LitElement {
       _expanded: { type: Object },
       _signed: { state: true },
       _ratings: { state: true },
+      _wishForm: { state: true },
     };
   }
 
@@ -112,6 +129,7 @@ class TaskMateParentDashboardCard extends LitElement {
     this._expanded = {};
     this._signed = {};        // safe photo path -> per-viewer signed path
     this._ratings = {};       // completion_id -> picked 1-3 star rating (#1114)
+    this._wishForm = null;    // { id, mode: "approve"|"decline", target, reason, error } (#1284)
     this._inflight = new Set();
   }
 
@@ -146,7 +164,7 @@ class TaskMateParentDashboardCard extends LitElement {
 
   async _ensureSignedPhotos(rawUrls) {
     for (const raw of rawUrls) {
-      const url = tmSafePhotoUrl(raw);
+      const url = tmSafePhotoUrl(raw) || tmSafeImageUrl(raw);
       if (!url || this._signed[url] || this._inflight.has(url)) continue;
       this._inflight.add(url);
       try {
@@ -162,6 +180,8 @@ class TaskMateParentDashboardCard extends LitElement {
 
   updated() {
     const urls = this._collectPhotoUrls();
+    // A wish's picture (#1284) is a stored image, signed the same way.
+    for (const w of this._wishRequests()) if (w.image_url) urls.push(w.image_url);
     if (urls.length) this._ensureSignedPhotos(urls);
     this._balanceTabs();
     this._syncTabFade();
@@ -694,6 +714,34 @@ class TaskMateParentDashboardCard extends LitElement {
       .pd-photo-link { line-height: 0; text-decoration: none; }
       .pd-gold-soft { color: var(--tmd-gold); }
 
+      /* Wish requests (#1284) — both render paths, in the Approvals tab. */
+      .pd-section-hd { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+        opacity: .65; margin: 6px 2px 0; }
+      .pd-item + .pd-section-hd { margin-top: 12px; }
+      .pd-section-hd + .pd-item { margin-top: 6px; }
+      .approval-item.pd-wish { flex-direction: column; align-items: stretch; }
+      .pd-wish-top { display: flex; align-items: center; gap: 10px; }
+      .pd-wish.loading { opacity: .5; pointer-events: none; }
+      .pd-wish-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+      .pd-wish-info > div:first-child { overflow-wrap: anywhere; white-space: normal; }
+      .pd-wish-heart { --mdc-icon-size: 15px; margin-inline-end: 4px; vertical-align: -2px; color: #e84393; }
+      .pd-wish-link { color: inherit; opacity: .7; margin-inline-start: 6px; text-decoration: none; }
+      .pd-wish-link ha-icon { --mdc-icon-size: 15px; vertical-align: -2px; }
+      .pd-wish-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 10px;
+        padding-top: 10px; border-top: 1px dashed var(--tmd-border, var(--divider-color, #e0e0e0)); }
+      .pd-wish-field { flex: 1 1 100%; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; opacity: .9; }
+      .pd-input { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; min-width: 0; width: 100%; box-sizing: border-box;
+        border: 1px solid var(--tmd-border, var(--divider-color, #c8c8c8));
+        background: var(--tmd-surface, var(--card-background-color, #fff)); color: var(--tmd-text, var(--primary-text-color, inherit)); }
+      .pd-input:focus-visible { outline: 2px solid var(--tmd-accent, var(--primary-color, #03a9f4)); outline-offset: 1px; }
+      .pd-wish-btns { display: flex; gap: 6px; flex: none; margin-inline-start: auto; }
+      .pd-wish-err { flex-basis: 100%; font-size: 12px; color: var(--tmd-bad, var(--error-color, #c0392b)); }
+      .pd-fbtn { font: 600 0.82rem/1 inherit; padding: 9px 14px; border-radius: 8px; cursor: pointer;
+        border: 1px solid var(--divider-color, #c8c8c8); background: transparent; color: inherit; }
+      .pd-fbtn.go { background: #2e9e5b; border-color: transparent; color: #fff; }
+      .pd-fbtn.no { background: #c0392b; border-color: transparent; color: #fff; }
+      .pd-fbtn[disabled] { opacity: .5; pointer-events: none; }
+
       /* Quality rating star picker (#1114) — both render paths, under the subtitle. */
       .pd-stars { display: inline-flex; align-items: center; gap: 1px; margin-top: 2px; }
       .pd-star {
@@ -716,6 +764,7 @@ class TaskMateParentDashboardCard extends LitElement {
       title: "",
       quick_points_amount: 5,
       show_claims: true,
+      show_wishes: true,
             header_color: '#c0392b',
     ...config,
     };
@@ -766,13 +815,15 @@ class TaskMateParentDashboardCard extends LitElement {
     const pointsName = attrs.points_name || this._t('common.points');
     // Chore swap requests (#1275) wait on a parent too.
     const pendingSwaps = Array.isArray(attrs.swap_requests) ? attrs.swap_requests.length : 0;
-    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps;
+    // New wishes (#1284) sit in the Approvals tab unless show_wishes is off.
+    const pendingWishes = this.config.show_wishes !== false ? tmWishList(attrs.wish_requests) : [];
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps + pendingWishes.length;
 
     const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 
     const tabs = [
       { id: "overview", label: this._t('dashboard.tab_overview'), icon: "mdi:view-dashboard" },
-      { id: "approvals", label: this._t('dashboard.tab_approvals'), icon: "mdi:check-circle", count: pendingCompletions.length },
+      { id: "approvals", label: this._t('dashboard.tab_approvals'), icon: "mdi:check-circle", count: pendingCompletions.length + pendingWishes.length },
       { id: "points", label: this._t('dashboard.tab_points'), icon: "mdi:star-plus" },
     ];
 
@@ -817,7 +868,7 @@ class TaskMateParentDashboardCard extends LitElement {
         <div class="tab-content">
           ${this._activeSection === "overview" ? this._renderOverview(family, chores, completions, pointsIcon, pointsName) : ''}
           ${this._activeSection === "rotation" ? this._renderRotation(rotationChores, children, attrs) : ''}
-          ${this._activeSection === "approvals" ? this._renderApprovals(pendingCompletions, children, chores, pointsIcon) : ''}
+          ${this._activeSection === "approvals" ? this._renderApprovals(pendingCompletions, children, chores, pointsIcon, pendingWishes, pointsName) : ''}
           ${this._activeSection === "claims" ? this._renderClaims(pendingRewardClaims, pointsIcon) : ''}
           ${this._activeSection === "points" ? this._renderPoints(family, pointsIcon, pointsName) : ''}
         </div>
@@ -910,13 +961,15 @@ class TaskMateParentDashboardCard extends LitElement {
     const pointsName = attrs.points_name || this._t('common.points');
     // Chore swap requests (#1275) wait on a parent too.
     const pendingSwaps = Array.isArray(attrs.swap_requests) ? attrs.swap_requests.length : 0;
-    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps;
+    // New wishes (#1284) sit in the Approvals tab unless show_wishes is off.
+    const pendingWishes = this.config.show_wishes !== false ? tmWishList(attrs.wish_requests) : [];
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps + pendingWishes.length;
 
     const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 
     const tabs = [
       { id: "overview", label: this._t('dashboard.tab_overview') },
-      { id: "approvals", label: this._t('dashboard.tab_approvals'), count: pendingCompletions.length },
+      { id: "approvals", label: this._t('dashboard.tab_approvals'), count: pendingCompletions.length + pendingWishes.length },
       { id: "points", label: this._t('dashboard.tab_points') },
     ];
     if (rotationChores.length > 0) {
@@ -940,7 +993,7 @@ class TaskMateParentDashboardCard extends LitElement {
     const sec = this._activeSection;
     if (sec === "overview") body = this._dOverview(design, family, chores, completions, attrs, pointsIcon);
     else if (sec === "rotation") body = this._dRotation(design, rotationChores, children, attrs);
-    else if (sec === "approvals") body = this._dApprovals(design, pendingCompletions, children, chores, pointsIcon);
+    else if (sec === "approvals") body = this._dApprovals(design, pendingCompletions, children, chores, pointsIcon, pendingWishes, pointsName);
     else if (sec === "claims") body = this._dClaims(design, pendingRewardClaims, pointsIcon);
     else if (sec === "points") body = this._dPoints(design, family, pointsIcon, pointsName);
 
@@ -1054,10 +1107,14 @@ class TaskMateParentDashboardCard extends LitElement {
     })}`;
   }
 
-  _dApprovals(design, pending, children, chores, _pointsIcon) {
-    if (!pending.length) return this._dEmpty(this._t('dashboard.empty_approvals'));
+  _dApprovals(design, pending, children, chores, _pointsIcon, wishes = [], pointsName = "") {
+    if (!pending.length && !wishes.length) return this._dEmpty(this._t('dashboard.empty_approvals'));
     const childMap = {}; children.forEach(c => { childMap[c.id] = c; });
     const choreMap = {}; chores.forEach(c => { choreMap[c.id] = c; });
+    return html`${this._dApprovalRows(pending, childMap, choreMap)}${this._renderWishes(wishes, childMap, pointsName, design)}`;
+  }
+
+  _dApprovalRows(pending, childMap, choreMap) {
     return html`${pending.map((comp, i) => {
       const tone = this._designTone(i);
       const child = childMap[comp.child_id];
@@ -1379,8 +1436,8 @@ class TaskMateParentDashboardCard extends LitElement {
     `;
   }
 
-  _renderApprovals(pending, children, chores, pointsIcon) {
-    if (!pending.length) return html`
+  _renderApprovals(pending, children, chores, pointsIcon, wishes = [], pointsName = "") {
+    if (!pending.length && !wishes.length) return html`
       <div class="empty-section">
         <ha-icon icon="mdi:check-all" style="color: #2ecc71;"></ha-icon>
         <span>${this._t('dashboard.empty_approvals')}</span>
@@ -1435,6 +1492,7 @@ class TaskMateParentDashboardCard extends LitElement {
           </div>
         `;
       })}
+      ${this._renderWishes(wishes, childMap, pointsName, "classic")}
     `;
   }
 
@@ -1504,6 +1562,160 @@ class TaskMateParentDashboardCard extends LitElement {
         </div>
       `)}
     `;
+  }
+
+  /* ── Wish requests (#1284) ─────────────────────────────────────────────
+     New wishes wait for a parent's yes or no, like a chore or a claim. ✓ and
+     ✕ open a short form under the row (the target to approve at, or an
+     optional reason for the child) rather than acting on one tap: approving
+     sets what the child saves towards, so it gets a second look. */
+
+  _wishRequests() {
+    if (!this.hass || !this.config || this.config.show_wishes === false) return [];
+    const attrs = (window.__taskmate_attrs && window.__taskmate_attrs(this.hass, this.config.entity))
+      || this.hass?.states?.[this.config.entity]?.attributes || {};
+    return tmWishList(attrs.wish_requests);
+  }
+
+  _openWishForm(wish, mode) {
+    const f = this._wishForm;
+    if (f && f.id === wish.wish_id && f.mode === mode) { this._wishForm = null; return; }
+    this._wishForm = { id: wish.wish_id, mode, target: String(wish.target ?? ""), reason: "", error: "" };
+  }
+
+  _renderWishes(wishes, childMap, pointsName, design) {
+    if (!wishes.length) return "";
+    const classic = design === "classic";
+    return html`
+      <div class="pd-section-hd">${this._t('dashboard.wishes_heading')}</div>
+      ${wishes.map((w, i) => {
+        const child = childMap[w.child_id];
+        const name = w.child_name || child?.name || this._t('common.unknown');
+        const busy = !!this._loading[w.wish_id];
+        const safeImg = tmSafeImageUrl(w.image_url);
+        const pic = (safeImg && this._signed[safeImg]) || "";
+        const link = tmSafeLink(w.link);
+        const time = w.requested_at
+          ? new Date(w.requested_at).toLocaleDateString(...__tmDateArgs(this.hass, { month: "short", day: "numeric" }, "date")) : "";
+        // "Mia suggested 250 Points · Nov 23": the suggestion names the child.
+        const sub = [this._t('dashboard.wish_suggested', { child: name, points: __tmNum(this.hass, Number(w.target) || 0), points_name: pointsName }), time]
+          .filter(Boolean).join(" · ");
+        const tone = this._designTone(i);
+        const avatar = classic
+          ? html`<div class="approval-child-avatar">${this._avatarGlyph(child)}</div>`
+          : this._av(name, child, tone, 36);
+        const thumb = pic
+          ? html`<a class="pd-photo-link" href="${pic}" target="_blank" rel="noopener"
+              @click="${(e) => this._openPhoto(e, pic, [w.wish_name, name].filter(Boolean).join(" · "))}"
+              title="${w.wish_name || ''}"><div class="pd-photo"><img src="${pic}" alt=""></div></a>`
+          : "";
+        const linkBtn = link
+          ? html`<a class="pd-wish-link" href="${link}" target="_blank" rel="noopener noreferrer"
+              title="${this._t('wishlist.open_link')}" aria-label="${this._t('wishlist.open_link')}"><ha-icon icon="mdi:open-in-new"></ha-icon></a>`
+          : "";
+        const acts = classic
+          ? html`
+            <button class="btn-approve" ?disabled="${busy}" @click="${() => this._openWishForm(w, 'approve')}"
+              title="${this._t('common.approve')}" aria-label="${this._t('common.approve')}"><ha-icon icon="mdi:check-bold"></ha-icon></button>
+            <button class="btn-reject" ?disabled="${busy}" @click="${() => this._openWishForm(w, 'decline')}"
+              title="${this._t('dashboard.wish_decline')}" aria-label="${this._t('dashboard.wish_decline')}"><ha-icon icon="mdi:close-thick"></ha-icon></button>`
+          : html`
+            <button class="btn good sm round" ?disabled="${busy}" title="${this._t('common.approve')}"
+              aria-label="${this._t('common.approve')}" @click="${() => this._openWishForm(w, 'approve')}">✓</button>
+            <button class="btn bad sm round" ?disabled="${busy}" title="${this._t('dashboard.wish_decline')}"
+              aria-label="${this._t('dashboard.wish_decline')}" @click="${() => this._openWishForm(w, 'decline')}">✕</button>`;
+        const top = html`
+          ${avatar}
+          <div class="pd-wish-info">
+            <div class="${classic ? 'approval-chore' : 'pd-item-title'}"><ha-icon class="pd-wish-heart" icon="mdi:heart-outline"></ha-icon>${w.wish_name || this._t('common.unknown')}${linkBtn}</div>
+            <div class="${classic ? 'approval-meta' : 'muted pd-item-sub'}">${sub}</div>
+          </div>
+          ${thumb}
+          <div class="${classic ? 'approval-actions' : 'pd-acts'}">${acts}</div>`;
+        const form = this._wishForm && this._wishForm.id === w.wish_id ? this._renderWishForm(w, name, classic) : "";
+        return classic
+          ? html`<div class="approval-item pd-wish ${busy ? 'loading' : ''}"><div class="pd-wish-top">${top}</div>${form}</div>`
+          : html`<div class="pd-item pd-wish ${busy ? 'loading' : ''}" style="--ac:${tone}"><div class="row">${top}</div>${form}</div>`;
+      })}`;
+  }
+
+  _renderWishForm(w, childName, classic) {
+    const f = this._wishForm;
+    const busy = !!this._loading[w.wish_id];
+    const btn = (kind) => classic ? `pd-fbtn ${kind}` : `btn sm ${kind === "go" ? "good" : kind === "no" ? "bad" : "ghost"}`;
+    const set = (patch) => { this._wishForm = { ...this._wishForm, ...patch }; };
+    const cancel = html`<button type="button" class="${btn('plain')}" ?disabled="${busy}"
+      @click="${() => { this._wishForm = null; }}">${this._t('common.cancel')}</button>`;
+    if (f.mode === "approve") {
+      return html`
+        <div class="pd-wish-form">
+          <label class="pd-wish-field">
+            <span>${this._t('dashboard.wish_target_label')}</span>
+            <input class="pd-input" type="number" inputmode="numeric" min="1" max="100000" step="1"
+              .value="${f.target}" ?disabled="${busy}"
+              @input="${(e) => set({ target: e.target.value, error: "" })}"
+              @keydown="${(e) => { if (e.key === "Enter") this._handleApproveWish(w); }}">
+          </label>
+          <div class="pd-wish-btns">
+            ${cancel}
+            <button type="button" class="${btn('go')}" ?disabled="${busy}"
+              @click="${() => this._handleApproveWish(w)}">${this._t('common.approve')}</button>
+          </div>
+          ${f.error ? html`<div class="pd-wish-err" role="alert">${f.error}</div>` : ""}
+        </div>`;
+    }
+    return html`
+      <div class="pd-wish-form">
+        <label class="pd-wish-field">
+          <span>${this._t('dashboard.wish_reason_label', { name: childName })}</span>
+          <input class="pd-input" type="text" maxlength="200" .value="${f.reason}" ?disabled="${busy}"
+            placeholder="${this._t('dashboard.wish_reason_placeholder')}"
+            @input="${(e) => set({ reason: e.target.value })}"
+            @keydown="${(e) => { if (e.key === "Enter") this._handleDeclineWish(w); }}">
+        </label>
+        <div class="pd-wish-btns">
+          ${cancel}
+          <button type="button" class="${btn('no')}" ?disabled="${busy}"
+            @click="${() => this._handleDeclineWish(w)}">${this._t('dashboard.wish_decline')}</button>
+        </div>
+      </div>`;
+  }
+
+  async _handleApproveWish(w) {
+    const id = w.wish_id;
+    const f = this._wishForm;
+    if (!f || f.id !== id || this._loading[id]) return;
+    const raw = String(f.target ?? "").trim();
+    const target = raw === "" ? Number(w.target) : Number(raw);
+    if (!Number.isInteger(target) || target < 1 || target > 100000) {
+      this._wishForm = { ...f, error: this._t('dashboard.wish_err_target', { max: __tmNum(this.hass, 100000) }) };
+      return;
+    }
+    this._loading = { ...this._loading, [id]: true };
+    try {
+      await this.hass.callService("taskmate", "approve_wish", { wish_id: id, target });
+      this._wishForm = null;
+    } catch (e) {
+      this._notifyServiceError("approve_wish", e, `taskmate_dashboard_approve_wish_${id}`);
+    } finally {
+      this._loading = { ...this._loading, [id]: false };
+    }
+  }
+
+  async _handleDeclineWish(w) {
+    const id = w.wish_id;
+    const f = this._wishForm;
+    if (!f || f.id !== id || this._loading[id]) return;
+    const reason = String(f.reason || "").trim().slice(0, 200);
+    this._loading = { ...this._loading, [id]: true };
+    try {
+      await this.hass.callService("taskmate", "decline_wish", { wish_id: id, ...(reason ? { reason } : {}) });
+      this._wishForm = null;
+    } catch (e) {
+      this._notifyServiceError("decline_wish", e, `taskmate_dashboard_decline_wish_${id}`);
+    } finally {
+      this._loading = { ...this._loading, [id]: false };
+    }
   }
 
   _notifyServiceError(service, error, notificationId) {

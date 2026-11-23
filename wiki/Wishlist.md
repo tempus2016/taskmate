@@ -50,6 +50,8 @@ Saved points leave the child's spendable balance straight away, like a savings j
 
 New wish requests also appear in **Needs you** on the Today page. Filter by child with the chips at the top of the page.
 
+On a phone, approve or decline them from the [Parent Dashboard card](Dashboard-Cards.md#parent-dashboard-card): they're listed under **Wishes** in its Approvals tab and count towards its badges. ✓ lets you change the target before approving; ✕ takes an optional reason for the child.
+
 ### Recording a pledge
 
 Tap **Pledge** on a wish. Enter the giver's name (names used before appear as quick chips), an amount (quick chips, or **Finish it** for exactly what's still needed) and an optional message. A preview bar shows the result before you save.

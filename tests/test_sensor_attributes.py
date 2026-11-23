@@ -31,6 +31,7 @@ from custom_components.taskmate.models import (
     PoolAllocation,
     Reward,
     RewardClaim,
+    Wish,
 )
 from custom_components.taskmate.sensor import (
     ChildBadgesSensor,
@@ -691,6 +692,21 @@ def _wired_stress_coordinator():
                 "status": "pending",
             }
             for i in range(50)
+        ]
+    )
+    # A full wish queue (#1284): every child at the open-wish cap, all still
+    # waiting, with the longest name and link a child can type.
+    coord.storage.get_wishes = MagicMock(
+        return_value=[
+            Wish(
+                child_id=f"child-{i % 4}",
+                name="W" * 60,
+                target=100000,
+                id=f"wish-{i:03d}-0123456789abcdef",
+                link="https://example.com/" + "x" * 480,
+                image_url=f"/api/taskmate/image/{'a' * 32}.jpg",
+            )
+            for i in range(20)
         ]
     )
     return coord
