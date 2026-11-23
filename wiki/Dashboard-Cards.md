@@ -727,7 +727,7 @@ See [Achievement Badges](Achievement-Badges.md) for full details on tiers, crite
 
 ![Family Goal Card](images/card-family-goal.png)
 
-**Purpose:** Shows the household's progress toward the shared co-op family goal — the points the children have earned together since the goal started, measured against a single target, with the reward shown beneath.
+**Purpose:** Shows the household's progress toward the shared co-op family goal — the points the children (and adults, if included) have earned together since the goal started, measured against a single target, with the reward shown beneath.
 
 **Default header colour:** Teal `#16a085`
 

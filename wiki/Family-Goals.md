@@ -16,7 +16,7 @@ Family Goals are **opt-in** and configured in the **TaskMate** panel → **Setti
 |---------|-----|---------|-------------|
 | **Enable family goal** | `family_goal_enabled` | `off` | Master toggle |
 | **Goal name** | `family_goal_name` | *(blank)* | A friendly name, e.g. *Movie night fund* (up to 120 characters) |
-| **Target (combined points)** | `family_goal_target` | `500` | Points the children need to earn between them, counted from when the goal started (1–10,000,000) |
+| **Target (combined points)** | `family_goal_target` | `500` | Points the children (and adults, if included) need to earn between them, counted from when the goal started (1–10,000,000) |
 | **Reward** | `family_goal_reward` | *(blank)* | What the family gets, e.g. *a family movie night* (up to 200 characters) |
 | **Include adult profiles** | `family_goal_include_adults` | `off` | Count the points [adult profiles](Adult-Profiles.md) earn as well. Shown once the family has an adult profile |
 
