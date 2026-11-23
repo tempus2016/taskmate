@@ -59,6 +59,20 @@ class TaskMateChildCardEditor extends LitElement {
     ];
   }
 
+  /**
+   * What the card does with show_help_button left unset, so the switch shows
+   * the card's real behaviour. Mirrors _helpEnabled() in taskmate-child-card.js:
+   * off in Pre-Reader Mode (from the YAML or the child's 3-5 stage), except
+   * under the Team family style.
+   */
+  _helpButtonDefault() {
+    const overview = this.config?.entity ? this.hass?.states?.[this.config.entity] : null;
+    const child = (overview?.attributes?.children || []).find((c) => c.id === this.config.child_id);
+    const preReader = this.config.pre_reader ?? (child?.age_group === '3_5');
+    if (preReader !== true) return true;
+    return !!(window.__taskmate_family_style && window.__taskmate_family_style(this.hass) === 'team');
+  }
+
   _buildSchema() {
     const overviewEntity = this.config?.entity
       ? this.hass?.states?.[this.config.entity]
@@ -274,7 +288,7 @@ class TaskMateChildCardEditor extends LitElement {
     const data = {
       entity: this.config.entity || '',
       child_id: this.config.child_id || '',
-      time_category: this.config.time_category || 'morning',
+      time_category: this.config.time_category || 'anytime',
       card_design: this.config.card_design || 'global',
       density: this.config.density || 'normal',
       seasonal: this.config.seasonal !== false,
@@ -288,7 +302,7 @@ class TaskMateChildCardEditor extends LitElement {
       include_anytime_chores: this.config.include_anytime_chores !== false,
       show_countdown: this.config.show_countdown !== false,
       show_minutes_left: this.config.show_minutes_left !== false,
-      show_help_button: this.config.show_help_button !== false,
+      show_help_button: this.config.show_help_button ?? this._helpButtonDefault(),
       show_mood: this.config.show_mood !== false,
       show_weekly_goal: this.config.show_weekly_goal !== false,
       show_personal_bests: this.config.show_personal_bests !== false,
@@ -336,12 +350,13 @@ class TaskMateChildCardEditor extends LitElement {
   _formChanged(e) {
     const newValues = e.detail.value || {};
     const newConfig = { ...this.config };
+    const helpDefault = this._helpButtonDefault();
     for (const [key, value] of Object.entries(newValues)) {
       const defaults = {
-        show_countdown: true, show_minutes_left: true, show_help_button: true, show_mood: true, show_weekly_goal: true,
+        show_countdown: true, show_minutes_left: true, show_help_button: helpDefault, show_mood: true, show_weekly_goal: true,
         show_personal_bests: true, show_boost_alert: true, show_appeals: true, show_screen_time: true,
         show_tour: true, debug: false, density: 'normal', seasonal: true,
-        time_category: 'morning', due_days_mode: 'hide',
+        time_category: 'anytime', due_days_mode: 'hide',
         recurrence_done_mode: 'dim', elapsed_time_mode: 'dim',
         first_come_claimed_mode: 'hide', set_times_layout: 'family', sort_available_first: true,
       };
