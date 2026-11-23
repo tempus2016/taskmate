@@ -71,6 +71,7 @@
       "pending_reward_claims",
       "pending_mandatory_misses",
       "pending_swap_requests",
+      "pending_wish_requests",
     ],
   };
 

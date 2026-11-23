@@ -384,6 +384,7 @@ entity: sensor.taskmate_overview
 title: Parent Dashboard
 quick_points_amount: 5        # points per +/- button press
 show_claims: true             # show the Claims tab
+show_wishes: true             # list new wish requests in the Approvals tab
 header_color: "#c0392b"
 ```
 
@@ -392,7 +393,7 @@ header_color: "#c0392b"
 | Tab | Content |
 |-----|---------|
 | **Overview** | All children's today progress bars and points |
-| **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)); with [quality ratings](Quality-Ratings.md) on, a ★ / ★★ / ★★★ picker under each chore rates it as you approve |
+| **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)); with [quality ratings](Quality-Ratings.md) on, a ★ / ★★ / ★★★ picker under each chore rates it as you approve. New [wish](Wishlist.md) requests follow under **Wishes** (hide them with `show_wishes: false`): ✓ opens the target, pre-filled with the child's suggestion, to approve at; ✕ asks for an optional reason the child sees before declining |
 | **Claims** | Pending reward claims with approve/reject |
 | **Points** | Quick +/- buttons per child |
 

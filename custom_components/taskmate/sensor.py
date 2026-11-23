@@ -2281,7 +2281,7 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
     """Sensor for pending approvals."""
 
     _unrecorded_attributes = frozenset(
-        {"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards", "swap_requests"}
+        {"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards", "swap_requests", "wish_requests"}
     )
 
     def __init__(
@@ -2300,7 +2300,36 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         """Return the number of pending approvals."""
         pending_completions = self.coordinator.data.get("pending_completions", [])
         pending_rewards = self.coordinator.data.get("pending_reward_claims", [])
-        return len(pending_completions) + len(pending_rewards) + len(self._swap_details())
+        return len(pending_completions) + len(pending_rewards) + len(self._swap_details()) + len(self._wish_details())
+
+    def _wish_details(self) -> list[dict]:
+        """New wishes waiting for a parent's yes or no (#1284), oldest first.
+
+        The child's own fields (link, picture) are only sent when set, since
+        this slice is capped at 16 KB. The picture is a bare path: the card
+        signs it for the viewer.
+        """
+        details = []
+        wishes = [w for w in self.coordinator.storage.get_wishes() if w.status == "pending"]
+        for wish in sorted(wishes, key=lambda w: w.created_at):
+            child = self.coordinator.get_child(wish.child_id)
+            if not child:
+                continue
+            detail = {
+                "wish_id": wish.id,
+                "type": "wish",
+                "child_id": child.id,
+                "child_name": child.name,
+                "wish_name": wish.name,
+                "target": wish.target,
+                "requested_at": wish.created_at.isoformat(),
+            }
+            if wish.link:
+                detail["link"] = wish.link
+            if wish.image_url:
+                detail["image_url"] = wish.image_url
+            details.append(detail)
+        return details
 
     def _swap_details(self) -> list[dict]:
         """Pending chore swap requests, named for the approval cards (#1275).
@@ -2450,6 +2479,11 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         if swaps := self._swap_details():
             attrs["pending_swap_requests"] = len(swaps)
             attrs["swap_requests"] = swaps
+        # New wishes (#1284), only while one is waiting, so the parent
+        # dashboard can approve or decline them away from the admin panel.
+        if wishes := self._wish_details():
+            attrs["pending_wish_requests"] = len(wishes)
+            attrs["wish_requests"] = wishes
         # Missed chores and sets reviewed in the admin panel (#1259): tells the
         # approvals card to leave them out. Absent while it is the card.
         if (where := self.coordinator.miss_review_location()) != "card":
