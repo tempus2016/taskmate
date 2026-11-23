@@ -72,6 +72,7 @@ class TaskMateParentDashboardCard extends LitElement {
       _signed: { state: true },
       _ratings: { state: true },
       _wishForm: { state: true },
+      _inspForm: { state: true },
     };
   }
 
@@ -131,6 +132,7 @@ class TaskMateParentDashboardCard extends LitElement {
     this._ratings = {};       // completion_id -> picked 1-3 star rating (#1114)
     this._wishForm = null;    // { id, mode: "approve"|"decline", target, reason, error } (#1284)
     this._inflight = new Set();
+    this._inspForm = null;    // the one open inline inspection form (#1285)
   }
 
   // Evidence photos come from an auth-gated view; an <img> sends no bearer
@@ -194,11 +196,19 @@ class TaskMateParentDashboardCard extends LitElement {
       this._tabResize = new ResizeObserver(() => { this._balanceTabs(); this._syncTabFade(); });
     }
     if (this._tabResize) this._tabResize.observe(this);
+    // "1h 20m left" on an open inspection (#1285): redraw once a minute,
+    // and only while the Inspections tab is showing.
+    if (!this._inspTick) {
+      this._inspTick = setInterval(() => {
+        if (this._activeSection === "inspections") this.requestUpdate();
+      }, 60000);
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this._tabResize) this._tabResize.disconnect();
+    if (this._inspTick) { clearInterval(this._inspTick); this._inspTick = null; }
   }
 
   /**
@@ -752,6 +762,60 @@ class TaskMateParentDashboardCard extends LitElement {
       .pd-star:hover, .pd-star.on { color: var(--tmd-gold, #f5b301); }
       .pd-star:focus-visible { outline: 2px solid var(--tmd-accent, var(--primary-color)); outline-offset: 1px; }
       .pd-star:disabled { cursor: default; opacity: .5; }
+
+      /* Surprise inspections (#1285) — both render paths. Rows carry an
+         inline form under them, so the row stacks: line, then form. */
+      .pi-hd { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+        opacity: .65; margin: 2px 2px 0; }
+      .pd-item + .pi-hd { margin-top: 14px; }
+      .pi-hd + .pd-item { margin-top: 7px; }
+      .approval-item.pi-item { display: block; }
+      .pi-line { display: flex; align-items: center; gap: 10px; }
+      .pd-item.loading { opacity: .5; pointer-events: none; }
+      .pi-form { margin-top: 10px; padding-top: 10px; display: flex; flex-direction: column; gap: 10px;
+        border-top: 1px dashed var(--tmd-border, var(--divider-color, #e0e0e0)); }
+      .pi-field { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; min-width: 0; }
+      .pi-field input, .pi-field textarea { font: inherit; font-size: 14px; font-weight: 400; padding: 8px 10px;
+        border-radius: 8px; border: 1px solid var(--tmd-border, var(--divider-color, #ccc)); box-sizing: border-box;
+        width: 100%; background: var(--tmd-surface, var(--card-background-color, #fff));
+        color: var(--tmd-text, var(--primary-text-color, #212121)); }
+      .pi-field input[type="number"] { max-width: 130px; }
+      .pi-field textarea { resize: vertical; }
+      .pi-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .pi-chip { font: inherit; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+        border: 1px solid var(--tmd-border, var(--divider-color, #ccc)); background: transparent;
+        color: var(--tmd-text, var(--primary-text-color, #212121)); }
+      .pi-chip.on { background: var(--tmd-accent, var(--primary-color, #03a9f4)); border-color: transparent; color: #fff; }
+      .pi-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; }
+      .pi-check input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--tmd-accent, var(--primary-color, #03a9f4)); }
+      .pi-opts { display: flex; flex-direction: column; gap: 6px; }
+      .pi-opt { display: flex; align-items: flex-start; gap: 10px; text-align: start; font: inherit; font-size: 13.5px;
+        font-weight: 600; padding: 9px 10px; border-radius: 10px; cursor: pointer; background: transparent;
+        color: var(--tmd-text, var(--primary-text-color, #212121));
+        border: 1px solid var(--tmd-border, var(--divider-color, #ccc)); }
+      .pi-opt.on { border-color: var(--tmd-accent, var(--primary-color, #03a9f4));
+        box-shadow: inset 0 0 0 1px var(--tmd-accent, var(--primary-color, #03a9f4)); }
+      .pi-opt:disabled { opacity: .55; cursor: default; }
+      .pi-opt small { display: block; font-weight: 400; font-size: 12px; opacity: .75; margin-top: 2px; }
+      .pi-radio { width: 16px; height: 16px; border-radius: 50%; flex: none; margin-top: 1px; box-sizing: border-box;
+        border: 2px solid var(--tmd-dim, var(--secondary-text-color, #888)); }
+      .pi-opt.on .pi-radio { border-color: var(--tmd-accent, var(--primary-color, #03a9f4));
+        background: radial-gradient(circle, var(--tmd-accent, var(--primary-color, #03a9f4)) 40%, transparent 46%); }
+      .pi-hint { font-size: 12px; opacity: .75; margin: 0; }
+      .pi-btns { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+      .pi-btn { font: inherit; font-size: 13.5px; font-weight: 600; border: 0; border-radius: 8px; padding: 8px 14px;
+        cursor: pointer; white-space: nowrap; background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff); }
+      .pi-btn.sm { padding: 6px 10px; font-size: 12.5px; }
+      .pi-btn.ghost { background: transparent; color: var(--primary-text-color, #212121);
+        border: 1px solid var(--divider-color, #ccc); }
+      .pi-btn.good { background: #27ae60; color: #fff; }
+      .pi-btn.bad { background: #e74c3c; color: #fff; }
+      .pi-btn[disabled], .pi-icon[disabled] { opacity: .5; pointer-events: none; }
+      .pi-icon { width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; flex: none; display: grid;
+        place-items: center; background: var(--secondary-background-color, #eee); color: var(--primary-text-color, #212121); }
+      .pi-icon ha-icon { --mdc-icon-size: 18px; }
+      .pi-flag.on { background: var(--tmd-accent, var(--primary-color, #03a9f4)); color: #fff; }
+      .pd-acts .pi-flag ha-icon { --mdc-icon-size: 18px; }
     `;
     const tokens = window.__taskmate_design && window.__taskmate_design.styles
       ? window.__taskmate_design.styles() : null;
@@ -765,6 +829,7 @@ class TaskMateParentDashboardCard extends LitElement {
       quick_points_amount: 5,
       show_claims: true,
       show_wishes: true,
+      show_inspections: true,
             header_color: '#c0392b',
     ...config,
     };
@@ -817,13 +882,16 @@ class TaskMateParentDashboardCard extends LitElement {
     const pendingSwaps = Array.isArray(attrs.swap_requests) ? attrs.swap_requests.length : 0;
     // New wishes (#1284) sit in the Approvals tab unless show_wishes is off.
     const pendingWishes = this.config.show_wishes !== false ? tmWishList(attrs.wish_requests) : [];
-    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps + pendingWishes.length;
+    // Surprise inspections (#1285): open ones wait on a parent too.
+    const insp = this._inspData(attrs);
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps + pendingWishes.length + (insp ? insp.open.length : 0);
 
     const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 
     const tabs = [
       { id: "overview", label: this._t('dashboard.tab_overview'), icon: "mdi:view-dashboard" },
       { id: "approvals", label: this._t('dashboard.tab_approvals'), icon: "mdi:check-circle", count: pendingCompletions.length + pendingWishes.length },
+      ...(insp ? [{ id: "inspections", label: this._t('dashboard.tab_inspections'), icon: "mdi:magnify-scan", count: insp.open.length }] : []),
       { id: "points", label: this._t('dashboard.tab_points'), icon: "mdi:star-plus" },
     ];
 
@@ -835,6 +903,10 @@ class TaskMateParentDashboardCard extends LitElement {
       const insertAt = tabs.findIndex(t => t.id === "points");
       tabs.splice(insertAt, 0, { id: "claims", label: this._t('dashboard.tab_claims'), icon: "mdi:gift", count: pendingRewardClaims.length });
     }
+
+    // The Inspections tab can go (feature switched off, show_inspections
+    // false): don't leave the card on a tab that no longer exists.
+    if (!tabs.some(t => t.id === this._activeSection)) this._activeSection = "overview";
 
     return html`
       <ha-card>
@@ -870,6 +942,7 @@ class TaskMateParentDashboardCard extends LitElement {
           ${this._activeSection === "rotation" ? this._renderRotation(rotationChores, children, attrs) : ''}
           ${this._activeSection === "approvals" ? this._renderApprovals(pendingCompletions, children, chores, pointsIcon, pendingWishes, pointsName) : ''}
           ${this._activeSection === "claims" ? this._renderClaims(pendingRewardClaims, pointsIcon) : ''}
+          ${this._activeSection === "inspections" ? this._renderInspections("classic", insp, children, pointsName) : ''}
           ${this._activeSection === "points" ? this._renderPoints(family, pointsIcon, pointsName) : ''}
         </div>
       </ha-card>
@@ -963,13 +1036,16 @@ class TaskMateParentDashboardCard extends LitElement {
     const pendingSwaps = Array.isArray(attrs.swap_requests) ? attrs.swap_requests.length : 0;
     // New wishes (#1284) sit in the Approvals tab unless show_wishes is off.
     const pendingWishes = this.config.show_wishes !== false ? tmWishList(attrs.wish_requests) : [];
-    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps + pendingWishes.length;
+    // Surprise inspections (#1285): open ones wait on a parent too.
+    const insp = this._inspData(attrs);
+    const totalPending = pendingCompletions.length + pendingRewardClaims.length + pendingSwaps + pendingWishes.length + (insp ? insp.open.length : 0);
 
     const rotationChores = chores.filter(c => ['alternating', 'random', 'balanced'].includes(c.assignment_mode || 'everyone'));
 
     const tabs = [
       { id: "overview", label: this._t('dashboard.tab_overview') },
       { id: "approvals", label: this._t('dashboard.tab_approvals'), count: pendingCompletions.length + pendingWishes.length },
+      ...(insp ? [{ id: "inspections", label: this._t('dashboard.tab_inspections'), count: insp.open.length }] : []),
       { id: "points", label: this._t('dashboard.tab_points') },
     ];
     if (rotationChores.length > 0) {
@@ -995,6 +1071,7 @@ class TaskMateParentDashboardCard extends LitElement {
     else if (sec === "rotation") body = this._dRotation(design, rotationChores, children, attrs);
     else if (sec === "approvals") body = this._dApprovals(design, pendingCompletions, children, chores, pointsIcon, pendingWishes, pointsName);
     else if (sec === "claims") body = this._dClaims(design, pendingRewardClaims, pointsIcon);
+    else if (sec === "inspections") body = this._renderInspections(design, insp, children, pointsName);
     else if (sec === "points") body = this._dPoints(design, family, pointsIcon, pointsName);
 
     return html`<ha-card class="tmd" style="--hd:${hd}">
@@ -1716,6 +1793,329 @@ class TaskMateParentDashboardCard extends LitElement {
     } finally {
       this._loading = { ...this._loading, [id]: false };
     }
+  }
+
+  /* ── Surprise inspections (#1285) ─────────────────────────────────────
+     The pending-approvals sensor publishes `inspection_settings` while the
+     feature is on (that is what shows the tab), plus `open_inspections` and
+     `inspectable_completions` while they have rows. Every action is a
+     taskmate.* service. The forms open inline under their row, one at a
+     time, in both render paths, so they work the same on a phone. */
+
+  _inspData(attrs) {
+    if (this.config.show_inspections === false) return null;
+    const settings = attrs && attrs.inspection_settings;
+    if (!settings || typeof settings !== "object") return null;
+    const list = (v) => (Array.isArray(v) ? v : []);
+    return { settings, open: list(attrs.open_inspections), recent: list(attrs.inspectable_completions) };
+  }
+
+  // "1h 58m" / "12m" until an ISO time (never negative), as in the panel.
+  _inspLeft(iso) {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (!Number.isFinite(ms)) return "—";
+    const mins = Math.max(0, Math.round(ms / 60000));
+    const h = Math.floor(mins / 60);
+    return h
+      ? this._t("dashboard.insp_left_hm", { h, m: String(mins % 60).padStart(2, "0") })
+      : this._t("dashboard.insp_left_m", { m: mins });
+  }
+
+  /** A stored "HH:MM" in Home Assistant's time format (12- or 24-hour). */
+  _inspClock(hhmm) {
+    return window.__taskmate_dates ? window.__taskmate_dates.clock(this.hass, hhmm) : String(hhmm || "");
+  }
+
+  _inspTime(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? "" : d.toLocaleTimeString(...__tmDateArgs(this.hass, { hour: "2-digit", minute: "2-digit" }, "time"));
+  }
+
+  // When "Until bedtime" started now really closes. Mirrors the server's
+  // inspection_until (and the panel's start dialog): bedtime today in HA's
+  // time zone, or the fallback when that's under min_minutes away. Both
+  // numbers come from the sensor so the card can't drift from the server.
+  _inspBedUntil(settings, now = Date.now()) {
+    const rule = (settings && settings.bed_rule) || {};
+    const minMinutes = Number.isFinite(rule.min_minutes) ? rule.min_minutes : 30;
+    const fallbackHours = Number.isFinite(rule.fallback_hours) ? rule.fallback_hours : 1;
+    const tz = (this.hass && this.hass.config && this.hass.config.time_zone) || undefined;
+    const opts = { hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" };
+    let fmt;
+    try {
+      fmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, ...opts });
+    } catch (_e) {
+      fmt = new Intl.DateTimeFormat("en-US", opts);
+    }
+    const wall = (ms) => {
+      const p = {};
+      for (const { type, value } of fmt.formatToParts(new Date(ms))) p[type] = Number(value);
+      return p;
+    };
+    const p = wall(now);
+    const nowSec = Math.floor(now / 1000) * 1000;
+    // The zone's offset right now, as wall-clock minus UTC.
+    const offset = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - nowSec;
+    const [bh, bm] = String((settings && settings.bedtime) || "20:00").split(":").map(Number);
+    const bedtime = Date.UTC(p.year, p.month - 1, p.day, bh || 0, bm || 0) - offset;
+    const fallback = bedtime - now < minMinutes * 60000;
+    const w = wall(fallback ? now + fallbackHours * 3600000 : bedtime);
+    const time = `${String(w.hour % 24).padStart(2, "0")}:${String(w.minute).padStart(2, "0")}`;
+    return { time, fallback, minutes: minMinutes };
+  }
+
+  // The same rounding and clamp the server applies (0 – 10000).
+  _inspBonus(value) {
+    return Math.max(0, Math.min(10000, Math.round(Number(value) || 0)));
+  }
+
+  // Tapping the same action again closes its form.
+  _toggleInspForm(kind, row, settings) {
+    const key = kind === "start" ? row.completion_id : row.id;
+    const f = this._inspForm;
+    if (f && f.kind === kind && f.key === key) { this._inspForm = null; return; }
+    const windows = ["1h", "2h", "4h", "bed"];
+    this._inspForm = {
+      kind,
+      key,
+      window: windows.includes(settings.window) ? settings.window : "2h",
+      bonus: kind === "start" ? settings.bonus : row.bonus,
+      tell: settings.tell_child !== false,
+      note: "",
+      can_redo: !!row.can_redo,
+      mode: settings.fail_mode === "redo" && row.can_redo ? "redo" : "note",
+    };
+  }
+
+  _patchInspForm(patch) {
+    if (this._inspForm) this._inspForm = { ...this._inspForm, ...patch };
+  }
+
+  async _inspCall(service, data, key) {
+    const lk = `insp_${key}`;
+    if (this._loading[lk]) return;
+    this._loading = { ...this._loading, [lk]: true };
+    this.requestUpdate();
+    try {
+      await this.hass.callService("taskmate", service, data);
+      if (this._inspForm && this._inspForm.key === key) this._inspForm = null;
+    } catch (e) {
+      this._notifyServiceError(service, e, `taskmate_dashboard_${service}_${key}`);
+    } finally {
+      this._loading = { ...this._loading, [lk]: false };
+      this.requestUpdate();
+    }
+  }
+
+  _inspStart(row) {
+    const f = this._inspForm || {};
+    return this._inspCall("start_inspection", {
+      completion_id: row.completion_id,
+      bonus: this._inspBonus(f.bonus),
+      window: f.window,
+      tell_child: !!f.tell,
+    }, row.completion_id);
+  }
+
+  _inspPass(row) {
+    const f = this._inspForm || {};
+    return this._inspCall("pass_inspection", {
+      inspection_id: row.id,
+      bonus: this._inspBonus(f.bonus),
+      note: String(f.note || "").trim().slice(0, 200),
+    }, row.id);
+  }
+
+  _inspFail(row) {
+    const f = this._inspForm || {};
+    return this._inspCall("fail_inspection", {
+      inspection_id: row.id,
+      redo: f.mode === "redo" && !!f.can_redo,
+      note: String(f.note || "").trim().slice(0, 200),
+    }, row.id);
+  }
+
+  _inspCancel(row) {
+    const ask = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
+    if (ask && !ask(this._t("dashboard.insp_cancel_confirm"))) return;
+    return this._inspCall("cancel_inspection", { inspection_id: row.id }, row.id);
+  }
+
+  _renderInspections(design, insp, children, pointsName) {
+    if (!insp) return "";
+    const classic = design === "classic";
+    const { open, recent, settings } = insp;
+    if (!open.length && !recent.length) {
+      return classic
+        ? html`<div class="empty-section"><ha-icon icon="mdi:magnify-scan"></ha-icon><span>${this._t('dashboard.insp_empty')}</span></div>`
+        : this._dEmpty(this._t('dashboard.insp_empty'));
+    }
+    const childMap = {};
+    (children || []).forEach(c => { childMap[c.id] = c; });
+    const section = (title, rows) => (rows.length ? html`<div class="pi-hd">${title}</div>${rows}` : "");
+    return html`
+      ${section(this._t('dashboard.insp_open_heading'), open.map((r, i) => this._inspOpenRow(design, r, i, childMap, settings)))}
+      ${section(this._t('dashboard.insp_recent_heading'), recent.map((r, i) => this._inspRecentRow(design, r, open.length + i, childMap, settings, pointsName)))}`;
+  }
+
+  // One row in either look: avatar, title, subtitle, actions, then its form.
+  _inspShell(design, i, child, name, title, sub, acts, form, loading) {
+    if (design === "classic") {
+      return html`
+        <div class="approval-item pi-item ${loading ? 'loading' : ''}">
+          <div class="pi-line">
+            <div class="approval-child-avatar">${this._avatarGlyph(child)}</div>
+            <div class="approval-info">
+              <div class="approval-chore">${title}</div>
+              <div class="approval-meta">${sub}</div>
+            </div>
+            <div class="approval-actions">${acts}</div>
+          </div>
+          ${form}
+        </div>`;
+    }
+    const tone = this._designTone(i);
+    return html`
+      <div class="pd-item pi-item ${loading ? 'loading' : ''}" style="--ac:${tone}">
+        <div class="row pi-line">
+          ${this._av(name, child, tone, 36)}
+          <div style="flex:1;min-width:0">
+            <div class="pd-item-title">${title}</div>
+            <div class="muted pd-item-sub">${sub}</div>
+          </div>
+          <div class="pd-acts">${acts}</div>
+        </div>
+        ${form}
+      </div>`;
+  }
+
+  // Button classes per look: the designed kit's .btn, or the card's own.
+  _inspBtn(design, kind) {
+    const classic = design === "classic";
+    const map = classic
+      ? { primary: "pi-btn", ghost: "pi-btn ghost", good: "pi-btn good sm", bad: "pi-btn bad sm", icon: "pi-icon" }
+      : { primary: "btn sm", ghost: "btn ghost sm", good: "btn good sm", bad: "btn bad sm", icon: "btn ghost sm round" };
+    return map[kind];
+  }
+
+  _inspOpenRow(design, r, i, childMap, settings) {
+    const child = childMap[r.child_id];
+    const name = r.child_name || (child && child.name) || "?";
+    const busy = !!this._loading[`insp_${r.id}`];
+    const f = this._inspForm && this._inspForm.key === r.id ? this._inspForm : null;
+    const sub = [
+      name,
+      this._t('dashboard.insp_needs_meta', { bonus: __tmNum(this.hass, Number(r.bonus) || 0), time: this._inspLeft(r.until) }),
+      r.tell_child ? this._t('dashboard.insp_told', { name }) : this._t('dashboard.insp_secret'),
+      ...(r.source === "random" ? [this._t('dashboard.insp_random')] : []),
+    ].join(" · ");
+    const passLabel = this._t('dashboard.insp_pass');
+    const failLabel = this._t('dashboard.insp_fail');
+    const cancelLabel = this._t('dashboard.insp_cancel');
+    const acts = html`
+      <button type="button" class="${this._inspBtn(design, "good")}" ?disabled="${busy}" aria-expanded="${f && f.kind === "pass" ? "true" : "false"}"
+        @click="${() => this._toggleInspForm("pass", r, settings)}">${passLabel}</button>
+      <button type="button" class="${this._inspBtn(design, "bad")}" ?disabled="${busy}" aria-expanded="${f && f.kind === "fail" ? "true" : "false"}"
+        @click="${() => this._toggleInspForm("fail", r, settings)}">${failLabel}</button>
+      <button type="button" class="${this._inspBtn(design, "icon")}" ?disabled="${busy}" title="${cancelLabel}" aria-label="${cancelLabel}"
+        @click="${() => this._inspCancel(r)}">${design === "classic" ? html`<ha-icon icon="mdi:close"></ha-icon>` : "✕"}</button>`;
+    let form = "";
+    if (f && f.kind === "pass") form = this._inspPassForm(design, r, f, name, busy);
+    else if (f && f.kind === "fail") form = this._inspFailForm(design, r, f, name, busy);
+    return this._inspShell(design, i, child, name, r.chore_name || this._t('common.unknown'), sub, acts, form, busy);
+  }
+
+  _inspRecentRow(design, r, i, childMap, settings, pointsName) {
+    const child = childMap[r.child_id];
+    const name = r.child_name || (child && child.name) || "?";
+    const busy = !!this._loading[`insp_${r.completion_id}`];
+    const f = this._inspForm && this._inspForm.kind === "start" && this._inspForm.key === r.completion_id ? this._inspForm : null;
+    const sub = `${name} · ${this._t('dashboard.insp_ctx', { time: this._inspTime(r.approved_at), points: __tmNum(this.hass, Number(r.points) || 0), points_name: pointsName })}`;
+    const label = this._t('dashboard.insp_flag_tooltip');
+    const acts = html`
+      <button type="button" class="${this._inspBtn(design, "icon")} pi-flag ${f ? "on" : ""}" ?disabled="${busy}" title="${label}" aria-label="${label}"
+        aria-expanded="${f ? "true" : "false"}" @click="${() => this._toggleInspForm("start", r, settings)}"><ha-icon icon="mdi:magnify-scan"></ha-icon></button>`;
+    const form = f ? this._inspStartForm(design, r, f, name, busy, settings) : "";
+    return this._inspShell(design, i, child, name, r.chore_name || this._t('common.unknown'), sub, acts, form, busy);
+  }
+
+  _inspBonusField(label, f) {
+    return html`
+      <label class="pi-field"><span>${label}</span>
+        <input type="number" min="0" max="10000" step="1" inputmode="numeric" .value="${String(f.bonus ?? "")}"
+          @input="${(e) => this._patchInspForm({ bonus: e.target.value })}">
+      </label>`;
+  }
+
+  _inspNoteField(label, f, placeholder = "") {
+    return html`
+      <label class="pi-field"><span>${label}</span>
+        <textarea maxlength="200" rows="2" placeholder="${placeholder}" .value="${f.note || ""}"
+          @input="${(e) => this._patchInspForm({ note: e.target.value })}"></textarea>
+      </label>`;
+  }
+
+  _inspButtons(design, busy, goLabel, onGo) {
+    return html`
+      <div class="pi-btns">
+        <button type="button" class="${this._inspBtn(design, "ghost")}" ?disabled="${busy}"
+          @click="${() => { this._inspForm = null; }}">${this._t('common.cancel')}</button>
+        <button type="button" class="${this._inspBtn(design, "primary")} pi-go" ?disabled="${busy}"
+          @click="${onGo}">${goLabel}</button>
+      </div>`;
+  }
+
+  _inspStartForm(design, r, f, name, busy, settings) {
+    const bed = this._inspBedUntil(settings);
+    const winLabel = (w) => (w === "bed"
+      ? this._t('dashboard.insp_window_bed', { time: this._inspClock(bed.time) })
+      : this._t(`dashboard.insp_window_${w}`));
+    return html`
+      <div class="pi-form">
+        <div class="pi-field"><span>${this._t('dashboard.insp_window_label')}</span>
+          <div class="pi-chips" role="radiogroup">
+            ${["1h", "2h", "4h", "bed"].map(w => html`
+              <button type="button" class="pi-chip ${f.window === w ? "on" : ""}" role="radio" aria-checked="${f.window === w ? "true" : "false"}"
+                @click="${() => this._patchInspForm({ window: w })}">${winLabel(w)}</button>`)}
+          </div>
+          ${f.window === "bed" && bed.fallback ? html`<p class="pi-hint">${this._t('dashboard.insp_window_bed_soon', {
+            bedtime: this._inspClock(settings.bedtime || "20:00"), minutes: bed.minutes, time: this._inspClock(bed.time) })}</p>` : ""}
+        </div>
+        ${this._inspBonusField(this._t('dashboard.insp_bonus_label'), f)}
+        <label class="pi-check">
+          <input type="checkbox" .checked="${!!f.tell}" @change="${(e) => this._patchInspForm({ tell: e.target.checked })}">
+          <span>${this._t('dashboard.insp_tell_label', { name })}</span>
+        </label>
+        ${this._inspButtons(design, busy, this._t('dashboard.insp_start_btn'), () => this._inspStart(r))}
+      </div>`;
+  }
+
+  _inspPassForm(design, r, f, name, busy) {
+    return html`
+      <div class="pi-form">
+        ${this._inspBonusField(this._t('dashboard.insp_bonus'), f)}
+        ${this._inspNoteField(this._t('dashboard.insp_note_pass_label', { name }), f)}
+        ${this._inspButtons(design, busy, this._t('dashboard.insp_pass_btn', { bonus: __tmNum(this.hass, this._inspBonus(f.bonus)) }), () => this._inspPass(r))}
+      </div>`;
+  }
+
+  _inspFailForm(design, r, f, name, busy) {
+    const opt = (mode, labelKey, disabled) => html`
+      <button type="button" class="pi-opt ${f.mode === mode ? "on" : ""}" role="radio" aria-checked="${f.mode === mode ? "true" : "false"}"
+        ?disabled="${disabled}" @click="${() => this._patchInspForm({ mode })}">
+        <span class="pi-radio"></span>
+        <span>${this._t(labelKey)}${disabled ? html`<small>${this._t('dashboard.insp_fail_redo_unavailable')}</small>` : ""}</span>
+      </button>`;
+    return html`
+      <div class="pi-form">
+        <div class="pi-opts" role="radiogroup">
+          ${opt("note", 'dashboard.insp_fail_note_label', false)}
+          ${opt("redo", 'dashboard.insp_fail_redo_label', !f.can_redo)}
+        </div>
+        ${this._inspNoteField(this._t('dashboard.insp_fail_fix_label', { name }), f)}
+        <p class="pi-hint">${this._t('dashboard.insp_fail_no_penalty')}</p>
+        ${this._inspButtons(design, busy, this._t(f.mode === "redo" ? 'dashboard.insp_fail_send_back' : 'dashboard.insp_fail_save'), () => this._inspFail(r))}
+      </div>`;
   }
 
   _notifyServiceError(service, error, notificationId) {

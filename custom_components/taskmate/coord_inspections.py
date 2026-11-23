@@ -121,6 +121,10 @@ class InspectionsMixin:
         value = self.storage.get_setting("inspection_fail_mode", "note")
         return value if value in INSPECTION_FAIL_MODES else "note"
 
+    def inspection_tell_default(self) -> bool:
+        """Whether a new inspection tells the child, unless the parent says otherwise."""
+        return self._insp_flag("inspection_tell_child", True)
+
     def inspection_until(self, window: str, now: datetime) -> datetime:
         """When an inspection started at ``now`` with ``window`` closes."""
         if window == "bed":
@@ -157,7 +161,7 @@ class InspectionsMixin:
     def _inspected_completion(self, completion_id: str):
         return next((c for c in self.storage.get_completions() if c.id == completion_id), None)
 
-    def _inspection_item_name(self, completion) -> str:
+    def inspection_item_name(self, completion) -> str:
         chore = self.get_chore(completion.chore_id)
         if chore is not None:
             return chore.name
@@ -225,13 +229,13 @@ class InspectionsMixin:
             raise refusal
         window = window if window in INSPECTION_WINDOWS else self.inspection_default_window()
         bonus = self.inspection_default_bonus() if bonus is None else max(0, min(INSPECTION_BONUS_MAX, int(bonus)))
-        tell = self._insp_flag("inspection_tell_child", True) if tell_child is None else bool(tell_child)
+        tell = self.inspection_tell_default() if tell_child is None else bool(tell_child)
         record = {
             "id": generate_id(),
             "completion_id": completion.id,
             "child_id": completion.child_id,
             "chore_id": completion.chore_id,
-            "chore_name": self._inspection_item_name(completion),
+            "chore_name": self.inspection_item_name(completion),
             "completed_on": _local_date(completion.completed_at),
             "points": int(completion.points_awarded or 0),
             "status": "open",
