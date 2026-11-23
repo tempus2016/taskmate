@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Points the children need to earn between them, counted from when the goal was switched on or started again.",
   "panel.family_goal_reward": "Reward",
   "panel.family_goal_reward_ph": "a family movie night",
+  "panel.family_goal_include_adults": "Include adult profiles",
+  "panel.family_goal_include_adults_hint": "Points earned by adult profiles count towards the goal too. Off: only the children's points count.",
   "panel.family_goal_reset": "Start again",
   "panel.family_goal_reset_hint": "Sets the goal back to 0. Only points earned from now on count, and the children's own points don't change.",
   "panel.family_goal_reset_button": "Start again at 0",

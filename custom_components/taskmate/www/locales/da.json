@@ -2981,6 +2981,8 @@
   "panel.family_goal_target_hint": "De point, børnene skal optjene tilsammen, talt fra da målet blev slået til eller startet forfra.",
   "panel.family_goal_reward": "Belønning",
   "panel.family_goal_reward_ph": "en filmaften for familien",
+  "panel.family_goal_include_adults": "Medtag voksenprofiler",
+  "panel.family_goal_include_adults_hint": "Point optjent af voksenprofiler tæller også med i målet. Slået fra: kun børnenes point tæller.",
   "panel.family_goal_reset": "Start forfra",
   "panel.family_goal_reset_hint": "Sætter målet tilbage til 0. Kun point optjent fra nu af tæller, og børnenes egne point ændres ikke.",
   "panel.family_goal_reset_button": "Start forfra fra 0",

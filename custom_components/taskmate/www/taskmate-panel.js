@@ -15657,6 +15657,11 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.family_goal_reward")}</div>
               <input type="text" class="tm-input" maxlength="200" data-setting="family_goal_reward" value="${this._esc(s.family_goal_reward || "")}" placeholder="${this._esc(this._t("panel.family_goal_reward_ph"))}">
             </div>
+            ${s.family_goal_include_adults || (this._state.children || []).some(c => c.is_adult) ? `
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_include_adults")}<small>${this._t("panel.family_goal_include_adults_hint")}</small></div>
+              <ha-switch data-setting="family_goal_include_adults" ${s.family_goal_include_adults ? "checked" : ""}></ha-switch>
+            </div>` : ""}
             ${s.family_goal_enabled ? `
             <div class="tm-setting-row">
               <div class="tm-setting-label">${this._t("panel.family_goal_reset")}<small>${this._t("panel.family_goal_reset_hint")}</small></div>

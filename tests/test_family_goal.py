@@ -159,13 +159,56 @@ def test_reset_leaves_balances_alone_and_rearms_the_celebration():
     assert family_goal_progress(s) == 0
 
 
-def test_adults_are_left_out():
+def test_adults_are_left_out_by_default():
     s = _storage([_child("a", 0, 0), _child("mum", 0, 0, adult=True)])
     start_family_goal(s)
-    assert "mum" not in s.get_setting(BASELINE_KEY)
     _set(s, "mum", total_points_earned=500)
     _set(s, "a", total_points_earned=40)
     assert family_goal_progress(s) == 40
+
+
+def test_adults_count_when_included():
+    s = _storage([_child("a", 0, 100), _child("mum", 0, 300, adult=True)], {"family_goal_include_adults": True})
+    start_family_goal(s)
+    assert family_goal_progress(s) == 0
+    _set(s, "mum", total_points_earned=350)
+    _set(s, "a", total_points_earned=140)
+    assert family_goal_progress(s) == 90
+
+
+def test_adults_switched_in_mid_goal_count_since_the_start():
+    s = _storage([_child("a", 0, 100), _child("mum", 0, 300, adult=True)], {"family_goal_enabled": True})
+    start_family_goal(s)
+    _set(s, "mum", total_points_earned=320)
+    _update_settings(_coordinator(s), family_goal_include_adults=True)
+    assert family_goal_progress(s) == 20
+
+
+def test_adults_missing_from_an_older_baseline_count_from_when_switched_on():
+    # A goal started on v7.13.0 recorded children only.
+    s = _storage([_child("a", 0, 100), _child("mum", 0, 300, adult=True)], {"family_goal_enabled": True})
+    s.set_setting(BASELINE_KEY, {"a": 100})
+    _update_settings(_coordinator(s), family_goal_include_adults=True)
+    assert family_goal_progress(s) == 0
+    _set(s, "mum", total_points_earned=330)
+    assert family_goal_progress(s) == 30
+
+
+def test_switching_adults_off_and_on_again_keeps_their_start():
+    s = _storage([_child("mum", 0, 300, adult=True)], {"family_goal_enabled": True, "family_goal_include_adults": True})
+    start_family_goal(s)
+    _set(s, "mum", total_points_earned=310)
+    _update_settings(_coordinator(s), family_goal_include_adults=False)
+    assert family_goal_progress(s) == 0
+    _update_settings(_coordinator(s), family_goal_include_adults=True)
+    assert family_goal_progress(s) == 10
+
+
+def test_a_new_adult_profile_counts_from_zero_when_included():
+    s = _storage([_child("a", 0, 0)], {"family_goal_include_adults": True})
+    start_family_goal(s)
+    s._data["children"].append(_child("dad", 25, 25, adult=True))
+    assert family_goal_progress(s) == 25
 
 
 def test_a_child_added_after_the_start_counts_from_zero():

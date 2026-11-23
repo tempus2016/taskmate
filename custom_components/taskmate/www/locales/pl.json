@@ -2981,6 +2981,8 @@
   "panel.family_goal_target_hint": "Punkty, które dzieci muszą zdobyć razem, liczone od włączenia celu lub zaczęcia go od nowa.",
   "panel.family_goal_reward": "Nagroda",
   "panel.family_goal_reward_ph": "rodzinny wieczór filmowy",
+  "panel.family_goal_include_adults": "Uwzględnij profile dorosłych",
+  "panel.family_goal_include_adults_hint": "Punkty zdobyte przez profile dorosłych też liczą się do celu. Wyłączone: liczą się tylko punkty dzieci.",
   "panel.family_goal_reset": "Zacznij od nowa",
   "panel.family_goal_reset_hint": "Ustawia cel z powrotem na 0. Liczą się tylko punkty zdobyte od teraz, a punkty dzieci się nie zmieniają.",
   "panel.family_goal_reset_button": "Zacznij od nowa od 0",

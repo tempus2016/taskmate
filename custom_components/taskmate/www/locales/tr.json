@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Hedef açıldığından veya yeniden başlatıldığından beri sayılan, çocukların birlikte kazanması gereken puanlar.",
   "panel.family_goal_reward": "Ödül",
   "panel.family_goal_reward_ph": "bir aile film gecesi",
+  "panel.family_goal_include_adults": "Yetişkin profillerini dahil et",
+  "panel.family_goal_include_adults_hint": "Yetişkin profillerinin kazandığı puanlar da hedefe sayılır. Kapalı: yalnızca çocukların puanları sayılır.",
   "panel.family_goal_reset": "Yeniden başlat",
   "panel.family_goal_reset_hint": "Hedefi 0'a döndürür. Yalnızca şu andan itibaren kazanılan puanlar sayılır ve çocukların kendi puanları değişmez.",
   "panel.family_goal_reset_button": "0'dan yeniden başlat",

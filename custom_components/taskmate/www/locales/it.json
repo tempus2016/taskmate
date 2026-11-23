@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Punti che i bambini devono guadagnare insieme, contati da quando l'obiettivo è stato attivato o ricominciato.",
   "panel.family_goal_reward": "Premio",
   "panel.family_goal_reward_ph": "una serata film in famiglia",
+  "panel.family_goal_include_adults": "Includi i profili adulti",
+  "panel.family_goal_include_adults_hint": "Anche i punti guadagnati dai profili adulti contano per l'obiettivo. Disattivato: contano solo i punti dei bambini.",
   "panel.family_goal_reset": "Ricomincia",
   "panel.family_goal_reset_hint": "Riporta l'obiettivo a 0. Contano solo i punti guadagnati da adesso, e i punti dei bambini non cambiano.",
   "panel.family_goal_reset_button": "Ricomincia da 0",

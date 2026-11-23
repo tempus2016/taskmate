@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Очки, которые детям нужно заработать вместе, считая с момента включения цели или её перезапуска.",
   "panel.family_goal_reward": "Награда",
   "panel.family_goal_reward_ph": "семейный киновечер",
+  "panel.family_goal_include_adults": "Учитывать профили взрослых",
+  "panel.family_goal_include_adults_hint": "Очки, заработанные профилями взрослых, тоже идут в цель. Выключено: считаются только очки детей.",
   "panel.family_goal_reset": "Начать заново",
   "panel.family_goal_reset_hint": "Возвращает цель к 0. Считаются только очки, заработанные с этого момента, а очки детей не меняются.",
   "panel.family_goal_reset_button": "Начать заново с 0",

@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Points que les enfants doivent gagner ensemble, comptés depuis l'activation de l'objectif ou son dernier redémarrage.",
   "panel.family_goal_reward": "Récompense",
   "panel.family_goal_reward_ph": "une soirée cinéma en famille",
+  "panel.family_goal_include_adults": "Inclure les profils adultes",
+  "panel.family_goal_include_adults_hint": "Les points gagnés par les profils adultes comptent aussi pour l'objectif. Désactivé : seuls les points des enfants comptent.",
   "panel.family_goal_reset": "Recommencer",
   "panel.family_goal_reset_hint": "Remet l'objectif à 0. Seuls les points gagnés à partir de maintenant comptent, et les points de chaque enfant ne changent pas.",
   "panel.family_goal_reset_button": "Recommencer à 0",

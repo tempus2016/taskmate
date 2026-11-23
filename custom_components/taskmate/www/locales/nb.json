@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Poengene barna må tjene til sammen, regnet fra da målet ble slått på eller startet på nytt.",
   "panel.family_goal_reward": "Belønning",
   "panel.family_goal_reward_ph": "en familiefilmkveld",
+  "panel.family_goal_include_adults": "Ta med voksenprofiler",
+  "panel.family_goal_include_adults_hint": "Poeng som voksenprofiler tjener, teller også mot målet. Av: bare barnas poeng teller.",
   "panel.family_goal_reset": "Start på nytt",
   "panel.family_goal_reset_hint": "Setter målet tilbake til 0. Bare poeng som tjenes fra nå av teller, og barnas egne poeng endres ikke.",
   "panel.family_goal_reset_button": "Start på nytt fra 0",

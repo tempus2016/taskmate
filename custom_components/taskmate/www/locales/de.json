@@ -3036,6 +3036,8 @@
   "panel.family_goal_target_hint": "Punkte, die die Kinder zusammen verdienen müssen, gezählt ab dem Einschalten oder Neustart des Ziels.",
   "panel.family_goal_reward": "Belohnung",
   "panel.family_goal_reward_ph": "ein Familienfilmabend",
+  "panel.family_goal_include_adults": "Erwachsenenprofile einbeziehen",
+  "panel.family_goal_include_adults_hint": "Punkte, die Erwachsenenprofile verdienen, zählen ebenfalls zum Ziel. Aus: Nur die Punkte der Kinder zählen.",
   "panel.family_goal_reset": "Neu starten",
   "panel.family_goal_reset_hint": "Setzt das Ziel auf 0 zurück. Es zählen nur Punkte, die ab jetzt verdient werden; die eigenen Punkte der Kinder bleiben unverändert.",
   "panel.family_goal_reset_button": "Bei 0 neu starten",

@@ -70,6 +70,8 @@ Adults are then listed after the children. The **Show adults** switch only appea
 
 The **Kiosk** and **Chore Board** cards can also be given a list of children. An adult you pick in that list is always shown; the filter only applies when the card shows everyone.
 
+The [Family Goal](Family-Goals.md) counts the children only unless **Include adult profiles** is switched on in its settings. That's a family-wide setting rather than a card option, because it changes the goal's total for everyone.
+
 Cards that belong to one child (the child card, routine, badges, wishlist, recap and auction cards) and the [Approvals card](Approvals-Card.md) aren't affected. The admin panel always shows everyone.
 
 ---

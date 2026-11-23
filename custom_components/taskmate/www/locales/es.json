@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Puntos que los niños deben ganar entre todos, contados desde que se activó la meta o se empezó de nuevo.",
   "panel.family_goal_reward": "Premio",
   "panel.family_goal_reward_ph": "una noche de cine en familia",
+  "panel.family_goal_include_adults": "Incluir perfiles de adultos",
+  "panel.family_goal_include_adults_hint": "Los puntos que ganan los perfiles de adultos también cuentan para la meta. Desactivado: solo cuentan los puntos de los niños.",
   "panel.family_goal_reset": "Empezar de nuevo",
   "panel.family_goal_reset_hint": "Devuelve la meta a 0. Solo cuentan los puntos ganados a partir de ahora, y los puntos de cada niño no cambian.",
   "panel.family_goal_reset_button": "Empezar de nuevo desde 0",

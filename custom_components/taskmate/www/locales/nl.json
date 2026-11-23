@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Hoeveel punten de kinderen samen moeten verdienen, geteld vanaf het moment dat het doel aan ging of opnieuw begon.",
   "panel.family_goal_reward": "Beloning",
   "panel.family_goal_reward_ph": "een filmavond met het gezin",
+  "panel.family_goal_include_adults": "Profielen van volwassenen meetellen",
+  "panel.family_goal_include_adults_hint": "Punten die profielen van volwassenen verdienen, tellen ook mee voor het doel. Uit: alleen de punten van de kinderen tellen.",
   "panel.family_goal_reset": "Opnieuw beginnen",
   "panel.family_goal_reset_hint": "Zet het doel terug op 0. Alleen punten die vanaf nu verdiend worden tellen, en de eigen punten van de kinderen veranderen niet.",
   "panel.family_goal_reset_button": "Opnieuw beginnen bij 0",

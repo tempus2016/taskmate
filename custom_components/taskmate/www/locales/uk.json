@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "Бали, які дітям потрібно заробити разом, рахуючи з моменту увімкнення цілі або її перезапуску.",
   "panel.family_goal_reward": "Винагорода",
   "panel.family_goal_reward_ph": "родинний вечір кіно",
+  "panel.family_goal_include_adults": "Враховувати профілі дорослих",
+  "panel.family_goal_include_adults_hint": "Бали, зароблені профілями дорослих, теж ідуть у ціль. Вимкнено: рахуються лише бали дітей.",
   "panel.family_goal_reset": "Почати знову",
   "panel.family_goal_reset_hint": "Повертає ціль до 0. Рахуються лише бали, зароблені відтепер, а бали дітей не змінюються.",
   "panel.family_goal_reset_button": "Почати знову з 0",

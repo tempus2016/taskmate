@@ -3042,6 +3042,8 @@
   "panel.family_goal_target_hint": "目標をオンにした時、またはやり直した時から数えて、子どもたちが合わせて獲得する必要のあるポイント。",
   "panel.family_goal_reward": "ごほうび",
   "panel.family_goal_reward_ph": "家族で映画の夜",
+  "panel.family_goal_include_adults": "大人のプロフィールも含める",
+  "panel.family_goal_include_adults_hint": "大人のプロフィールが獲得したポイントも目標に数えます。オフのときは子どもたちのポイントだけを数えます。",
   "panel.family_goal_reset": "やり直す",
   "panel.family_goal_reset_hint": "目標を0に戻します。これから獲得したポイントだけが数えられ、子どもたちのポイントは変わりません。",
   "panel.family_goal_reset_button": "0からやり直す",
