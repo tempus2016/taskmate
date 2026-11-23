@@ -12,6 +12,9 @@ const LitElement = customElements.get("hui-masonry-view")
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
+/** The label of a select field's option, or undefined. */
+const byValue = (field, value) => field?.selector?.select?.options?.find((o) => o.value === value)?.label;
+
 // Card Editor
 class TaskMateChildCardEditor extends LitElement {
   static get properties() {
@@ -30,6 +33,10 @@ class TaskMateChildCardEditor extends LitElement {
     return css`
       :host { display: block; padding: 4px 0; }
       ha-form { display: block; margin-bottom: 16px; }
+      ha-expansion-panel { display: block; margin-bottom: 12px; }
+      ha-expansion-panel ha-form { margin-bottom: 0; }
+      .section-body { display: flex; flex-direction: column; gap: 16px; padding: 12px 0 8px; }
+      .nested { margin-inline-start: 32px; }
     `;
   }
 
@@ -211,6 +218,66 @@ class TaskMateChildCardEditor extends LitElement {
     ];
   }
 
+  /**
+   * The editor's collapsible sections (fields picked from _buildSchema() by
+   * name). The first three fields always show; Appearance starts open.
+   */
+  _sections() {
+    const byName = Object.fromEntries(this._buildSchema().map((f) => [f.name, f]));
+    const pick = (...names) => names.map((n) => byName[n]);
+    return {
+      top: pick('entity', 'child_id', 'time_category'),
+      appearance: pick('card_design', 'density'),
+      appearanceMore: pick('seasonal', 'show_description', 'set_times_layout'),
+      which: pick('sort_available_first', 'include_anytime_chores', 'due_days_mode', 'recurrence_done_mode',
+        'first_come_claimed_mode', 'dependency_mode', 'elapsed_time_mode'),
+      kid: pick('show_countdown', 'show_minutes_left', 'show_help_button', 'show_mood', 'show_weekly_goal',
+        'show_personal_bests', 'show_boost_alert', 'show_screen_time', 'show_tour', 'pre_reader'),
+      kidNested: pick('pre_reader_labels'),
+      advanced: pick('show_parent_actions', 'show_appeals', 'pre_reader_points', 'debug'),
+    };
+  }
+
+  _onOff(on, name) {
+    return this._t(on ? 'common.editor.summary_on' : 'common.editor.summary_off', { name });
+  }
+
+  _modeWord(value) {
+    return ['hide', 'dim', 'show'].includes(value) ? this._t(`common.editor.summary_value_${value}`) : value;
+  }
+
+  /** One-line summaries shown under each section title, from the form data. */
+  _summaries(data, sections) {
+    const join = (parts) => parts.filter(Boolean).join(' · ');
+    const design = data.card_design === 'global'
+      ? this._t('common.editor.summary_global_design')
+      : (byValue(sections.appearance[0], data.card_design) || data.card_design);
+    const kidToggles = sections.kid.filter((f) => f.name !== 'pre_reader');
+    const which = [
+      data.sort_available_first ? this._t('child.editor.summary_available_first') : '',
+      this._t('child.editor.summary_not_due', { value: this._modeWord(data.due_days_mode) }),
+      this._t('common.editor.summary_missed', { value: this._modeWord(data.elapsed_time_mode) }),
+    ].filter(Boolean);
+    return {
+      appearance: join([
+        design,
+        byValue(sections.appearance[1], data.density) || data.density,
+        this._t(this.config.header_color ? 'common.editor.summary_header_custom' : 'common.editor.summary_header_default'),
+        this._onOff(data.seasonal, this._t('common.editor.summary_seasonal')),
+      ]),
+      which: join([...which, this._t('common.editor.summary_more', { count: sections.which.length - which.length })]),
+      kid: join([
+        this._t('common.editor.summary_count_on', { on: kidToggles.filter((f) => data[f.name]).length, total: kidToggles.length }),
+        this._onOff(data.pre_reader, this._t('child.editor.summary_picture_mode')),
+      ]),
+      advanced: join([
+        this._onOff(data.show_parent_actions, this._t('common.editor.summary_parent_actions')),
+        this._onOff(data.show_appeals, this._t('child.editor.summary_appeals')),
+        this._onOff(data.debug, this._t('child.editor.summary_debug')),
+      ]),
+    };
+  }
+
   _computeLabel = (entry) => {
     const labels = {
       entity: this._t('common.editor.overview_entity'),
@@ -255,6 +322,7 @@ class TaskMateChildCardEditor extends LitElement {
       density: this._t('child.editor.density_helper'),
       seasonal: this._t('child.editor.seasonal_helper'),
       show_tour: this._t('child.editor.show_tour_helper'),
+      pre_reader_labels: this._t('child.editor.pre_reader_labels_helper'),
       due_days_mode: this._t('child.editor.due_days_helper'),
       recurrence_done_mode: this._t('child.editor.recurrence_helper'),
       first_come_claimed_mode: this._t('child.editor.first_come_helper'),
@@ -304,16 +372,35 @@ class TaskMateChildCardEditor extends LitElement {
       debug: this.config.debug === true,
     };
 
-    return html`
+    const sections = this._sections();
+    const summary = this._summaries(data, sections);
+    const form = (schema, disabled = false) => html`
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._buildSchema()}
+        .schema=${schema}
+        .disabled=${disabled}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
-      ></ha-form>
-      ${this._renderColourPicker('header_color', '#9b59b6')}
+      ></ha-form>`;
+    const section = (title, secondary, icon, body, expanded = false) => html`
+      <ha-expansion-panel outlined .header=${title} .secondary=${secondary} .expanded=${expanded}>
+        <ha-icon slot="leading-icon" .icon=${icon}></ha-icon>
+        <div class="section-body">${body}</div>
+      </ha-expansion-panel>`;
+
+    return html`
+      ${form(sections.top)}
+      ${section(this._t('common.editor.section_appearance'), summary.appearance, 'mdi:palette-outline', html`
+        ${form(sections.appearance)}
+        ${this._renderColourPicker('header_color', '#9b59b6')}
+        ${form(sections.appearanceMore)}`, true)}
+      ${section(this._t('common.editor.section_which_chores'), summary.which, 'mdi:filter-variant', form(sections.which))}
+      ${section(this._t('common.editor.section_kid_features'), summary.kid, 'mdi:human-child', html`
+        ${form(sections.kid)}
+        <div class="nested">${form(sections.kidNested, !data.pre_reader)}</div>`)}
+      ${section(this._t('common.editor.section_advanced'), summary.advanced, 'mdi:cog-outline', form(sections.advanced))}
     `;
   }
 
