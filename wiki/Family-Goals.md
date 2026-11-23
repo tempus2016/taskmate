@@ -16,8 +16,9 @@ Family Goals are **opt-in** and configured in the **TaskMate** panel → **Setti
 |---------|-----|---------|-------------|
 | **Enable family goal** | `family_goal_enabled` | `off` | Master toggle |
 | **Goal name** | `family_goal_name` | *(blank)* | A friendly name, e.g. *Movie night fund* (up to 120 characters) |
-| **Target (combined points)** | `family_goal_target` | `500` | Points the children need to earn between them, counted from when the goal started (1–10,000,000) |
+| **Target (combined points)** | `family_goal_target` | `500` | Points the children (and adults, if included) need to earn between them, counted from when the goal started (1–10,000,000) |
 | **Reward** | `family_goal_reward` | *(blank)* | What the family gets, e.g. *a family movie night* (up to 200 characters) |
+| **Include adult profiles** | `family_goal_include_adults` | `off` | Count the points [adult profiles](Adult-Profiles.md) earn as well. Shown once the family has an adult profile |
 
 ---
 
@@ -37,7 +38,7 @@ The goal counts the **points the children have earned since it started**:
 - **Spending or redeeming points never takes the goal back.** A child can buy a reward without pulling the family total down.
 - Penalties don't lower it either, so one child's penalty doesn't set the others back.
 - Undoing an approval takes those points back off the goal.
-- Adult profiles aren't counted; it's the children's goal.
+- Adult profiles aren't counted unless **Include adult profiles** is on. Switched on part-way through, adults count what they've earned since the goal started. A goal started on 7.13.0 didn't record the adults, so they count from the moment you switch it on.
 - A child added after the goal started counts from 0.
 
 Switching the goal **on** starts it at 0. Changing the **target** keeps the progress so far, so you can raise the bar part-way through. Either way the "reached" state resets so the goal can be celebrated afresh.

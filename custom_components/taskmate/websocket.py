@@ -123,7 +123,7 @@ from .coord_sibling_checks import SIBLING_CHECK_MAX_BONUS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .errors import TaskMateError, error_translation, send_translated_error
-from .family_goal import start_family_goal
+from .family_goal import include_adults_switched_on, includes_adults, start_family_goal
 from .family_style import FAMILY_STYLE_KEY, STYLE_HIDE_SCOPES, note_manual_change, switch_values
 from .models import (
     CHORE_STEP_NAME_MAX_LENGTH,
@@ -2454,6 +2454,7 @@ _SUBKEY_SETTINGS = {
     "family_goal_name",
     "family_goal_target",
     "family_goal_reward",
+    "family_goal_include_adults",
     # Family style (#1260): the switches a style covers that had none before,
     # and whether a switched-off feature also leaves the admin panel.
     # family_style itself is only set by taskmate/apply_family_style.
@@ -2855,6 +2856,7 @@ _UPDATE_SETTINGS_SCHEMA = {
     vol.Optional("family_goal_name"): vol.All(str, vol.Length(max=120)),
     vol.Optional("family_goal_target"): vol.All(vol.Coerce(int), vol.Range(min=1, max=10000000)),
     vol.Optional("family_goal_reward"): vol.All(str, vol.Length(max=200)),
+    vol.Optional("family_goal_include_adults"): bool,
     vol.Optional("leaderboard_enabled"): bool,
     vol.Optional("penalties_enabled"): bool,
     vol.Optional("raffles_enabled"): bool,
@@ -2908,6 +2910,7 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         changed.append("parent_user_ids")
     old_pack_children = dict(storage.get_setting(SEASON_PACK_CHILDREN_KEY, {}) or {})
     goal_was_on = storage.get_setting("family_goal_enabled", False) in (True, "true")
+    adults_were_in = includes_adults(storage)
     # Family style (#1260): a covered switch changed by hand makes it Custom.
     style_switches_before = switch_values(storage.get_settings())
     for k, v in msg.items():
@@ -2930,6 +2933,8 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         storage.set_setting("family_goal_achieved", False)
     if not goal_was_on and storage.get_setting("family_goal_enabled", False) in (True, "true"):
         start_family_goal(storage)
+    elif not adults_were_in and includes_adults(storage):
+        include_adults_switched_on(storage)
     if note_manual_change(storage, style_switches_before):
         changed.append(FAMILY_STYLE_KEY)
     if changed:
