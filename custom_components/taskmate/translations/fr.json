@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Réinitialiser l'objectif familial",
+      "description": "Recommence l'objectif familial à 0. Seuls les points gagnés à partir de maintenant comptent ; les soldes de points des enfants ne changent pas."
+    },
     "adopt_pet": {
       "name": "Adopter un animal",
       "description": "Un enfant adopte (ou renomme) son animal virtuel. Il grandit à chaque tâche terminée à partir de maintenant.",

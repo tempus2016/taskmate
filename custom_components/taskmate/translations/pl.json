@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Zresetuj cel rodzinny",
+      "description": "Zaczyna cel rodzinny od nowa od 0. Liczą się tylko punkty zdobyte od teraz; salda punktów dzieci się nie zmieniają."
+    },
     "adopt_pet": {
       "name": "Adoptuj zwierzaka",
       "description": "Dziecko adoptuje (lub zmienia imię) swojego wirtualnego zwierzaka. Rośnie z każdym wykonanym od teraz zadaniem.",

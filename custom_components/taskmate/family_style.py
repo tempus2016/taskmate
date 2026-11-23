@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from typing import Any, Final
 
+from .family_goal import start_family_goal
+
 FAMILY_STYLE_KEY: Final = "family_style"
 STYLE_HIDE_SCOPE_KEY: Final = "style_hide_scope"
 STYLE_SNAPSHOT_KEY: Final = "family_style_snapshot"
@@ -116,9 +118,12 @@ def apply_family_style(storage, style: str) -> dict[str, Any]:
         storage.set_setting(change["key"], change["new"])
     if style == "game" and STYLE_SNAPSHOT_KEY in settings:
         storage.get_settings().pop(STYLE_SNAPSHOT_KEY, None)
-    # A family goal switched on (or off) starts again, as in update_settings.
+    # A family goal switched on (or off) starts again, as in update_settings;
+    # switched on, it counts from 0 (#1282).
     if any(c["key"] == "family_goal_enabled" for c in changes):
         storage.set_setting("family_goal_achieved", False)
+    if any(c["key"] == "family_goal_enabled" and c["new"] for c in changes):
+        start_family_goal(storage)
     storage.set_setting(FAMILY_STYLE_KEY, style)
     return {"style": style, "previous": previous if previous in FAMILY_STYLES else None, "changes": changes}
 

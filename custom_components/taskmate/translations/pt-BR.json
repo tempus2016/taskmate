@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Redefinir meta da família",
+      "description": "Recomeça a meta da família do 0. Só contam os pontos ganhos a partir de agora; os saldos de pontos das crianças não mudam."
+    },
     "adopt_pet": {
       "name": "Adotar um bichinho",
       "description": "Uma criança adota (ou renomeia) seu bichinho virtual. Ele cresce com cada tarefa feita a partir de agora.",

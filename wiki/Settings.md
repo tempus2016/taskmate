@@ -156,13 +156,13 @@ Convert points into a real-money allowance. When enabled, parents can record a p
 
 ### Family Goals (v4.4.0)
 
-A shared co-op goal: when the family's combined points reach the target, TaskMate fires `taskmate_family_goal_reached` and notifies. The achieved flag resets whenever the target or enabled toggle changes. See [Family Goals](Family-Goals.md).
+A shared co-op goal: when the points the children earn together reach the target, TaskMate fires `taskmate_family_goal_reached` and notifies. Spending points doesn't count against it. Switching it on starts it at 0, and **Start again at 0** (shown while the goal is on) starts a new one without touching anyone's points. The achieved flag resets whenever the target or enabled toggle changes. See [Family Goals](Family-Goals.md).
 
 | Setting | Default | Range | Description |
 |---------|---------|-------|-------------|
 | **Family goal enabled** (`family_goal_enabled`) | `false` (off) | on / off | Master toggle for the family co-op goal |
 | **Family goal name** (`family_goal_name`) | *(empty)* | up to 120 chars | Display name of the goal |
-| **Family goal target** (`family_goal_target`) | `500` | 1–10000000 | Combined points needed to reach the goal |
+| **Family goal target** (`family_goal_target`) | `500` | 1–10000000 | Points the children need to earn between them, counted from when the goal started |
 | **Family goal reward** (`family_goal_reward`) | *(empty)* | up to 200 chars | Description of the reward earned when the goal is met |
 
 ### Negative Balance (v4.4.0)
@@ -441,7 +441,7 @@ Set under **Children → Edit** for each child, not globally.
 - **Vacation mode** — checked at midnight during the daily streak check
 - **Default card design** — the style applied to every card left on *Use global default*
 - **Allowance** — applied when a payout is recorded; converts points to cash at the fixed rate
-- **Family goal** — checked after point changes; fires when combined points reach the target
+- **Family goal** — checked after point changes; fires when the children's earnings since the start reach the target
 - **Allow negative balance** — applied at every point removal
 - **Reminder escalation** — timed off each mandatory miss
 - **Quiet hours** — checked per child before each notification is delivered

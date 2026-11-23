@@ -12,9 +12,10 @@ const { loadCard, localize, render, WWW } = require("./harness.cjs");
 const CARDS = {
   "taskmate-family-goal-card": {
     entity: "sensor.taskmate_overview",
-    fields: ["entity", "title", "card_design"],
+    fields: ["entity", "title", "show_parent_actions", "card_design"],
     accent: "#16a085",
-    full: { entity: "sensor.taskmate_overview", title: "Movie night", card_design: "playroom" },
+    // show_parent_actions is on by default, so only false is stored (#1282).
+    full: { entity: "sensor.taskmate_overview", title: "Movie night", show_parent_actions: false, card_design: "playroom" },
   },
   "taskmate-photo-gallery-card": {
     entity: "sensor.taskmate_activity",
@@ -70,6 +71,11 @@ for (const [card, spec] of Object.entries(CARDS)) {
     const bare = formData(editor(card, { entity: spec.entity }));
     assert.equal(bare.card_design, "global");
     assert.equal(bare.max, undefined, "an unset photo limit stays empty, not 0");
+    if (spec.fields.includes("show_parent_actions")) {
+      assert.equal(bare.show_parent_actions, true, "parent actions show unless turned off");
+      el._formChanged({ detail: { value: { show_parent_actions: true } } });
+      assert.equal(plain(el.dispatched.at(-1).detail.config).show_parent_actions, undefined, "the default is not stored");
+    }
   });
 
   test(`${card} editor sets the header colour, defaulting to the card's own`, () => {

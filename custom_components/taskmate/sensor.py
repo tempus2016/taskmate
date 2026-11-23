@@ -1049,6 +1049,8 @@ def _build_recent_completions(common: dict, limit: int = 35) -> list[dict]:
                 # Star rating the parent gave at approval (#927) — only when rated.
                 **({"rating": comp.quality_rating} if getattr(comp, "quality_rating", 0) else {}),
                 **({"for_child_id": comp.for_child_id} if getattr(comp, "for_child_id", "") else {}),
+                # What the child wrote and suggested (#1283), only when they did.
+                **comp.child_note_fields(),
                 **({"time_id": comp.time_id} if set_time is not None else {}),
             }
         )
@@ -1086,6 +1088,8 @@ def _build_photo_gallery(common: dict, limit: int = 40) -> list[dict]:
 
 _FEED_REJECTIONS_MAX = 8
 _FEED_INSPECTIONS_MAX = 8
+# Approved chores the parent dashboard card offers to inspect (#1285).
+INSPECTABLE_CARD_MAX = 15
 
 
 def _build_recent_transactions(
@@ -1526,13 +1530,13 @@ class TaskMateOverallStatsSensor(_CachedAttrsSensor):
             # Leaderboard seasons (FEAT-2): current-month standings + champion history.
             "season_month": dt_util.now().strftime("%Y-%m"),
             "season_champions": list(reversed(self.coordinator.storage.get_season_champions()))[:12],
-            # Family co-op goal (FEAT-4).
+            # Family co-op goal (FEAT-4): points earned since it started (#1282).
             "family_goal": {
                 "enabled": settings.get("family_goal_enabled", False) in (True, "true"),
                 "name": settings.get("family_goal_name", "") or "",
                 "target": _safe_int(settings.get("family_goal_target"), 0),
                 "reward": settings.get("family_goal_reward", "") or "",
-                "progress": sum(c.points for c in children),
+                "progress": self.coordinator.family_goal_progress(),
                 "achieved": settings.get("family_goal_achieved", False) in (True, "true"),
             },
         }
@@ -2279,7 +2283,17 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
     """Sensor for pending approvals."""
 
     _unrecorded_attributes = frozenset(
-        {"chore_completions", "reward_claims", "mandatory_misses", "owed_rewards", "swap_requests"}
+        {
+            "chore_completions",
+            "reward_claims",
+            "mandatory_misses",
+            "owed_rewards",
+            "swap_requests",
+            "open_inspections",
+            "inspectable_completions",
+            "inspection_settings",
+            "wish_requests",
+        }
     )
 
     def __init__(
@@ -2298,7 +2312,36 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         """Return the number of pending approvals."""
         pending_completions = self.coordinator.data.get("pending_completions", [])
         pending_rewards = self.coordinator.data.get("pending_reward_claims", [])
-        return len(pending_completions) + len(pending_rewards) + len(self._swap_details())
+        return len(pending_completions) + len(pending_rewards) + len(self._swap_details()) + len(self._wish_details())
+
+    def _wish_details(self) -> list[dict]:
+        """New wishes waiting for a parent's yes or no (#1284), oldest first.
+
+        The child's own fields (link, picture) are only sent when set, since
+        this slice is capped at 16 KB. The picture is a bare path: the card
+        signs it for the viewer.
+        """
+        details = []
+        wishes = [w for w in self.coordinator.storage.get_wishes() if w.status == "pending"]
+        for wish in sorted(wishes, key=lambda w: w.created_at):
+            child = self.coordinator.get_child(wish.child_id)
+            if not child:
+                continue
+            detail = {
+                "wish_id": wish.id,
+                "type": "wish",
+                "child_id": child.id,
+                "child_name": child.name,
+                "wish_name": wish.name,
+                "target": wish.target,
+                "requested_at": wish.created_at.isoformat(),
+            }
+            if wish.link:
+                detail["link"] = wish.link
+            if wish.image_url:
+                detail["image_url"] = wish.image_url
+            details.append(detail)
+        return details
 
     def _swap_details(self) -> list[dict]:
         """Pending chore swap requests, named for the approval cards (#1275).
@@ -2331,6 +2374,79 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
                 detail["from_child_name"] = from_child.name
             details.append(detail)
         return details
+
+    def _inspection_attrs(self) -> dict:
+        """Surprise inspections for the parent dashboard card (#1285).
+
+        Nothing at all while the feature is off. The settings always ride
+        along when it is on (they tell the card to show its tab); the two
+        lists only when they have rows, and the inspectable list is capped,
+        newest first, because this sensor shares the 16 KB attribute cap.
+        """
+        coord = self.coordinator
+        enabled = getattr(coord, "inspections_enabled", None)
+        # `is not True`: a stand-in coordinator answers with a non-bool.
+        if not callable(enabled) or enabled() is not True:
+            return {}
+        bed_h, bed_m = coord.inspection_bedtime()
+        out: dict = {
+            "inspection_settings": {
+                "bonus": coord.inspection_default_bonus(),
+                "window": coord.inspection_default_window(),
+                "fail_mode": coord.inspection_fail_default(),
+                "tell_child": coord.inspection_tell_default(),
+                "bedtime": f"{bed_h:02d}:{bed_m:02d}",
+                "bed_rule": coord.inspection_bed_rule(),
+            }
+        }
+        open_rows = []
+        for r in coord.storage.get_inspections():
+            if r.get("status") != "open":
+                continue
+            child = coord.get_child(r.get("child_id", ""))
+            if child is None:
+                continue
+            open_rows.append(
+                {
+                    "id": r.get("id", ""),
+                    "completion_id": r.get("completion_id", ""),
+                    "child_id": child.id,
+                    "child_name": child.name,
+                    "chore_name": r.get("chore_name", ""),
+                    "points": r.get("points", 0),
+                    "bonus": r.get("bonus", 0),
+                    "until": r.get("until", ""),
+                    "tell_child": bool(r.get("tell_child")),
+                    "source": r.get("source", "parent"),
+                    "can_redo": coord.inspection_can_redo(r),
+                }
+            )
+        if open_rows:
+            out["open_inspections"] = open_rows
+        ids = set(coord.inspectable_completion_ids())
+        if ids:
+            rows = []
+            for comp in coord.storage.get_completions():
+                if comp.id not in ids:
+                    continue
+                child = coord.get_child(comp.child_id)
+                if child is None:
+                    continue
+                approved = comp.approved_at or comp.completed_at
+                rows.append(
+                    {
+                        "completion_id": comp.id,
+                        "child_id": child.id,
+                        "child_name": child.name,
+                        "chore_name": coord.inspection_item_name(comp),
+                        "points": int(comp.points_awarded or 0),
+                        "approved_at": approved.isoformat() if approved else "",
+                    }
+                )
+            rows.sort(key=lambda row: row["approved_at"], reverse=True)
+            if rows:
+                out["inspectable_completions"] = rows[:INSPECTABLE_CARD_MAX]
+        return out
 
     @property
     def icon(self) -> str:
@@ -2448,6 +2564,11 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         if swaps := self._swap_details():
             attrs["pending_swap_requests"] = len(swaps)
             attrs["swap_requests"] = swaps
+        # New wishes (#1284), only while one is waiting, so the parent
+        # dashboard can approve or decline them away from the admin panel.
+        if wishes := self._wish_details():
+            attrs["pending_wish_requests"] = len(wishes)
+            attrs["wish_requests"] = wishes
         # Missed chores and sets reviewed in the admin panel (#1259): tells the
         # approvals card to leave them out. Absent while it is the card.
         if (where := self.coordinator.miss_review_location()) != "card":
@@ -2456,6 +2577,10 @@ class PendingApprovalsSensor(TaskMateBaseSensor):
         # while the tracker is on and something is owed.
         if owed := self.coordinator.owed_rewards():
             attrs["owed_rewards"] = owed
+        # Surprise inspections (#1285): open ones, what can still be flagged and
+        # the start defaults, so the parent dashboard card can run them. All
+        # absent while inspections are off.
+        attrs.update(self._inspection_attrs())
         # Quality rating (#927): tells approval cards to draw the star picker,
         # and what each star pays. Absent entirely while the feature is off.
         if self.coordinator.quality_rating_enabled():

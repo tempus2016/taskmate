@@ -1053,7 +1053,7 @@ Call off an open inspection, as if it never started.
 
 A child's account may make at most 120 child-facing service calls a minute; a burst beyond that is refused ("Too many requests from this account") and recorded in the audit log. Parents, admins and automations are not limited.
 
-Services for the v7.0.0 family features. The ones a child can use for themselves (`request_help`, `log_mood`, `set_weekly_goal`, `buy_raffle_tickets`, `adopt_pet`, `buy_pet_item`, `equip_pet_item`) go through the same linked-child check as `complete_chore`, so a child's account can only act for that child. `answer_help`, `set_sick_day` and `draw_raffle` are parent actions (an HA admin or a [TaskMate parent](Parent-Access.md); automations are allowed).
+Services for the v7.0.0 family features. The ones a child can use for themselves (`request_help`, `log_mood`, `set_weekly_goal`, `buy_raffle_tickets`, `adopt_pet`, `buy_pet_item`, `equip_pet_item`) go through the same linked-child check as `complete_chore`, so a child's account can only act for that child. `answer_help`, `set_sick_day`, `draw_raffle` and `reset_family_goal` are parent actions (an HA admin or a [TaskMate parent](Parent-Access.md); automations are allowed).
 
 ### `taskmate.request_help`
 A child says they are stuck on a chore. Sends the parents a push; nothing is completed or skipped. See [Help Requests](Help-Requests.md).
@@ -1170,6 +1170,13 @@ data:
 ```
 
 The winner is picked at random, weighted by tickets. A raffle nobody entered closes with no winner.
+
+### `taskmate.reset_family_goal`
+Start the [family goal](Family-Goals.md) again at 0. Only points earned from now on count; the children's point balances don't change. Re-arms the goal-reached notification. Takes no fields.
+
+```yaml
+service: taskmate.reset_family_goal
+```
 
 ### `taskmate.adopt_pet`
 A child adopts (or renames) their virtual pet. It grows with every chore they finish from now on. See [Virtual Pets](Virtual-Pets.md).

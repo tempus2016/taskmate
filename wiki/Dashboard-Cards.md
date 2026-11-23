@@ -374,7 +374,7 @@ header_color: "#16a085"
 
 ![Parent Dashboard Card](images/card-parent-dashboard.png)
 
-**Purpose:** All-in-one parent control centre with four tabs.
+**Purpose:** All-in-one parent control centre with tabs for each kind of job.
 
 **Default header colour:** Crimson `#c0392b`
 
@@ -384,6 +384,8 @@ entity: sensor.taskmate_overview
 title: Parent Dashboard
 quick_points_amount: 5        # points per +/- button press
 show_claims: true             # show the Claims tab
+show_wishes: true             # list new wish requests in the Approvals tab
+show_inspections: true        # show the Inspections tab while surprise inspections are on
 header_color: "#c0392b"
 ```
 
@@ -392,7 +394,8 @@ header_color: "#c0392b"
 | Tab | Content |
 |-----|---------|
 | **Overview** | All children's today progress bars and points |
-| **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)); with [quality ratings](Quality-Ratings.md) on, a ★ / ★★ / ★★★ picker under each chore rates it as you approve |
+| **Approvals** | Pending chore completions with approve/reject — evidence-photo thumbnails render inline (see [Photo Proof](Photo-Proof.md)); with [quality ratings](Quality-Ratings.md) on, a ★ / ★★ / ★★★ picker under each chore rates it as you approve. New [wish](Wishlist.md) requests follow under **Wishes** (hide them with `show_wishes: false`): ✓ opens the target, pre-filled with the child's suggestion, to approve at; ✕ asks for an optional reason the child sees before declining |
+| **Inspections** | Only while [Surprise Inspections](Surprise-Inspections.md) are on. Open inspections to pass, fail or cancel, then chores approved in the last 24 hours with a 🔍 to start one |
 | **Claims** | Pending reward claims with approve/reject |
 | **Points** | Quick +/- buttons per child |
 
@@ -724,7 +727,7 @@ See [Achievement Badges](Achievement-Badges.md) for full details on tiers, crite
 
 ![Family Goal Card](images/card-family-goal.png)
 
-**Purpose:** Shows the household's progress toward the shared co-op family goal — everyone's combined points measured against a single target, with the reward shown beneath.
+**Purpose:** Shows the household's progress toward the shared co-op family goal — the points the children have earned together since the goal started, measured against a single target, with the reward shown beneath.
 
 **Default header colour:** Teal `#16a085`
 
@@ -734,14 +737,16 @@ Set it up in the visual editor (the overview entity, an optional title, the [des
 type: custom:taskmate-family-goal-card
 entity: sensor.taskmate_overview
 title: Family Goal             # optional — custom card title
+show_parent_actions: true      # optional — false hides Start again on a shared kids' dashboard
 card_design: global            # optional — classic, playroom, console, cleanpro, accessible, graphite
 header_color: "#16a085"
 ```
 
 **Behaviour:**
-- Displays a progress bar from the combined family balance toward the goal target, with a percentage
+- Displays a progress bar from the points earned since the goal started toward the target, with a percentage (spending points doesn't move it back)
 - Shows the goal's reward, and a celebration state once the target is reached
 - If no family goal is enabled, the card keeps its title and shows a friendly "no goal set" placeholder
+- Parents see a **Start again** button that asks for confirmation, then starts the goal again at 0 without changing anyone's points
 
 The goal itself is enabled and configured in [Settings](Settings.md). See [Family Goals](Family-Goals.md) for the full feature.
 

@@ -2771,6 +2771,10 @@ draw_raffle:
       selector:
         text:
 
+reset_family_goal:
+  name: Reset family goal
+  description: Start the family goal again at 0. Only points earned from now on count; the children's point balances don't change.
+
 adopt_pet:
   name: Adopt a pet
   description: A child adopts (or renames) their virtual pet. It grows with every chore they finish from now on.

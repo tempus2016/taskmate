@@ -1495,6 +1495,7 @@ class TaskMatePanel extends HTMLElement {
     // Settings
     if (act === "save-settings") { this._doSaveSettings(); return; }
     if (act === "config-export") { this._doExportConfig(); return; }
+    if (act === "family-goal-reset") { this._doResetFamilyGoal(); return; }
     if (act === "config-import") { this.querySelector("[data-role='config-import-file']")?.click(); return; }
     if (act === "ics-show") { this._icsShow(); return; }
     if (act === "ics-regenerate") { this._icsRegenerate(); return; }
@@ -6108,6 +6109,8 @@ class TaskMatePanel extends HTMLElement {
       child: c.child_id === "__parent__" ? this._t("panel.activity_parent") : ((childById[c.child_id] || {}).name || "?"),
       label: `${this._t("panel.activity_completed_chore", {name: (choreById[c.chore_id] || {}).name || this._t("panel.activity_deleted_chore")})}`,
       points: c.points_awarded,
+      // What the child wrote when they submitted it (#1283).
+      child_note: c.note || "", suggested_points: c.suggested_points || 0,
     }));
     claims.filter(c => c.approved && this._childInScope(c.child_id)).forEach(c => events.push({
       ts: c.approved_at || c.claimed_at, kind: "claim", child_id: c.child_id, claim_id: c.wish_id ? "" : c.id,
@@ -6139,6 +6142,7 @@ class TaskMatePanel extends HTMLElement {
             <div class="tm-timeline-body">
               <div><strong>${this._esc(ev.child)}</strong> · ${this._esc(ev.label)}${ev.kind === "completion" && ev.completion_id ? ` ${this._inspSlot(ev.completion_id)}` : ""}${ev.kind === "claim" && ev.claim_id ? ` <button type="button" class="tm-btn tm-btn-sm tm-voucher-btn" data-act="print-voucher" data-id="${this._esc(ev.claim_id)}" title="${this._t("panel.voucher_print")}" aria-label="${this._t("panel.voucher_print")}">🖨️</button>` : ""}</div>
               ${ev.note ? `<div class="tm-meta tm-insp-note">“${this._esc(ev.note)}”</div>` : ""}
+              ${ev.kind === "completion" ? this._childNoteLines({ note: ev.child_note, suggested_points: ev.suggested_points }) : ""}
             </div>
             <div class="tm-timeline-points ${ev.points >= 0 ? 'tm-pos' : 'tm-neg'} tm-numeric">${ev.points == null ? "" : `${ev.points >= 0 ? '+' : ''}${this._fmtNum(this._num(ev.points))}`}</div>
           </div>
@@ -13219,6 +13223,15 @@ class TaskMatePanel extends HTMLElement {
     this._showToast("ok", this._t("panel.toast_badge_revoked"));
   }
 
+  // Family goal (#1282): start it again at 0; balances stay as they are.
+  async _doResetFamilyGoal() {
+    if (!confirm(this._t("panel.family_goal_reset_confirm"))) return;
+    const { ok, err } = await this._callService("reset_family_goal", {});
+    if (!ok) { this._showToast("err", this._t("panel.toast_family_goal_reset_failed", { error: err })); return; }
+    await this._fetchState();
+    this._showToast("ok", this._t("panel.toast_family_goal_reset"));
+  }
+
   async _doRebuildBadges() {
     if (!confirm(this._t("panel.badge_confirm_rebuild"))) return;
     const { ok, err } = await this._callService("rebuild_badges", {});
@@ -15644,6 +15657,11 @@ class TaskMatePanel extends HTMLElement {
               <div class="tm-setting-label">${this._t("panel.family_goal_reward")}</div>
               <input type="text" class="tm-input" maxlength="200" data-setting="family_goal_reward" value="${this._esc(s.family_goal_reward || "")}" placeholder="${this._esc(this._t("panel.family_goal_reward_ph"))}">
             </div>
+            ${s.family_goal_enabled ? `
+            <div class="tm-setting-row">
+              <div class="tm-setting-label">${this._t("panel.family_goal_reset")}<small>${this._t("panel.family_goal_reset_hint")}</small></div>
+              <div><button type="button" class="tm-btn" data-act="family-goal-reset"><ha-icon icon="mdi:restart"></ha-icon> ${this._t("panel.family_goal_reset_button")}</button></div>
+            </div>` : ""}
           </div>
         </div>
 

@@ -123,6 +123,7 @@ from .coord_sibling_checks import SIBLING_CHECK_MAX_BONUS
 from .coord_teamwork import teamwork_config_error
 from .coordinator import TaskMateCoordinator
 from .errors import TaskMateError, error_translation, send_translated_error
+from .family_goal import start_family_goal
 from .family_style import FAMILY_STYLE_KEY, STYLE_HIDE_SCOPES, note_manual_change, switch_values
 from .models import (
     CHORE_STEP_NAME_MAX_LENGTH,
@@ -2906,6 +2907,7 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
         storage.set_parent_user_ids(list(msg["parent_user_ids"]))
         changed.append("parent_user_ids")
     old_pack_children = dict(storage.get_setting(SEASON_PACK_CHILDREN_KEY, {}) or {})
+    goal_was_on = storage.get_setting("family_goal_enabled", False) in (True, "true")
     # Family style (#1260): a covered switch changed by hand makes it Custom.
     style_switches_before = switch_values(storage.get_settings())
     for k, v in msg.items():
@@ -2922,9 +2924,12 @@ async def _ws_update_settings(hass, connection, msg, coordinator):
                 continue
             storage.set_setting(k, v)
             changed.append(k)
-    # Re-arm a family goal when its target/enabled changes (FEAT-4).
+    # Re-arm a family goal when its target/enabled changes (FEAT-4). Switching
+    # it on starts it again at 0 (#1282); a new target keeps the progress.
     if "family_goal_target" in changed or "family_goal_enabled" in changed:
         storage.set_setting("family_goal_achieved", False)
+    if not goal_was_on and storage.get_setting("family_goal_enabled", False) in (True, "true"):
+        start_family_goal(storage)
     if note_manual_change(storage, style_switches_before):
         changed.append(FAMILY_STYLE_KEY)
     if changed:

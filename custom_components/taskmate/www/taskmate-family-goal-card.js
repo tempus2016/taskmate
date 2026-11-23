@@ -40,7 +40,7 @@ const DEFAULT_ACCENT = "#16a085";
 
 class TaskMateFamilyGoalCard extends LitElement {
   static get properties() {
-    return { hass: { type: Object }, config: { type: Object } };
+    return { hass: { type: Object }, config: { type: Object }, _resetting: { state: true } };
   }
 
   setConfig(config) {
@@ -128,9 +128,40 @@ class TaskMateFamilyGoalCard extends LitElement {
             : goal.reward
               ? html`<div class="fg-reward">${this._t("family_goal.reward_label", { reward: goal.reward })}</div>`
               : ""}
+          ${this._canReset()
+            ? html`<div class="fg-actions">
+                <button type="button" class="fg-reset" ?disabled=${this._resetting} @click=${() => this._reset()}>
+                  <ha-icon icon="mdi:restart"></ha-icon>${this._t("family_goal.reset")}
+                </button>
+              </div>`
+            : ""}
         </div>
       </ha-card>
     `;
+  }
+
+  // Parents can start the goal again at 0 (#1282). show_parent_actions: false
+  // hides the button on a shared kids' dashboard, as on the other cards.
+  _canReset() {
+    return this.config?.show_parent_actions !== false
+      && !!window.__taskmate_is_parent && window.__taskmate_is_parent(this.hass);
+  }
+
+  async _reset() {
+    if (this._resetting) return;
+    if (!window.confirm(this._t("family_goal.reset_confirm"))) return;
+    this._resetting = true;
+    try {
+      await this.hass.callService("taskmate", "reset_family_goal", {});
+    } catch (error) {
+      console.error("TaskMate: could not start the family goal again", error);
+      this.hass.callService("persistent_notification", "create", {
+        title: this._t("family_goal.default_title"),
+        message: this._t("family_goal.reset_failed", { error: (error && error.message) || String(error) }),
+      });
+    } finally {
+      this._resetting = false;
+    }
   }
 
   _head(icon, title) {
@@ -176,6 +207,19 @@ class TaskMateFamilyGoalCard extends LitElement {
       }
       .fg-reward { margin-top: 8px; font-size: 0.85rem; color: var(--tmd-text, var(--primary-text-color)); }
       .fg-reward.done { font-weight: 600; color: var(--tmd-gold, #d4ac0d); }
+      .fg-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+      .fg-reset {
+        display: inline-flex; align-items: center; gap: 6px;
+        min-height: 36px; padding: 6px 12px;
+        border: 1px solid var(--tmd-border, var(--divider-color, #ddd));
+        border-radius: var(--tmd-radius-sm, 8px);
+        background: transparent; color: var(--tmd-dim, var(--secondary-text-color));
+        font: inherit; font-size: 0.82rem; cursor: pointer;
+      }
+      .fg-reset ha-icon { --mdc-icon-size: 16px; }
+      .fg-reset:hover:not([disabled]) { color: var(--tmd-text, var(--primary-text-color)); border-color: var(--fg-accent); }
+      .fg-reset:focus-visible { outline: 2px solid var(--fg-accent); outline-offset: 2px; }
+      .fg-reset[disabled] { opacity: .6; cursor: default; }
       .fg-empty {
         display: flex; flex-direction: column; align-items: center; gap: 8px;
         padding: 16px 16px 24px; color: var(--tmd-dim, var(--secondary-text-color));

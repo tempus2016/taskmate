@@ -1793,6 +1793,10 @@
         }
       }
     },
+    "reset_family_goal": {
+      "name": "Återställ familjemål",
+      "description": "Börjar om familjemålet från 0. Bara poäng som tjänas från och med nu räknas; barnens poängsaldon ändras inte."
+    },
     "adopt_pet": {
       "name": "Adoptera ett husdjur",
       "description": "Ett barn adopterar (eller byter namn på) sitt virtuella husdjur. Det växer med varje syssla barnet gör från och med nu.",
