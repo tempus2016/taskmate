@@ -80,7 +80,7 @@ class TaskMateChildCardEditor extends LitElement {
     const children = overviewEntity?.attributes?.children || [];
 
     return [
-      { name: 'entity', selector: { entity: { domain: 'sensor' } } },
+      { name: 'entity', selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: 'sensor' } } },
       {
         name: 'child_id',
         selector: {

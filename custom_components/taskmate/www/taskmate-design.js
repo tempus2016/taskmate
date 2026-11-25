@@ -927,13 +927,16 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
   //   role "activity" — the activity sensor (sensor.taskmate_activity):
   //                     recent_completions[] + photo_gallery. Used by the photo
   //                     gallery card.
-  window.__taskmate_suggest = window.__taskmate_suggest || function (hass, entityId, type, role) {
-    if (!entityId || typeof entityId !== "string" || !entityId.startsWith("sensor.")) return null;
+  const hasRole = (hass, entityId, role) => {
+    if (!entityId || typeof entityId !== "string" || !entityId.startsWith("sensor.")) return false;
     const a = hass && hass.states && hass.states[entityId] && hass.states[entityId].attributes;
-    if (!a) return null;
+    if (!a) return false;
     const isOverview = a.points_name !== undefined && Array.isArray(a.children);
     const isActivity = Array.isArray(a.recent_completions) && a.photo_gallery !== undefined;
-    if (!(role === "activity" ? isActivity : isOverview)) return null;
+    return role === "activity" ? isActivity : isOverview;
+  };
+  window.__taskmate_suggest = window.__taskmate_suggest || function (hass, entityId, type, role) {
+    if (!hasRole(hass, entityId, role)) return null;
     // Mirror the card's own stub defaults (mode/title/days/…) so a suggested
     // card lands configured exactly as if added manually, just on this entity.
     let stub = {};
@@ -942,6 +945,46 @@ button.tmd-tag::after,.photo-badge.tm-help-btn::after,.mode-btn::after{inset:-12
       if (el && typeof el.getStubConfig === "function") stub = el.getStubConfig() || {};
     } catch (e) { stub = {}; }
     return { config: Object.assign({}, stub, { type: "custom:" + type, entity: entityId }) };
+  };
+
+  // ── Card editors' entity picker ─────────────────────────────────────────────
+  // Every card editor's "entity" field uses this selector, so the picker lists
+  // only TaskMate's own sensors with the card's role (the overview sensor, or
+  // the activity sensor for the photo gallery), not every sensor in the house.
+  // Same attribute signature as the suggestions above. When exactly one such
+  // sensor exists and the card's entity is empty or names a sensor that isn't
+  // there, the editor is pre-filled with it, once per editor.
+  //
+  //   __taskmate_entity_candidates(hass, role?) -> sorted entity ids
+  //   __taskmate_entity_selector(editor, role?) -> ha-form selector
+  const fromTaskmate = (hass, entityId) => {
+    const reg = hass && hass.entities && hass.entities[entityId];
+    return !reg || !reg.platform || reg.platform === "taskmate";
+  };
+  const entityCandidates = (hass, role) => Object.keys((hass && hass.states) || {})
+    .filter((id) => hasRole(hass, id, role) && fromTaskmate(hass, id))
+    .sort();
+  window.__taskmate_entity_candidates = window.__taskmate_entity_candidates || function (hass, role) {
+    return entityCandidates(hass, role || "overview");
+  };
+  const prefilled = new WeakSet();
+  window.__taskmate_entity_selector = window.__taskmate_entity_selector || function (editor, role) {
+    const hass = editor && editor.hass;
+    const ids = entityCandidates(hass, role || "overview");
+    const config = (editor && editor.config) || {};
+    const current = config.entity;
+    if (ids.length === 1 && !prefilled.has(editor) && (!current || !(hass.states && hass.states[current]))) {
+      prefilled.add(editor);
+      // Runs from render(), so hand the change to HA after this render.
+      Promise.resolve().then(() => editor.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config: Object.assign({}, config, { entity: ids[0] }) }, bubbles: true, composed: true,
+      })));
+    }
+    const entity = { filter: { integration: "taskmate", domain: "sensor" } };
+    // An empty include list would hide every entity, so only narrow when the
+    // signature found something.
+    if (ids.length) entity.include_entities = ids;
+    return { entity };
   };
 
   // ── Birthday "first open today" gate (#924) ───────────────────────────────

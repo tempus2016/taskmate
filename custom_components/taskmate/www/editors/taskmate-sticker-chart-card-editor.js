@@ -42,7 +42,7 @@ class TaskMateStickerChartCardEditor extends LitElement {
     const children = attrs.children || [];
     const rewards = attrs.rewards || [];
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: "sensor" } } },
       {
         name: "child_id",
         selector: {
