@@ -29,7 +29,7 @@ class TaskMatePetCardEditor extends LitElement {
       || this.hass?.states?.[this.config?.entity]?.attributes || {};
     const children = attrs.children || [];
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: "sensor" } } },
       { name: "child_id", selector: { select: { options: children.map(c => ({ value: c.id, label: c.name })), mode: "dropdown" } } },
       { name: "title", selector: { text: {} } },
       { name: "show_shop", selector: { boolean: {} } },

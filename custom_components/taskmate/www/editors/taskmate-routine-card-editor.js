@@ -42,7 +42,7 @@ class TaskMateRoutineCardEditor extends LitElement {
       : (entity && entity.attributes) || {};
     const children = Array.isArray(attrs.children) ? attrs.children : [];
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: "sensor" } } },
       {
         name: "child_id",
         selector: {

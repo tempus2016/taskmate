@@ -50,7 +50,7 @@ class TaskMateRewardsCardEditor extends LitElement {
     return [
       {
         name: 'entity',
-        selector: { entity: { domain: 'sensor' } },
+        selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: 'sensor' } },
       },
       {
         name: 'title',

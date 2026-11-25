@@ -52,7 +52,7 @@ class TaskMateKioskCardEditor extends LitElement {
 
   _schema() {
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: "sensor" } } },
       { name: "title", selector: { text: {} } },
       {
         name: "card_design",
@@ -123,6 +123,56 @@ class TaskMateKioskCardEditor extends LitElement {
       { name: "allow_avatar_change", selector: { boolean: {} } },
       { name: "show_tour", selector: { boolean: {} } },
     ];
+  }
+
+  /**
+   * The editor's collapsible sections (fields picked from _schema() by name),
+   * grouped like the child card editor. Appearance starts open.
+   */
+  _sections() {
+    const byName = Object.fromEntries(this._schema().map((f) => [f.name, f]));
+    const pick = (...names) => names.map((n) => byName[n]);
+    return {
+      top: pick("entity", "title"),
+      appearance: pick("card_design"),
+      appearanceMore: pick("seasonal", "show_description", "set_times_layout"),
+      which: pick("completed_mode", "elapsed_time_mode", "grabs_first"),
+      kid: pick("show_points", "show_streak", "show_reward_progress", "show_picker_progress", "show_bounties",
+        "show_rewards", "play_sounds", "show_confetti", "show_completion_popup", "show_raffle_draws",
+        "show_boost_alert", "show_pet", "show_badges", "allow_avatar_change", "show_tour"),
+      advanced: pick("timeout", "warn_before_return", "ambient_mode", "ambient_after"),
+    };
+  }
+
+  _onOff(on, name) {
+    return this._t(on ? "common.editor.summary_on" : "common.editor.summary_off", { name });
+  }
+
+  _modeWord(value) {
+    return ["hide", "dim", "show"].includes(value) ? this._t(`common.editor.summary_value_${value}`) : value;
+  }
+
+  /** One-line summaries shown under each section title, from the form data. */
+  _summaries(data, sections) {
+    const join = (parts) => parts.filter(Boolean).join(" · ");
+    const label = (field, value) => field?.selector?.select?.options?.find((o) => o.value === value)?.label || value;
+    const which = [
+      this._t("kiosk.editor.summary_done", { value: this._modeWord(data.completed_mode) }),
+      this._t("common.editor.summary_missed", { value: this._modeWord(data.elapsed_time_mode) }),
+    ];
+    return {
+      appearance: join([
+        data.card_design === "global" ? this._t("common.editor.summary_global_design") : label(sections.appearance[0], data.card_design),
+        this._t(this.config.header_color ? "common.editor.summary_header_custom" : "common.editor.summary_header_default"),
+        this._onOff(data.seasonal, this._t("common.editor.summary_seasonal")),
+      ]),
+      which: join([...which, this._t("common.editor.summary_more", { count: sections.which.length - which.length })]),
+      kid: this._t("common.editor.summary_count_on", { on: sections.kid.filter((f) => data[f.name]).length, total: sections.kid.length }),
+      advanced: join([
+        this._t("kiosk.editor.summary_timeout", { seconds: clampTimeout(data.timeout) }),
+        label(sections.advanced[2], data.ambient_mode),
+      ]),
+    };
   }
 
   _computeLabel = (entry) => ({
@@ -252,16 +302,31 @@ class TaskMateKioskCardEditor extends LitElement {
     };
     const rows = this._childRows();
     const pins = this._pins || {};
-    return html`
+    const sections = this._sections();
+    const summary = this._summaries(data, sections);
+    const form = (schema) => html`
       <ha-form
         .hass=${this.hass}
         .data=${data}
-        .schema=${this._schema()}
+        .schema=${schema}
         .computeLabel=${this._computeLabel}
         .computeHelper=${this._computeHelper}
         @value-changed=${this._formChanged}
-      ></ha-form>
-      ${this._renderColourPicker()}
+      ></ha-form>`;
+    const section = (title, secondary, icon, body, expanded = false) => html`
+      <ha-expansion-panel outlined .header=${title} .secondary=${secondary} .expanded=${expanded}>
+        <ha-icon slot="leading-icon" .icon=${icon}></ha-icon>
+        <div class="section-body">${body}</div>
+      </ha-expansion-panel>`;
+    return html`
+      ${form(sections.top)}
+      ${section(this._t("common.editor.section_appearance"), summary.appearance, "mdi:palette-outline", html`
+        ${form(sections.appearance)}
+        ${this._renderColourPicker()}
+        ${form(sections.appearanceMore)}`, true)}
+      ${section(this._t("common.editor.section_which_chores"), summary.which, "mdi:filter-variant", form(sections.which))}
+      ${section(this._t("common.editor.section_kid_features"), summary.kid, "mdi:human-child", form(sections.kid))}
+      ${section(this._t("common.editor.section_advanced"), summary.advanced, "mdi:cog-outline", form(sections.advanced))}
       <div class="kiosk-children">
         <div class="kiosk-heading">${this._t("kiosk.editor.children_heading")}</div>
         <div class="kiosk-hint">${this._t("kiosk.editor.children_hint")}</div>
@@ -351,6 +416,9 @@ class TaskMateKioskCardEditor extends LitElement {
     return css`
       :host { display: block; }
       ha-form { display: block; margin-bottom: 16px; }
+      ha-expansion-panel { display: block; margin-bottom: 12px; }
+      ha-expansion-panel ha-form { margin-bottom: 0; }
+      .section-body { display: flex; flex-direction: column; gap: 16px; padding: 12px 0 8px; }
       .kiosk-children { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
       .kiosk-heading { font-weight: 600; color: var(--primary-color); }
       .kiosk-hint { font-size: 12px; color: var(--secondary-text-color); }

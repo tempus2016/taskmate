@@ -38,7 +38,7 @@ class TaskMateRecapCardEditor extends LitElement {
     const entity = this.config?.entity ? this.hass?.states?.[this.config.entity] : null;
     const children = entity?.attributes?.children || [];
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this) ?? { entity: { domain: "sensor" } } },
       {
         name: "child_id",
         selector: {

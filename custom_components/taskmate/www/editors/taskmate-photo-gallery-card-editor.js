@@ -36,7 +36,7 @@ class TaskMatePhotoGalleryCardEditor extends LitElement {
 
   _buildSchema() {
     return [
-      { name: "entity", selector: { entity: { domain: "sensor" } } },
+      { name: "entity", selector: window.__taskmate_entity_selector?.(this, "activity") ?? { entity: { domain: "sensor" } } },
       { name: "title", selector: { text: {} } },
       { name: "max", selector: { number: { min: 1, max: 200, step: 1, mode: "box" } } },
       {
