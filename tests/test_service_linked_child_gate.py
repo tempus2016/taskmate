@@ -97,6 +97,31 @@ async def test_other_non_admin_rejected():
 
 
 @pytest.mark.asyncio
+async def test_non_admin_parent_allowed_on_linked_child():
+    """#1291: a configured TaskMate parent may act for a linked child."""
+    coord = _coordinator("uid-malia")
+    coord.storage.get_parent_user_ids.return_value = ["uid-parent"]
+    await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-parent"), coord, "child-1")
+
+
+@pytest.mark.asyncio
+async def test_non_parent_still_rejected_on_linked_child():
+    """#1291: the parent pass doesn't open a linked child to everyone else."""
+    coord = _coordinator("uid-malia")
+    coord.storage.get_parent_user_ids.return_value = ["uid-parent"]
+    with pytest.raises(tm.Unauthorized):
+        await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-ella"), coord, "child-1")
+
+
+@pytest.mark.asyncio
+async def test_parent_with_own_profile_allowed_on_other_child():
+    """#1291: a parent who is linked to a profile of their own still acts for the others."""
+    coord = _coordinator("", others=[MagicMock(linked_user_id="uid-parent")])
+    coord.storage.get_parent_user_ids.return_value = ["uid-parent"]
+    await tm._async_require_linked_child(_hass(MagicMock(is_admin=False)), _call("uid-parent"), coord, "child-1")
+
+
+@pytest.mark.asyncio
 async def test_unlinked_child_blocks_known_other_child():
     """SEC-4: a user linked to a different child can't act via an unlinked child."""
     coord = _coordinator("", others=[MagicMock(linked_user_id="uid-sibling")])

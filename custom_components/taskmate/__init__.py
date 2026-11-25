@@ -479,7 +479,8 @@ async def _async_require_linked_child(hass: HomeAssistant, call: ServiceCall, co
 
     Opt-in: only enforced when the child has a ``linked_user_id`` set. Children
     with no link keep the default open/kiosk behaviour (any user, e.g. a shared
-    tablet). Admins and context-less calls (automations, scripts) always pass.
+    tablet). Admins, TaskMate parents and context-less calls (automations,
+    scripts) always pass.
     """
     user_id = call.context.user_id
     if not user_id:
@@ -491,8 +492,11 @@ async def _async_require_linked_child(hass: HomeAssistant, call: ServiceCall, co
     user = await hass.auth.async_get_user(user_id)
     if user is not None and user.is_admin:
         return
+    # A configured TaskMate parent may act for any child, linked or not (#1291).
+    if user_id in (coordinator.storage.get_parent_user_ids() or []):
+        return
     if linked:
-        # Target child is linked to a different user and caller isn't admin.
+        # Target child is linked to a different user and caller isn't admin or parent.
         raise Unauthorized(context=call.context)
     # Target child is unlinked (kiosk). A user who is themselves linked to a
     # *different* child must not act through an unlinked child (SEC-4); truly
@@ -502,10 +506,8 @@ async def _async_require_linked_child(hass: HomeAssistant, call: ServiceCall, co
         raise Unauthorized(context=call.context)
     # Strict mode: households where every child has their own HA login can
     # require a link, so an unlinked child profile is no longer an open door
-    # for any authenticated user. Parents keep acting on any child's behalf.
+    # for any authenticated user. Parents already passed above.
     if coordinator.storage.get_require_linked_child():
-        if user_id in (coordinator.storage.get_parent_user_ids() or []):
-            return
         raise Unauthorized(context=call.context)
 
 

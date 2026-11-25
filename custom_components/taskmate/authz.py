@@ -69,7 +69,8 @@ async def async_context_allows_child(hass: HomeAssistant, coordinator: Any, cont
     """True if the context user may act *as* ``child_id`` (linked-child rule).
 
     Mirrors the service-layer ``_async_require_linked_child`` gate: a child that
-    has ``linked_user_id`` set may only be driven by that HA user (or an admin);
+    has ``linked_user_id`` set may only be driven by that HA user, an admin or a
+    TaskMate parent;
     an unlinked child keeps the open/kiosk behaviour, except a user who is
     themselves linked to a *different* child may never act through an unlinked
     child.
@@ -83,13 +84,16 @@ async def async_context_allows_child(hass: HomeAssistant, coordinator: Any, cont
         return True
     if await async_user_is_admin(hass, user_id):
         return True
+    # A configured TaskMate parent may act for any child, linked or not (#1291).
+    if coordinator is not None and user_id in (coordinator.storage.get_parent_user_ids() or []):
+        return True
     if linked:
         return False
     others = coordinator.storage.get_children() or []
     if any(getattr(c, "linked_user_id", "") == user_id for c in others):
         return False
     # Strict mode (opt-in): an unlinked child is not an open door. Mirrors the
-    # service-layer gate — parents may still act on any child's behalf.
+    # service-layer gate; parents already passed above.
     if coordinator is not None and coordinator.storage.get_require_linked_child():
-        return user_id in (coordinator.storage.get_parent_user_ids() or [])
+        return False
     return True
