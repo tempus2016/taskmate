@@ -61,7 +61,7 @@ A child's undo reverses the completion completely: the points, the chore count, 
 The new `taskmate.undo_chore` service works out the child from the completion itself, not from the caller. Then it applies the usual linked-account rule for that child:
 
 - A child can't undo a sibling's chore.
-- With **Require a linked account per child** switched on, only the child's own Home Assistant user (or an admin) can undo it.
+- With **Require a linked account per child** switched on, only the child's own Home Assistant user, an admin or a [TaskMate parent](Parent-Access.md) can undo it.
 - The window applies to everyone using this route, admins included. Parents keep their own undo and reject buttons for anything outside the window.
 
 ```yaml

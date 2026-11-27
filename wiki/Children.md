@@ -116,7 +116,7 @@ Each child stores the following data internally:
 | `career_score` | Long-term performance metric (`total_points_earned − total_penalties_received`) |
 | `total_penalties_received` | Lifetime count of penalties applied |
 | `level` | (v4.0+) Cached XP level derived from `total_points_earned`. See [Levels and XP](Levels-and-XP.md) |
-| `linked_user_id` | (v4.0+) HA user ID linked to this child; when set, only that user (or an admin) may self-serve as this child |
+| `linked_user_id` | (v4.0+) HA user ID linked to this child; when set, only that user, an admin or a [TaskMate parent](Parent-Access.md) may act as this child |
 | `notify_service` | Optional per-child `notify.*` service override |
 | `quiet_hours_start` | (v4.4+) Start of the do-not-disturb window in `HH:MM` (24h); empty = disabled. See [Quiet Hours](Quiet-Hours.md) |
 | `quiet_hours_end` | (v4.4+) End of the do-not-disturb window in `HH:MM` (24h, exclusive); a start later than the end is an overnight window. See [Quiet Hours](Quiet-Hours.md) |

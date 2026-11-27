@@ -13,6 +13,7 @@ worse than none.
 
 from __future__ import annotations
 
+import inspect
 import logging
 import time
 from typing import Any
@@ -35,6 +36,24 @@ ISSUE_CHORE_NOBODY = "chore_assigned_to_nobody"
 ISSUE_CHORE_DEPENDENCY = "chore_dependency_missing"
 ISSUE_REWARD_NOBODY = "reward_assigned_to_nobody"
 ISSUE_UNLOCK_NOT_ALLOWED = "reward_unlock_not_allowed"
+
+
+def _owner_kwargs(entry_id: str | None) -> dict[str, str]:
+    """Link an issue to TaskMate's config entry where HA supports it.
+
+    HA 2026.11 added ``config_entry_id`` to ``async_create_issue``: HA then
+    deletes the issue when the entry is removed and hides it while the entry
+    is disabled. Older versions reject the argument, so only pass it when the
+    installed HA takes it. ``clear_repairs`` still cleans up on unload.
+    """
+    if not entry_id:
+        return {}
+    try:
+        params = inspect.signature(ir.async_create_issue).parameters
+    except (TypeError, ValueError):
+        return {}
+    return {"config_entry_id": entry_id} if "config_entry_id" in params else {}
+
 
 _CHILD_ENTITY_FIELDS = ("availability_entity", "unavailability_entity", "presence_entity", "picture_entity")
 _CHORE_ENTITY_FIELDS = ("visibility_entity", "weather_entity")
@@ -146,6 +165,7 @@ class RepairsMixin:
             # this configuration no longer has.
             registry = ir.async_get(self.hass)
             self._repairs_active = {issue_id: {} for (domain, issue_id) in list(registry.issues) if domain == DOMAIN}
+        owner = _owner_kwargs(getattr(self, "entry_id", None))
         for issue_id, issue in found.items():
             if self._repairs_active.get(issue_id) == issue:
                 continue
@@ -153,6 +173,7 @@ class RepairsMixin:
                 self.hass,
                 DOMAIN,
                 issue_id,
+                **owner,
                 is_fixable=False,
                 is_persistent=False,
                 severity=ir.IssueSeverity.ERROR if issue["severity"] == "error" else ir.IssueSeverity.WARNING,
