@@ -128,3 +128,36 @@ def test_no_checks_during_startup(monkeypatch):
     coord._repairs_loaded_at = -10_000
     coord.async_update_repairs()
     assert created == []
+
+
+def _capture_create(monkeypatch, create):
+    monkeypatch.setattr(coord_repairs, "ir", MagicMock())
+    monkeypatch.setattr(coord_repairs.ir, "async_create_issue", create)
+    monkeypatch.setattr(coord_repairs.ir, "async_delete_issue", lambda hass, dom, iid: None)
+    monkeypatch.setattr(coord_repairs.ir, "async_get", lambda hass: MagicMock(issues={}))
+    coord = _Coord(children=[Child(name="V", id="k1", presence_entity="person.gone")])
+    coord.entry_id = "entry123"
+    coord._repairs_loaded_at = -10_000
+    coord.async_update_repairs()
+
+
+def test_issue_linked_to_config_entry_on_new_ha(monkeypatch):
+    seen = []
+
+    def create(hass, domain, issue_id, *, config_entry_id=None, **kw):
+        seen.append(config_entry_id)
+
+    _capture_create(monkeypatch, create)
+    assert seen == ["entry123"]
+
+
+def test_issue_not_linked_on_old_ha(monkeypatch):
+    seen = []
+
+    def create(
+        hass, domain, issue_id, *, is_fixable, is_persistent, severity, translation_key, translation_placeholders
+    ):
+        seen.append(issue_id)
+
+    _capture_create(monkeypatch, create)
+    assert seen == ["child_entity_missing_k1_presence_entity"]
