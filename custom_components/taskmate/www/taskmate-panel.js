@@ -19120,7 +19120,10 @@ class TaskMatePanel extends HTMLElement {
       .tm-approval-banner strong { color: var(--tm-text); font-weight: 600; }
 
       /* Body */
-      .tm-body { flex: 1; overflow-y: auto; padding: 24px 32px 56px; background: var(--tm-bg); }
+      /* HA 2026.11+ themes can set --ha-panel-background (any CSS background,
+         gradients and images too). HA declares no default for it, so an
+         unthemed panel keeps --tm-bg. */
+      .tm-body { flex: 1; overflow-y: auto; padding: 24px 32px 56px; background: var(--ha-panel-background, var(--tm-bg)); }
       .tm-body-inner { max-width: 1180px; margin: 0 auto; }
 
       /* Toolbar */
