@@ -102,6 +102,18 @@ def test_allows_child_strict_mode_mirrors_the_service_gate():
     assert run(authz.async_context_allows_child(hass, coord, _ctx(""), "malia")) is True
 
 
+def test_allows_child_lets_parents_act_for_linked_children():
+    """#1291: entity doors (button/todo) mirror the service gate for parents."""
+    coord = MagicMock()
+    coord.get_child.return_value = MagicMock(linked_user_id="uid-malia")
+    coord.storage.get_children.return_value = [MagicMock(linked_user_id="uid-parent")]
+    coord.storage.get_require_linked_child.return_value = False
+    coord.storage.get_parent_user_ids.return_value = ["uid-parent"]
+    hass = _hass(MagicMock(is_admin=False))
+    assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-parent"), "malia")) is True
+    assert run(authz.async_context_allows_child(hass, coord, _ctx("uid-ella"), "malia")) is False
+
+
 # ── entity platforms enforce the gate ───────────────────────────────────────
 
 
