@@ -6681,7 +6681,7 @@ class TaskMatePanel extends HTMLElement {
   // ── Screen-time bank and bin-day chores ─────────────────────────────
   _listChips(field, items, emptyKey) {
     return items.map(e => {
-      const name = this._hass?.states?.[e]?.attributes?.friendly_name || e;
+      const name = this._entityName(e) || e;
       return `<span class="tm-allow-chip" title="${this._esc(e)}">${this._esc(name)}
         <button type="button" data-act="st-list-remove" data-field="${this._esc(field)}" data-id="${this._esc(e)}" title="${this._t("panel.tooltip_remove")}">✕</button></span>`;
     }).join("") || `<span class="tm-field-hint">${this._t(emptyKey)}</span>`;
@@ -18363,8 +18363,24 @@ class TaskMatePanel extends HTMLElement {
     else { (this._settingsEntityDraft = this._settingsEntityDraft || {})[field] = value; }
   }
 
+  // An entity's display name, built the way HA's own cards build it (device
+  // name + entity name, honouring renames) on HA 2026.4+, which added
+  // hass.formatEntityName. Older HA, or a name the helper can't build, falls
+  // back to friendly_name. "" when the entity has no state.
+  _entityName(entityId) {
+    const st = this._hass?.states?.[entityId];
+    if (!st) return "";
+    if (typeof this._hass.formatEntityName === "function") {
+      try {
+        const name = this._hass.formatEntityName(st, [{ type: "device" }, { type: "entity" }]);
+        if (name) return name;
+      } catch (_e) { /* fall back below */ }
+    }
+    return st.attributes?.friendly_name || "";
+  }
+
   _entityPickerField(label, name, value, domains, hintHtml = "", { withPicture = false } = {}) {
-    const friendly = value && this._hass?.states?.[value]?.attributes?.friendly_name || "";
+    const friendly = value ? this._entityName(value) : "";
     const icon = value ? (this._hass?.states?.[value]?.attributes?.icon || this._entityDomainIcon(value)) : "";
     return `
       <div class="tm-field">
@@ -18404,7 +18420,7 @@ class TaskMatePanel extends HTMLElement {
           if (this._hass.entities?.[id]?.platform === "taskmate") return false;
         }
         if (!query) return true;
-        const fn = st.attributes?.friendly_name || "";
+        const fn = this._entityName(id);
         return id.toLowerCase().includes(query) || fn.toLowerCase().includes(query);
       })
       .sort(([a], [b]) => a.localeCompare(b))
@@ -18413,7 +18429,7 @@ class TaskMatePanel extends HTMLElement {
     const dd = document.createElement("div");
     dd.className = "tm-ep-dropdown";
     entities.forEach(([id, st]) => {
-      const fn = st.attributes?.friendly_name || "";
+      const fn = this._entityName(id);
       const stateIcon = st.attributes?.icon || this._entityDomainIcon(id);
       const opt = document.createElement("div");
       opt.className = "tm-ep-option";
