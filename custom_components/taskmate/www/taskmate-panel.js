@@ -20246,9 +20246,15 @@ class TaskMatePanel extends HTMLElement {
         margin-top: calc((37px - 56px) / 2);
         --ha-color-form-background: transparent;
         --ha-color-border-neutral-loud: transparent;
+        /* Before HA 2026.11 the picker rows were md-list-items. */
         --md-list-item-leading-space: 11px;
         --md-list-item-trailing-space: 4px;
         --md-list-item-label-text-size: 13px;
+        /* HA 2026.11+ rows are ha-combo-box-items. ha-picker-field pins
+           their inline-start padding to var(--ha-space-4) and the label
+           uses --ha-font-size-m, so those are the hooks that reach them. */
+        --ha-space-4: 11px;
+        --ha-font-size-m: 13px;
         --mdc-text-field-fill-color: transparent;
         --mdc-text-field-idle-line-color: transparent;
         --mdc-text-field-hover-line-color: transparent;
