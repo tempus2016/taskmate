@@ -56,7 +56,7 @@ Replace `mia` with your child's name in every template on this page.
 - **Skipped:** chores a single tap can't finish: [photo proof](Photo-Proof.md), [open-ended](Open-Ended-Chores.md), [timed](Timed-Tasks.md) and [teamwork](Teamwork-Chores.md) chores.
 - **Normal rules apply:** approval, points and notifications behave exactly as if the child had tapped the chore on their card.
 - **Nothing left?** It quietly does nothing, so a button pressed once too often doesn't raise an error.
-- **Linked accounts:** it follows the same rule as ticking a chore. If the child is linked to a Home Assistant user, the watch has to be signed in as that user (or an admin).
+- **Linked accounts:** it follows the same rule as ticking a chore. If the child is linked to a Home Assistant user, the watch has to be signed in as that user, an admin or a [TaskMate parent](Parent-Access.md).
 
 ### Wrap it in a script
 

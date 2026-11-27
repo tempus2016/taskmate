@@ -280,7 +280,7 @@ Ticking a chore from the kiosk goes through exactly the same checks as ticking i
 | Setup | What the kiosk can do |
 |-------|-----------------------|
 | Children not linked to any account (the usual family set-up) | Tick chores for every child |
-| A child linked to their own account | Can't tick that child's chores unless the tablet is signed in as an admin |
+| A child linked to their own account | Can't tick that child's chores unless the tablet is signed in as an admin or a TaskMate parent |
 | **Require a linked account per child** switched on | Can only tick chores if the tablet's account is a TaskMate parent or an admin |
 
 When the kiosk isn't allowed to act for a child, their face shows **Ask a grown-up**, and tapping it explains why. It never shows buttons that would fail. See [Parent Access](Parent-Access.md) for linking accounts.
